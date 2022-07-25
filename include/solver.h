@@ -21,6 +21,7 @@ namespace ratio::solver
     ORATIO_EXPORT ratio::core::expr new_real() noexcept override;
     ORATIO_EXPORT ratio::core::expr new_time_point() noexcept override;
     ORATIO_EXPORT ratio::core::expr new_string() noexcept override;
+    ORATIO_EXPORT ratio::core::expr new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals) override;
 
     /**
      * @brief Get the sat core.
