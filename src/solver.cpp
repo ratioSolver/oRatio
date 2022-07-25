@@ -176,6 +176,27 @@ namespace ratio::solver
     }
 
     ORATIO_EXPORT ratio::core::expr solver::negate(const ratio::core::expr &var) noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), !static_cast<ratio::core::bool_item &>(*var).get_value()); }
+    ORATIO_EXPORT ratio::core::expr solver::conj(const std::vector<ratio::core::expr> &exprs) noexcept
+    {
+        std::vector<semitone::lit> lits;
+        for (const auto &bex : exprs)
+            lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
+        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_conj(std::move(lits)));
+    }
+    ORATIO_EXPORT ratio::core::expr solver::disj(const std::vector<ratio::core::expr> &exprs) noexcept
+    {
+        std::vector<semitone::lit> lits;
+        for (const auto &bex : exprs)
+            lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
+        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_disj(std::move(lits)));
+    }
+    ORATIO_EXPORT ratio::core::expr solver::exct_one(const std::vector<ratio::core::expr> &exprs) noexcept
+    {
+        std::vector<semitone::lit> lits;
+        for (const auto &bex : exprs)
+            lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
+        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_exct_one(std::move(lits)));
+    }
 
     ORATIO_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
     {

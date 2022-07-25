@@ -27,6 +27,9 @@ namespace ratio::solver
     ORATIO_EXPORT void remove(ratio::core::expr &var, ratio::core::expr &val) override;
 
     ORATIO_EXPORT ratio::core::expr negate(const ratio::core::expr &var) noexcept override;
+    ORATIO_EXPORT ratio::core::expr conj(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIO_EXPORT ratio::core::expr disj(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIO_EXPORT ratio::core::expr exct_one(const std::vector<ratio::core::expr> &exprs) noexcept override;
 
     inline semitone::lit get_ni() const noexcept { return ni; }
     inline void set_ni(const semitone::lit &v) noexcept
