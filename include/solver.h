@@ -26,6 +26,8 @@ namespace ratio::solver
     ORATIO_EXPORT ratio::core::expr get(ratio::core::enum_item &var, const std::string &name);
     ORATIO_EXPORT void remove(ratio::core::expr &var, ratio::core::expr &val) override;
 
+    ORATIO_EXPORT ratio::core::expr negate(const ratio::core::expr &var) noexcept override;
+
     inline semitone::lit get_ni() const noexcept { return ni; }
     inline void set_ni(const semitone::lit &v) noexcept
     {
@@ -35,8 +37,8 @@ namespace ratio::solver
 
     inline void restore_ni() noexcept { ni = tmp_ni; }
 
-    void assert_facts(std::vector<ratio::core::expr> facts) override;
-    void assert_facts(std::vector<semitone::lit> facts);
+    ORATIO_EXPORT void assert_facts(std::vector<ratio::core::expr> facts) override;
+    ORATIO_EXPORT void assert_facts(std::vector<semitone::lit> facts);
 
     /**
      * @brief Get the sat core.

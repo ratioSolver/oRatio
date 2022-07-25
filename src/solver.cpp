@@ -62,13 +62,15 @@ namespace ratio::solver
             throw ratio::core::unsolvable_exception();
     }
 
-    void solver::assert_facts(std::vector<ratio::core::expr> facts)
+    ORATIO_EXPORT ratio::core::expr solver::negate(const ratio::core::expr &var) noexcept { return std::make_shared<ratio::core::bool_item>(*this, !static_cast<ratio::core::bool_item *>(var.get())->get_value()); }
+
+    ORATIO_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
     {
         for (const auto &f : facts)
             if (!sat_cr.new_clause({!ni, static_cast<ratio::core::bool_item *>(f.get())->get_value()}))
                 throw ratio::core::unsolvable_exception();
     }
-    void solver::assert_facts(std::vector<semitone::lit> facts)
+    ORATIO_EXPORT void solver::assert_facts(std::vector<semitone::lit> facts)
     {
         for (const auto &f : facts)
             if (!sat_cr.new_clause({!ni, f}))
