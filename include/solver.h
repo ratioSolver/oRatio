@@ -21,7 +21,22 @@ namespace ratio::solver
     ORATIO_EXPORT ratio::core::expr new_real() noexcept override;
     ORATIO_EXPORT ratio::core::expr new_time_point() noexcept override;
     ORATIO_EXPORT ratio::core::expr new_string() noexcept override;
+
     ORATIO_EXPORT ratio::core::expr new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals) override;
+    ORATIO_EXPORT ratio::core::expr get(ratio::core::enum_item &var, const std::string &name);
+    ORATIO_EXPORT void remove(ratio::core::expr &var, ratio::core::expr &val) override;
+
+    inline semitone::lit get_ni() const noexcept { return ni; }
+    inline void set_ni(const semitone::lit &v) noexcept
+    {
+      tmp_ni = ni;
+      ni = v;
+    }
+
+    inline void restore_ni() noexcept { ni = tmp_ni; }
+
+    void assert_facts(std::vector<ratio::core::expr> facts) override;
+    void assert_facts(std::vector<semitone::lit> facts);
 
     /**
      * @brief Get the sat core.
@@ -55,6 +70,9 @@ namespace ratio::solver
     inline semitone::rdl_theory &get_rdl_theory() noexcept { return rdl_th; }
 
   private:
+    semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..
+    semitone::lit ni = semitone::TRUE_lit; // the current controlling literal..
+
     semitone::sat_core sat_cr;   // the sat core..
     semitone::lra_theory lra_th; // the linear-real-arithmetic theory..
     semitone::ov_theory ov_th;   // the object-variable theory..
