@@ -2,6 +2,7 @@
 #include "atom.h"
 #include "predicate.h"
 #include "field.h"
+#include "conjunction.h"
 #include "causal_graph.h"
 #include <algorithm>
 #include <cassert>
@@ -361,7 +362,7 @@ namespace ratio::solver
             return false;
     }
 
-    ORATIO_EXPORT void solver::new_disjunction(const std::vector<std::unique_ptr<ratio::core::conjunction>> conjs)
+    ORATIO_EXPORT void solver::new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs)
     {
     }
 

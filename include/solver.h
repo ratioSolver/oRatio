@@ -60,7 +60,7 @@ namespace ratio::solver
 
     inline void restore_ni() noexcept { ni = tmp_ni; }
 
-    ORATIO_EXPORT void new_disjunction(const std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) override;
+    ORATIO_EXPORT void new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) override;
 
   private:
     ORATIO_EXPORT void new_atom(ratio::core::atom &atm, const bool &is_fact = true) override;
