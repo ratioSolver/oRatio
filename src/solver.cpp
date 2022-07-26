@@ -2,12 +2,15 @@
 #include "atom.h"
 #include "predicate.h"
 #include "field.h"
+#include "causal_graph.h"
 #include <algorithm>
 #include <cassert>
 
 namespace ratio::solver
 {
-    solver::solver() : sat_cr(), lra_th(sat_cr), ov_th(sat_cr), idl_th(sat_cr), rdl_th(sat_cr) {}
+    ORATIO_EXPORT solver::solver() : solver(std::make_unique<causal_graph>()) {}
+    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : sat_cr(), lra_th(sat_cr), ov_th(sat_cr), idl_th(sat_cr), rdl_th(sat_cr), gr(std::move(gr)) { gr->init(*this); }
+    ORATIO_EXPORT solver::~solver() {}
 
     ORATIO_EXPORT ratio::core::expr solver::new_bool() noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat_cr.new_var())); }
     ORATIO_EXPORT ratio::core::expr solver::new_int() noexcept { return std::make_shared<ratio::core::arith_item>(get_int_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
@@ -356,6 +359,14 @@ namespace ratio::solver
         }
         else
             return false;
+    }
+
+    ORATIO_EXPORT void solver::new_disjunction(const std::vector<std::unique_ptr<ratio::core::conjunction>> conjs)
+    {
+    }
+
+    ORATIO_EXPORT void solver::new_atom(ratio::core::atom &atm, const bool &is_fact)
+    {
     }
 
     ORATIO_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)

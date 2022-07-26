@@ -10,11 +10,17 @@
 
 namespace ratio::solver
 {
+  class causal_graph;
+  class flaw;
+  class resolver;
+
   class solver : public ratio::core::core
   {
   public:
-    solver();
-    ~solver() = default;
+    ORATIO_EXPORT solver();
+    ORATIO_EXPORT solver(std::unique_ptr<causal_graph> gr);
+    solver(const solver &orig) = delete;
+    ORATIO_EXPORT ~solver();
 
     ORATIO_EXPORT ratio::core::expr new_bool() noexcept override;
     ORATIO_EXPORT ratio::core::expr new_int() noexcept override;
@@ -54,6 +60,12 @@ namespace ratio::solver
 
     inline void restore_ni() noexcept { ni = tmp_ni; }
 
+    ORATIO_EXPORT void new_disjunction(const std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) override;
+
+  private:
+    ORATIO_EXPORT void new_atom(ratio::core::atom &atm, const bool &is_fact = true) override;
+
+  public:
     ORATIO_EXPORT void assert_facts(std::vector<ratio::core::expr> facts) override;
     ORATIO_EXPORT void assert_facts(std::vector<semitone::lit> facts);
 
@@ -88,6 +100,8 @@ namespace ratio::solver
      */
     inline semitone::rdl_theory &get_rdl_theory() noexcept { return rdl_th; }
 
+    const causal_graph &get_graph() const noexcept { return *gr; }
+
   private:
     semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..
     semitone::lit ni = semitone::TRUE_lit; // the current controlling literal..
@@ -97,5 +111,7 @@ namespace ratio::solver
     semitone::ov_theory ov_th;   // the object-variable theory..
     semitone::idl_theory idl_th; // the integer difference logic theory..
     semitone::rdl_theory rdl_th; // the real difference logic theory..
+
+    std::unique_ptr<causal_graph> gr;
   };
 } // namespace ratio::solver
