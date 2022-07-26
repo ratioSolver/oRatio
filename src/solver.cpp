@@ -381,4 +381,7 @@ namespace ratio::solver
             if (!sat_cr.new_clause({!ni, f}))
                 throw ratio::core::unsolvable_exception();
     }
+
+    ORATIO_EXPORT bool solver::solve() { return true; }
+    ORATIO_EXPORT void solver::take_decision(const semitone::lit &ch) {}
 } // namespace ratio::solver

@@ -36,12 +36,14 @@ namespace ratio::solver
      * @param r The resolver whose cost is going to be estimated.
      * @return semitone::rational The estimated cost of the given resolver.
      */
-    virtual semitone::rational get_estimated_cost(const resolver &r) const noexcept { return semitone::rational::ZERO; }
+    virtual semitone::rational get_estimated_cost(const resolver &) const noexcept { return semitone::rational::ZERO; }
 
   private:
     ORATIO_EXPORT virtual void init(solver &slv);
-    virtual void enqueue(flaw &f) {}
-    virtual void propagate_costs(flaw &f) {}
+    ORATIO_EXPORT void check();
+
+    virtual void enqueue(flaw &) {}
+    virtual void propagate_costs(flaw &) {}
     virtual void build() {} // builds the graph..
     virtual void prune() {} // prunes the current graph..
 

@@ -100,7 +100,20 @@ namespace ratio::solver
      */
     inline semitone::rdl_theory &get_rdl_theory() noexcept { return rdl_th; }
 
-    const causal_graph &get_graph() const noexcept { return *gr; }
+    inline size_t decision_level() const noexcept { return trail.size(); } // returns the current decision level..
+    inline bool root_level() const noexcept { return trail.empty(); }      // checks whether the current decision level is root level..
+
+    const causal_graph &get_causal_graph() const noexcept { return *gr; }
+    const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
+
+    /**
+     * Solves the given problem returning whether a solution has been found.
+     */
+    ORATIO_EXPORT bool solve();
+    /**
+     * Takes the given decision and propagates its effects.
+     */
+    ORATIO_EXPORT void take_decision(const semitone::lit &ch);
 
   private:
     semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..
@@ -112,6 +125,15 @@ namespace ratio::solver
     semitone::idl_theory idl_th; // the integer difference logic theory..
     semitone::rdl_theory rdl_th; // the real difference logic theory..
 
-    std::unique_ptr<causal_graph> gr;
+    std::unique_ptr<causal_graph> gr;        // the causal graph..
+    std::unordered_set<flaw *> active_flaws; // the currently active flaws..
+
+    struct layer
+    {
+      std::unordered_map<flaw *, semitone::rational> old_f_costs; // the old estimated flaws' costs..
+      std::unordered_set<flaw *> new_flaws;                       // the just activated flaws..
+      std::unordered_set<flaw *> solved_flaws;                    // the just solved flaws..
+    };
+    std::vector<layer> trail; // the list of taken decisions, with the associated changes made, in chronological order..
   };
 } // namespace ratio::solver
