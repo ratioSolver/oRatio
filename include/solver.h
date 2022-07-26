@@ -31,6 +31,18 @@ namespace ratio::solver
     ORATIO_EXPORT ratio::core::expr disj(const std::vector<ratio::core::expr> &exprs) noexcept override;
     ORATIO_EXPORT ratio::core::expr exct_one(const std::vector<ratio::core::expr> &exprs) noexcept override;
 
+    ORATIO_EXPORT ratio::core::expr add(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIO_EXPORT ratio::core::expr sub(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIO_EXPORT ratio::core::expr mult(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIO_EXPORT ratio::core::expr div(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIO_EXPORT ratio::core::expr minus(const ratio::core::expr &ex) noexcept override;
+
+    ORATIO_EXPORT ratio::core::expr lt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIO_EXPORT ratio::core::expr leq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIO_EXPORT ratio::core::expr eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIO_EXPORT ratio::core::expr geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIO_EXPORT ratio::core::expr gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+
     inline semitone::lit get_ni() const noexcept { return ni; }
     inline void set_ni(const semitone::lit &v) noexcept
     {

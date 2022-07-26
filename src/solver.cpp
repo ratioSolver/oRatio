@@ -2,6 +2,7 @@
 #include "atom.h"
 #include "predicate.h"
 #include "field.h"
+#include <algorithm>
 #include <cassert>
 
 namespace ratio::solver
@@ -196,6 +197,104 @@ namespace ratio::solver
         for (const auto &bex : exprs)
             lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
         return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_exct_one(std::move(lits)));
+    }
+
+    ORATIO_EXPORT ratio::core::expr solver::add(const std::vector<ratio::core::expr> &exprs) noexcept
+    {
+        assert(exprs.size() > 1);
+        semitone::lin l;
+        for (const auto &aex : exprs)
+            l += static_cast<ratio::core::arith_item &>(*aex).get_value();
+        return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
+    }
+    ORATIO_EXPORT ratio::core::expr solver::sub(const std::vector<ratio::core::expr> &exprs) noexcept
+    {
+        assert(exprs.size() > 1);
+        semitone::lin l;
+        for (auto it = exprs.cbegin(); it != exprs.cend(); ++it)
+            if (it == exprs.cbegin())
+                l += static_cast<ratio::core::arith_item &>(**it).get_value();
+            else
+                l -= static_cast<ratio::core::arith_item &>(**it).get_value();
+        return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
+    }
+    ORATIO_EXPORT ratio::core::expr solver::mult(const std::vector<ratio::core::expr> &exprs) noexcept
+    {
+        assert(exprs.size() > 1);
+        if (auto var_it = std::find_if(exprs.cbegin(), exprs.cend(), [this](const auto &ae)
+                                       { return is_constant(static_cast<ratio::core::arith_item &>(*ae)); });
+            var_it != exprs.cend())
+        {
+            auto c_xpr = *var_it;
+            semitone::lin l = static_cast<ratio::core::arith_item &>(*c_xpr).get_value();
+            for (const auto &xpr : exprs)
+                if (xpr != c_xpr)
+                {
+                    assert(is_constant(static_cast<ratio::core::arith_item &>(*xpr)) && "non-linear expression..");
+                    assert(lra_th.value(static_cast<ratio::core::arith_item &>(*xpr).get_value()).get_infinitesimal() == semitone::rational::ZERO);
+                    l *= lra_th.value(static_cast<ratio::core::arith_item &>(*xpr).get_value()).get_rational();
+                }
+            return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
+        }
+        else
+        {
+            semitone::lin l = static_cast<ratio::core::arith_item &>(**exprs.cbegin()).get_value();
+            for (auto it = ++exprs.cbegin(); it != exprs.cend(); ++it)
+            {
+                assert(lra_th.value(static_cast<ratio::core::arith_item &>(**it).get_value()).get_infinitesimal() == semitone::rational::ZERO);
+                l *= lra_th.value(static_cast<ratio::core::arith_item &>(**it).get_value()).get_rational();
+            }
+            return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
+        }
+    }
+    ORATIO_EXPORT ratio::core::expr solver::div(const std::vector<ratio::core::expr> &exprs) noexcept
+    {
+        assert(exprs.size() > 1);
+        assert(std::all_of(++exprs.cbegin(), exprs.cend(), [this](const auto &ae)
+                           { return is_constant(static_cast<ratio::core::arith_item &>(*ae)); }) &&
+               "non-linear expression..");
+        assert(lra_th.value(static_cast<ratio::core::arith_item &>(*exprs[1]).get_value()).get_infinitesimal() == semitone::rational::ZERO);
+        auto c = lra_th.value(static_cast<ratio::core::arith_item &>(*exprs[1]).get_value()).get_rational();
+        for (size_t i = 2; i < exprs.size(); ++i)
+        {
+            assert(lra_th.value(static_cast<ratio::core::arith_item &>(*exprs[i]).get_value()).get_infinitesimal() == semitone::rational::ZERO);
+            c *= lra_th.value(static_cast<ratio::core::arith_item &>(*exprs[i]).get_value()).get_rational();
+        }
+        return std::make_shared<ratio::core::arith_item>(get_type(exprs), static_cast<ratio::core::arith_item &>(*exprs.at(0)).get_value() / c);
+    }
+    ORATIO_EXPORT ratio::core::expr solver::minus(const ratio::core::expr &ex) noexcept { return std::make_shared<ratio::core::arith_item>(ex->get_type(), -static_cast<ratio::core::arith_item &>(*ex).get_value()); }
+
+    ORATIO_EXPORT ratio::core::expr solver::lt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    {
+        if (&get_type({left, right}) == &get_time_type())
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_lt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+        else
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_lt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+    }
+    ORATIO_EXPORT ratio::core::expr solver::leq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    {
+        if (&get_type({left, right}) == &get_time_type())
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_leq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+        else
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_leq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+    }
+    ORATIO_EXPORT ratio::core::expr solver::eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    {
+        return nullptr;
+    }
+    ORATIO_EXPORT ratio::core::expr solver::geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    {
+        if (&get_type({left, right}) == &get_time_type())
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+        else
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+    }
+    ORATIO_EXPORT ratio::core::expr solver::gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    {
+        if (&get_type({left, right}) == &get_time_type())
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+        else
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
 
     ORATIO_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
