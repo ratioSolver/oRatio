@@ -43,6 +43,8 @@ namespace ratio::solver
     ORATIO_EXPORT ratio::core::expr geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
     ORATIO_EXPORT ratio::core::expr gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
 
+    ORATIO_EXPORT bool matches(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+
     inline semitone::lit get_ni() const noexcept { return ni; }
     inline void set_ni(const semitone::lit &v) noexcept
     {
