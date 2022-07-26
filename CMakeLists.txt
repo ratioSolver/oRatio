@@ -17,6 +17,8 @@ enable_testing()
 
 add_subdirectory(extern/core)
 
+option(GRAPH_PRUNING "Prunes the causal graph before starting the search" ON)
+
 file(GLOB RATIO_SOURCES src/*.cpp)
 file(GLOB RATIO_HEADERS include/*.h)
 
@@ -24,6 +26,11 @@ add_library(${PROJECT_NAME} SHARED ${RATIO_SOURCES})
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
 target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE)
+
+message(STATUS "Prune graph:      ${GRAPH_PRUNING}")
+if(GRAPH_PRUNING)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE GRAPH_PRUNING)
+endif()
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
