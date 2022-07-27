@@ -27,8 +27,6 @@ namespace ratio::solver
     inline flaw &get_effect() const noexcept { return effect; }
     inline const std::vector<flaw *> &get_preconditions() const noexcept { return preconditions; }
 
-    virtual std::string get_data() const = 0;
-
   private:
     /**
      * Applies this resolver, introducing subgoals and/or constraints.

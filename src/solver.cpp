@@ -368,9 +368,54 @@ namespace ratio::solver
     {
     }
 
-    ORATIO_EXPORT void solver::new_atom(ratio::core::atom &atm, const bool &is_fact)
+    void solver::new_atom(ratio::core::atom &atm, const bool &is_fact)
     {
     }
+
+    void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
+    {
+        if (std::any_of(f->get_causes().cbegin(), f->get_causes().cend(), [this](const auto &r)
+                        { return sat_cr.value(r->get_rho()) == semitone::False; })) // there is no reason for introducing this flaw..
+            return;
+        // we initialize the flaw..
+        f->init(); // flaws' initialization requires being at root-level..
+        FIRE_NEW_FLAW(f);
+
+        if (enqueue) // we enqueue the flaw..
+            gr->enqueue(*f);
+        else // we directly expand the flaw..
+            gr->expand_flaw(*f);
+
+        switch (sat_cr.value(f->get_phi()))
+        {
+        case semitone::True: // we have a top-level (a landmark) flaw..
+            if (enqueue || std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
+                                        { return sat_cr.value(r->get_rho()) == semitone::True; }))
+                active_flaws.insert(f.get()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
+            break;
+        case semitone::Undefined: // we listen for the flaw to become active..
+            // phis[semitone::variable(f->get_phi())].push_back(std::move(f));
+            // bind(semitone::variable(f->get_phi()));
+            break;
+        }
+    }
+
+    void solver::new_resolver(std::unique_ptr<resolver> r)
+    {
+        FIRE_NEW_RESOLVER(r);
+        if (sat_cr.value(r->get_rho()) == semitone::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
+        {
+            // we listen for the resolver to become inactive..
+            // rhos[semitone::variable(r->get_rho())].push_back(std::move(r));
+            // bind(semitone::variable(r->get_rho()));
+        }
+    }
+
+    void solver::new_causal_link(flaw &f, resolver &r) {}
+
+    void solver::expand_flaw(flaw &f) {}
+    void solver::apply_resolver(resolver &r) {}
+    void solver::set_cost(flaw &f, semitone::rational cost) {}
 
     ORATIO_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
     {

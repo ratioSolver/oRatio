@@ -29,11 +29,13 @@ namespace ratio::solver
         case semitone::False:
             init(*slv); // we create a new graph var..
             if (!slv->get_active_flaws().empty())
+            { // we check if we have an estimated solution for the current problem..
                 if (std::any_of(slv->get_active_flaws().cbegin(), slv->get_active_flaws().cend(), [](flaw *f)
-                                { return is_positive_infinite(f->get_estimated_cost()); })) // we build/extend the graph..
-                    build();
-                else // we add a layer to the current graph..
-                    add_layer();
+                                { return is_positive_infinite(f->get_estimated_cost()); }))
+                    build(); // we build/extend the graph..
+                else
+                    add_layer(); // we add a layer to the current graph..
+            }
             [[fallthrough]];
         case semitone::Undefined:
 #ifdef GRAPH_PRUNING
@@ -42,5 +44,14 @@ namespace ratio::solver
             // we take 'gamma' decision..
             slv->take_decision(semitone::lit(gamma));
         }
+    }
+
+    void causal_graph::expand_flaw(flaw &f)
+    {
+        // we expand the flaw..
+        slv->expand_flaw(f);
+
+        // we propagate the costs starting from the just expanded flaw..
+        propagate_costs(f);
     }
 } // namespace ratio::solver

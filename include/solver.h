@@ -8,14 +8,46 @@
 #include "idl_theory.h"
 #include "rdl_theory.h"
 
+#define RATIO_AT "at"
+#define RATIO_START "start"
+#define RATIO_END "end"
+#define RATIO_DURATION "duration"
+#define RATIO_IMPULSE "Impulse"
+#define RATIO_INTERVAL "Interval"
+
+#ifdef BUILD_LISTENERS
+#define FIRE_NEW_FLAW(f) fire_new_flaw(f)
+#define FIRE_FLAW_COST_CHANGED(f) fire_flaw_cost_changed(f)
+#define FIRE_CURRENT_FLAW(f) fire_current_flaw(f)
+#define FIRE_NEW_RESOLVER(r) fire_new_resolver(r)
+#define FIRE_CURRENT_RESOLVER(r) fire_current_resolver(r)
+#define FIRE_CAUSAL_LINK_ADDED(f, r) fire_causal_link_added(f, r)
+#else
+#define FIRE_NEW_FLAW(f)
+#define FIRE_FLAW_COST_CHANGED(f)
+#define FIRE_CURRENT_FLAW(f)
+#define FIRE_NEW_RESOLVER(r)
+#define FIRE_CURRENT_RESOLVER(r)
+#define FIRE_CAUSAL_LINK_ADDED(f, r)
+#endif
+
 namespace ratio::solver
 {
   class causal_graph;
   class flaw;
   class resolver;
+#ifdef BUILD_LISTENERS
+  class solver_listener;
+#endif
 
   class solver : public ratio::core::core
   {
+    friend class causal_graph;
+    friend class flaw;
+#ifdef BUILD_LISTENERS
+    friend class solver_listener;
+#endif
+
   public:
     ORATIO_EXPORT solver();
     ORATIO_EXPORT solver(std::unique_ptr<causal_graph> gr);
@@ -63,7 +95,14 @@ namespace ratio::solver
     ORATIO_EXPORT void new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) override;
 
   private:
-    ORATIO_EXPORT void new_atom(ratio::core::atom &atm, const bool &is_fact = true) override;
+    void new_atom(ratio::core::atom &atm, const bool &is_fact = true) override;
+    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw 'f' has been created..
+    void new_resolver(std::unique_ptr<resolver> r);                     // notifies the solver that a new resolver 'r' has been created..
+    void new_causal_link(flaw &f, resolver &r);                         // notifies the solver that a new causal link between a flaw 'f' and a resolver 'r' has been created..
+
+    void expand_flaw(flaw &f);                       // expands the given flaw..
+    void apply_resolver(resolver &r);                // applies the given resolver..
+    void set_cost(flaw &f, semitone::rational cost); // sets the cost of the given flaw..
 
   public:
     ORATIO_EXPORT void assert_facts(std::vector<ratio::core::expr> facts) override;
@@ -138,5 +177,19 @@ namespace ratio::solver
 
     std::unordered_map<semitone::var, std::vector<std::unique_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
     std::unordered_map<semitone::var, std::vector<std::unique_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
+
+#ifdef BUILD_LISTENERS
+  private:
+    std::vector<solver_listener *> listeners; // the solver listeners..
+
+    void fire_new_flaw(const flaw &f) const;
+    void fire_flaw_state_changed(const flaw &f) const;
+    void fire_flaw_cost_changed(const flaw &f) const;
+    void fire_current_flaw(const flaw &f) const;
+    void fire_new_resolver(const resolver &r) const;
+    void fire_resolver_state_changed(const resolver &r) const;
+    void fire_current_resolver(const resolver &r) const;
+    void fire_causal_link_added(const flaw &f, const resolver &r) const;
+#endif
   };
 } // namespace ratio::solver

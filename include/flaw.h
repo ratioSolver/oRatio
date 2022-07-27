@@ -4,6 +4,7 @@
 #include "lit.h"
 #include "rational.h"
 #include <vector>
+#include <memory>
 
 namespace ratio::solver
 {
@@ -12,6 +13,7 @@ namespace ratio::solver
 
   class flaw
   {
+    friend class solver;
     friend class resolver;
 
   public:
@@ -51,7 +53,7 @@ namespace ratio::solver
     /**
      * Adds the resolver 'r' to this flaw.
      */
-    void add_resolver(resolver &r);
+    void add_resolver(std::unique_ptr<resolver> r);
 
   private:
     solver &slv;                                                         // the solver this flaw belongs to..

@@ -56,8 +56,11 @@ namespace ratio::solver
     ORATIO_EXPORT virtual void activated_resolver(resolver &r);
     ORATIO_EXPORT virtual void negated_resolver(resolver &r);
 
+  protected:
+    void expand_flaw(flaw &f);
+
   private:
-    solver *slv;                                                     // the solver this causal-graph belongs to..
-    semitone::var gamma;                                             // this variable represents the validity of the current graph..
+    solver *slv;         // the solver this causal-graph belongs to..
+    semitone::var gamma; // this variable represents the validity of the current graph..
   };
 } // namespace ratio::solver
