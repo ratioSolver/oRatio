@@ -84,8 +84,6 @@ namespace ratio::solver
     ORATIO_EXPORT ratio::core::expr geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
     ORATIO_EXPORT ratio::core::expr gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
 
-    ORATIO_EXPORT bool matches(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-
     inline semitone::lit get_ni() const noexcept { return ni; }
     inline void set_ni(const semitone::lit &v) noexcept
     {
@@ -114,6 +112,16 @@ namespace ratio::solver
       else
         return {};
     }
+
+    /**
+     * @brief Checks whether the two items can be made equal.
+     *
+     * @param left The first item to check if it can be made equal to the other.
+     * @param right The second expression to check if it can be made equal to the other.
+     * @return true If the two items can be made equal.
+     * @return false If the two items can not be made equal.
+     */
+    bool matches(ratio::core::item &left, ratio::core::item &right) noexcept;
 
   public:
     ORATIO_EXPORT void assert_facts(std::vector<ratio::core::expr> facts) override;

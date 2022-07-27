@@ -325,30 +325,30 @@ namespace ratio::solver
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
 
-    ORATIO_EXPORT bool solver::matches(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    bool solver::matches(ratio::core::item &left, ratio::core::item &right) noexcept
     {
-        if (left == right) // the two items are the same item..
+        if (&left == &right) // the two items are the same item..
             return true;
-        else if (&left->get_type() == &get_bool_type() && &right->get_type() == &get_bool_type())
+        else if (&left.get_type() == &get_bool_type() && &right.get_type() == &get_bool_type())
         { // we are comparing boolean expressions..
-            auto l_val = sat_cr.value(static_cast<ratio::core::bool_item &>(*left).get_value());
-            auto r_val = sat_cr.value(static_cast<ratio::core::bool_item &>(*right).get_value());
+            auto l_val = sat_cr.value(static_cast<ratio::core::bool_item &>(left).get_value());
+            auto r_val = sat_cr.value(static_cast<ratio::core::bool_item &>(right).get_value());
             return l_val == r_val || l_val == semitone::Undefined || r_val == semitone::Undefined;
         }
-        else if (&left->get_type() == &get_string_type() && &right->get_type() == &get_string_type()) // we are comparing string expressions..
-            return static_cast<ratio::core::string_item &>(*left).get_value() == static_cast<ratio::core::string_item &>(*right).get_value();
-        else if ((&left->get_type() == &get_int_type() || &left->get_type() == &get_real_type() || &left->get_type() == &get_time_type()) && (&right->get_type() == &get_int_type() || &right->get_type() == &get_real_type() || &right->get_type() == &get_time_type()))
+        else if (&left.get_type() == &get_string_type() && &right.get_type() == &get_string_type()) // we are comparing string expressions..
+            return static_cast<ratio::core::string_item &>(left).get_value() == static_cast<ratio::core::string_item &>(right).get_value();
+        else if ((&left.get_type() == &get_int_type() || &left.get_type() == &get_real_type() || &left.get_type() == &get_time_type()) && (&right.get_type() == &get_int_type() || &right.get_type() == &get_real_type() || &right.get_type() == &get_time_type()))
         { // we are comparing arithmetic expressions..
-            if (&get_type({left, right}) == &get_time_type())
-                return rdl_th.matches(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value());
+            if (&get_type(std::vector<const ratio::core::item *>({&left, &right})) == &get_time_type())
+                return rdl_th.matches(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
             else
-                return lra_th.matches(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value());
+                return lra_th.matches(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
         }
-        else if (dynamic_cast<ratio::core::enum_item *>(right.get()))
+        else if (dynamic_cast<ratio::core::enum_item *>(&right))
             return matches(right, left); // we swap, for simplifying code..
-        else if (ratio::core::enum_item *le = dynamic_cast<ratio::core::enum_item *>(left.get()))
+        else if (ratio::core::enum_item *le = dynamic_cast<ratio::core::enum_item *>(&left))
         { // we are comparing enums..
-            if (ratio::core::enum_item *re = dynamic_cast<ratio::core::enum_item *>(right.get()))
+            if (ratio::core::enum_item *re = dynamic_cast<ratio::core::enum_item *>(&right))
             { // the right expression is an enum..
                 auto r_vals = ov_th.value(re->get_var());
                 for (const auto &c_v : ov_th.value(le->get_var()))
@@ -357,7 +357,7 @@ namespace ratio::solver
                 return false;
             }
             else
-                return ov_th.value(le->get_var()).count(right.get());
+                return ov_th.value(le->get_var()).count(&right);
         }
         else
             return false;
