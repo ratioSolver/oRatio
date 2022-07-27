@@ -7,7 +7,7 @@
 
 namespace ratio::solver
 {
-  class causal_graph;
+  class solver;
   class flaw;
 
   class resolver
@@ -20,7 +20,7 @@ namespace ratio::solver
     resolver(const resolver &that) = delete;
     virtual ~resolver() = default;
 
-    inline causal_graph &get_causal_graph() const noexcept { return gr; }
+    inline solver &get_solver() const noexcept { return slv; }
     inline semitone::lit get_rho() const noexcept { return rho; }
     inline semitone::rational get_intrinsic_cost() const noexcept { return intrinsic_cost; }
     ORATIO_EXPORT semitone::rational get_estimated_cost() const noexcept;
@@ -38,7 +38,7 @@ namespace ratio::solver
     virtual void apply() = 0;
 
   private:
-    causal_graph &gr;                        // the causal-graph this resolver belongs to..
+    solver &slv;                             // the solver this resolver belongs to..
     const semitone::lit rho;                 // the propositional literal indicating whether the resolver is active or not..
     const semitone::rational intrinsic_cost; // the intrinsic cost of the resolver..
     flaw &effect;                            // the flaw solved by this resolver..

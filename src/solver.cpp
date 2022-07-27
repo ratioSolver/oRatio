@@ -4,6 +4,8 @@
 #include "field.h"
 #include "conjunction.h"
 #include "causal_graph.h"
+#include "flaw.h"
+#include "resolver.h"
 #include <algorithm>
 #include <cassert>
 

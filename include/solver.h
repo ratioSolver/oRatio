@@ -135,5 +135,8 @@ namespace ratio::solver
       std::unordered_set<flaw *> solved_flaws;                    // the just solved flaws..
     };
     std::vector<layer> trail; // the list of taken decisions, with the associated changes made, in chronological order..
+
+    std::unordered_map<semitone::var, std::vector<std::unique_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
+    std::unordered_map<semitone::var, std::vector<std::unique_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
   };
 } // namespace ratio::solver

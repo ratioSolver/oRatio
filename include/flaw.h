@@ -7,7 +7,7 @@
 
 namespace ratio::solver
 {
-  class causal_graph;
+  class solver;
   class resolver;
 
   class flaw
@@ -15,11 +15,11 @@ namespace ratio::solver
     friend class resolver;
 
   public:
-    ORATIO_EXPORT flaw(causal_graph &gr, std::vector<resolver *> causes, const bool &exclusive = false);
+    ORATIO_EXPORT flaw(solver &slv, std::vector<resolver *> causes, const bool &exclusive = false);
     flaw(const flaw &orig) = delete;
     virtual ~flaw() = default;
 
-    inline causal_graph &get_causal_graph() const noexcept { return gr; }
+    inline solver &get_solver() const noexcept { return slv; }
     inline semitone::lit get_phi() const noexcept { return phi; }
     inline semitone::var get_position() const noexcept { return position; }
     inline const std::vector<resolver *> &get_resolvers() const noexcept { return resolvers; }
@@ -54,7 +54,7 @@ namespace ratio::solver
     void add_resolver(resolver &r);
 
   private:
-    causal_graph &gr;                                                    // the causal-graph this flaw belongs to..
+    solver &slv;                                                         // the solver this flaw belongs to..
     semitone::lit phi;                                                   // the propositional literal indicating whether the flaw is active or not (this literal is initialized by the 'init' procedure)..
     semitone::var position;                                              // the position variable (i.e., an integer time-point) associated to this flaw..
     semitone::rational est_cost = semitone::rational::POSITIVE_INFINITY; // the current estimated cost of the flaw..

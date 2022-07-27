@@ -59,7 +59,5 @@ namespace ratio::solver
   private:
     solver *slv;                                                     // the solver this causal-graph belongs to..
     semitone::var gamma;                                             // this variable represents the validity of the current graph..
-    std::unordered_map<semitone::var, std::vector<flaw *>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
-    std::unordered_map<semitone::var, std::vector<resolver *>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
   };
 } // namespace ratio::solver
