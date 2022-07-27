@@ -2,6 +2,7 @@
 
 #include "oratio_export.h"
 #include "core.h"
+#include "theory.h"
 #include "sat_stack.h"
 #include "lra_theory.h"
 #include "ov_theory.h"
@@ -41,7 +42,7 @@ namespace ratio::solver
   class solver_listener;
 #endif
 
-  class solver : public ratio::core::core
+  class solver : public ratio::core::core, private semitone::theory
   {
     friend class causal_graph;
     friend class flaw;
@@ -172,6 +173,12 @@ namespace ratio::solver
      * Takes the given decision and propagates its effects.
      */
     ORATIO_EXPORT void take_decision(const semitone::lit &ch);
+
+  private:
+    bool propagate(const semitone::lit &p) override;
+    bool check() override;
+    void push() override;
+    void pop() override;
 
   private:
     semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..

@@ -11,7 +11,7 @@
 namespace ratio::solver
 {
     ORATIO_EXPORT solver::solver() : solver(std::make_unique<causal_graph>()) {}
-    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : sat_cr(), lra_th(sat_cr), ov_th(sat_cr), idl_th(sat_cr), rdl_th(sat_cr), gr(std::move(gr)) { gr->init(*this); }
+    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : sat_cr(), lra_th(sat_cr), ov_th(sat_cr), idl_th(sat_cr), rdl_th(sat_cr), gr(std::move(gr)), theory(sat_cr) { gr->init(*this); }
     ORATIO_EXPORT solver::~solver() {}
 
     ORATIO_EXPORT ratio::core::expr solver::new_bool() noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat_cr.new_var())); }
@@ -489,6 +489,7 @@ namespace ratio::solver
     }
 
     ORATIO_EXPORT bool solver::solve() { return true; }
+
     ORATIO_EXPORT void solver::take_decision(const semitone::lit &ch)
     {
         assert(sat_cr.value(ch) == semitone::Undefined);
@@ -509,5 +510,116 @@ namespace ratio::solver
                                                 { return is_positive_infinite(r->get_estimated_cost()) || sat_cr.value(r->rho) != semitone::False; }); }));
 
         FIRE_STATE_CHANGED();
+    }
+
+    bool solver::propagate(const semitone::lit &p)
+    {
+        assert(cnfl.empty());
+        assert(phis.count(variable(p)) || rhos.count(variable(p)));
+
+        if (const auto at_phis_p = phis.find(variable(p)); at_phis_p != phis.cend())
+            switch (sat_cr.value(at_phis_p->first))
+            {
+            case semitone::True: // some flaws have been activated..
+                for (const auto &f : at_phis_p->second)
+                {
+                    assert(!active_flaws.count(f.get()));
+                    if (!root_level())
+                        trail.back().new_flaws.insert(f.get());
+                    if (std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
+                                     { return sat_cr.value(r->rho) == semitone::True; }))
+                        active_flaws.insert(f.get()); // this flaw has been activated and not yet accidentally solved..
+                    else if (!root_level())
+                        trail.back().solved_flaws.insert(f.get()); // this flaw has been accidentally solved..
+                    gr->activated_flaw(*f);
+                }
+                if (root_level()) // since we are at root-level, we can perform some cleaning..
+                    phis.erase(at_phis_p);
+                break;
+            case semitone::False: // some flaws have been negated..
+                for (const auto &f : at_phis_p->second)
+                {
+                    assert(!active_flaws.count(f.get()));
+                    gr->negated_flaw(*f);
+                }
+                if (root_level()) // since we are at root-level, we can perform some cleaning..
+                    phis.erase(at_phis_p);
+                break;
+            }
+
+        if (const auto at_rhos_p = rhos.find(variable(p)); at_rhos_p != rhos.cend())
+            switch (sat_cr.value(at_rhos_p->first))
+            {
+            case semitone::True: // some resolvers have been activated..
+                for (const auto &r : at_rhos_p->second)
+                {
+                    if (active_flaws.erase(&r->effect) && !root_level()) // this resolver has been activated, hence its effect flaw has been resolved (notice that we remove its effect only in case it was already active)..
+                        trail.back().solved_flaws.insert(&r->effect);
+                    gr->activated_resolver(*r);
+                }
+                if (root_level()) // since we are at root-level, we can perform some cleaning..
+                    rhos.erase(at_rhos_p);
+                break;
+            case semitone::False: // some resolvers have been negated..
+                for (const auto &r : at_rhos_p->second)
+                    gr->negated_resolver(*r);
+                if (root_level()) // since we are at root-level, we can perform some cleaning..
+                    rhos.erase(at_rhos_p);
+                break;
+            }
+
+        return true;
+    }
+
+    bool solver::check()
+    {
+        assert(cnfl.empty());
+        assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
+                           { return sat_cr.value(f->phi) == semitone::True; }));
+        assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
+                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
+                                                { return sat_cr.value(f->phi) != semitone::True || (active_flaws.count(f.get()) || std::any_of(trail.cbegin(), trail.cend(), [&f](const auto &l)
+                                                                                                                                               { return l.solved_flaws.count(f.get()); })); }); }));
+        assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
+                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
+                                                { return sat_cr.value(f->phi) != semitone::False || is_positive_infinite(f->get_estimated_cost()); }); }));
+        assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
+                           { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
+                                                { return sat_cr.value(r->rho) != semitone::False || is_positive_infinite(r->get_estimated_cost()); }); }));
+        return true;
+    }
+
+    void solver::push()
+    {
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
+
+        trail.emplace_back();
+        gr->push();
+    }
+
+    void solver::pop()
+    {
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
+
+        // we reintroduce the solved flaw..
+        for (const auto &f : trail.back().solved_flaws)
+            active_flaws.insert(f);
+
+        // we erase the new flaws..
+        for (const auto &f : trail.back().new_flaws)
+            active_flaws.erase(f);
+
+        // we restore the flaws' estimated costs..
+        for (const auto &[f, cost] : trail.back().old_f_costs)
+        {
+            // assert(f.first->est_cost != cost);
+            f->est_cost = cost;
+            FIRE_FLAW_COST_CHANGED(*f);
+        }
+
+        trail.pop_back();
+        gr->pop();
+
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
     }
 } // namespace ratio::solver
