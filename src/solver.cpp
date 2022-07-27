@@ -4,8 +4,7 @@
 #include "field.h"
 #include "conjunction.h"
 #include "causal_graph.h"
-#include "flaw.h"
-#include "resolver.h"
+#include "disjunction_flaw.h"
 #include <algorithm>
 #include <cassert>
 
@@ -365,7 +364,8 @@ namespace ratio::solver
     }
 
     ORATIO_EXPORT void solver::new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs)
-    {
+    { // we create a new disjunction flaw..
+        new_flaw(std::make_unique<disjunction_flaw>(*this, get_cause(), std::move(conjs)));
     }
 
     void solver::new_atom(ratio::core::atom &atm, const bool &is_fact)

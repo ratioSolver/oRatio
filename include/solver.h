@@ -105,6 +105,14 @@ namespace ratio::solver
     void apply_resolver(resolver &r);                // applies the given resolver..
     void set_cost(flaw &f, semitone::rational cost); // sets the cost of the given flaw..
 
+    inline const std::vector<resolver *> get_cause()
+    {
+      if (res)
+        return {res};
+      else
+        return {};
+    }
+
   public:
     ORATIO_EXPORT void assert_facts(std::vector<ratio::core::expr> facts) override;
     ORATIO_EXPORT void assert_facts(std::vector<semitone::lit> facts);
