@@ -114,6 +114,7 @@ namespace ratio::solver
         return {};
     }
 
+    semitone::lit eq(ratio::core::item &left, ratio::core::item &right) noexcept;
     /**
      * @brief Checks whether the two items can be made equal.
      *
@@ -192,8 +193,8 @@ namespace ratio::solver
 
     struct atom_prop
     {
-      const semitone::var sigma; // this variable represents the state of the atom: if the variable is true, the atom is active; if the variable is false, the atom is unified; if the variable is undefined, the atom is not justified..
-      atom_flaw *const reason;   // the reason for having introduced the atom..
+      semitone::var sigma; // this variable represents the state of the atom: if the variable is true, the atom is active; if the variable is false, the atom is unified; if the variable is undefined, the atom is not justified..
+      atom_flaw *reason;   // the reason for having introduced the atom..
     };
     std::unordered_map<const ratio::core::atom *, atom_prop> atom_properties; // the atoms' properties..
 

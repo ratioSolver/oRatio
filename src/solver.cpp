@@ -1,17 +1,19 @@
 #include "solver.h"
-#include "atom.h"
+#include "item.h"
 #include "predicate.h"
 #include "field.h"
 #include "conjunction.h"
 #include "causal_graph.h"
 #include "disjunction_flaw.h"
+#include "atom_flaw.h"
+#include "smart_type.h"
 #include <algorithm>
 #include <cassert>
 
 namespace ratio::solver
 {
     ORATIO_EXPORT solver::solver() : solver(std::make_unique<causal_graph>()) {}
-    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : sat_cr(), lra_th(sat_cr), ov_th(sat_cr), idl_th(sat_cr), rdl_th(sat_cr), gr(std::move(gr)), theory(sat_cr) { gr->init(*this); }
+    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : sat_cr(), lra_th(sat_cr), ov_th(sat_cr), idl_th(sat_cr), rdl_th(sat_cr), theory(sat_cr), gr(std::move(gr)) { gr->init(*this); }
     ORATIO_EXPORT solver::~solver() {}
 
     ORATIO_EXPORT ratio::core::expr solver::new_bool() noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat_cr.new_var())); }
@@ -283,33 +285,7 @@ namespace ratio::solver
         else
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_leq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
-    ORATIO_EXPORT ratio::core::expr solver::eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
-    {
-        if (left == right) // the two items are the same item..
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::TRUE_lit);
-        else if (&left->get_type() == &get_bool_type() && &right->get_type() == &get_bool_type()) // we are comparing boolean expressions..
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_eq(static_cast<ratio::core::bool_item &>(*left).get_value(), static_cast<ratio::core::bool_item &>(*right).get_value()));
-        else if (&left->get_type() == &get_string_type() && &right->get_type() == &get_string_type()) // we are comparing string expressions..
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), static_cast<ratio::core::string_item &>(*left).get_value() == static_cast<ratio::core::string_item &>(*right).get_value() ? semitone::TRUE_lit : semitone::FALSE_lit);
-        else if ((&left->get_type() == &get_int_type() || &left->get_type() == &get_real_type() || &left->get_type() == &get_time_type()) && (&right->get_type() == &get_int_type() || &right->get_type() == &get_real_type() || &right->get_type() == &get_time_type()))
-        { // we are comparing arithmetic expressions..
-            if (&get_type({left, right}) == &get_time_type())
-                return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_eq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-            else
-                return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_eq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-        }
-        else if (dynamic_cast<ratio::core::enum_item *>(right.get()))
-            return eq(right, left); // we swap, for simplifying code..
-        else if (ratio::core::enum_item *le = dynamic_cast<ratio::core::enum_item *>(left.get()))
-        { // we are comparing enums..
-            if (ratio::core::enum_item *re = dynamic_cast<ratio::core::enum_item *>(right.get()))
-                return std::make_shared<ratio::core::bool_item>(get_bool_type(), ov_th.new_eq(le->get_var(), re->get_var()));
-            else
-                return std::make_shared<ratio::core::bool_item>(get_bool_type(), ov_th.allows(le->get_var(), *left));
-        }
-        else
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::FALSE_lit);
-    }
+    ORATIO_EXPORT ratio::core::expr solver::eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept { std::make_shared<ratio::core::bool_item>(get_bool_type(), eq(*left, *right)); }
     ORATIO_EXPORT ratio::core::expr solver::geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
     {
         if (&get_type({left, right}) == &get_time_type())
@@ -325,6 +301,33 @@ namespace ratio::solver
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
 
+    semitone::lit solver::eq(ratio::core::item &left, ratio::core::item &right) noexcept
+    {
+        if (&left == &right) // the two items are the same item..
+            return semitone::TRUE_lit;
+        else if (&left.get_type() == &get_bool_type() && &right.get_type() == &get_bool_type()) // we are comparing boolean expressions..
+            return sat_cr.new_eq(static_cast<ratio::core::bool_item &>(left).get_value(), static_cast<ratio::core::bool_item &>(right).get_value());
+        else if (&left.get_type() == &get_string_type() && &right.get_type() == &get_string_type()) // we are comparing string expressions..
+            return static_cast<ratio::core::string_item &>(left).get_value() == static_cast<ratio::core::string_item &>(right).get_value() ? semitone::TRUE_lit : semitone::FALSE_lit;
+        else if ((&left.get_type() == &get_int_type() || &left.get_type() == &get_real_type() || &left.get_type() == &get_time_type()) && (&right.get_type() == &get_int_type() || &right.get_type() == &get_real_type() || &right.get_type() == &get_time_type()))
+        { // we are comparing arithmetic expressions..
+            if (&get_type(std::vector<const ratio::core::item *>({&left, &right})) == &get_time_type())
+                return rdl_th.new_eq(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
+            else
+                return lra_th.new_eq(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
+        }
+        else if (dynamic_cast<ratio::core::enum_item *>(&right))
+            return eq(right, left); // we swap, for simplifying code..
+        else if (ratio::core::enum_item *le = dynamic_cast<ratio::core::enum_item *>(&left))
+        { // we are comparing enums..
+            if (ratio::core::enum_item *re = dynamic_cast<ratio::core::enum_item *>(&right))
+                return ov_th.new_eq(le->get_var(), re->get_var());
+            else
+                return ov_th.allows(le->get_var(), left);
+        }
+        else
+            return semitone::FALSE_lit;
+    }
     bool solver::matches(ratio::core::item &left, ratio::core::item &right) noexcept
     {
         if (&left == &right) // the two items are the same item..
@@ -370,6 +373,27 @@ namespace ratio::solver
 
     void solver::new_atom(ratio::core::atom &atm, const bool &is_fact)
     {
+        // we create a new atom flaw..
+        auto af = std::make_unique<atom_flaw>(*this, get_cause(), atm, is_fact);
+        // we store some properties..
+        atom_properties[&atm] = {sat_cr.new_var(), af.get()};
+        // we store the flaw..
+        new_flaw(std::move(af));
+
+        // we check if we need to notify the new atom to any smart types..
+        if (&atm.get_type().get_scope() != this)
+        {
+            std::queue<ratio::core::type *> q;
+            q.push(static_cast<ratio::core::type *>(&atm.get_type().get_scope()));
+            while (!q.empty())
+            {
+                if (auto st = dynamic_cast<smart_type *>(q.front()))
+                    st->new_atom_flaw(*af);
+                for (const auto &st : q.front()->get_supertypes())
+                    q.push(st);
+                q.pop();
+            }
+        }
     }
 
     void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
