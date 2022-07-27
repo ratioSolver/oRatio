@@ -285,7 +285,7 @@ namespace ratio::solver
         else
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_leq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
-    ORATIO_EXPORT ratio::core::expr solver::eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept { std::make_shared<ratio::core::bool_item>(get_bool_type(), eq(*left, *right)); }
+    ORATIO_EXPORT ratio::core::expr solver::eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), eq(*left, *right)); }
     ORATIO_EXPORT ratio::core::expr solver::geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
     {
         if (&get_type({left, right}) == &get_time_type())
@@ -399,7 +399,7 @@ namespace ratio::solver
     void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
     {
         if (std::any_of(f->get_causes().cbegin(), f->get_causes().cend(), [this](const auto &r)
-                        { return sat_cr.value(r->get_rho()) == semitone::False; })) // there is no reason for introducing this flaw..
+                        { return sat_cr.value(r->rho) == semitone::False; })) // there is no reason for introducing this flaw..
             return;
         // we initialize the flaw..
         f->init(); // flaws' initialization requires being at root-level..
@@ -410,16 +410,16 @@ namespace ratio::solver
         else // we directly expand the flaw..
             gr->expand_flaw(*f);
 
-        switch (sat_cr.value(f->get_phi()))
+        switch (sat_cr.value(f->phi))
         {
         case semitone::True: // we have a top-level (a landmark) flaw..
             if (enqueue || std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
-                                        { return sat_cr.value(r->get_rho()) == semitone::True; }))
+                                        { return sat_cr.value(r->rho) == semitone::True; }))
                 active_flaws.insert(f.get()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
             break;
         case semitone::Undefined: // we listen for the flaw to become active..
-            // phis[semitone::variable(f->get_phi())].push_back(std::move(f));
-            // bind(semitone::variable(f->get_phi()));
+            phis[variable(f->phi)].push_back(std::move(f));
+            bind(variable(f->phi));
             break;
         }
     }
@@ -427,11 +427,11 @@ namespace ratio::solver
     void solver::new_resolver(std::unique_ptr<resolver> r)
     {
         FIRE_NEW_RESOLVER(r);
-        if (sat_cr.value(r->get_rho()) == semitone::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
+        if (sat_cr.value(r->rho) == semitone::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
         {
             // we listen for the resolver to become inactive..
-            // rhos[semitone::variable(r->get_rho())].push_back(std::move(r));
-            // bind(semitone::variable(r->get_rho()));
+            rhos[variable(r->rho)].push_back(std::move(r));
+            bind(variable(r->rho));
         }
     }
 
@@ -441,7 +441,7 @@ namespace ratio::solver
         r.preconditions.push_back(&f);
         f.supports.push_back(&r);
         // activating the resolver requires the activation of the flaw..
-        [[maybe_unused]] bool new_clause = sat_cr.new_clause({!r.rho, f.get_phi()});
+        [[maybe_unused]] bool new_clause = sat_cr.new_clause({!r.rho, f.phi});
         assert(new_clause);
         // we introduce an ordering constraint..
         [[maybe_unused]] bool new_dist = sat_cr.new_clause({!r.rho, idl_th.new_distance(r.effect.position, f.position, 0)});
@@ -463,8 +463,8 @@ namespace ratio::solver
             throw ratio::core::unsolvable_exception();
 
         // we clean up already solved flaws..
-        if (sat_cr.value(f.get_phi()) == semitone::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
-                                                                       { return sat_cr.value(r->rho) == semitone::True; }))
+        if (sat_cr.value(f.phi) == semitone::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
+                                                                 { return sat_cr.value(r->rho) == semitone::True; }))
             active_flaws.erase(&f); // this flaw has already been solved..
     }
 
