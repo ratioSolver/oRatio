@@ -38,6 +38,7 @@ namespace ratio::solver
   class flaw;
   class atom_flaw;
   class resolver;
+  class smart_type;
 #ifdef BUILD_LISTENERS
   class solver_listener;
 #endif
@@ -48,6 +49,7 @@ namespace ratio::solver
     friend class flaw;
     friend class atom_flaw;
     friend class resolver;
+    friend class smart_type;
 #ifdef BUILD_LISTENERS
     friend class solver_listener;
 #endif
@@ -198,9 +200,10 @@ namespace ratio::solver
     };
     std::unordered_map<const ratio::core::atom *, atom_prop> atom_properties; // the atoms' properties..
 
-    std::unique_ptr<causal_graph> gr;        // the causal graph..
-    resolver *res = nullptr;                 // the current resolver (i.e. the cause for the new flaws)..
-    std::unordered_set<flaw *> active_flaws; // the currently active flaws..
+    std::unique_ptr<causal_graph> gr;         // the causal graph..
+    resolver *res = nullptr;                  // the current resolver (i.e. the cause for the new flaws)..
+    std::unordered_set<flaw *> active_flaws;  // the currently active flaws..
+    std::unordered_set<flaw *> pending_flaws; // pending flaws, waiting for root-level to be initialized..
 
     struct layer
     {
