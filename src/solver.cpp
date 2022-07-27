@@ -435,7 +435,7 @@ namespace ratio::solver
         for (const auto &r : f.resolvers)
             apply_resolver(*r);
 
-        if (!get_sat_core().propagate())
+        if (!sat_cr.propagate())
             throw ratio::core::unsolvable_exception();
 
         // we clean up already solved flaws..
@@ -455,7 +455,7 @@ namespace ratio::solver
         }
         catch (const ratio::core::inconsistency_exception &)
         { // the resolver is inapplicable..
-            if (!get_sat_core().new_clause({!r.rho}))
+            if (!sat_cr.new_clause({!r.rho}))
                 throw ratio::core::unsolvable_exception();
         }
 
@@ -489,5 +489,25 @@ namespace ratio::solver
     }
 
     ORATIO_EXPORT bool solver::solve() { return true; }
-    ORATIO_EXPORT void solver::take_decision(const semitone::lit &ch) {}
+    ORATIO_EXPORT void solver::take_decision(const semitone::lit &ch)
+    {
+        assert(sat_cr.value(ch) == semitone::Undefined);
+
+        // we take the decision..
+        if (!sat_cr.assume(ch))
+            throw ratio::core::unsolvable_exception();
+
+        if (root_level()) // we make sure that gamma is at true..
+            gr->check();
+        assert(sat_cr.value(gr->gamma) == semitone::True);
+
+        assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
+                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
+                                                { return (sat_cr.value(f->phi) != semitone::False && f->get_estimated_cost() == (f->get_best_resolver() ? f->get_best_resolver()->get_estimated_cost() : semitone::rational::POSITIVE_INFINITY)) || is_positive_infinite(f->get_estimated_cost()); }); }));
+        assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
+                           { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
+                                                { return is_positive_infinite(r->get_estimated_cost()) || sat_cr.value(r->rho) != semitone::False; }); }));
+
+        FIRE_STATE_CHANGED();
+    }
 } // namespace ratio::solver

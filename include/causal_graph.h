@@ -29,6 +29,7 @@ namespace ratio::solver
     virtual ~causal_graph() = default;
 
     inline solver &get_solver() const noexcept { return *slv; }
+    inline const semitone::var &get_gamma() const noexcept { return gamma; }
 
     /**
      * @brief Get the estimated cost of the given resolver.
