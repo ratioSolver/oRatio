@@ -35,6 +35,7 @@ namespace ratio::solver
 {
   class causal_graph;
   class flaw;
+  class atom_flaw;
   class resolver;
 #ifdef BUILD_LISTENERS
   class solver_listener;
@@ -44,6 +45,7 @@ namespace ratio::solver
   {
     friend class causal_graph;
     friend class flaw;
+    friend class atom_flaw;
     friend class resolver;
 #ifdef BUILD_LISTENERS
     friend class solver_listener;
@@ -172,6 +174,13 @@ namespace ratio::solver
     semitone::ov_theory ov_th;   // the object-variable theory..
     semitone::idl_theory idl_th; // the integer difference logic theory..
     semitone::rdl_theory rdl_th; // the real difference logic theory..
+
+    struct atom_prop
+    {
+      const semitone::var sigma; // this variable represents the state of the atom: if the variable is true, the atom is active; if the variable is false, the atom is unified; if the variable is undefined, the atom is not justified..
+      atom_flaw *const reason;   // the reason for having introduced the atom..
+    };
+    std::unordered_map<const ratio::core::atom *, atom_prop> atom_properties; // the atoms' properties..
 
     std::unique_ptr<causal_graph> gr;        // the causal graph..
     resolver *res = nullptr;                 // the current resolver (i.e. the cause for the new flaws)..
