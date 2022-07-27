@@ -44,6 +44,7 @@ namespace ratio::solver
   {
     friend class causal_graph;
     friend class flaw;
+    friend class resolver;
 #ifdef BUILD_LISTENERS
     friend class solver_listener;
 #endif
@@ -165,6 +166,7 @@ namespace ratio::solver
     semitone::rdl_theory rdl_th; // the real difference logic theory..
 
     std::unique_ptr<causal_graph> gr;        // the causal graph..
+    resolver *res = nullptr;                 // the current resolver (i.e. the cause for the new flaws)..
     std::unordered_set<flaw *> active_flaws; // the currently active flaws..
 
     struct layer

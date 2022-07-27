@@ -411,11 +411,69 @@ namespace ratio::solver
         }
     }
 
-    void solver::new_causal_link(flaw &f, resolver &r) {}
+    void solver::new_causal_link(flaw &f, resolver &r)
+    {
+        FIRE_CAUSAL_LINK_ADDED(f, r);
+        r.preconditions.push_back(&f);
+        f.supports.push_back(&r);
+        // activating the resolver requires the activation of the flaw..
+        [[maybe_unused]] bool new_clause = sat_cr.new_clause({!r.rho, f.get_phi()});
+        assert(new_clause);
+        // we introduce an ordering constraint..
+        [[maybe_unused]] bool new_dist = sat_cr.new_clause({!r.rho, idl_th.new_distance(r.effect.position, f.position, 0)});
+        assert(new_dist);
+    }
 
-    void solver::expand_flaw(flaw &f) {}
-    void solver::apply_resolver(resolver &r) {}
-    void solver::set_cost(flaw &f, semitone::rational cost) {}
+    void solver::expand_flaw(flaw &f)
+    {
+        assert(!f.expanded);
+
+        // we expand the flaw..
+        f.expand();
+
+        // we apply the flaw's resolvers..
+        for (const auto &r : f.resolvers)
+            apply_resolver(*r);
+
+        if (!get_sat_core().propagate())
+            throw ratio::core::unsolvable_exception();
+
+        // we clean up already solved flaws..
+        if (sat_cr.value(f.get_phi()) == semitone::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
+                                                                       { return sat_cr.value(r->rho) == semitone::True; }))
+            active_flaws.erase(&f); // this flaw has already been solved..
+    }
+
+    void solver::apply_resolver(resolver &r)
+    {
+        res = &r;      // we write down the resolver so that new flaws know their cause..
+        set_ni(r.rho); // we temporally set the ni variable..
+
+        try
+        { // we apply the resolver..
+            r.apply();
+        }
+        catch (const ratio::core::inconsistency_exception &)
+        { // the resolver is inapplicable..
+            if (!get_sat_core().new_clause({!r.rho}))
+                throw ratio::core::unsolvable_exception();
+        }
+
+        // we make some cleanings..
+        restore_ni();
+        res = nullptr;
+    }
+
+    void solver::set_cost(flaw &f, semitone::rational cost)
+    {
+        assert(f.est_cost != cost);
+        if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
+            trail.back().old_f_costs.try_emplace(&f, f.est_cost);
+
+        // we update the flaw's estimated cost..
+        f.est_cost = cost;
+        FIRE_FLAW_COST_CHANGED(f);
+    }
 
     ORATIO_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
     {

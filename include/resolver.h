@@ -12,6 +12,7 @@ namespace ratio::solver
 
   class resolver
   {
+    friend class solver;
     friend class flaw;
 
   public:
