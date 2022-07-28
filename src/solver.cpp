@@ -4,6 +4,9 @@
 #include "field.h"
 #include "conjunction.h"
 #include "causal_graph.h"
+#include "bool_flaw.h"
+#include "disj_flaw.h"
+#include "enum_flaw.h"
 #include "disjunction_flaw.h"
 #include "atom_flaw.h"
 #include "smart_type.h"
@@ -19,7 +22,13 @@ namespace ratio::solver
     ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : sat_cr(), lra_th(sat_cr), ov_th(sat_cr), idl_th(sat_cr), rdl_th(sat_cr), theory(sat_cr), gr(std::move(gr)) { gr->init(*this); }
     ORATIO_EXPORT solver::~solver() {}
 
-    ORATIO_EXPORT ratio::core::expr solver::new_bool() noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat_cr.new_var())); }
+    ORATIO_EXPORT ratio::core::expr solver::new_bool() noexcept
+    { // we create a new boolean expression..
+        auto b_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat_cr.new_var()));
+        // we create a new boolean flaw..
+        new_flaw(std::make_unique<bool_flaw>(*this, get_cause(), *b_xpr));
+        return b_xpr;
+    }
     ORATIO_EXPORT ratio::core::expr solver::new_int() noexcept { return std::make_shared<ratio::core::arith_item>(get_int_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
     ORATIO_EXPORT ratio::core::expr solver::new_real() noexcept { return std::make_shared<ratio::core::arith_item>(get_real_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
     ORATIO_EXPORT ratio::core::expr solver::new_time_point() noexcept { return std::make_shared<ratio::core::arith_item>(get_time_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
@@ -39,7 +48,12 @@ namespace ratio::solver
         for (const auto &i : allowed_vals)
             vals.push_back(i.get());
 
-        return std::make_shared<ratio::core::enum_item>(tp, ov_th.new_var(vals));
+        // we create a new enum expression..
+        // notice that we do not enforce the exct_one constraint!
+        auto e_xpr = std::make_shared<ratio::core::enum_item>(tp, ov_th.new_var(vals, false));
+        if (allowed_vals.size() > 1) // we create a new enum flaw..
+            new_flaw(std::make_unique<enum_flaw>(*this, get_cause(), *e_xpr));
+        return e_xpr;
     }
     ORATIO_EXPORT ratio::core::expr solver::get(ratio::core::enum_item &var, const std::string &name)
     {
@@ -199,7 +213,13 @@ namespace ratio::solver
         std::vector<semitone::lit> lits;
         for (const auto &bex : exprs)
             lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
-        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_disj(std::move(lits)));
+
+        auto d_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_disj(lits));
+
+        if (exprs.size() > 1) // we create a new var flaw..
+            new_flaw(std::make_unique<disj_flaw>(*this, get_cause(), std::move(lits)));
+
+        return d_xpr;
     }
     ORATIO_EXPORT ratio::core::expr solver::exct_one(const std::vector<ratio::core::expr> &exprs) noexcept
     {
