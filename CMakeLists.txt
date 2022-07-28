@@ -15,9 +15,10 @@ include(CMakePackageConfigHelpers)
 include(CTest)
 enable_testing()
 
-add_subdirectory(extern/core)
-
 option(GRAPH_PRUNING "Prunes the causal graph before starting the search" ON)
+option(BUILD_LISTENERS "Builds the solver's listeners" OFF)
+
+add_subdirectory(extern/core)
 
 file(GLOB RATIO_SOURCES src/*.cpp)
 file(GLOB RATIO_HEADERS include/*.h)
@@ -27,9 +28,14 @@ GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
 target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE)
 
-message(STATUS "Prune graph:      ${GRAPH_PRUNING}")
+message(STATUS "Prune causal graph:     ${GRAPH_PRUNING}")
 if(GRAPH_PRUNING)
     target_compile_definitions(${PROJECT_NAME} PRIVATE GRAPH_PRUNING)
+endif()
+
+message(STATUS "Build solver listeners: ${BUILD_LISTENERS}")
+if(BUILD_LISTENERS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE BUILD_LISTENERS)
 endif()
 
 if(BUILD_TESTING)
