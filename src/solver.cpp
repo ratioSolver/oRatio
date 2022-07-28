@@ -19,12 +19,12 @@
 namespace ratio::solver
 {
     ORATIO_EXPORT solver::solver() : solver(std::make_unique<causal_graph>()) {}
-    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : sat_cr(), lra_th(sat_cr), ov_th(sat_cr), idl_th(sat_cr), rdl_th(sat_cr), theory(sat_cr), gr(std::move(gr)) { gr->init(*this); }
+    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(gr)) { gr->init(*this); }
     ORATIO_EXPORT solver::~solver() {}
 
     ORATIO_EXPORT ratio::core::expr solver::new_bool() noexcept
     { // we create a new boolean expression..
-        auto b_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat_cr.new_var()));
+        auto b_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat->new_var()));
         // we create a new boolean flaw..
         new_flaw(std::make_unique<bool_flaw>(*this, get_cause(), *b_xpr));
         return b_xpr;
@@ -66,14 +66,14 @@ namespace ratio::solver
         std::vector<semitone::var_value *> c_vals;
         for (const auto &val : val_vars)
         {
-            const auto var = sat_cr.new_disj(val.second);
+            const auto var = sat->new_disj(val.second);
             c_vars.push_back(var);
             c_vals.push_back(val.first);
             for (const auto &val_not : val_vars)
                 if (val != val_not)
                     for (const auto &v : val_not.second)
                     {
-                        [[maybe_unused]] bool nc = sat_cr.new_clause({!var, !v});
+                        [[maybe_unused]] bool nc = sat->new_clause({!var, !v});
                         assert(nc);
                     }
         }
@@ -84,7 +84,7 @@ namespace ratio::solver
             [[maybe_unused]] bool nc;
             for (size_t i = 0; i < c_vars.size(); ++i)
             {
-                nc = sat_cr.new_clause({!c_vars[i], sat_cr.new_eq(static_cast<ratio::core::bool_item &>(*c_vals[i]).get_value(), static_cast<ratio::core::bool_item &>(*b).get_value())});
+                nc = sat->new_clause({!c_vars[i], sat->new_eq(static_cast<ratio::core::bool_item &>(*c_vals[i]).get_value(), static_cast<ratio::core::bool_item &>(*b).get_value())});
                 assert(nc);
             }
             return b;
@@ -113,13 +113,13 @@ namespace ratio::solver
                 [[maybe_unused]] bool nc;
                 for (size_t i = 0; i < c_vars.size(); ++i)
                 {
-                    nc = sat_cr.new_clause({!c_vars[i], lra_th.new_eq(static_cast<ratio::core::arith_item &>(*ie).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
+                    nc = sat->new_clause({!c_vars[i], lra_th.new_eq(static_cast<ratio::core::arith_item &>(*ie).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
                     assert(nc);
                 }
                 // we impose some bounds which might help propagation..
-                nc = sat_cr.new_clause({lra_th.new_geq(static_cast<ratio::core::arith_item &>(*ie).get_value(), semitone::lin(min.get_rational()))});
+                nc = sat->new_clause({lra_th.new_geq(static_cast<ratio::core::arith_item &>(*ie).get_value(), semitone::lin(min.get_rational()))});
                 assert(nc);
-                nc = sat_cr.new_clause({lra_th.new_leq(static_cast<ratio::core::arith_item &>(*ie).get_value(), semitone::lin(max.get_rational()))});
+                nc = sat->new_clause({lra_th.new_leq(static_cast<ratio::core::arith_item &>(*ie).get_value(), semitone::lin(max.get_rational()))});
                 assert(nc);
                 return ie;
             }
@@ -146,13 +146,13 @@ namespace ratio::solver
                 [[maybe_unused]] bool nc;
                 for (size_t i = 0; i < c_vars.size(); ++i)
                 {
-                    nc = sat_cr.new_clause({!c_vars[i], lra_th.new_eq(static_cast<ratio::core::arith_item &>(*re).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
+                    nc = sat->new_clause({!c_vars[i], lra_th.new_eq(static_cast<ratio::core::arith_item &>(*re).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
                     assert(nc);
                 }
                 // we impose some bounds which might help propagation..
-                nc = sat_cr.new_clause({lra_th.new_geq(static_cast<ratio::core::arith_item &>(*re).get_value(), semitone::lin(min.get_rational()))});
+                nc = sat->new_clause({lra_th.new_geq(static_cast<ratio::core::arith_item &>(*re).get_value(), semitone::lin(min.get_rational()))});
                 assert(nc);
-                nc = sat_cr.new_clause({lra_th.new_leq(static_cast<ratio::core::arith_item &>(*re).get_value(), semitone::lin(max.get_rational()))});
+                nc = sat->new_clause({lra_th.new_leq(static_cast<ratio::core::arith_item &>(*re).get_value(), semitone::lin(max.get_rational()))});
                 assert(nc);
                 return re;
             }
@@ -179,13 +179,13 @@ namespace ratio::solver
                 [[maybe_unused]] bool nc;
                 for (size_t i = 0; i < c_vars.size(); ++i)
                 {
-                    nc = sat_cr.new_clause({!c_vars[i], rdl_th.new_eq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
+                    nc = sat->new_clause({!c_vars[i], rdl_th.new_eq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
                     assert(nc);
                 }
                 // we impose some bounds which might help propagation..
-                nc = sat_cr.new_clause({rdl_th.new_geq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), semitone::lin(min.get_rational()))});
+                nc = sat->new_clause({rdl_th.new_geq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), semitone::lin(min.get_rational()))});
                 assert(nc);
-                nc = sat_cr.new_clause({rdl_th.new_leq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), semitone::lin(max.get_rational()))});
+                nc = sat->new_clause({rdl_th.new_leq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), semitone::lin(max.get_rational()))});
                 assert(nc);
                 return tm_pt;
             }
@@ -196,7 +196,7 @@ namespace ratio::solver
     ORATIO_EXPORT void solver::remove(ratio::core::expr &var, ratio::core::expr &val)
     {
         auto alw_var = ov_th.allows(static_cast<ratio::core::enum_item &>(*var).get_var(), *val);
-        if (!sat_cr.new_clause({!ni, !alw_var}))
+        if (!sat->new_clause({!ni, !alw_var}))
             throw ratio::core::unsolvable_exception();
     }
 
@@ -206,7 +206,7 @@ namespace ratio::solver
         std::vector<semitone::lit> lits;
         for (const auto &bex : exprs)
             lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
-        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_conj(std::move(lits)));
+        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat->new_conj(std::move(lits)));
     }
     ORATIO_EXPORT ratio::core::expr solver::disj(const std::vector<ratio::core::expr> &exprs) noexcept
     {
@@ -214,7 +214,7 @@ namespace ratio::solver
         for (const auto &bex : exprs)
             lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
 
-        auto d_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_disj(lits));
+        auto d_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), sat->new_disj(lits));
 
         if (exprs.size() > 1) // we create a new var flaw..
             new_flaw(std::make_unique<disj_flaw>(*this, get_cause(), std::move(lits)));
@@ -226,7 +226,7 @@ namespace ratio::solver
         std::vector<semitone::lit> lits;
         for (const auto &bex : exprs)
             lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
-        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat_cr.new_exct_one(std::move(lits)));
+        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat->new_exct_one(std::move(lits)));
     }
 
     ORATIO_EXPORT ratio::core::expr solver::add(const std::vector<ratio::core::expr> &exprs) noexcept
@@ -329,7 +329,7 @@ namespace ratio::solver
         if (&left == &right) // the two items are the same item..
             return semitone::TRUE_lit;
         else if (&left.get_type() == &get_bool_type() && &right.get_type() == &get_bool_type()) // we are comparing boolean expressions..
-            return sat_cr.new_eq(static_cast<ratio::core::bool_item &>(left).get_value(), static_cast<ratio::core::bool_item &>(right).get_value());
+            return sat->new_eq(static_cast<ratio::core::bool_item &>(left).get_value(), static_cast<ratio::core::bool_item &>(right).get_value());
         else if (&left.get_type() == &get_string_type() && &right.get_type() == &get_string_type()) // we are comparing string expressions..
             return static_cast<ratio::core::string_item &>(left).get_value() == static_cast<ratio::core::string_item &>(right).get_value() ? semitone::TRUE_lit : semitone::FALSE_lit;
         else if ((&left.get_type() == &get_int_type() || &left.get_type() == &get_real_type() || &left.get_type() == &get_time_type()) && (&right.get_type() == &get_int_type() || &right.get_type() == &get_real_type() || &right.get_type() == &get_time_type()))
@@ -357,8 +357,8 @@ namespace ratio::solver
             return true;
         else if (&left.get_type() == &get_bool_type() && &right.get_type() == &get_bool_type())
         { // we are comparing boolean expressions..
-            auto l_val = sat_cr.value(static_cast<ratio::core::bool_item &>(left).get_value());
-            auto r_val = sat_cr.value(static_cast<ratio::core::bool_item &>(right).get_value());
+            auto l_val = sat->value(static_cast<ratio::core::bool_item &>(left).get_value());
+            auto r_val = sat->value(static_cast<ratio::core::bool_item &>(right).get_value());
             return l_val == r_val || l_val == semitone::Undefined || r_val == semitone::Undefined;
         }
         else if (&left.get_type() == &get_string_type() && &right.get_type() == &get_string_type()) // we are comparing string expressions..
@@ -399,7 +399,7 @@ namespace ratio::solver
         // we create a new atom flaw..
         auto af = std::make_unique<atom_flaw>(*this, get_cause(), atm, is_fact);
         // we store some properties..
-        atom_properties[&atm] = {sat_cr.new_var(), af.get()};
+        atom_properties[&atm] = {sat->new_var(), af.get()};
         // we store the flaw..
         new_flaw(std::move(af));
 
@@ -422,7 +422,7 @@ namespace ratio::solver
     void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
     {
         if (std::any_of(f->get_causes().cbegin(), f->get_causes().cend(), [this](const auto &r)
-                        { return sat_cr.value(r->rho) == semitone::False; })) // there is no reason for introducing this flaw..
+                        { return sat->value(r->rho) == semitone::False; })) // there is no reason for introducing this flaw..
             return;
         // we initialize the flaw..
         f->init(); // flaws' initialization requires being at root-level..
@@ -433,11 +433,11 @@ namespace ratio::solver
         else // we directly expand the flaw..
             gr->expand_flaw(*f);
 
-        switch (sat_cr.value(f->phi))
+        switch (sat->value(f->phi))
         {
         case semitone::True: // we have a top-level (a landmark) flaw..
             if (enqueue || std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
-                                        { return sat_cr.value(r->rho) == semitone::True; }))
+                                        { return sat->value(r->rho) == semitone::True; }))
                 active_flaws.insert(f.get()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
             break;
         case semitone::Undefined: // we listen for the flaw to become active..
@@ -450,7 +450,7 @@ namespace ratio::solver
     void solver::new_resolver(std::unique_ptr<resolver> r)
     {
         FIRE_NEW_RESOLVER(*r);
-        if (sat_cr.value(r->rho) == semitone::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
+        if (sat->value(r->rho) == semitone::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
         {
             // we listen for the resolver to become inactive..
             rhos[variable(r->rho)].push_back(std::move(r));
@@ -464,10 +464,10 @@ namespace ratio::solver
         r.preconditions.push_back(&f);
         f.supports.push_back(&r);
         // activating the resolver requires the activation of the flaw..
-        [[maybe_unused]] bool new_clause = sat_cr.new_clause({!r.rho, f.phi});
+        [[maybe_unused]] bool new_clause = sat->new_clause({!r.rho, f.phi});
         assert(new_clause);
         // we introduce an ordering constraint..
-        [[maybe_unused]] bool new_dist = sat_cr.new_clause({!r.rho, idl_th.new_distance(r.effect.position, f.position, 0)});
+        [[maybe_unused]] bool new_dist = sat->new_clause({!r.rho, idl_th.new_distance(r.effect.position, f.position, 0)});
         assert(new_dist);
     }
 
@@ -482,12 +482,12 @@ namespace ratio::solver
         for (const auto &r : f.resolvers)
             apply_resolver(*r);
 
-        if (!sat_cr.propagate())
+        if (!sat->propagate())
             throw ratio::core::unsolvable_exception();
 
         // we clean up already solved flaws..
-        if (sat_cr.value(f.phi) == semitone::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
-                                                                 { return sat_cr.value(r->rho) == semitone::True; }))
+        if (sat->value(f.phi) == semitone::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
+                                                                 { return sat->value(r->rho) == semitone::True; }))
             active_flaws.erase(&f); // this flaw has already been solved..
     }
 
@@ -502,7 +502,7 @@ namespace ratio::solver
         }
         catch (const ratio::core::inconsistency_exception &)
         { // the resolver is inapplicable..
-            if (!sat_cr.new_clause({!r.rho}))
+            if (!sat->new_clause({!r.rho}))
                 throw ratio::core::unsolvable_exception();
         }
 
@@ -525,13 +525,13 @@ namespace ratio::solver
     ORATIO_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
     {
         for (const auto &f : facts)
-            if (!sat_cr.new_clause({!ni, static_cast<ratio::core::bool_item &>(*f).get_value()}))
+            if (!sat->new_clause({!ni, static_cast<ratio::core::bool_item &>(*f).get_value()}))
                 throw ratio::core::unsolvable_exception();
     }
     ORATIO_EXPORT void solver::assert_facts(std::vector<semitone::lit> facts)
     {
         for (const auto &f : facts)
-            if (!sat_cr.new_clause({!ni, f}))
+            if (!sat->new_clause({!ni, f}))
                 throw ratio::core::unsolvable_exception();
     }
 
@@ -539,22 +539,22 @@ namespace ratio::solver
 
     ORATIO_EXPORT void solver::take_decision(const semitone::lit &ch)
     {
-        assert(sat_cr.value(ch) == semitone::Undefined);
+        assert(sat->value(ch) == semitone::Undefined);
 
         // we take the decision..
-        if (!sat_cr.assume(ch))
+        if (!sat->assume(ch))
             throw ratio::core::unsolvable_exception();
 
         if (root_level()) // we make sure that gamma is at true..
             gr->check();
-        assert(sat_cr.value(gr->gamma) == semitone::True);
+        assert(sat->value(gr->gamma) == semitone::True);
 
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return (sat_cr.value(f->phi) != semitone::False && f->get_estimated_cost() == (f->get_best_resolver() ? f->get_best_resolver()->get_estimated_cost() : semitone::rational::POSITIVE_INFINITY)) || is_positive_infinite(f->get_estimated_cost()); }); }));
+                                                { return (sat->value(f->phi) != semitone::False && f->get_estimated_cost() == (f->get_best_resolver() ? f->get_best_resolver()->get_estimated_cost() : semitone::rational::POSITIVE_INFINITY)) || is_positive_infinite(f->get_estimated_cost()); }); }));
         assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
                            { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
-                                                { return is_positive_infinite(r->get_estimated_cost()) || sat_cr.value(r->rho) != semitone::False; }); }));
+                                                { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != semitone::False; }); }));
 
         FIRE_STATE_CHANGED();
     }
@@ -565,7 +565,7 @@ namespace ratio::solver
         assert(phis.count(variable(p)) || rhos.count(variable(p)));
 
         if (const auto at_phis_p = phis.find(variable(p)); at_phis_p != phis.cend())
-            switch (sat_cr.value(at_phis_p->first))
+            switch (sat->value(at_phis_p->first))
             {
             case semitone::True: // some flaws have been activated..
                 for (const auto &f : at_phis_p->second)
@@ -574,7 +574,7 @@ namespace ratio::solver
                     if (!root_level())
                         trail.back().new_flaws.insert(f.get());
                     if (std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
-                                     { return sat_cr.value(r->rho) == semitone::True; }))
+                                     { return sat->value(r->rho) == semitone::True; }))
                         active_flaws.insert(f.get()); // this flaw has been activated and not yet accidentally solved..
                     else if (!root_level())
                         trail.back().solved_flaws.insert(f.get()); // this flaw has been accidentally solved..
@@ -595,7 +595,7 @@ namespace ratio::solver
             }
 
         if (const auto at_rhos_p = rhos.find(variable(p)); at_rhos_p != rhos.cend())
-            switch (sat_cr.value(at_rhos_p->first))
+            switch (sat->value(at_rhos_p->first))
             {
             case semitone::True: // some resolvers have been activated..
                 for (const auto &r : at_rhos_p->second)
@@ -622,17 +622,17 @@ namespace ratio::solver
     {
         assert(cnfl.empty());
         assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
-                           { return sat_cr.value(f->phi) == semitone::True; }));
+                           { return sat->value(f->phi) == semitone::True; }));
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return sat_cr.value(f->phi) != semitone::True || (active_flaws.count(f.get()) || std::any_of(trail.cbegin(), trail.cend(), [&f](const auto &l)
+                                                { return sat->value(f->phi) != semitone::True || (active_flaws.count(f.get()) || std::any_of(trail.cbegin(), trail.cend(), [&f](const auto &l)
                                                                                                                                                { return l.solved_flaws.count(f.get()); })); }); }));
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return sat_cr.value(f->phi) != semitone::False || is_positive_infinite(f->get_estimated_cost()); }); }));
+                                                { return sat->value(f->phi) != semitone::False || is_positive_infinite(f->get_estimated_cost()); }); }));
         assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
                            { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
-                                                { return sat_cr.value(r->rho) != semitone::False || is_positive_infinite(r->get_estimated_cost()); }); }));
+                                                { return sat->value(r->rho) != semitone::False || is_positive_infinite(r->get_estimated_cost()); }); }));
         return true;
     }
 

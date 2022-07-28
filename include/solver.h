@@ -43,7 +43,7 @@ namespace ratio::solver
   class solver_listener;
 #endif
 
-  class solver : public ratio::core::core, private semitone::theory
+  class solver : public ratio::core::core, public semitone::theory
   {
     friend class causal_graph;
     friend class flaw;
@@ -132,12 +132,6 @@ namespace ratio::solver
     ORATIO_EXPORT void assert_facts(std::vector<semitone::lit> facts);
 
     /**
-     * @brief Get the sat core.
-     *
-     * @return semitone::sat_core& The sat core.
-     */
-    inline semitone::sat_core &get_sat_core() noexcept { return sat_cr; }
-    /**
      * @brief Get the linear-real-arithmetic theory.
      *
      * @return semitone::lra_theory& The linear-real-arithmetic theory.
@@ -199,7 +193,6 @@ namespace ratio::solver
     semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..
     semitone::lit ni = semitone::TRUE_lit; // the current controlling literal..
 
-    semitone::sat_core sat_cr;   // the sat core..
     semitone::lra_theory lra_th; // the linear-real-arithmetic theory..
     semitone::ov_theory ov_th;   // the object-variable theory..
     semitone::idl_theory idl_th; // the integer difference logic theory..

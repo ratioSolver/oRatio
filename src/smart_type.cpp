@@ -28,7 +28,7 @@ namespace ratio::solver
         return std::vector<resolver *>(ress.cbegin(), ress.cend());
     }
 
-    atom_listener::atom_listener(ratio::core::atom &atm) : semitone::sat_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_sat_core()), semitone::lra_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_lra_theory()), semitone::rdl_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_rdl_theory()), semitone::ov_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_ov_theory()), atm(atm)
+    atom_listener::atom_listener(ratio::core::atom &atm) : semitone::sat_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_sat()), semitone::lra_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_lra_theory()), semitone::rdl_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_rdl_theory()), semitone::ov_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_ov_theory()), atm(atm)
     {
         for (const auto &[xpr_name, xpr] : atm.get_vars())
             if (auto be = dynamic_cast<ratio::core::bool_item *>(&*xpr))

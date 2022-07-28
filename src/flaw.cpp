@@ -12,7 +12,7 @@ namespace ratio::solver
         resolver *c_res = nullptr;
         semitone::rational c_cost = semitone::rational::POSITIVE_INFINITY;
         for (const auto &r : resolvers)
-            if (slv.get_sat_core().value(r->get_rho()) != semitone::False && r->get_estimated_cost() < c_cost)
+            if (slv.get_sat()->value(r->get_rho()) != semitone::False && r->get_estimated_cost() < c_cost)
             {
                 c_res = r;
                 c_cost = r->get_estimated_cost();
@@ -25,7 +25,7 @@ namespace ratio::solver
         assert(!expanded);
         assert(slv.root_level());
 
-        [[maybe_unused]] bool add_distance = slv.get_sat_core().new_clause({slv.get_idl_theory().new_distance(position, 0, 0)});
+        [[maybe_unused]] bool add_distance = slv.get_sat()->new_clause({slv.get_idl_theory().new_distance(position, 0, 0)});
         assert(add_distance);
 
         std::vector<semitone::lit> cs;
@@ -35,11 +35,11 @@ namespace ratio::solver
             c->preconditions.push_back(this); // this flaw is a precondition of its 'c' cause..
             supports.push_back(c);            // .. and it also supports its 'c' cause..
             cs.push_back(c->rho);
-            [[maybe_unused]] bool dist = slv.get_sat_core().new_clause({slv.get_idl_theory().new_distance(c->effect.position, position, -1)});
+            [[maybe_unused]] bool dist = slv.get_sat()->new_clause({slv.get_idl_theory().new_distance(c->effect.position, position, -1)});
             assert(dist);
         }
         // we initialize the phi variable as the conjunction of the causes' rho variables..
-        phi = slv.get_sat_core().new_conj(std::move(cs));
+        phi = slv.get_sat()->new_conj(std::move(cs));
     }
 
     void flaw::expand()
@@ -54,7 +54,7 @@ namespace ratio::solver
         // we add causal relations between the flaw and its resolvers (i.e., if the flaw is phi exactly one of its resolvers should be in plan)..
         if (resolvers.empty())
         { // there is no way for solving this flaw: we force the phi variable at false..
-            if (!slv.get_sat_core().new_clause({!phi}))
+            if (!slv.get_sat()->new_clause({!phi}))
                 throw ratio::core::unsolvable_exception();
         }
         else
@@ -66,13 +66,13 @@ namespace ratio::solver
                 r_chs.push_back(r->rho);
 
             // we link the phi variable to the resolvers' rho variables..
-            if (!slv.get_sat_core().new_clause(r_chs))
+            if (!slv.get_sat()->new_clause(r_chs))
                 throw ratio::core::unsolvable_exception();
 
             if (exclusive) // we make the resolvers mutually exclusive..
                 for (size_t i = 0; i < resolvers.size(); ++i)
                     for (size_t j = i + 1; j < resolvers.size(); ++j)
-                        if (!slv.get_sat_core().new_clause({!resolvers[i]->rho, !resolvers[j]->rho}))
+                        if (!slv.get_sat()->new_clause({!resolvers[i]->rho, !resolvers[j]->rho}))
                             throw ratio::core::unsolvable_exception();
         }
     }
@@ -80,7 +80,7 @@ namespace ratio::solver
     void flaw::add_resolver(std::unique_ptr<resolver> r)
     {
         // the activation of the resolver activates (and solves!) the flaw..
-        if (!slv.get_sat_core().new_clause({!r->rho, phi}))
+        if (!slv.get_sat()->new_clause({!r->rho, phi}))
             throw ratio::core::unsolvable_exception();
         resolvers.push_back(r.get());
         slv.new_resolver(std::move(r));

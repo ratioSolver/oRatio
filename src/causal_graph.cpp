@@ -16,7 +16,7 @@ namespace ratio::solver
     ORATIO_EXPORT void causal_graph::activated_resolver(resolver &) {}
     ORATIO_EXPORT void causal_graph::negated_resolver(resolver &r)
     {
-        if (slv->get_sat_core().value(r.get_effect().get_phi()) != semitone::False)
+        if (slv->get_sat()->value(r.get_effect().get_phi()) != semitone::False)
             // we update the cost of the resolver's effect..
             propagate_costs(r.get_effect());
     }
@@ -24,7 +24,7 @@ namespace ratio::solver
     void causal_graph::check()
     {
         assert(slv->root_level());
-        switch (slv->get_sat_core().value(gamma))
+        switch (slv->get_sat()->value(gamma))
         {
         case semitone::False:
             init(*slv); // we create a new graph var..
