@@ -183,6 +183,18 @@ namespace ratio::solver
     void push() override;
     void pop() override;
 
+  public:
+    ORATIO_EXPORT ratio::core::predicate &get_impulse() const noexcept;
+    ORATIO_EXPORT bool is_impulse(const ratio::core::type &pred) const noexcept;
+    ORATIO_EXPORT bool is_impulse(const ratio::core::atom &atm) const noexcept;
+    ORATIO_EXPORT ratio::core::predicate &get_interval() const noexcept;
+    ORATIO_EXPORT bool is_interval(const ratio::core::type &pred) const noexcept;
+    ORATIO_EXPORT bool is_interval(const ratio::core::atom &atm) const noexcept;
+
+  private:
+    ratio::core::predicate *imp_pred = nullptr;
+    ratio::core::predicate *int_pred = nullptr;
+
   private:
     semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..
     semitone::lit ni = semitone::TRUE_lit; // the current controlling literal..

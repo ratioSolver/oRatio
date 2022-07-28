@@ -43,7 +43,7 @@ namespace ratio::solver
 
     virtual void causal_link_added(const flaw &, const resolver &) {}
 
-    class flaw_listener : public smt::sat_value_listener, public smt::idl_value_listener
+    class flaw_listener : public semitone::sat_value_listener, public semitone::idl_value_listener
     {
     public:
       flaw_listener(solver_listener &l, const flaw &f) : sat_value_listener(l.slv.get_sat_core()), idl_value_listener(l.slv.get_idl_theory()), listener(l), f(f)
@@ -55,15 +55,15 @@ namespace ratio::solver
       virtual ~flaw_listener() {}
 
     private:
-      void sat_value_change(const smt::var &) override { listener.flaw_state_changed(f); }
-      void idl_value_change(const smt::var &) override { listener.flaw_position_changed(f); }
+      void sat_value_change(const semitone::var &) override { listener.flaw_state_changed(f); }
+      void idl_value_change(const semitone::var &) override { listener.flaw_position_changed(f); }
 
     protected:
       solver_listener &listener;
       const flaw &f;
     };
 
-    class resolver_listener : public smt::sat_value_listener
+    class resolver_listener : public semitone::sat_value_listener
     {
     public:
       resolver_listener(solver_listener &l, const resolver &r) : sat_value_listener(l.slv.get_sat_core()), listener(l), r(r) { listen_sat(variable(r.get_rho())); }
@@ -71,7 +71,7 @@ namespace ratio::solver
       virtual ~resolver_listener() {}
 
     private:
-      void sat_value_change(const smt::var &) override { listener.resolver_state_changed(r); }
+      void sat_value_change(const semitone::var &) override { listener.resolver_state_changed(r); }
 
     protected:
       solver_listener &listener;

@@ -7,6 +7,9 @@
 #include "disjunction_flaw.h"
 #include "atom_flaw.h"
 #include "smart_type.h"
+#ifdef BUILD_LISTENERS
+#include "solver_listener.h"
+#endif
 #include <algorithm>
 #include <cassert>
 
@@ -403,7 +406,7 @@ namespace ratio::solver
             return;
         // we initialize the flaw..
         f->init(); // flaws' initialization requires being at root-level..
-        FIRE_NEW_FLAW(f);
+        FIRE_NEW_FLAW(*f);
 
         if (enqueue) // we enqueue the flaw..
             gr->enqueue(*f);
@@ -426,7 +429,7 @@ namespace ratio::solver
 
     void solver::new_resolver(std::unique_ptr<resolver> r)
     {
-        FIRE_NEW_RESOLVER(r);
+        FIRE_NEW_RESOLVER(*r);
         if (sat_cr.value(r->rho) == semitone::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
         {
             // we listen for the resolver to become inactive..
@@ -646,4 +649,54 @@ namespace ratio::solver
 
         LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
     }
+
+    ORATIO_EXPORT ratio::core::predicate &solver::get_impulse() const noexcept { return *imp_pred; }
+    ORATIO_EXPORT bool solver::is_impulse(const ratio::core::type &pred) const noexcept { return get_impulse().is_assignable_from(pred); }
+    ORATIO_EXPORT bool solver::is_impulse(const ratio::core::atom &atm) const noexcept { return is_impulse(atm.get_type()); }
+    ORATIO_EXPORT ratio::core::predicate &solver::get_interval() const noexcept { return *int_pred; }
+    ORATIO_EXPORT bool solver::is_interval(const ratio::core::type &pred) const noexcept { return get_interval().is_assignable_from(pred); }
+    ORATIO_EXPORT bool solver::is_interval(const ratio::core::atom &atm) const noexcept { return is_interval(atm.get_type()); }
+
+#ifdef BUILD_LISTENERS
+    void solver::fire_new_flaw(const flaw &f) const
+    {
+        for (const auto &l : listeners)
+            l->new_flaw(f);
+    }
+    void solver::fire_flaw_state_changed(const flaw &f) const
+    {
+        for (const auto &l : listeners)
+            l->flaw_state_changed(f);
+    }
+    void solver::fire_flaw_cost_changed(const flaw &f) const
+    {
+        for (const auto &l : listeners)
+            l->flaw_cost_changed(f);
+    }
+    void solver::fire_current_flaw(const flaw &f) const
+    {
+        for (const auto &l : listeners)
+            l->current_flaw(f);
+    }
+    void solver::fire_new_resolver(const resolver &r) const
+    {
+        for (const auto &l : listeners)
+            l->new_resolver(r);
+    }
+    void solver::fire_resolver_state_changed(const resolver &r) const
+    {
+        for (const auto &l : listeners)
+            l->resolver_state_changed(r);
+    }
+    void solver::fire_current_resolver(const resolver &r) const
+    {
+        for (const auto &l : listeners)
+            l->current_resolver(r);
+    }
+    void solver::fire_causal_link_added(const flaw &f, const resolver &r) const
+    {
+        for (const auto &l : listeners)
+            l->causal_link_added(f, r);
+    }
+#endif
 } // namespace ratio::solver
