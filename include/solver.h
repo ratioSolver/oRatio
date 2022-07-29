@@ -68,7 +68,7 @@ namespace ratio::solver
 
     ORATIO_EXPORT ratio::core::expr new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals) override;
     ORATIO_EXPORT ratio::core::expr get(ratio::core::enum_item &var, const std::string &name);
-    ORATIO_EXPORT void remove(ratio::core::expr &var, ratio::core::expr &val) override;
+    ORATIO_EXPORT void remove(ratio::core::expr &var, semitone::var_value &val) override;
 
     ORATIO_EXPORT ratio::core::expr negate(const ratio::core::expr &var) noexcept override;
     ORATIO_EXPORT ratio::core::expr conj(const std::vector<ratio::core::expr> &exprs) noexcept override;
@@ -155,6 +155,11 @@ namespace ratio::solver
      * @return semitone::rdl_theory& The real difference logic theory.
      */
     inline semitone::rdl_theory &get_rdl_theory() noexcept { return rdl_th; }
+
+    ORATIO_EXPORT semitone::lbool bool_value([[maybe_unused]] const ratio::core::bool_item &x) const noexcept;
+    ORATIO_EXPORT std::pair<semitone::inf_rational, semitone::inf_rational> arith_bounds([[maybe_unused]] const ratio::core::arith_item &x) const noexcept;
+    ORATIO_EXPORT semitone::inf_rational arith_value([[maybe_unused]] const ratio::core::arith_item &x) const noexcept;
+    ORATIO_EXPORT std::unordered_set<semitone::var_value *> enum_value([[maybe_unused]] const ratio::core::enum_item &x) const noexcept;
 
     inline size_t decision_level() const noexcept { return trail.size(); } // returns the current decision level..
     inline bool root_level() const noexcept { return trail.empty(); }      // checks whether the current decision level is root level..

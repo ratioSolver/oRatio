@@ -193,9 +193,9 @@ namespace ratio::solver
         else
             return std::make_shared<ratio::core::enum_item>(var.get_type().get_field(name).get_type(), ov_th.new_var(c_vars, c_vals));
     }
-    ORATIO_EXPORT void solver::remove(ratio::core::expr &var, ratio::core::expr &val)
+    ORATIO_EXPORT void solver::remove(ratio::core::expr &var, semitone::var_value &val)
     {
-        auto alw_var = ov_th.allows(static_cast<ratio::core::enum_item &>(*var).get_var(), *val);
+        auto alw_var = ov_th.allows(static_cast<ratio::core::enum_item &>(*var).get_var(), val);
         if (!sat->new_clause({!ni, !alw_var}))
             throw ratio::core::unsolvable_exception();
     }
@@ -487,7 +487,7 @@ namespace ratio::solver
 
         // we clean up already solved flaws..
         if (sat->value(f.phi) == semitone::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
-                                                                 { return sat->value(r->rho) == semitone::True; }))
+                                                               { return sat->value(r->rho) == semitone::True; }))
             active_flaws.erase(&f); // this flaw has already been solved..
     }
 
@@ -626,7 +626,7 @@ namespace ratio::solver
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
                                                 { return sat->value(f->phi) != semitone::True || (active_flaws.count(f.get()) || std::any_of(trail.cbegin(), trail.cend(), [&f](const auto &l)
-                                                                                                                                               { return l.solved_flaws.count(f.get()); })); }); }));
+                                                                                                                                             { return l.solved_flaws.count(f.get()); })); }); }));
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
                                                 { return sat->value(f->phi) != semitone::False || is_positive_infinite(f->get_estimated_cost()); }); }));
@@ -676,6 +676,23 @@ namespace ratio::solver
     ORATIO_EXPORT ratio::core::predicate &solver::get_interval() const noexcept { return *int_pred; }
     ORATIO_EXPORT bool solver::is_interval(const ratio::core::type &pred) const noexcept { return get_interval().is_assignable_from(pred); }
     ORATIO_EXPORT bool solver::is_interval(const ratio::core::atom &atm) const noexcept { return is_interval(atm.get_type()); }
+
+    ORATIO_EXPORT semitone::lbool solver::bool_value([[maybe_unused]] const ratio::core::bool_item &x) const noexcept { return sat->value(x.get_value()); }
+    ORATIO_EXPORT std::pair<semitone::inf_rational, semitone::inf_rational> solver::arith_bounds([[maybe_unused]] const ratio::core::arith_item &x) const noexcept
+    {
+        if (&x.get_type() == &get_time_type())
+            return rdl_th.bounds(x.get_value());
+        else
+            return lra_th.bounds(x.get_value());
+    }
+    ORATIO_EXPORT semitone::inf_rational solver::arith_value([[maybe_unused]] const ratio::core::arith_item &x) const noexcept
+    {
+        if (&x.get_type() == &get_time_type())
+            return rdl_th.bounds(x.get_value()).first;
+        else
+            return lra_th.value(x.get_value());
+    }
+    ORATIO_EXPORT std::unordered_set<semitone::var_value *> solver::enum_value([[maybe_unused]] const ratio::core::enum_item &x) const noexcept { return ov_th.value(x.get_var()); }
 
 #ifdef BUILD_LISTENERS
     void solver::fire_new_flaw(const flaw &f) const
