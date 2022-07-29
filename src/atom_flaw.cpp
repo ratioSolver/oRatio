@@ -10,8 +10,8 @@ namespace ratio::solver
     void atom_flaw::compute_resolvers()
     {
         assert(get_solver().get_sat_core()->value(get_phi()) != semitone::False);
-        assert(get_solver().get_sat_core()->value(get_solver().atom_properties.at(&atm).sigma) != semitone::False);
-        if (get_solver().get_sat_core()->value(get_solver().atom_properties.at(&atm).sigma) == semitone::Undefined) // we check if the atom can unify..
+        assert(get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) != semitone::False);
+        if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::Undefined) // we check if the atom can unify..
             for (const auto &i : atm.get_type().get_instances())
             { // we check for possible unifications (i.e. all the instances of the atom's type)..
                 if (&*i == &atm)
@@ -21,12 +21,12 @@ namespace ratio::solver
                 ratio::core::atom &t_atm = static_cast<ratio::core::atom &>(*i);
 
                 // this is the target flaw (i.e. the one we are trying to unify with) and cannot be in the current flaw's causes' effects..
-                atom_flaw &t_flaw = *get_solver().atom_properties.at(&t_atm).reason;
+                atom_flaw &t_flaw = get_reason(get_solver(), t_atm);
 
-                if (!t_flaw.is_expanded() ||                                                                       // the target flaw must hav been already expanded..
-                    get_solver().get_idl_theory().distance(get_position(), t_flaw.get_position()).first > 0 ||     // unifying with the target atom would introduce cyclic causality..
-                    get_solver().get_sat_core()->value(get_solver().atom_properties.at(&t_atm).sigma) == semitone::False || // the target atom is unified with some other atom..
-                    !get_solver().matches(atm, t_atm))                                                             // the atom does not equate with the target target..
+                if (!t_flaw.is_expanded() ||                                                                   // the target flaw must hav been already expanded..
+                    get_solver().get_idl_theory().distance(get_position(), t_flaw.get_position()).first > 0 || // unifying with the target atom would introduce cyclic causality..
+                    get_solver().get_sat_core()->value(get_sigma(get_solver(), t_atm)) == semitone::False ||   // the target atom is unified with some other atom..
+                    !get_solver().matches(atm, t_atm))                                                         // the atom does not equate with the target target..
                     continue;
 
                 // the equality propositional literal..
@@ -35,7 +35,7 @@ namespace ratio::solver
                 if (get_solver().get_sat_core()->value(eq_lit) == semitone::False)
                     continue; // the two atoms cannot unify, hence, we skip this instance..
 
-                auto u_res = std::make_unique<unify_atom>(*this, atm, t_atm, std::vector<semitone::lit>({semitone::lit(get_solver().atom_properties.at(&atm).sigma, false), semitone::lit(get_solver().atom_properties.at(&t_atm).sigma), eq_lit}));
+                auto u_res = std::make_unique<unify_atom>(*this, atm, t_atm, std::vector<semitone::lit>({semitone::lit(get_sigma(get_solver(), atm), false), semitone::lit(get_solver().atom_properties.at(&t_atm).sigma), eq_lit}));
                 assert(get_solver().get_sat_core()->value(u_res->get_rho()) != semitone::False);
                 get_solver().new_causal_link(t_flaw, *u_res);
                 add_resolver(std::move(u_res));
@@ -57,7 +57,7 @@ namespace ratio::solver
 
     void atom_flaw::activate_fact::apply()
     { // activating this resolver activates the fact..
-        if (!get_solver().get_sat_core()->new_clause({!get_rho(), semitone::lit(get_solver().atom_properties.at(&atm).sigma)}))
+        if (!get_solver().get_sat_core()->new_clause({!get_rho(), semitone::lit(get_sigma(get_solver(), atm))}))
             throw ratio::core::unsolvable_exception();
     }
 
@@ -66,7 +66,7 @@ namespace ratio::solver
 
     void atom_flaw::activate_goal::apply()
     { // activating this resolver activates the goal..
-        if (!get_solver().get_sat_core()->new_clause({!get_rho(), semitone::lit(get_solver().atom_properties.at(&atm).sigma)}))
+        if (!get_solver().get_sat_core()->new_clause({!get_rho(), semitone::lit(get_sigma(get_solver(), atm))}))
             throw ratio::core::unsolvable_exception();
         // we also apply the rule..
         static_cast<ratio::core::predicate &>(atm.get_type()).apply_rule(atm);
@@ -77,7 +77,7 @@ namespace ratio::solver
     void atom_flaw::unify_atom::apply()
     {
         // this is the target flaw..
-        atom_flaw &t_flaw = *get_solver().atom_properties.at(&trgt).reason;
+        atom_flaw &t_flaw = get_reason(get_solver(), trgt);
         assert(t_flaw.is_expanded());
         for (const auto &r : t_flaw.get_resolvers())
             if (activate_fact *act_f = dynamic_cast<activate_fact *>(r))
