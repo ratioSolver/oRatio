@@ -60,6 +60,14 @@ namespace ratio::solver
     solver(const solver &orig) = delete;
     ORATIO_EXPORT ~solver();
 
+    ORATIO_EXPORT void read(const std::string &script) override;
+    ORATIO_EXPORT void read(const std::vector<std::string> &files) override;
+
+    /**
+     * Initializes the solver.
+     */
+    ORATIO_EXPORT void init() noexcept;
+
     ORATIO_EXPORT ratio::core::expr new_bool() noexcept override;
     ORATIO_EXPORT ratio::core::expr new_int() noexcept override;
     ORATIO_EXPORT ratio::core::expr new_real() noexcept override;

@@ -18,7 +18,7 @@ jobs:
 
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
-      TEMPORAL_NETWORK: ${{ matrix.temporal_network }}
+      TEMPORAL_NETWORK_TYPE: ${{ matrix.temporal_network }}
       GRAPH_PRUNING: ${{ matrix.graph_pruning }}
       BUILD_LISTENERS: ${{ matrix.build_listeners }}
 
@@ -28,7 +28,7 @@ jobs:
           submodules: recursive
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DTEMPORAL_NETWORK=${{env.TEMPORAL_NETWORK}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}

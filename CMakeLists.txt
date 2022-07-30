@@ -31,7 +31,7 @@ GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
 target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE)
 
-message(STATUS "Temporal network type:    ${TEMPORAL_NETWORK_TYPE}")
+message(STATUS "Temporal network type:  ${TEMPORAL_NETWORK_TYPE}")
 if(TEMPORAL_NETWORK_TYPE STREQUAL DL)
     target_compile_definitions(${PROJECT_NAME} PRIVATE DL_TN)
     set(INIT_STRING "predicate Impulse(tp at) { at >= origin; at <= horizon; } predicate Interval(tp start, tp end) { start >= origin; start <= end; end <= horizon; } tp origin; tp horizon; origin >= 0.0; origin <= horizon;")

@@ -1,4 +1,5 @@
 #include "solver.h"
+#include "init.h"
 #include "item.h"
 #include "predicate.h"
 #include "field.h"
@@ -10,6 +11,8 @@
 #include "disjunction_flaw.h"
 #include "atom_flaw.h"
 #include "smart_type.h"
+#include "agent.h"
+#include "state_variable.h"
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
 #endif
@@ -21,6 +24,26 @@ namespace ratio::solver
     ORATIO_EXPORT solver::solver() : solver(std::make_unique<causal_graph>()) {}
     ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(gr)) { gr->init(*this); }
     ORATIO_EXPORT solver::~solver() {}
+
+    ORATIO_EXPORT void solver::read(const std::string &script)
+    {
+        core::read(script);
+    }
+    ORATIO_EXPORT void solver::read(const std::vector<std::string> &files)
+    {
+        core::read(files);
+    }
+
+    ORATIO_EXPORT void solver::init() noexcept
+    {
+        gr->init(*this);
+        read(INIT_STRING);
+        imp_pred = &get_predicate(RATIO_IMPULSE);
+        int_pred = &get_predicate(RATIO_INTERVAL);
+        new_type(std::make_unique<agent>(*this));
+        new_type(std::make_unique<state_variable>(*this));
+        FIRE_STATE_CHANGED();
+    }
 
     ORATIO_EXPORT ratio::core::expr solver::new_bool() noexcept
     { // we create a new boolean expression..
