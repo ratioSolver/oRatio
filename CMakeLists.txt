@@ -23,12 +23,12 @@ option(BUILD_LISTENERS "Builds the solver's listeners" OFF)
 
 add_subdirectory(extern/core)
 
-file(GLOB RATIO_SOURCES src/*.cpp)
-file(GLOB RATIO_HEADERS include/*.h)
+file(GLOB RATIO_SOURCES src/*.cpp src/flaws/*.cpp src/types/*.cpp)
+file(GLOB RATIO_HEADERS include/*.h include/flaws/*.h include/types/*.h)
 
 add_library(${PROJECT_NAME} SHARED ${RATIO_SOURCES})
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
-target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
+target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/flaws $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/types $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
 target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE)
 
 message(STATUS "Temporal network type:  ${TEMPORAL_NETWORK_TYPE}")
@@ -68,7 +68,7 @@ install(
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 install(
-    FILES ${RATIO_CORE_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_export.h
+    FILES ${RATIO_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_export.h
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
 )
 configure_package_config_file(src/${PROJECT_NAME}Config.cmake.in ${PROJECT_NAME}Config.cmake INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME} PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
