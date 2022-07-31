@@ -65,12 +65,6 @@ namespace ratio::solver
         c_pred = cp.get();
         ratio::core::type::new_predicate(std::move(cp));
     }
-    consumable_resource::~consumable_resource()
-    {
-        // we clear the atom listeners..
-        for ([[maybe_unused]] const auto &[atm, lstnrs] : atoms)
-            delete lstnrs;
-    }
 
     std::vector<std::vector<std::pair<semitone::lit, double>>> consumable_resource::get_current_incs()
     {
@@ -105,7 +99,7 @@ namespace ratio::solver
         // since flaws might require planning, we can't store the variables for on-line flaw resolution..
 
         // we store, for the atom, its atom listener..
-        atoms.emplace_back(&atm, new cr_atom_listener(*this, atm));
+        atoms.emplace_back(&atm, std::make_unique<cr_atom_listener>(*this, atm));
 
         // we filter out those atoms which are not strictly active..
         if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::True)

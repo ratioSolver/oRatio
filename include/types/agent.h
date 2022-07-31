@@ -16,7 +16,7 @@ namespace ratio::solver
   private:
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
 
-    void new_predicate(ratio::core::predicate& pred) noexcept override;
+    void new_predicate(ratio::core::predicate &pred) noexcept override;
     void new_atom_flaw(atom_flaw &f) override;
 
     class agnt_constructor : public ratio::core::constructor
@@ -48,6 +48,6 @@ namespace ratio::solver
 
   private:
     std::set<ratio::core::atom *> to_check;
-    std::vector<std::pair<ratio::core::atom *, agnt_atom_listener *>> atoms;
+    std::vector<std::pair<ratio::core::atom *, std::unique_ptr<agnt_atom_listener>>> atoms;
   };
 } // namespace ratio::solver

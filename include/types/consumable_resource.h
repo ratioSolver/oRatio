@@ -20,7 +20,6 @@ namespace ratio::solver
   public:
     consumable_resource(solver &slv);
     consumable_resource(const consumable_resource &orig) = delete;
-    ~consumable_resource();
 
   private:
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
@@ -78,7 +77,7 @@ namespace ratio::solver
     ratio::core::predicate *p_pred;
     ratio::core::predicate *c_pred;
     std::vector<std::unique_ptr<const riddle::ast::statement>> pred_stmnts;
-    std::set<const ratio::core::item *> to_check;                          // the consumable-resource instances whose atoms have changed..
-    std::vector<std::pair<ratio::core::atom *, cr_atom_listener *>> atoms; // we store, for each atom, its atom listener..
+    std::set<const ratio::core::item *> to_check;                                         // the consumable-resource instances whose atoms have changed..
+    std::vector<std::pair<ratio::core::atom *, std::unique_ptr<cr_atom_listener>>> atoms; // we store, for each atom, its atom listener..
   };
 } // namespace ratio::solver

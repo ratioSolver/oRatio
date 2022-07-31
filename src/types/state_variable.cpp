@@ -156,7 +156,7 @@ namespace ratio::solver
             store_variables(atm, *c_atm.first);
 
         // we store, for the atom, its atom listener..
-        atoms.emplace_back(&atm, new sv_atom_listener(*this, atm));
+        atoms.emplace_back(&atm, std::make_unique<sv_atom_listener>(*this, atm));
 
         // we filter out those atoms which are not strictly active..
         if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::True)
@@ -264,8 +264,8 @@ namespace ratio::solver
         if (sv.get_solver().get_sat_core()->value(get_sigma(sv.get_solver(), atm)) == semitone::True)
         {
             auto c_scope = atm.get(TAU_KW);
-            if (auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope)) // the 'tau' parameter is a variable..
-                for (const auto &val : sv.get_solver().get_ov_theory().value(enum_scope->get_var()))    // we check for all its allowed values..
+            if (auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))                 // the 'tau' parameter is a variable..
+                for (const auto &val : sv.get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     sv.to_check.insert(static_cast<const ratio::core::item *>(val));
             else // the 'tau' parameter is a constant..
                 sv.to_check.insert(&*c_scope);

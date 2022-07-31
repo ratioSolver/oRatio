@@ -36,7 +36,7 @@ namespace ratio::solver
             restore_ni();
         }
 
-        atoms.emplace_back(&atm, new agnt_atom_listener(*this, atm));
+        atoms.emplace_back(&atm, std::make_unique<agnt_atom_listener>(*this, atm));
         to_check.insert(&atm);
     }
 
