@@ -13,6 +13,7 @@
 #include "smart_type.h"
 #include "agent.h"
 #include "state_variable.h"
+#include "consumable_resource.h"
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
 #endif
@@ -27,11 +28,17 @@ namespace ratio::solver
 
     ORATIO_EXPORT void solver::read(const std::string &script)
     {
+        // we read the script..
         core::read(script);
+        // we reset the smart-types if some new smart-type has been added with the previous script..
+        reset_smart_types();
     }
     ORATIO_EXPORT void solver::read(const std::vector<std::string> &files)
     {
+        // we read the files..
         core::read(files);
+        // we reset the smart-types if some new smart-type has been added with the previous files..
+        reset_smart_types();
     }
 
     ORATIO_EXPORT void solver::init() noexcept
@@ -42,6 +49,7 @@ namespace ratio::solver
         int_pred = &get_predicate(RATIO_INTERVAL);
         new_type(std::make_unique<agent>(*this));
         new_type(std::make_unique<state_variable>(*this));
+        new_type(std::make_unique<consumable_resource>(*this));
         FIRE_STATE_CHANGED();
     }
 
@@ -691,6 +699,24 @@ namespace ratio::solver
         gr->pop();
 
         LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
+    }
+
+    void solver::reset_smart_types()
+    {
+        // some cleanings..
+        smart_types.clear();
+        std::queue<ratio::core::type *> q;
+        for ([[maybe_unused]] const auto &[tp_name, tp] : get_types())
+            if (!tp->is_primitive())
+                q.push(tp.get());
+        while (!q.empty())
+        {
+            if (auto st = dynamic_cast<smart_type *>(q.front()))
+                smart_types.push_back(st);
+            for ([[maybe_unused]] const auto &[tp_name, tp] : q.front()->get_types())
+                q.push(tp.get());
+            q.pop();
+        }
     }
 
     ORATIO_EXPORT ratio::core::predicate &solver::get_impulse() const noexcept { return *imp_pred; }

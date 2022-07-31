@@ -190,6 +190,8 @@ namespace ratio::solver
     void push() override;
     void pop() override;
 
+    void reset_smart_types();
+
   public:
     ORATIO_EXPORT ratio::core::predicate &get_impulse() const noexcept;
     ORATIO_EXPORT bool is_impulse(const ratio::core::type &pred) const noexcept;
@@ -202,8 +204,9 @@ namespace ratio::solver
     friend inline atom_flaw &get_reason(const solver &s, const ratio::core::atom &atm) { return *s.atom_properties.at(&atm).reason; }
 
   private:
-    ratio::core::predicate *imp_pred = nullptr;
-    ratio::core::predicate *int_pred = nullptr;
+    ratio::core::predicate *imp_pred = nullptr; // the `Impulse` predicate..
+    ratio::core::predicate *int_pred = nullptr; // the `Interval` predicate..
+    std::vector<smart_type *> smart_types;      // the smart-types..
 
   private:
     semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..
