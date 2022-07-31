@@ -13,6 +13,7 @@
 #include "smart_type.h"
 #include "agent.h"
 #include "state_variable.h"
+#include "reusable_resource.h"
 #include "consumable_resource.h"
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
@@ -49,6 +50,7 @@ namespace ratio::solver
         int_pred = &get_predicate(RATIO_INTERVAL);
         new_type(std::make_unique<agent>(*this));
         new_type(std::make_unique<state_variable>(*this));
+        new_type(std::make_unique<reusable_resource>(*this));
         new_type(std::make_unique<consumable_resource>(*this));
         FIRE_STATE_CHANGED();
     }

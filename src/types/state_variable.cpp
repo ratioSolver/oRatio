@@ -13,7 +13,7 @@ namespace ratio::solver
     {
         std::vector<std::vector<std::pair<semitone::lit, double>>> incs;
         // we partition atoms for each state-variable they might insist on..
-        std::unordered_map<const ratio::core::item *, std::vector<ratio::core::atom *>> sv_instances;
+        std::unordered_map<const ratio::core::complex_item *, std::vector<ratio::core::atom *>> sv_instances;
         for ([[maybe_unused]] const auto &[atm, atm_lstnr] : atoms)
             if (get_solver().get_sat_core()->value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
             {
@@ -21,11 +21,11 @@ namespace ratio::solver
                 if (auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))
                 {
                     for (const auto &val : get_solver().get_ov_theory().value(enum_scope->get_var()))
-                        if (to_check.count(static_cast<const ratio::core::item *>(val)))
-                            sv_instances[static_cast<const ratio::core::item *>(val)].emplace_back(atm);
+                        if (to_check.count(static_cast<const ratio::core::complex_item *>(val)))
+                            sv_instances[static_cast<const ratio::core::complex_item *>(val)].emplace_back(atm);
                 }
-                else if (to_check.count(static_cast<ratio::core::item *>(&*c_scope)))
-                    sv_instances[static_cast<ratio::core::item *>(&*c_scope)].emplace_back(atm);
+                else if (to_check.count(static_cast<ratio::core::complex_item *>(&*c_scope)))
+                    sv_instances[static_cast<ratio::core::complex_item *>(&*c_scope)].emplace_back(atm);
             }
 
         // we detect inconsistencies for each of the instances..
