@@ -146,8 +146,8 @@ namespace ratio::solver
                                         if (get_solver().get_sat_core()->value(a0_a1_it->second) != semitone::False)
                                         {
 #ifdef DL_TN
-                                            const auto [min, max] = get_solver().get_rdl_theory().distance(a0_end->l, a1_start->l);
-                                            const auto commit = is_infinite(min) || is_infinite(max) ? 0.5 : (std::min(static_cast<double>(max.get_rational()), 0.0) - std::min(static_cast<double>(min.get_rational()), 0.0)) / (static_cast<double>(max.get_rational()) - static_cast<double>(min.get_rational()));
+                                            const auto [min, max] = get_solver().get_rdl_theory().distance(static_cast<ratio::core::arith_item &>(*a0_end).get_value(), static_cast<ratio::core::arith_item &>(*a1_start).get_value());
+                                            const auto commit = is_infinite(min) || is_infinite(max) ? 0.5 : (std::min(to_double(max.get_rational()), 0.0) - std::min(to_double(min.get_rational()), 0.0)) / (to_double(max.get_rational()) - to_double(min.get_rational()));
 #elif LA_TN
                                             const auto work = (get_core().arith_value(a1_end).get_rational() - get_core().arith_value(a1_start).get_rational()) * (get_core().arith_value(a0_end).get_rational() - get_core().arith_value(a1_start).get_rational());
                                             const auto commit = work == semitone::rational::ZERO ? -std::numeric_limits<double>::max() : 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator());
@@ -160,8 +160,8 @@ namespace ratio::solver
                                         if (get_solver().get_sat_core()->value(a1_a0_it->second) != semitone::False)
                                         {
 #ifdef DL_TN
-                                            const auto [min, max] = get_solver().get_rdl_theory().distance(a1_end->l, a0_start->l);
-                                            const auto commit = is_infinite(min) || is_infinite(max) ? 0.5 : (std::min(static_cast<double>(max.get_rational()), 0.0) - std::min(static_cast<double>(min.get_rational()), 0.0)) / (static_cast<double>(max.get_rational()) - static_cast<double>(min.get_rational()));
+                                            const auto [min, max] = get_solver().get_rdl_theory().distance(static_cast<ratio::core::arith_item &>(*a1_end).get_value(), static_cast<ratio::core::arith_item &>(*a0_start).get_value());
+                                            const auto commit = is_infinite(min) || is_infinite(max) ? 0.5 : (std::min(to_double(max.get_rational()), 0.0) - std::min(to_double(min.get_rational()), 0.0)) / (to_double(max.get_rational()) - to_double(min.get_rational()));
 #elif LA_TN
                                             const auto work = (get_core().arith_value(a0_end).get_rational() - get_core().arith_value(a0_start).get_rational()) * (get_core().arith_value(a1_end).get_rational() - get_core().arith_value(a0_start).get_rational());
                                             const auto commit = work == semitone::rational::ZERO ? -std::numeric_limits<double>::max() : 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator());
