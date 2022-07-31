@@ -364,9 +364,9 @@ namespace ratio::solver
         }
         else if (dynamic_cast<ratio::core::enum_item *>(&right))
             return eq(right, left); // we swap, for simplifying code..
-        else if (ratio::core::enum_item *le = dynamic_cast<ratio::core::enum_item *>(&left))
+        else if (auto le = dynamic_cast<ratio::core::enum_item *>(&left))
         { // we are comparing enums..
-            if (ratio::core::enum_item *re = dynamic_cast<ratio::core::enum_item *>(&right))
+            if (auto re = dynamic_cast<ratio::core::enum_item *>(&right))
                 return ov_th.new_eq(le->get_var(), re->get_var());
             else
                 return ov_th.allows(le->get_var(), left);
@@ -395,9 +395,9 @@ namespace ratio::solver
         }
         else if (dynamic_cast<ratio::core::enum_item *>(&right))
             return matches(right, left); // we swap, for simplifying code..
-        else if (ratio::core::enum_item *le = dynamic_cast<ratio::core::enum_item *>(&left))
+        else if (auto le = dynamic_cast<ratio::core::enum_item *>(&left))
         { // we are comparing enums..
-            if (ratio::core::enum_item *re = dynamic_cast<ratio::core::enum_item *>(&right))
+            if (auto re = dynamic_cast<ratio::core::enum_item *>(&right))
             { // the right expression is an enum..
                 auto r_vals = ov_th.value(re->get_var());
                 for (const auto &c_v : ov_th.value(le->get_var()))

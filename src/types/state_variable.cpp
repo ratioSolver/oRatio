@@ -1,6 +1,5 @@
 #include "state_variable.h"
 #include "solver.h"
-#include "item.h"
 #include "predicate.h"
 #include "field.h"
 #include "atom_flaw.h"
@@ -265,7 +264,7 @@ namespace ratio::solver
         if (sv.get_solver().get_sat_core()->value(get_sigma(sv.get_solver(), atm)) == semitone::True)
         {
             auto c_scope = atm.get(TAU_KW);
-            if (ratio::core::enum_item *enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope)) // the 'tau' parameter is a variable..
+            if (auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope)) // the 'tau' parameter is a variable..
                 for (const auto &val : sv.get_solver().get_ov_theory().value(enum_scope->get_var()))    // we check for all its allowed values..
                     sv.to_check.insert(static_cast<const ratio::core::item *>(val));
             else // the 'tau' parameter is a constant..

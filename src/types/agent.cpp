@@ -1,6 +1,5 @@
 #include "agent.h"
 #include "solver.h"
-#include "item.h"
 #include "predicate.h"
 #include "field.h"
 #include "atom_flaw.h"
