@@ -13,10 +13,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         build_type: [Debug, Release]
         temporal_network: [LA, DL]
-        deferrable_flaws: [TRUE, FALSE]
-        graph_pruning: [TRUE, FALSE]
-        check_inconsistencies: [TRUE, FALSE]
-        build_listeners: [TRUE, FALSE]
+        deferrable_flaws: [ON, OFF]
+        graph_pruning: [ON, OFF]
+        check_inconsistencies: [ON, OFF]
+        build_listeners: [ON, OFF]
 
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
