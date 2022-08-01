@@ -62,7 +62,7 @@ endif()
 
 message(STATUS "Build solver listeners: ${BUILD_LISTENERS}")
 if(BUILD_LISTENERS)
-    target_compile_definitions(${PROJECT_NAME} INTERFACE BUILD_LISTENERS)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_LISTENERS)
 endif()
 
 if(BUILD_TESTING)
