@@ -185,10 +185,17 @@ namespace ratio::solver
     ORATIO_EXPORT void take_decision(const semitone::lit &ch);
 
   private:
+    inline std::unordered_set<flaw *> flush_pending_flaws() { return std::move(pending_flaws); }
+
+    void next();
+
     bool propagate(const semitone::lit &p) override;
     bool check() override;
     void push() override;
     void pop() override;
+
+    void solve_inconsistencies();                                          // checks whether the types have any inconsistency and, in case, solve them..
+    std::vector<std::vector<std::pair<semitone::lit, double>>> get_incs(); // collects all the current inconsistencies..
 
     void reset_smart_types();
 

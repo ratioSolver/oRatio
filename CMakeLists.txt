@@ -18,8 +18,10 @@ enable_testing()
 set(TEMPORAL_NETWORK_TYPES DL LA)
 set(TEMPORAL_NETWORK_TYPE LA CACHE STRING "Temporal network type")
 set_property(CACHE TEMPORAL_NETWORK_TYPE PROPERTY STRINGS ${TEMPORAL_NETWORK_TYPES})
-option(GRAPH_PRUNING "Prunes the causal graph before starting the search" ON)
-option(BUILD_LISTENERS "Builds the solver's listeners" OFF)
+option(DEFERRABLE_FLAWS "Check for deferrable flaws" TRUE)
+option(GRAPH_PRUNING "Prunes the causal graph before starting the search" TRUE)
+option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" FALSE)
+option(BUILD_LISTENERS "Builds the solver's listeners" FALSE)
 
 add_subdirectory(extern/core)
 
@@ -43,9 +45,19 @@ else()
 endif()
 configure_file(include/init.h.in init.h @ONLY)
 
-message(STATUS "Prune causal graph:     ${GRAPH_PRUNING}")
+message(STATUS "Deferrable flaws:       ${DEFERRABLE_FLAWS}")
+if(DEFERRABLE_FLAWS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEFERRABLE_FLAWS)
+endif()
+
+message(STATUS "Prune graph:            ${GRAPH_PRUNING}")
 if(GRAPH_PRUNING)
     target_compile_definitions(${PROJECT_NAME} PRIVATE GRAPH_PRUNING)
+endif()
+
+message(STATUS "Check inconsistencies:  ${CHECK_INCONSISTENCIES}")
+if(CHECK_INCONSISTENCIES)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE CHECK_INCONSISTENCIES)
 endif()
 
 message(STATUS "Build solver listeners: ${BUILD_LISTENERS}")

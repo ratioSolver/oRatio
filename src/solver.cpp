@@ -568,7 +568,115 @@ namespace ratio::solver
                 throw ratio::core::unsolvable_exception();
     }
 
-    ORATIO_EXPORT bool solver::solve() { return true; }
+    ORATIO_EXPORT bool solver::solve()
+    {
+        FIRE_STARTED_SOLVING();
+
+        try
+        {
+            if (root_level())
+            { // we make sure that gamma is at true..
+                gr->build();
+                gr->check();
+            }
+            assert(sat->value(gr->gamma) == semitone::True);
+
+            // we search for a consistent solution without flaws..
+#ifdef CHECK_INCONSISTENCIES
+            // we solve all the current inconsistencies..
+            solve_inconsistencies();
+
+            while (!active_flaws.empty())
+            {
+                assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
+                                   { return sat->value(f->phi) == semitone::True; })); // all the current flaws must be active..
+                assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
+                                   { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](resolver *r)
+                                                         { return sat->value(r->rho) == semitone::True; }); })); // none of the current flaws must have already been solved..
+
+                // this is the next flaw (i.e. the most expensive one) to be solved..
+                auto best_flaw = std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f0, const auto &f1)
+                                                  { return f0->get_estimated_cost() > f1->get_estimated_cost(); });
+                assert(best_flaw != active_flaws.cend());
+                FIRE_CURRENT_FLAW(**best_flaw);
+
+                if (is_infinite((*best_flaw)->get_estimated_cost()))
+                { // we don't know how to solve this flaw :(
+                    do
+                    { // we have to search..
+                        next();
+                    } while (std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f)
+                                         { return is_infinite(f->get_estimated_cost()); }));
+                    // we solve all the current inconsistencies..
+                    solve_inconsistencies();
+                    continue;
+                }
+
+                // this is the next resolver (i.e. the cheapest one) to be applied..
+                auto *best_res = (*best_flaw)->get_best_resolver();
+                FIRE_CURRENT_RESOLVER(*best_res);
+
+                assert(!is_infinite(best_res->get_estimated_cost()));
+
+                // we apply the resolver..
+                take_decision(best_res->get_rho());
+
+                // we solve all the current inconsistencies..
+                solve_inconsistencies();
+            }
+#else
+            do
+            {
+                while (!active_flaws.empty())
+                {
+                    assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
+                                       { return sat->value(f->phi) == semitone::True; })); // all the current flaws must be active..
+                    assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
+                                       { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](resolver *r)
+                                                             { return sat->value(r->rho) == semitone::True; }); })); // none of the current flaws must have already been solved..
+
+                    // this is the next flaw (i.e. the most expensive one) to be solved..
+                    auto best_flaw = std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f0, const auto &f1)
+                                                      { return f0->get_estimated_cost() > f1->get_estimated_cost(); });
+                    assert(best_flaw != active_flaws.cend());
+                    FIRE_CURRENT_FLAW(**best_flaw);
+
+                    if (is_infinite((*best_flaw)->get_estimated_cost()))
+                    { // we don't know how to solve this flaw :(
+                        do
+                        { // we have to search..
+                            next();
+                        } while (std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f)
+                                             { return is_infinite(f->get_estimated_cost()); }));
+                        continue;
+                    }
+
+                    // this is the next resolver (i.e. the cheapest one) to be applied..
+                    auto *best_res = (*best_flaw)->get_best_resolver();
+                    FIRE_CURRENT_RESOLVER(*best_res);
+
+                    assert(!is_infinite(best_res->get_estimated_cost()));
+
+                    // we apply the resolver..
+                    take_decision(best_res->get_rho());
+                }
+
+                // we solve all the current inconsistencies..
+                solve_inconsistencies();
+            } while (!active_flaws.empty());
+#endif
+            // Hurray!! we have found a solution..
+            LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+            FIRE_STATE_CHANGED();
+            FIRE_SOLUTION_FOUND();
+            return true;
+        }
+        catch (const ratio::core::unsolvable_exception &)
+        { // the problem is unsolvable..
+            FIRE_INCONSISTENT_PROBLEM();
+            return false;
+        }
+    }
 
     ORATIO_EXPORT void solver::take_decision(const semitone::lit &ch)
     {
@@ -576,6 +684,26 @@ namespace ratio::solver
 
         // we take the decision..
         if (!sat->assume(ch))
+            throw ratio::core::unsolvable_exception();
+
+        if (root_level()) // we make sure that gamma is at true..
+            gr->check();
+        assert(sat->value(gr->gamma) == semitone::True);
+
+        assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
+                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
+                                                { return (sat->value(f->phi) != semitone::False && f->get_estimated_cost() == (f->get_best_resolver() ? f->get_best_resolver()->get_estimated_cost() : semitone::rational::POSITIVE_INFINITY)) || is_positive_infinite(f->get_estimated_cost()); }); }));
+        assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
+                           { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
+                                                { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != semitone::False; }); }));
+
+        FIRE_STATE_CHANGED();
+    }
+
+    void solver::next()
+    {
+        LOG("next..");
+        if (!sat->next())
             throw ratio::core::unsolvable_exception();
 
         if (root_level()) // we make sure that gamma is at true..
@@ -701,6 +829,90 @@ namespace ratio::solver
         gr->pop();
 
         LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
+    }
+
+    void solver::solve_inconsistencies()
+    {
+        // all the current inconsistencies..
+        auto incs = get_incs();
+
+        while (!incs.empty())
+            if (const auto &uns_flw = std::find_if(incs.cbegin(), incs.cend(), [](const auto &v)
+                                                   { return v.empty(); });
+                uns_flw != incs.cend())
+            { // we have an unsolvable flaw..
+                // we backtrack..
+                next();
+                // we re-collect all the inconsistencies from all the smart-types..
+                incs = get_incs();
+            }
+            else if (const auto &det_flw = std::find_if(incs.cbegin(), incs.cend(), [](const auto &v)
+                                                        { return v.size() == 1; });
+                     det_flw != incs.cend())
+            { // we have deterministic flaw: i.e., a flaw with a single resolver..
+                assert(sat->value(det_flw->front().first) != semitone::False);
+                if (sat->value(det_flw->front().first) == semitone::Undefined)
+                { // we can learn something from it..
+                    std::vector<semitone::lit> learnt;
+                    learnt.reserve(trail.size() + 1);
+                    learnt.push_back(det_flw->front().first);
+                    for (const auto &l : sat->get_decisions())
+                        learnt.push_back(!l);
+                    record(learnt);
+                    if (!sat->propagate())
+                        throw ratio::core::unsolvable_exception();
+
+                    if (root_level()) // we make sure that gamma is at true..
+                        gr->check();
+                    assert(sat->value(gr->gamma) == semitone::True);
+                }
+
+                // we re-collect all the inconsistencies from all the smart-types..
+                incs = get_incs();
+            }
+            else
+            { // we have to take a decision..
+                std::vector<std::pair<semitone::lit, double>> bst_inc;
+                double k_inv = std::numeric_limits<double>::infinity();
+                for (const auto &inc : incs)
+                {
+                    double bst_commit = std::numeric_limits<double>::infinity();
+                    for ([[maybe_unused]] const auto &[choice, commit] : inc)
+                        if (commit < bst_commit)
+                            bst_commit = commit;
+                    double c_k_inv = 0;
+                    for ([[maybe_unused]] const auto &[choice, commit] : inc)
+                        c_k_inv += 1l / (1l + (commit - bst_commit));
+                    if (c_k_inv < k_inv)
+                    {
+                        k_inv = c_k_inv;
+                        bst_inc = inc;
+                    }
+                }
+
+                // we select the best choice (i.e. the least committing one) from those available for the best flaw..
+                take_decision(std::min_element(bst_inc.cbegin(), bst_inc.cend(), [](const auto &ch0, const auto &ch1)
+                                               { return ch0.second < ch1.second; })
+                                  ->first);
+
+                // we re-collect all the inconsistencies from all the smart-types..
+                incs = get_incs();
+            }
+    }
+
+    std::vector<std::vector<std::pair<semitone::lit, double>>> solver::get_incs()
+    {
+        std::vector<std::vector<std::pair<semitone::lit, double>>> incs;
+        // we collect all the inconsistencies from all the smart-types..
+        for (const auto &st : smart_types)
+        {
+            const auto c_incs = st->get_current_incs();
+            incs.insert(incs.cend(), c_incs.cbegin(), c_incs.cend());
+        }
+        assert(std::all_of(incs.cbegin(), incs.cend(), [](const auto &inc)
+                           { return std::all_of(inc.cbegin(), inc.cend(), [](const auto &ch)
+                                                { return std::isfinite(ch.second); }); }));
+        return incs;
     }
 
     void solver::reset_smart_types()

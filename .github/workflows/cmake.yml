@@ -13,13 +13,17 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         build_type: [Debug, Release]
         temporal_network: [LA, DL]
-        graph_pruning: [ON, OFF]
-        build_listeners: [ON, OFF]
+        deferrable_flaws: [TRUE, FALSE]
+        graph_pruning: [TRUE, FALSE]
+        check_inconsistencies: [TRUE, FALSE]
+        build_listeners: [TRUE, FALSE]
 
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
       TEMPORAL_NETWORK_TYPE: ${{ matrix.temporal_network }}
+      DEFERRABLE_FLAWS: ${{ matrix.deferrable_flaws }}
       GRAPH_PRUNING: ${{ matrix.graph_pruning }}
+      CHECK_INCONSISTENCIES: ${{ matrix.check_inconsistencies }}
       BUILD_LISTENERS: ${{ matrix.build_listeners }}
 
     steps:
@@ -28,7 +32,7 @@ jobs:
           submodules: recursive
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DGRAPH_DEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
