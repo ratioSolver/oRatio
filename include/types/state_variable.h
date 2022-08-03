@@ -62,6 +62,8 @@ namespace ratio::solver
       sv_flaw(state_variable &sv, const std::set<ratio::core::atom *> &atms);
       sv_flaw(sv_flaw &&) = delete;
 
+      ORATIO_EXPORT std::string get_data() const noexcept override;
+
     private:
       void compute_resolvers() override;
 
@@ -76,6 +78,8 @@ namespace ratio::solver
     public:
       order_resolver(sv_flaw &flw, const semitone::lit &r, const ratio::core::atom &before, const ratio::core::atom &after);
       order_resolver(const order_resolver &that) = delete;
+
+      ORATIO_EXPORT std::string get_data() const noexcept override;
 
     private:
       void apply() override;
@@ -92,6 +96,8 @@ namespace ratio::solver
       place_resolver(sv_flaw &flw, const semitone::lit &r, ratio::core::atom &plc_atm, const ratio::core::item &plc_itm, ratio::core::atom &frbd_atm);
       place_resolver(const place_resolver &that) = delete;
 
+      ORATIO_EXPORT std::string get_data() const noexcept override;
+
     private:
       void apply() override;
 
@@ -107,6 +113,8 @@ namespace ratio::solver
     public:
       forbid_resolver(sv_flaw &flw, ratio::core::atom &atm, ratio::core::item &itm);
       forbid_resolver(const forbid_resolver &that) = delete;
+
+      ORATIO_EXPORT std::string get_data() const noexcept override;
 
     private:
       void apply() override;

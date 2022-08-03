@@ -34,6 +34,8 @@ namespace ratio::solver
     ORATIO_EXPORT resolver *get_cheapest_resolver() const noexcept;
     virtual resolver *get_best_resolver() const noexcept { return get_cheapest_resolver(); }
 
+    virtual std::string get_data() const noexcept = 0;
+
   private:
     /**
      * Initializes this flaw.
@@ -66,4 +68,6 @@ namespace ratio::solver
     std::vector<resolver *> supports;                                    // the resolvers supported by this flaw (used for propagating cost estimates)..
     const bool exclusive;                                                // a boolean indicating whether the flaw is exclusive (i.e. exactly one of its resolver can be applied)..
   };
+
+  inline uintptr_t get_id(const ratio::solver::flaw &f) noexcept { return reinterpret_cast<uintptr_t>(&f); }
 } // namespace ratio::solver

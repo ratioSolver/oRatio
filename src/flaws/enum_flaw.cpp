@@ -5,6 +5,8 @@ namespace ratio::solver
 {
     enum_flaw::enum_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::enum_item &v_itm) : flaw(slv, std::move(causes), true), v_itm(v_itm) {}
 
+    std::string enum_flaw::get_data() const noexcept { return "{\"type\":\"enum\"}"; }
+
     void enum_flaw::compute_resolvers()
     {
         std::unordered_set<semitone::var_value *> vals = get_solver().get_ov_theory().value(v_itm.get_var());
@@ -13,6 +15,16 @@ namespace ratio::solver
     }
 
     enum_flaw::choose_value::choose_value(semitone::rational cst, enum_flaw &enm_flaw, semitone::var_value &val) : resolver(enm_flaw.get_solver().get_ov_theory().allows(enm_flaw.v_itm.get_var(), val), cst, enm_flaw), v(enm_flaw.v_itm.get_var()), val(val) {}
+
+    std::string enum_flaw::choose_value::get_data() const noexcept
+    {
+#ifdef COMPUTE_NAMES
+        if (const auto itm = dynamic_cast<const ratio::core::item *>(&val))
+            return "{\"type\":\"assignment\", \"val\":\"" + get_solver().guess_name(*itm) + "\"}";
+        else
+#endif
+            return "{\"type\":\"assignment\"}";
+    }
 
     void enum_flaw::choose_value::apply()
     { // activating this resolver assigns a value to the variable..

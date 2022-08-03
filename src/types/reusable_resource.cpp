@@ -356,6 +356,19 @@ namespace ratio::solver
 
     reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr, const std::set<ratio::core::atom *> &atms) : flaw(rr.get_solver(), smart_type::get_resolvers(rr.get_solver(), atms), {}), rr(rr), overlapping_atoms(atms) {}
 
+    ORATIO_EXPORT std::string reusable_resource::rr_flaw::get_data() const noexcept
+    {
+        std::string lbl = "{\"type\":\"rr-flaw\", \"atoms\":[";
+        for (auto as_it = overlapping_atoms.cbegin(); as_it != overlapping_atoms.cend(); ++as_it)
+        {
+            if (as_it != overlapping_atoms.cbegin())
+                lbl += ", ";
+            lbl += "\"" + std::to_string(get_id(**as_it)) + "\"";
+        }
+        lbl += "]}";
+        return lbl;
+    }
+
     void reusable_resource::rr_flaw::compute_resolvers()
     {
         const auto cs = combinations(std::vector<ratio::core::atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2);
@@ -388,13 +401,19 @@ namespace ratio::solver
 
     reusable_resource::order_resolver::order_resolver(rr_flaw &flw, const semitone::lit &r, const ratio::core::atom &before, const ratio::core::atom &after) : resolver(r, semitone::rational::ZERO, flw), before(before), after(after) {}
 
+    ORATIO_EXPORT std::string reusable_resource::order_resolver::get_data() const noexcept { return "{\"type\":\"order\", \"before_atom\":\"" + std::to_string(get_id(before)) + "\", \"after_atom\":\"" + std::to_string(get_id(after)) + "\"}"; }
+
     void reusable_resource::order_resolver::apply() {}
 
     reusable_resource::place_resolver::place_resolver(rr_flaw &flw, const semitone::lit &r, ratio::core::atom &plc_atm, const ratio::core::item &plc_itm, ratio::core::atom &frbd_atm) : resolver(r, semitone::rational::ZERO, flw), plc_atm(plc_atm), plc_itm(plc_itm), frbd_atm(frbd_atm) {}
 
+    ORATIO_EXPORT std::string reusable_resource::place_resolver::get_data() const noexcept { return "{\"type\":\"place\", \"place_atom\":\"" + std::to_string(get_id(plc_atm)) + "\", \"forbid_atom\":\"" + std::to_string(get_id(frbd_atm)) + "\"}"; }
+
     void reusable_resource::place_resolver::apply() {}
 
     reusable_resource::forbid_resolver::forbid_resolver(rr_flaw &flw, ratio::core::atom &atm, ratio::core::item &itm) : resolver(semitone::rational::ZERO, flw), atm(atm), itm(itm) {}
+
+    ORATIO_EXPORT std::string reusable_resource::forbid_resolver::get_data() const noexcept { return "{\"type\":\"forbid\", \"atom\":" + std::to_string(get_id(atm)) + "}"; }
 
     void reusable_resource::forbid_resolver::apply() { get_solver().get_sat_core()->new_clause({!get_rho(), !get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item &>(*atm.get(TAU_KW)).get_var(), itm)}); }
 } // namespace ratio::solver

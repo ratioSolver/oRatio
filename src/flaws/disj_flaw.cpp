@@ -5,6 +5,8 @@ namespace ratio::solver
 {
     disj_flaw::disj_flaw(solver &slv, std::vector<resolver *> causes, std::vector<semitone::lit> lits) : flaw(slv, std::move(causes), false), lits(std::move(lits)) {}
 
+    ORATIO_EXPORT std::string disj_flaw::get_data() const noexcept { return "{\"type\":\"disj\"}"; }
+
     void disj_flaw::compute_resolvers()
     {
         for (const auto &p : lits)
@@ -12,6 +14,8 @@ namespace ratio::solver
     }
 
     disj_flaw::choose_lit::choose_lit(semitone::rational cst, disj_flaw &disj_flaw, const semitone::lit &p) : resolver(p, cst, disj_flaw) {}
+
+    ORATIO_EXPORT std::string disj_flaw::choose_lit::get_data() const noexcept { return "{}"; }
 
     void disj_flaw::choose_lit::apply() {}
 } // namespace ratio::solver

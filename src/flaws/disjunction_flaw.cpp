@@ -5,6 +5,8 @@ namespace ratio::solver
 {
     disjunction_flaw::disjunction_flaw(solver &slv, std::vector<resolver *> causes, std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) : flaw(slv, std::move(causes), false), conjs(std::move(conjs)) {}
 
+    ORATIO_EXPORT std::string disjunction_flaw::get_data() const noexcept { return "{\"type\":\"disjunction\"}"; }
+
     void disjunction_flaw::compute_resolvers()
     {
         for (auto &cnj : conjs)
@@ -12,6 +14,8 @@ namespace ratio::solver
     }
 
     disjunction_flaw::choose_conjunction::choose_conjunction(disjunction_flaw &disj_flaw, std::unique_ptr<ratio::core::conjunction> conj) : resolver(conj->get_cost(), disj_flaw), conj(std::move(conj)) {}
+
+    ORATIO_EXPORT std::string disjunction_flaw::choose_conjunction::get_data() const noexcept { return "{}"; }
 
     void disjunction_flaw::choose_conjunction::apply() { conj->execute(); }
 } // namespace ratio::solver

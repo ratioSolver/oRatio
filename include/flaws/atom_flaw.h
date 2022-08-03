@@ -20,6 +20,8 @@ namespace ratio::solver
 
     inline ratio::core::atom &get_atom() const noexcept { return atm; }
 
+    ORATIO_EXPORT std::string get_data() const noexcept override;
+
   private:
     void compute_resolvers() override;
 
@@ -30,6 +32,8 @@ namespace ratio::solver
       activate_fact(atom_flaw &f, ratio::core::atom &a);
       activate_fact(const semitone::lit &r, atom_flaw &f, ratio::core::atom &a);
       activate_fact(const activate_fact &that) = delete;
+
+      ORATIO_EXPORT std::string get_data() const noexcept override;
 
     private:
       void apply() override;
@@ -45,6 +49,8 @@ namespace ratio::solver
       activate_goal(const semitone::lit &r, atom_flaw &f, ratio::core::atom &a);
       activate_goal(const activate_goal &that) = delete;
 
+      ORATIO_EXPORT std::string get_data() const noexcept override;
+
     private:
       void apply() override;
 
@@ -57,6 +63,8 @@ namespace ratio::solver
     public:
       unify_atom(atom_flaw &atm_flaw, ratio::core::atom &atm, ratio::core::atom &trgt, const std::vector<semitone::lit> &unif_lits);
       unify_atom(const unify_atom &that) = delete;
+
+      ORATIO_EXPORT std::string get_data() const noexcept override;
 
     private:
       void apply() override;

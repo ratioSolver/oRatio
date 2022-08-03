@@ -12,6 +12,8 @@ namespace ratio::solver
     bool_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::bool_item &b_itm);
     bool_flaw(const bool_flaw &orig) = delete;
 
+    ORATIO_EXPORT std::string get_data() const noexcept override;
+
   private:
     void compute_resolvers() override;
 
@@ -20,6 +22,8 @@ namespace ratio::solver
     public:
       choose_value(semitone::rational cst, bool_flaw &bl_flaw, const semitone::lit &val);
       choose_value(const choose_value &that) = delete;
+
+      ORATIO_EXPORT std::string get_data() const noexcept override;
 
     private:
       void apply() override;

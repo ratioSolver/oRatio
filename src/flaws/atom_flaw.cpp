@@ -7,6 +7,14 @@ namespace ratio::solver
 {
     atom_flaw::atom_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::atom &atm, const bool is_fact) : flaw(slv, std::move(causes), true), atm(atm), is_fact(is_fact) {}
 
+    ORATIO_EXPORT std::string atom_flaw::get_data() const noexcept
+    {
+        if (is_fact)
+            return "{\"type\":\"fact\", \"atom\":" + std::to_string(get_id(atm)) + "}";
+        else
+            return "{\"type\":\"goal\", \"atom\":" + std::to_string(get_id(atm)) + "}";
+    }
+
     void atom_flaw::compute_resolvers()
     {
         assert(get_solver().get_sat_core()->value(get_phi()) != semitone::False);
@@ -55,6 +63,8 @@ namespace ratio::solver
     atom_flaw::activate_fact::activate_fact(atom_flaw &f, ratio::core::atom &a) : resolver(semitone::rational::ZERO, f), atm(a) {}
     atom_flaw::activate_fact::activate_fact(const semitone::lit &r, atom_flaw &f, ratio::core::atom &a) : resolver(r, semitone::rational::ZERO, f), atm(a) {}
 
+    ORATIO_EXPORT std::string atom_flaw::activate_fact::get_data() const noexcept { return "{\"type\":\"activate\", \"atom\":" + std::to_string(get_id(atm)) + "}"; }
+
     void atom_flaw::activate_fact::apply()
     { // activating this resolver activates the fact..
         if (!get_solver().get_sat_core()->new_clause({!get_rho(), semitone::lit(get_sigma(get_solver(), atm))}))
@@ -63,6 +73,8 @@ namespace ratio::solver
 
     atom_flaw::activate_goal::activate_goal(atom_flaw &f, ratio::core::atom &a) : resolver(semitone::rational::ONE, f), atm(a) {}
     atom_flaw::activate_goal::activate_goal(const semitone::lit &r, atom_flaw &f, ratio::core::atom &a) : resolver(r, semitone::rational::ONE, f), atm(a) {}
+
+    ORATIO_EXPORT std::string atom_flaw::activate_goal::get_data() const noexcept { return "{\"type\":\"activate\", \"atom\":" + std::to_string(get_id(atm)) + "}"; }
 
     void atom_flaw::activate_goal::apply()
     { // activating this resolver activates the goal..
@@ -73,6 +85,8 @@ namespace ratio::solver
     }
 
     atom_flaw::unify_atom::unify_atom(atom_flaw &f, ratio::core::atom &atm, ratio::core::atom &trgt, const std::vector<semitone::lit> &unif_lits) : resolver(semitone::rational::ONE, f), atm(atm), trgt(trgt), unif_lits(unif_lits) {}
+
+    ORATIO_EXPORT std::string atom_flaw::unify_atom::get_data() const noexcept { return "{\"type\":\"unify\", \"atom\":" + std::to_string(get_id(atm)) + ", \"target\":\"" + std::to_string(get_id(trgt)) + "\"}"; }
 
     void atom_flaw::unify_atom::apply()
     {
