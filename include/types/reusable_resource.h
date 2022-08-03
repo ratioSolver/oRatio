@@ -19,6 +19,8 @@ namespace ratio::solver
     reusable_resource(solver &slv);
     reusable_resource(const reusable_resource &orig) = delete;
 
+    const std::vector<ratio::core::atom *> &get_atoms() const noexcept { return atoms; }
+
   private:
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
 
@@ -138,8 +140,9 @@ namespace ratio::solver
     std::vector<std::unique_ptr<const riddle::ast::statement>> ctr_stmnts;
     ratio::core::predicate *u_pred;
     std::vector<std::unique_ptr<const riddle::ast::statement>> pred_stmnts;
-    std::set<const ratio::core::item *> to_check;                                         // the reusable-resource instances whose atoms have changed..
-    std::vector<std::pair<ratio::core::atom *, std::unique_ptr<rr_atom_listener>>> atoms; // we store, for each atom, its atom listener..
+    std::set<const ratio::core::item *> to_check;             // the reusable-resource instances whose atoms have changed..
+    std::vector<ratio::core::atom *> atoms;                   // we store, for each atom, its atom listener..
+    std::vector<std::unique_ptr<rr_atom_listener>> listeners; // we store, for each atom, its atom listener..
 
     std::map<std::set<ratio::core::atom *>, rr_flaw *> rr_flaws;                                                    // the reusable-resource flaws found so far..
     std::map<ratio::core::atom *, std::map<ratio::core::atom *, semitone::lit>> leqs;                               // all the possible ordering constraints..

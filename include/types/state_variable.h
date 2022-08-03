@@ -19,6 +19,8 @@ namespace ratio::solver
     state_variable(solver &slv);
     state_variable(const state_variable &orig) = delete;
 
+    const std::vector<ratio::core::atom *> &get_atoms() const noexcept { return atoms; }
+
   private:
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
 
@@ -125,8 +127,9 @@ namespace ratio::solver
     };
 
   private:
-    std::set<const ratio::core::item *> to_check;                                         // the state-variable instances whose atoms have changed..
-    std::vector<std::pair<ratio::core::atom *, std::unique_ptr<sv_atom_listener>>> atoms; // we store, for each atom, its atom listener..
+    std::set<const ratio::core::item *> to_check;                   // the state-variable instances whose atoms have changed..
+    std::vector<ratio::core::atom *> atoms;                         // we store, for each atom, its atom listener..
+    std::vector<std::unique_ptr<const sv_atom_listener>> listeners; // we store, for each atom, its atom listener..
 
     std::map<std::set<ratio::core::atom *>, sv_flaw *> sv_flaws;                                                    // the state-variable flaws found so far..
     std::map<ratio::core::atom *, std::map<ratio::core::atom *, semitone::lit>> leqs;                               // all the possible ordering constraints..
