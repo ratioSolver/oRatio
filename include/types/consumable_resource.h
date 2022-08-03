@@ -21,6 +21,10 @@ namespace ratio::solver
     consumable_resource(solver &slv);
     consumable_resource(const consumable_resource &orig) = delete;
 
+    const std::vector<ratio::core::atom *> &get_atoms() const noexcept { return atoms; }
+    const ratio::core::type &get_produce_predicate() const noexcept { return *p_pred; }
+    const ratio::core::type &get_consume_predicate() const noexcept { return *c_pred; }
+
   private:
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
 

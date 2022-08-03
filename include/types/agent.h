@@ -13,6 +13,8 @@ namespace ratio::solver
     agent(solver &slv);
     agent(const agent &orig) = delete;
 
+    const std::vector<ratio::core::atom *> &get_atoms() const noexcept { return atoms; }
+
   private:
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
 

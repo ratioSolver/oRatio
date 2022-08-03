@@ -20,6 +20,7 @@ namespace ratio::solver
     reusable_resource(const reusable_resource &orig) = delete;
 
     const std::vector<ratio::core::atom *> &get_atoms() const noexcept { return atoms; }
+    const ratio::core::type &get_use_predicate() const noexcept { return *u_pred; }
 
   private:
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
