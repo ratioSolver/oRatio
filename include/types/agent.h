@@ -48,6 +48,7 @@ namespace ratio::solver
 
   private:
     std::set<ratio::core::atom *> to_check;
-    std::vector<std::pair<ratio::core::atom *, std::unique_ptr<agnt_atom_listener>>> atoms;
+    std::vector<ratio::core::atom *> atoms;
+    std::vector<std::unique_ptr<agnt_atom_listener>> listeners;
   };
 } // namespace ratio::solver

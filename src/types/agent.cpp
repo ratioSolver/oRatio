@@ -25,7 +25,7 @@ namespace ratio::solver
 
     void agent::new_atom_flaw(atom_flaw &f)
     {
-        ratio::core::atom &atm = f.get_atom();
+        auto &atm = f.get_atom();
         if (f.is_fact)
         {
             set_ni(semitone::lit(get_sigma(get_solver(), atm)));
@@ -36,7 +36,10 @@ namespace ratio::solver
             restore_ni();
         }
 
-        atoms.emplace_back(&atm, std::make_unique<agnt_atom_listener>(*this, atm));
+        // we store, for the atom, its atom listener..
+        atoms.emplace_back(&atm);
+        listeners.emplace_back(std::make_unique<agnt_atom_listener>(*this, atm));
+
         to_check.insert(&atm);
     }
 

@@ -77,7 +77,8 @@ namespace ratio::solver
     ratio::core::predicate *p_pred;
     ratio::core::predicate *c_pred;
     std::vector<std::unique_ptr<const riddle::ast::statement>> pred_stmnts;
-    std::set<const ratio::core::item *> to_check;                                         // the consumable-resource instances whose atoms have changed..
-    std::vector<std::pair<ratio::core::atom *, std::unique_ptr<cr_atom_listener>>> atoms; // we store, for each atom, its atom listener..
+    std::set<const ratio::core::item *> to_check;             // the consumable-resource instances whose atoms have changed..
+    std::vector<ratio::core::atom *> atoms;                   // we store, for each atom, its atom listener..
+    std::vector<std::unique_ptr<cr_atom_listener>> listeners; // we store, for each atom, its atom listener..
   };
 } // namespace ratio::solver

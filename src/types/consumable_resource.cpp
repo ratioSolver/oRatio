@@ -81,7 +81,7 @@ namespace ratio::solver
     }
     void consumable_resource::new_atom_flaw(atom_flaw &f)
     {
-        ratio::core::atom &atm = f.get_atom();
+        auto &atm = f.get_atom();
         if (f.is_fact)
         { // we apply produce-predicate or the consume-predicate whenever the fact becomes active..
             set_ni(semitone::lit(get_sigma(get_solver(), atm)));
@@ -99,13 +99,14 @@ namespace ratio::solver
         // since flaws might require planning, we can't store the variables for on-line flaw resolution..
 
         // we store, for the atom, its atom listener..
-        atoms.emplace_back(&atm, std::make_unique<cr_atom_listener>(*this, atm));
+        atoms.emplace_back(&atm);
+        listeners.emplace_back(std::make_unique<cr_atom_listener>(*this, atm));
 
         // we filter out those atoms which are not strictly active..
         if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::True)
         {
-            auto c_scope = atm.get(TAU_KW);
-            if (auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))              // the 'tau' parameter is a variable..
+            const auto c_scope = atm.get(TAU_KW);
+            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))        // the 'tau' parameter is a variable..
                 for (const auto &val : get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     to_check.insert(static_cast<const ratio::core::item *>(val));
             else // the 'tau' parameter is a constant..
@@ -125,8 +126,8 @@ namespace ratio::solver
         // we filter out those atoms which are not strictly active..
         if (cr.get_solver().get_sat_core()->value(get_sigma(cr.get_solver(), atm)) == semitone::True)
         {
-            auto c_scope = atm.get(TAU_KW);
-            if (auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))                 // the 'tau' parameter is a variable..
+            const auto c_scope = atm.get(TAU_KW);
+            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))           // the 'tau' parameter is a variable..
                 for (const auto &val : cr.get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     cr.to_check.insert(static_cast<const ratio::core::item *>(val));
             else // the 'tau' parameter is a constant..
