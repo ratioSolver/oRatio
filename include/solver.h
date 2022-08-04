@@ -55,8 +55,8 @@ namespace ratio::solver
 #endif
 
   public:
-    ORATIO_EXPORT solver();
-    ORATIO_EXPORT solver(std::unique_ptr<causal_graph> gr);
+    ORATIO_EXPORT solver(const bool &i = true);
+    ORATIO_EXPORT solver(std::unique_ptr<causal_graph> gr, const bool &i = true);
     solver(const solver &orig) = delete;
     ORATIO_EXPORT ~solver();
 

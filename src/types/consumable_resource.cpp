@@ -75,7 +75,7 @@ namespace ratio::solver
     void consumable_resource::new_predicate(ratio::core::predicate &pred) noexcept
     {
         assert(get_solver().is_interval(pred));
-        assert(c_pred->is_assignable_from(pred) || p_pred->is_assignable_from(pred));
+        assert(!c_pred || c_pred->is_assignable_from(pred) || !p_pred || p_pred->is_assignable_from(pred));
         // each consumable-resource predicate has a tau parameter indicating on which resource the atoms insist on..
         new_field(pred, std::make_unique<ratio::core::field>(static_cast<type &>(pred.get_scope()), TAU_KW));
     }
