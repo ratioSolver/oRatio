@@ -24,7 +24,7 @@
 namespace ratio::solver
 {
     ORATIO_EXPORT solver::solver() : solver(std::make_unique<causal_graph>()) {}
-    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> gr) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(gr)) { gr->init(*this); }
+    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> c_gr) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(c_gr)) { gr->init(*this); }
     ORATIO_EXPORT solver::~solver() {}
 
     ORATIO_EXPORT void solver::read(const std::string &script)
