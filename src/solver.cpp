@@ -15,6 +15,10 @@
 #include "state_variable.h"
 #include "reusable_resource.h"
 #include "consumable_resource.h"
+#if defined(H_MAX) || defined(H_ADD)
+#include "h_1.h"
+#define HEURISTIC std::make_unique<h_1>()
+#endif
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
 #endif
@@ -23,12 +27,12 @@
 
 namespace ratio::solver
 {
-    ORATIO_EXPORT solver::solver(const bool &i) : solver(std::make_unique<causal_graph>(), i) {}
+    ORATIO_EXPORT solver::solver(const bool &i) : solver(HEURISTIC, i) {}
     ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> c_gr, const bool &i) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(c_gr))
     {
-        gr->init(*this);
-        if (i)
+        if (i) // we initializa the solver..
             init();
+        gr->init(*this); // we initialize the causal graph..
     }
     ORATIO_EXPORT solver::~solver() {}
 
@@ -704,6 +708,8 @@ namespace ratio::solver
 
         FIRE_STATE_CHANGED();
     }
+
+    std::vector<std::unique_ptr<flaw>> solver::flush_pending_flaws() { return std::move(pending_flaws); }
 
     void solver::next()
     {

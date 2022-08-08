@@ -2,8 +2,10 @@
 
 #include "oratio_export.h"
 #include "rational.h"
-#include <unordered_map>
+#include "lit.h"
+#include <unordered_set>
 #include <vector>
+#include <memory>
 
 #ifdef BUILD_LISTENERS
 #define FIRE_CURRENT_FLAW(f) fire_current_flaw(f)
@@ -26,7 +28,6 @@ namespace ratio::solver
   public:
     ORATIO_EXPORT causal_graph();
     causal_graph(const causal_graph &orig) = delete;
-    virtual ~causal_graph() = default;
 
     inline solver &get_solver() const noexcept { return *slv; }
     inline const semitone::var &get_gamma() const noexcept { return gamma; }
@@ -58,9 +59,15 @@ namespace ratio::solver
     ORATIO_EXPORT virtual void negated_resolver(resolver &r);
 
   protected:
+    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true) const noexcept;
     void expand_flaw(flaw &f);
+    void set_cost(flaw &f, const semitone::rational &cost) const noexcept;
 
-  private:
+    std::unordered_set<flaw *> &get_flaws() const noexcept;
+    std::vector<std::unique_ptr<flaw>> flush_pending_flaws() const noexcept;
+    std::vector<std::vector<std::pair<semitone::lit, double>>> get_incs() const noexcept;
+
+  protected:
     solver *slv;         // the solver this causal-graph belongs to..
     semitone::var gamma; // this variable represents the validity of the current graph..
   };

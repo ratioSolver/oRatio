@@ -18,6 +18,11 @@ enable_testing()
 set(TEMPORAL_NETWORK_TYPES DL LA)
 set(TEMPORAL_NETWORK_TYPE LA CACHE STRING "Temporal network type")
 set_property(CACHE TEMPORAL_NETWORK_TYPE PROPERTY STRINGS ${TEMPORAL_NETWORK_TYPES})
+
+set(HEURISTIC_TYPES h_max h_add)
+set(HEURISTIC_TYPE h_max CACHE STRING "Heuristic type")
+set_property(CACHE HEURISTIC_TYPE PROPERTY STRINGS ${HEURISTIC_TYPES})
+
 option(DEFERRABLE_FLAWS "Check for deferrable flaws" ON)
 option(GRAPH_PRUNING "Prunes the causal graph before starting the search" ON)
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
@@ -25,12 +30,12 @@ option(BUILD_LISTENERS "Builds the solver's listeners" OFF)
 
 add_subdirectory(extern/core)
 
-file(GLOB RATIO_SOURCES src/*.cpp src/flaws/*.cpp src/types/*.cpp)
-file(GLOB RATIO_HEADERS include/*.h include/flaws/*.h include/types/*.h)
+file(GLOB RATIO_SOURCES src/*.cpp src/flaws/*.cpp src/types/*.cpp src/heuristics/*.cpp)
+file(GLOB RATIO_HEADERS include/*.h include/flaws/*.h include/types/*.h include/heuristics/*.h)
 
 add_library(${PROJECT_NAME} SHARED ${RATIO_SOURCES})
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
-target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/flaws $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/types $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
+target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/flaws $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/types $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/heuristics $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
 target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE)
 
 message(STATUS "Temporal network type:  ${TEMPORAL_NETWORK_TYPE}")
@@ -44,6 +49,15 @@ else()
     message(FATAL_ERROR "TEMPORAL_NETWORK_TYPE must be one of ${TEMPORAL_NETWORK_TYPES}")
 endif()
 configure_file(include/init.h.in init.h @ONLY)
+
+message(STATUS "Heuristic type:         ${HEURISTIC_TYPE}")
+if(HEURISTIC_TYPE STREQUAL h_max)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE H_MAX)
+elseif(HEURISTIC_TYPE STREQUAL h_add)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE H_ADD)
+else()
+    message(FATAL_ERROR "HEURISTIC_TYPE must be one of ${HEURISTIC_TYPES}")
+endif()
 
 message(STATUS "Deferrable flaws:       ${DEFERRABLE_FLAWS}")
 if(DEFERRABLE_FLAWS)

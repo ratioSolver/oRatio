@@ -39,7 +39,7 @@ namespace ratio::solver
     void set_ni(const semitone::lit &v) noexcept; // temporally sets the solver's 'ni' literal..
     void restore_ni() noexcept;                   // restores the solver's 'ni' literal..
 
-    void store_flaw(flaw &f) noexcept; // stores the flaw waiting for its initialization at root-level..
+    void store_flaw(std::unique_ptr<flaw> f) noexcept; // stores the flaw waiting for its initialization at root-level..
 
     static std::vector<resolver *> get_resolvers(solver &slv, const std::set<ratio::core::atom *> &atms) noexcept; // returns the vector of resolvers which has given rise to the given atoms..
 

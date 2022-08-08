@@ -63,9 +63,9 @@ namespace ratio::solver
                         std::set<ratio::core::atom *> mcs(as.cbegin(), as.cend());
                         if (!sv_flaws.count(mcs))
                         { // we create a new state-variable flaw..
-                            sv_flaw *flw = new sv_flaw(*this, mcs);
-                            sv_flaws.insert({mcs, flw});
-                            store_flaw(*flw); // we store the flaw for retrieval when at root-level..
+                            auto flw = std::make_unique<sv_flaw>(*this, mcs);
+                            sv_flaws.insert({mcs, flw.get()});
+                            store_flaw(std::move(flw)); // we store the flaw for retrieval when at root-level..
                         }
 
                         std::vector<std::pair<semitone::lit, double>> choices;
@@ -163,7 +163,7 @@ namespace ratio::solver
         if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
-            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))              // the 'tau' parameter is a variable..
+            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))        // the 'tau' parameter is a variable..
                 for (const auto &val : get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     to_check.insert(static_cast<const ratio::core::item *>(val));
             else // the 'tau' parameter is a constant..
@@ -265,7 +265,7 @@ namespace ratio::solver
         if (sv.get_solver().get_sat_core()->value(get_sigma(sv.get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
-            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))                 // the 'tau' parameter is a variable..
+            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))           // the 'tau' parameter is a variable..
                 for (const auto &val : sv.get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     sv.to_check.insert(static_cast<const ratio::core::item *>(val));
             else // the 'tau' parameter is a constant..

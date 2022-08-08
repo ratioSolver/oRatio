@@ -185,7 +185,7 @@ namespace ratio::solver
     ORATIO_EXPORT void take_decision(const semitone::lit &ch);
 
   private:
-    inline std::unordered_set<flaw *> flush_pending_flaws() { return std::move(pending_flaws); }
+    std::vector<std::unique_ptr<flaw>> flush_pending_flaws();
 
     void next();
 
@@ -231,10 +231,10 @@ namespace ratio::solver
     };
     std::unordered_map<const ratio::core::atom *, atom_prop> atom_properties; // the atoms' properties..
 
-    std::unique_ptr<causal_graph> gr;         // the causal graph..
-    resolver *res = nullptr;                  // the current resolver (i.e. the cause for the new flaws)..
-    std::unordered_set<flaw *> active_flaws;  // the currently active flaws..
-    std::unordered_set<flaw *> pending_flaws; // pending flaws, waiting for root-level to be initialized..
+    std::unique_ptr<causal_graph> gr;                 // the causal graph..
+    resolver *res = nullptr;                          // the current resolver (i.e. the cause for the new flaws)..
+    std::unordered_set<flaw *> active_flaws;          // the currently active flaws..
+    std::vector<std::unique_ptr<flaw>> pending_flaws; // pending flaws, waiting for root-level to be initialized..
 
     struct layer
     {

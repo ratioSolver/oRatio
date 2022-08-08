@@ -46,6 +46,7 @@ namespace ratio::solver
         }
     }
 
+    void causal_graph::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue) const noexcept { slv->new_flaw(std::move(f), enqueue); }
     void causal_graph::expand_flaw(flaw &f)
     {
         // we expand the flaw..
@@ -54,4 +55,10 @@ namespace ratio::solver
         // we propagate the costs starting from the just expanded flaw..
         propagate_costs(f);
     }
+
+    void causal_graph::set_cost(flaw &f, const semitone::rational &cost) const noexcept { slv->set_cost(f, cost); }
+
+    std::unordered_set<flaw *> &causal_graph::get_flaws() const noexcept { return slv->active_flaws; }
+    std::vector<std::unique_ptr<flaw>> causal_graph::flush_pending_flaws() const noexcept { return slv->flush_pending_flaws(); }
+    std::vector<std::vector<std::pair<semitone::lit, double>>> causal_graph::get_incs() const noexcept { return slv->get_incs(); }
 } // namespace ratio::solver

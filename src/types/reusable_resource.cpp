@@ -128,9 +128,9 @@ namespace ratio::solver
                             std::set<ratio::core::atom *> mcs(c_mcs.cbegin(), c_mcs.cend());
                             if (!rr_flaws.count(mcs))
                             { // we create a new reusable-resource flaw..
-                                rr_flaw *flw = new rr_flaw(*this, mcs);
-                                rr_flaws.insert({mcs, flw});
-                                store_flaw(*flw); // we store the flaw for retrieval when at root-level..
+                                auto flw = std::make_unique<rr_flaw>(*this, mcs);
+                                rr_flaws.insert({mcs, flw.get()});
+                                store_flaw(std::move(flw)); // we store the flaw for retrieval when at root-level..
                             }
 
                             std::vector<std::pair<semitone::lit, double>> choices;
