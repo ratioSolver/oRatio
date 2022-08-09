@@ -42,6 +42,10 @@ namespace ratio::solver
         core::read(script);
         // we reset the smart-types if some new smart-type has been added with the previous script..
         reset_smart_types();
+
+        if (!sat->propagate())
+            throw ratio::core::unsolvable_exception();
+        FIRE_STATE_CHANGED();
     }
     ORATIO_EXPORT void solver::read(const std::vector<std::string> &files)
     {
@@ -49,6 +53,10 @@ namespace ratio::solver
         core::read(files);
         // we reset the smart-types if some new smart-type has been added with the previous files..
         reset_smart_types();
+
+        if (!sat->propagate())
+            throw ratio::core::unsolvable_exception();
+        FIRE_STATE_CHANGED();
     }
 
     ORATIO_EXPORT void solver::init() noexcept
@@ -354,16 +362,16 @@ namespace ratio::solver
     ORATIO_EXPORT ratio::core::expr solver::geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
     {
         if (&get_type({left, right}) == &get_time_type())
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
         else
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
     ORATIO_EXPORT ratio::core::expr solver::gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
     {
         if (&get_type({left, right}) == &get_time_type())
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
         else
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
+            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
 
     semitone::lit solver::eq(ratio::core::item &left, ratio::core::item &right) noexcept

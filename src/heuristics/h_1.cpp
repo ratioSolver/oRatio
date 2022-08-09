@@ -40,7 +40,9 @@ namespace ratio::solver
     }
 
     void h_1::init(solver &slv) noexcept
-    { // we create the gamma variable..
+    {
+        causal_graph::init(slv);
+        // we create the gamma variable..
         gamma = slv.get_sat_core()->new_var();
         LOG("graph var is: γ" << std::to_string(gamma));
 #ifdef GRAPH_PRUNING

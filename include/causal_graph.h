@@ -40,8 +40,10 @@ namespace ratio::solver
      */
     virtual semitone::rational get_estimated_cost(const resolver &) const noexcept { return semitone::rational::ZERO; }
 
-  private:
+  protected:
     ORATIO_EXPORT virtual void init(solver &slv);
+
+  private:
     ORATIO_EXPORT void check();
 
     virtual void enqueue(flaw &) {}
