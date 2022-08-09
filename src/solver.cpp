@@ -490,22 +490,21 @@ namespace ratio::solver
                                         { return sat->value(r->rho) == semitone::True; }))
                 active_flaws.insert(f.get()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
             break;
-        case semitone::Undefined: // we listen for the flaw to become active..
-            phis[variable(f->phi)].push_back(std::move(f));
-            bind(variable(f->phi));
+        case semitone::Undefined:   // we do not have a top-level (a landmark) flaw, nor an infeasible one..
+            bind(variable(f->phi)); // we listen for the flaw to become active..
             break;
         }
+
+        phis[variable(f->phi)].emplace_back(std::move(f));
     }
 
     void solver::new_resolver(std::unique_ptr<resolver> r)
     {
         FIRE_NEW_RESOLVER(*r);
         if (sat->value(r->rho) == semitone::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
-        {
-            // we listen for the resolver to become inactive..
-            rhos[variable(r->rho)].push_back(std::move(r));
-            bind(variable(r->rho));
-        }
+            bind(variable(r->rho));                    // we listen for the resolver to become inactive..
+
+        rhos[variable(r->rho)].push_back(std::move(r));
     }
 
     void solver::new_causal_link(flaw &f, resolver &r)
@@ -760,8 +759,6 @@ namespace ratio::solver
                         trail.back().solved_flaws.insert(f.get()); // this flaw has been accidentally solved..
                     gr->activated_flaw(*f);
                 }
-                if (root_level()) // since we are at root-level, we can perform some cleaning..
-                    phis.erase(at_phis_p);
                 break;
             case semitone::False: // some flaws have been negated..
                 for (const auto &f : at_phis_p->second)
@@ -769,8 +766,6 @@ namespace ratio::solver
                     assert(!active_flaws.count(f.get()));
                     gr->negated_flaw(*f);
                 }
-                if (root_level()) // since we are at root-level, we can perform some cleaning..
-                    phis.erase(at_phis_p);
                 break;
             }
 
@@ -784,14 +779,10 @@ namespace ratio::solver
                         trail.back().solved_flaws.insert(&r->effect);
                     gr->activated_resolver(*r);
                 }
-                if (root_level()) // since we are at root-level, we can perform some cleaning..
-                    rhos.erase(at_rhos_p);
                 break;
             case semitone::False: // some resolvers have been negated..
                 for (const auto &r : at_rhos_p->second)
                     gr->negated_resolver(*r);
-                if (root_level()) // since we are at root-level, we can perform some cleaning..
-                    rhos.erase(at_rhos_p);
                 break;
             }
 
@@ -803,10 +794,6 @@ namespace ratio::solver
         assert(cnfl.empty());
         assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
                            { return sat->value(f->phi) == semitone::True; }));
-        assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
-                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return sat->value(f->phi) != semitone::True || (active_flaws.count(f.get()) || std::any_of(trail.cbegin(), trail.cend(), [&f](const auto &l)
-                                                                                                                                             { return l.solved_flaws.count(f.get()); })); }); }));
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
                                                 { return sat->value(f->phi) != semitone::False || is_positive_infinite(f->get_estimated_cost()); }); }));
