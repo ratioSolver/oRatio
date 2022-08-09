@@ -389,15 +389,15 @@ namespace ratio::solver
             else
                 return lra_th.new_eq(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
         }
-        else if (dynamic_cast<ratio::core::enum_item *>(&right))
-            return eq(right, left); // we swap, for simplifying code..
         else if (auto le = dynamic_cast<ratio::core::enum_item *>(&left))
-        { // we are comparing enums..
-            if (auto re = dynamic_cast<ratio::core::enum_item *>(&right))
+        {
+            if (auto re = dynamic_cast<ratio::core::enum_item *>(&right)) // we are comparing enums..
                 return ov_th.new_eq(le->get_var(), re->get_var());
             else
-                return ov_th.allows(le->get_var(), left);
+                return ov_th.allows(le->get_var(), right);
         }
+        else if (dynamic_cast<ratio::core::enum_item *>(&right))
+            return eq(right, left); // we swap, for simplifying code..
         else
             return semitone::FALSE_lit;
     }
