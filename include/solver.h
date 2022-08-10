@@ -111,12 +111,15 @@ namespace ratio::solver
       ni = v;
     }
 
-    inline void restore_ni() noexcept { ni = tmp_ni; }
+    inline void restore_ni() noexcept
+    {
+      ni = tmp_ni;
+    }
 
     ORATIO_EXPORT void new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) override;
 
   private:
-    void new_atom(ratio::core::atom &atm, const bool &is_fact = true) override;
+    void new_atom(ratio::core::expr &atm, const bool &is_fact = true) override;
     void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw 'f' has been created..
     void new_resolver(std::unique_ptr<resolver> r);                     // notifies the solver that a new resolver 'r' has been created..
     void new_causal_link(flaw &f, resolver &r);                         // notifies the solver that a new causal link between a flaw 'f' and a resolver 'r' has been created..

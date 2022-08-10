@@ -147,7 +147,8 @@ namespace ratio::solver
         if (f.is_fact)
         { // we apply interval-predicate whenever the fact becomes active..
             set_ni(semitone::lit(get_sigma(get_solver(), atm)));
-            get_solver().get_interval().apply_rule(atm);
+            auto atm_expr = f.get_atom_expr();
+            get_solver().get_interval().apply_rule(atm_expr);
             restore_ni();
         }
 

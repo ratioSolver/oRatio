@@ -29,10 +29,11 @@ namespace ratio::solver
         if (f.is_fact)
         {
             set_ni(semitone::lit(get_sigma(get_solver(), atm)));
+            auto atm_expr = f.get_atom_expr();
             if (get_solver().get_impulse().is_assignable_from(atm.get_type())) // we apply impulse-predicate whenever the fact becomes active..
-                get_solver().get_impulse().apply_rule(atm);
+                get_solver().get_impulse().apply_rule(atm_expr);
             else // we apply interval-predicate whenever the fact becomes active..
-                get_solver().get_interval().apply_rule(atm);
+                get_solver().get_interval().apply_rule(atm_expr);
             restore_ni();
         }
 

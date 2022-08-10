@@ -26,5 +26,26 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < NUM_TESTS; ++i)
     {
         ratio::solver::solver s;
+        try
+        {
+            std::cout << "parsing input files..\n";
+            s.read(prob_names);
+
+            std::cout << "solving the problem..\n";
+            if (s.solve())
+                std::cout << "hurray!! we have found a solution..\n";
+            else
+            {
+                std::cout << "the problem is unsolvable..\n";
+                return 1;
+            }
+        }
+        catch (const std::exception &ex)
+        {
+            std::cout << ex.what() << '\n';
+            return 1;
+        }
     }
+
+    return 0;
 }

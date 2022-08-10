@@ -30,9 +30,9 @@ namespace ratio::solver
     ORATIO_EXPORT solver::solver(const bool &i) : solver(HEURISTIC, i) {}
     ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> c_gr, const bool &i) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(c_gr))
     {
-        if (i) // we initializa the solver..
-            init();
         gr->init(*this); // we initialize the causal graph..
+        if (i)           // we initializa the solver..
+            init();
     }
     ORATIO_EXPORT solver::~solver() {}
 
@@ -61,7 +61,6 @@ namespace ratio::solver
 
     ORATIO_EXPORT void solver::init() noexcept
     {
-        gr->init(*this);
         read(INIT_STRING);
         imp_pred = &get_predicate(RATIO_IMPULSE);
         int_pred = &get_predicate(RATIO_INTERVAL);
@@ -398,6 +397,40 @@ namespace ratio::solver
         }
         else if (dynamic_cast<ratio::core::enum_item *>(&right))
             return eq(right, left); // we swap, for simplifying code..
+        else if (auto le = dynamic_cast<ratio::core::complex_item *>(&left))
+        {
+            if (auto re = dynamic_cast<ratio::core::complex_item *>(&right))
+            { // we are comparing complex items..
+                std::vector<semitone::lit> eqs;
+                std::queue<ratio::core::type *> q;
+                q.push(&left.get_type());
+                while (!q.empty())
+                {
+                    for (const auto &[f_name, f] : q.front()->get_fields())
+                        if (!f->is_synthetic())
+                        {
+                            auto c_eq = eq(*le->get(f_name), *re->get(f_name));
+                            if (sat->value(c_eq) == semitone::False)
+                                return semitone::FALSE_lit;
+                            eqs.push_back(c_eq);
+                        }
+                    for (const auto &st : q.front()->get_supertypes())
+                        q.push(st);
+                    q.pop();
+                }
+                switch (eqs.size())
+                {
+                case 0:
+                    return semitone::FALSE_lit;
+                case 1:
+                    return *eqs.cbegin();
+                default:
+                    return sat->new_conj(std::move(eqs));
+                }
+            }
+            else
+                return semitone::FALSE_lit;
+        }
         else
             return semitone::FALSE_lit;
     }
@@ -405,6 +438,8 @@ namespace ratio::solver
     {
         if (&left == &right) // the two items are the same item..
             return true;
+        else if (&left.get_type() != &right.get_type())
+            return false;
         else if (&left.get_type() == &get_bool_type() && &right.get_type() == &get_bool_type())
         { // we are comparing boolean expressions..
             auto l_val = sat->value(static_cast<ratio::core::bool_item &>(left).get_value());
@@ -420,12 +455,10 @@ namespace ratio::solver
             else
                 return lra_th.matches(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
         }
-        else if (dynamic_cast<ratio::core::enum_item *>(&right))
-            return matches(right, left); // we swap, for simplifying code..
         else if (auto le = dynamic_cast<ratio::core::enum_item *>(&left))
-        { // we are comparing enums..
+        {
             if (auto re = dynamic_cast<ratio::core::enum_item *>(&right))
-            { // the right expression is an enum..
+            { // we are comparing enums..
                 auto r_vals = ov_th.value(re->get_var());
                 for (const auto &c_v : ov_th.value(le->get_var()))
                     if (r_vals.count(c_v))
@@ -434,6 +467,29 @@ namespace ratio::solver
             }
             else
                 return ov_th.value(le->get_var()).count(&right);
+        }
+        else if (dynamic_cast<ratio::core::enum_item *>(&right))
+            return matches(right, left); // we swap, for simplifying code..
+        else if (auto le = dynamic_cast<ratio::core::complex_item *>(&left))
+        {
+            if (auto re = dynamic_cast<ratio::core::complex_item *>(&right))
+            { // we are comparing complex items..
+                std::queue<ratio::core::type *> q;
+                q.push(&left.get_type());
+                while (!q.empty())
+                {
+                    for (const auto &[f_name, f] : q.front()->get_fields())
+                        if (!f->is_synthetic())
+                            if (!matches(*le->get(f_name), *re->get(f_name)))
+                                return false;
+                    for (const auto &st : q.front()->get_supertypes())
+                        q.push(st);
+                    q.pop();
+                }
+                return true;
+            }
+            else
+                return false;
         }
         else
             return false;
@@ -444,20 +500,18 @@ namespace ratio::solver
         new_flaw(std::make_unique<disjunction_flaw>(*this, get_cause(), std::move(conjs)));
     }
 
-    void solver::new_atom(ratio::core::atom &atm, const bool &is_fact)
+    void solver::new_atom(ratio::core::expr &atm, const bool &is_fact)
     {
         // we create a new atom flaw..
         auto af = std::make_unique<atom_flaw>(*this, get_cause(), atm, is_fact);
         // we store some properties..
-        atom_properties[&atm] = {sat->new_var(), af.get()};
-        // we store the flaw..
-        new_flaw(std::move(af));
+        atom_properties[&af->get_atom()] = {sat->new_var(), af.get()};
 
         // we check if we need to notify the new atom to any smart types..
-        if (&atm.get_type().get_scope() != this)
+        if (&atm->get_type().get_scope() != this)
         {
             std::queue<ratio::core::type *> q;
-            q.push(static_cast<ratio::core::type *>(&atm.get_type().get_scope()));
+            q.push(static_cast<ratio::core::type *>(&atm->get_type().get_scope()));
             while (!q.empty())
             {
                 if (auto st = dynamic_cast<smart_type *>(q.front()))
@@ -467,6 +521,9 @@ namespace ratio::solver
                 q.pop();
             }
         }
+
+        // we store the flaw..
+        new_flaw(std::move(af));
     }
 
     void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
@@ -805,7 +862,7 @@ namespace ratio::solver
 
     void solver::push()
     {
-        LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
 
         trail.emplace_back();
         gr->push();
@@ -813,7 +870,7 @@ namespace ratio::solver
 
     void solver::pop()
     {
-        LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
 
         // we reintroduce the solved flaw..
         for (const auto &f : trail.back().solved_flaws)
@@ -834,7 +891,7 @@ namespace ratio::solver
         trail.pop_back();
         gr->pop();
 
-        LOG(std::to_string(trail.size()) << " (" << std::to_string(flaws.size()) << ")");
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
     }
 
     void solver::solve_inconsistencies()

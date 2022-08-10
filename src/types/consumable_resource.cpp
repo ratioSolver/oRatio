@@ -85,10 +85,11 @@ namespace ratio::solver
         if (f.is_fact)
         { // we apply produce-predicate or the consume-predicate whenever the fact becomes active..
             set_ni(semitone::lit(get_sigma(get_solver(), atm)));
+            auto atm_expr = f.get_atom_expr();
             if (p_pred->is_assignable_from(atm.get_type()))
-                p_pred->apply_rule(atm);
+                p_pred->apply_rule(atm_expr);
             else
-                c_pred->apply_rule(atm);
+                c_pred->apply_rule(atm_expr);
             restore_ni();
         }
 
