@@ -14,7 +14,7 @@ namespace ratio::solver
     semitone::rational get_estimated_cost(const resolver &r) const noexcept override;
 
   private:
-    void init(solver &slv) noexcept override;
+    void init(solver &s) noexcept override;
     void enqueue(flaw &f) override;
     void propagate_costs(flaw &f) override;
 

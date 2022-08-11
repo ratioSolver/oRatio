@@ -9,7 +9,7 @@ namespace ratio::solver
 {
     ORATIO_EXPORT causal_graph::causal_graph() {}
 
-    ORATIO_EXPORT void causal_graph::init(solver &slv) { this->slv = &slv; }
+    ORATIO_EXPORT void causal_graph::init(solver &s) { this->slv = &s; }
 
     ORATIO_EXPORT void causal_graph::activated_flaw(flaw &) {}
     ORATIO_EXPORT void causal_graph::negated_flaw(flaw &f) { propagate_costs(f); }

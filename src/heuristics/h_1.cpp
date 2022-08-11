@@ -39,11 +39,11 @@ namespace ratio::solver
         return est_cost + r.get_intrinsic_cost();
     }
 
-    void h_1::init(solver &slv) noexcept
+    void h_1::init(solver &s) noexcept
     {
-        causal_graph::init(slv);
+        causal_graph::init(s);
         // we create the gamma variable..
-        gamma = slv.get_sat_core()->new_var();
+        gamma = s.get_sat_core()->new_var();
         LOG("graph var is: γ" << std::to_string(gamma));
 #ifdef GRAPH_PRUNING
         // we clear the already closed flaws so that they can be closed again..

@@ -115,14 +115,14 @@ namespace ratio::solver
         std::vector<semitone::var_value *> c_vals;
         for (const auto &val : val_vars)
         {
-            const auto var = sat->new_disj(val.second);
-            c_vars.push_back(var);
+            const auto c_var = sat->new_disj(val.second);
+            c_vars.push_back(c_var);
             c_vals.push_back(val.first);
             for (const auto &val_not : val_vars)
                 if (val != val_not)
                     for (const auto &v : val_not.second)
                     {
-                        [[maybe_unused]] bool nc = sat->new_clause({!var, !v});
+                        [[maybe_unused]] bool nc = sat->new_clause({!c_var, !v});
                         assert(nc);
                     }
         }
@@ -290,11 +290,11 @@ namespace ratio::solver
     {
         assert(exprs.size() > 1);
         semitone::lin l;
-        for (auto it = exprs.cbegin(); it != exprs.cend(); ++it)
-            if (it == exprs.cbegin())
-                l += static_cast<ratio::core::arith_item &>(**it).get_value();
+        for (auto xpr_it = exprs.cbegin(); xpr_it != exprs.cend(); ++xpr_it)
+            if (xpr_it == exprs.cbegin())
+                l += static_cast<ratio::core::arith_item &>(**xpr_it).get_value();
             else
-                l -= static_cast<ratio::core::arith_item &>(**it).get_value();
+                l -= static_cast<ratio::core::arith_item &>(**xpr_it).get_value();
         return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
     }
     ORATIO_EXPORT ratio::core::expr solver::mult(const std::vector<ratio::core::expr> &exprs) noexcept
@@ -318,10 +318,10 @@ namespace ratio::solver
         else
         {
             semitone::lin l = static_cast<ratio::core::arith_item &>(**exprs.cbegin()).get_value();
-            for (auto it = ++exprs.cbegin(); it != exprs.cend(); ++it)
+            for (auto xpr_it = ++exprs.cbegin(); xpr_it != exprs.cend(); ++xpr_it)
             {
-                assert(lra_th.value(static_cast<ratio::core::arith_item &>(**it).get_value()).get_infinitesimal() == semitone::rational::ZERO);
-                l *= lra_th.value(static_cast<ratio::core::arith_item &>(**it).get_value()).get_rational();
+                assert(lra_th.value(static_cast<ratio::core::arith_item &>(**xpr_it).get_value()).get_infinitesimal() == semitone::rational::ZERO);
+                l *= lra_th.value(static_cast<ratio::core::arith_item &>(**xpr_it).get_value()).get_rational();
             }
             return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
         }
@@ -388,18 +388,18 @@ namespace ratio::solver
             else
                 return lra_th.new_eq(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
         }
-        else if (auto le = dynamic_cast<ratio::core::enum_item *>(&left))
+        else if (auto lee = dynamic_cast<ratio::core::enum_item *>(&left))
         {
-            if (auto re = dynamic_cast<ratio::core::enum_item *>(&right)) // we are comparing enums..
-                return ov_th.new_eq(le->get_var(), re->get_var());
+            if (auto ree = dynamic_cast<ratio::core::enum_item *>(&right)) // we are comparing enums..
+                return ov_th.new_eq(lee->get_var(), ree->get_var());
             else
-                return ov_th.allows(le->get_var(), right);
+                return ov_th.allows(lee->get_var(), right);
         }
         else if (dynamic_cast<ratio::core::enum_item *>(&right))
             return eq(right, left); // we swap, for simplifying code..
-        else if (auto le = dynamic_cast<ratio::core::complex_item *>(&left))
+        else if (auto leci = dynamic_cast<ratio::core::complex_item *>(&left))
         {
-            if (auto re = dynamic_cast<ratio::core::complex_item *>(&right))
+            if (auto reci = dynamic_cast<ratio::core::complex_item *>(&right))
             { // we are comparing complex items..
                 std::vector<semitone::lit> eqs;
                 std::queue<ratio::core::type *> q;
@@ -409,13 +409,13 @@ namespace ratio::solver
                     for (const auto &[f_name, f] : q.front()->get_fields())
                         if (!f->is_synthetic())
                         {
-                            auto c_eq = eq(*le->get(f_name), *re->get(f_name));
+                            auto c_eq = eq(*leci->get(f_name), *reci->get(f_name));
                             if (sat->value(c_eq) == semitone::False)
                                 return semitone::FALSE_lit;
                             eqs.push_back(c_eq);
                         }
-                    for (const auto &st : q.front()->get_supertypes())
-                        q.push(st);
+                    for (const auto &stp : q.front()->get_supertypes())
+                        q.push(stp);
                     q.pop();
                 }
                 switch (eqs.size())
@@ -455,24 +455,24 @@ namespace ratio::solver
             else
                 return lra_th.matches(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
         }
-        else if (auto le = dynamic_cast<ratio::core::enum_item *>(&left))
+        else if (auto lee = dynamic_cast<ratio::core::enum_item *>(&left))
         {
-            if (auto re = dynamic_cast<ratio::core::enum_item *>(&right))
+            if (auto ree = dynamic_cast<ratio::core::enum_item *>(&right))
             { // we are comparing enums..
-                auto r_vals = ov_th.value(re->get_var());
-                for (const auto &c_v : ov_th.value(le->get_var()))
+                auto r_vals = ov_th.value(ree->get_var());
+                for (const auto &c_v : ov_th.value(lee->get_var()))
                     if (r_vals.count(c_v))
                         return true;
                 return false;
             }
             else
-                return ov_th.value(le->get_var()).count(&right);
+                return ov_th.value(lee->get_var()).count(&right);
         }
         else if (dynamic_cast<ratio::core::enum_item *>(&right))
             return matches(right, left); // we swap, for simplifying code..
-        else if (auto le = dynamic_cast<ratio::core::complex_item *>(&left))
+        else if (auto leci = dynamic_cast<ratio::core::complex_item *>(&left))
         {
-            if (auto re = dynamic_cast<ratio::core::complex_item *>(&right))
+            if (auto reci = dynamic_cast<ratio::core::complex_item *>(&right))
             { // we are comparing complex items..
                 std::queue<ratio::core::type *> q;
                 q.push(&left.get_type());
@@ -480,10 +480,10 @@ namespace ratio::solver
                 {
                     for (const auto &[f_name, f] : q.front()->get_fields())
                         if (!f->is_synthetic())
-                            if (!matches(*le->get(f_name), *re->get(f_name)))
+                            if (!matches(*leci->get(f_name), *reci->get(f_name)))
                                 return false;
-                    for (const auto &st : q.front()->get_supertypes())
-                        q.push(st);
+                    for (const auto &stp : q.front()->get_supertypes())
+                        q.push(stp);
                     q.pop();
                 }
                 return true;
@@ -514,10 +514,10 @@ namespace ratio::solver
             q.push(static_cast<ratio::core::type *>(&atm->get_type().get_scope()));
             while (!q.empty())
             {
-                if (auto st = dynamic_cast<smart_type *>(q.front()))
-                    st->new_atom_flaw(*af);
-                for (const auto &st : q.front()->get_supertypes())
-                    q.push(st);
+                if (auto smrtp = dynamic_cast<smart_type *>(q.front()))
+                    smrtp->new_atom_flaw(*af);
+                for (const auto &stp : q.front()->get_supertypes())
+                    q.push(stp);
                 q.pop();
             }
         }
@@ -967,9 +967,9 @@ namespace ratio::solver
     {
         std::vector<std::vector<std::pair<semitone::lit, double>>> incs;
         // we collect all the inconsistencies from all the smart-types..
-        for (const auto &st : smart_types)
+        for (const auto &smrtp : smart_types)
         {
-            const auto c_incs = st->get_current_incs();
+            const auto c_incs = smrtp->get_current_incs();
             incs.insert(incs.cend(), c_incs.cbegin(), c_incs.cend());
         }
         assert(std::all_of(incs.cbegin(), incs.cend(), [](const auto &inc)
@@ -988,8 +988,8 @@ namespace ratio::solver
                 q.push(tp.get());
         while (!q.empty())
         {
-            if (auto st = dynamic_cast<smart_type *>(q.front()))
-                smart_types.push_back(st);
+            if (auto smrtp = dynamic_cast<smart_type *>(q.front()))
+                smart_types.push_back(smrtp);
             for ([[maybe_unused]] const auto &[tp_name, tp] : q.front()->get_types())
                 q.push(tp.get());
             q.pop();
