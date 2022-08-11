@@ -78,8 +78,8 @@ namespace ratio::solver
     std::vector<riddle::id_token> ctr_ins;
     std::vector<std::vector<std::unique_ptr<const riddle::ast::expression>>> ctr_ivs;
     std::vector<std::unique_ptr<const riddle::ast::statement>> ctr_stmnts;
-    ratio::core::predicate *p_pred;
-    ratio::core::predicate *c_pred;
+    ratio::core::predicate *p_pred = nullptr;
+    ratio::core::predicate *c_pred = nullptr;
     std::vector<std::unique_ptr<const riddle::ast::statement>> pred_stmnts;
     std::set<const ratio::core::item *> to_check;             // the consumable-resource instances whose atoms have changed..
     std::vector<ratio::core::atom *> atoms;                   // we store, for each atom, its atom listener..
