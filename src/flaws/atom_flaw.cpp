@@ -63,7 +63,7 @@ namespace ratio::solver
     atom_flaw::activate_fact::activate_fact(atom_flaw &f) : resolver(semitone::rational::ZERO, f) {}
     atom_flaw::activate_fact::activate_fact(const semitone::lit &r, atom_flaw &f) : resolver(r, semitone::rational::ZERO, f) {}
 
-    ORATIO_EXPORT std::string atom_flaw::activate_fact::get_data() const noexcept { return "{\"type\":\"activate\", \"atom\":" + std::to_string(get_id(static_cast<atom_flaw &>(get_effect()).get_atom())) + "}"; }
+    ORATIO_EXPORT std::string atom_flaw::activate_fact::get_data() const noexcept { return "{\"type\":\"activate\"}"; }
 
     void atom_flaw::activate_fact::apply()
     { // activating this resolver activates the fact..
@@ -74,7 +74,7 @@ namespace ratio::solver
     atom_flaw::activate_goal::activate_goal(atom_flaw &f) : resolver(semitone::rational::ONE, f) {}
     atom_flaw::activate_goal::activate_goal(const semitone::lit &r, atom_flaw &f) : resolver(r, semitone::rational::ONE, f) {}
 
-    ORATIO_EXPORT std::string atom_flaw::activate_goal::get_data() const noexcept { return "{\"type\":\"activate\", \"atom\":" + std::to_string(get_id(static_cast<atom_flaw &>(get_effect()).get_atom())) + "}"; }
+    ORATIO_EXPORT std::string atom_flaw::activate_goal::get_data() const noexcept { return "{\"type\":\"activate\"}"; }
 
     void atom_flaw::activate_goal::apply()
     { // activating this resolver activates the goal..
@@ -86,7 +86,7 @@ namespace ratio::solver
 
     atom_flaw::unify_atom::unify_atom(atom_flaw &f, ratio::core::atom &trgt, const std::vector<semitone::lit> &unif_lits) : resolver(semitone::rational::ONE, f), trgt(trgt), unif_lits(unif_lits) {}
 
-    ORATIO_EXPORT std::string atom_flaw::unify_atom::get_data() const noexcept { return "{\"type\":\"unify\", \"atom\":" + std::to_string(get_id(static_cast<atom_flaw &>(get_effect()).get_atom())) + ", \"target\":\"" + std::to_string(get_id(trgt)) + "\"}"; }
+    ORATIO_EXPORT std::string atom_flaw::unify_atom::get_data() const noexcept { return "{\"type\":\"unify\", \"target\":\"" + std::to_string(get_id(trgt)) + "\"}"; }
 
     void atom_flaw::unify_atom::apply()
     {

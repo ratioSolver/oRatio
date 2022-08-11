@@ -20,7 +20,7 @@ namespace ratio::solver
     {
 #ifdef COMPUTE_NAMES
         if (const auto itm = dynamic_cast<const ratio::core::item *>(&val))
-            return "{\"type\":\"assignment\", \"val\":\"" + get_solver().guess_name(*itm) + "\"}";
+            return "{\"type\":\"assignment\", \"val\":" + std::to_string(get_id(*itm)) + "}";
         else
 #endif
             return "{\"type\":\"assignment\"}";
