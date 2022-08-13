@@ -117,8 +117,8 @@ namespace ratio::solver
 
     consumable_resource::cr_constructor::cr_constructor(consumable_resource &cr, std::vector<ratio::core::field_ptr> args, const std::vector<riddle::id_token> &ins, const std::vector<std::vector<std::unique_ptr<const riddle::ast::expression>>> &ivs, const std::vector<std::unique_ptr<const riddle::ast::statement>> &stmnts) : ratio::core::constructor(cr, std::move(args), ins, ivs, stmnts) {}
 
-    consumable_resource::produce_predicate::produce_predicate(consumable_resource &cr, std::vector<ratio::core::field_ptr> args, const std::vector<std::unique_ptr<const riddle::ast::statement>> &stmnts) : predicate(cr, CONSUMABLE_RESOURCE_PRODUCE_PREDICATE_NAME, std::move(args), stmnts) { new_supertype(cr.get_core().get_predicate(RATIO_INTERVAL)); }
-    consumable_resource::consume_predicate::consume_predicate(consumable_resource &cr, std::vector<ratio::core::field_ptr> args, const std::vector<std::unique_ptr<const riddle::ast::statement>> &stmnts) : predicate(cr, CONSUMABLE_RESOURCE_CONSUME_PREDICATE_NAME, std::move(args), stmnts) { new_supertype(cr.get_core().get_predicate(RATIO_INTERVAL)); }
+    consumable_resource::produce_predicate::produce_predicate(consumable_resource &cr, std::vector<ratio::core::field_ptr> args, const std::vector<std::unique_ptr<const riddle::ast::statement>> &stmnts) : predicate(cr, CONSUMABLE_RESOURCE_PRODUCE_PREDICATE_NAME, std::move(args), stmnts) { new_supertype(cr.get_solver().get_interval()); }
+    consumable_resource::consume_predicate::consume_predicate(consumable_resource &cr, std::vector<ratio::core::field_ptr> args, const std::vector<std::unique_ptr<const riddle::ast::statement>> &stmnts) : predicate(cr, CONSUMABLE_RESOURCE_CONSUME_PREDICATE_NAME, std::move(args), stmnts) { new_supertype(cr.get_solver().get_interval()); }
 
     consumable_resource::cr_atom_listener::cr_atom_listener(consumable_resource &cr, ratio::core::atom &atm) : atom_listener(atm), cr(cr) {}
 

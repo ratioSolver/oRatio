@@ -338,7 +338,7 @@ namespace ratio::solver
 
     reusable_resource::rr_constructor::rr_constructor(reusable_resource &rr, std::vector<ratio::core::field_ptr> args, const std::vector<riddle::id_token> &ins, const std::vector<std::vector<std::unique_ptr<const riddle::ast::expression>>> &ivs, const std::vector<std::unique_ptr<const riddle::ast::statement>> &stmnts) : constructor(rr, std::move(args), ins, ivs, stmnts) {}
 
-    reusable_resource::use_predicate::use_predicate(reusable_resource &rr, std::vector<ratio::core::field_ptr> args, const std::vector<std::unique_ptr<const riddle::ast::statement>> &stmnts) : predicate(rr, REUSABLE_RESOURCE_USE_PREDICATE_NAME, std::move(args), stmnts) { new_supertype(rr.get_core().get_predicate(RATIO_INTERVAL)); }
+    reusable_resource::use_predicate::use_predicate(reusable_resource &rr, std::vector<ratio::core::field_ptr> args, const std::vector<std::unique_ptr<const riddle::ast::statement>> &stmnts) : predicate(rr, REUSABLE_RESOURCE_USE_PREDICATE_NAME, std::move(args), stmnts) { new_supertype(rr.get_solver().get_interval()); }
 
     reusable_resource::rr_atom_listener::rr_atom_listener(reusable_resource &rr, ratio::core::atom &atm) : atom_listener(atm), rr(rr) {}
 
