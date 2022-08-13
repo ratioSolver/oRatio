@@ -504,8 +504,12 @@ namespace ratio::solver
     {
         // we create a new atom flaw..
         auto af = std::make_unique<atom_flaw>(*this, get_cause(), atm, is_fact);
+        auto &c_af = *af;
         // we store some properties..
         atom_properties[&af->get_atom()] = {sat->new_var(), af.get()};
+
+        // we store the flaw..
+        new_flaw(std::move(af));
 
         // we check if we need to notify the new atom to any smart types..
         if (&atm->get_type().get_scope() != this)
@@ -515,15 +519,12 @@ namespace ratio::solver
             while (!q.empty())
             {
                 if (auto smrtp = dynamic_cast<smart_type *>(q.front()))
-                    smrtp->new_atom_flaw(*af);
+                    smrtp->new_atom_flaw(c_af);
                 for (const auto &stp : q.front()->get_supertypes())
                     q.push(stp);
                 q.pop();
             }
         }
-
-        // we store the flaw..
-        new_flaw(std::move(af));
     }
 
     void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
