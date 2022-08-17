@@ -108,6 +108,7 @@ namespace ratio::solver
       place_resolver(const place_resolver &that) = delete;
 
       ORATIO_EXPORT std::string get_data() const noexcept override;
+      const ratio::core::item &get_place_item() const noexcept { return plc_itm; }
 
     private:
       void apply() override;
@@ -139,7 +140,7 @@ namespace ratio::solver
     std::vector<riddle::id_token> ctr_ins;
     std::vector<std::vector<std::unique_ptr<const riddle::ast::expression>>> ctr_ivs;
     std::vector<std::unique_ptr<const riddle::ast::statement>> ctr_stmnts;
-    ratio::core::predicate *u_pred;
+    ratio::core::predicate *u_pred = nullptr;
     std::vector<std::unique_ptr<const riddle::ast::statement>> pred_stmnts;
     std::set<const ratio::core::item *> to_check;             // the reusable-resource instances whose atoms have changed..
     std::vector<ratio::core::atom *> atoms;                   // we store, for each atom, its atom listener..

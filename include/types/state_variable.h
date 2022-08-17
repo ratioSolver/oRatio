@@ -99,6 +99,7 @@ namespace ratio::solver
       place_resolver(const place_resolver &that) = delete;
 
       ORATIO_EXPORT std::string get_data() const noexcept override;
+      const ratio::core::item &get_place_item() const noexcept { return plc_itm; }
 
     private:
       void apply() override;

@@ -12,9 +12,9 @@ namespace ratio::solver
     consumable_resource::consumable_resource(solver &slv) : smart_type(slv, CONSUMABLE_RESOURCE_NAME)
     {
         // we add the 'initial_amount' field..
-        new_field(*this, std::make_unique<ratio::core::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_INITIAL_AMOUNT));
+        new_field(std::make_unique<ratio::core::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_INITIAL_AMOUNT));
         // we add the 'capacity' field..
-        new_field(*this, std::make_unique<ratio::core::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_CAPACITY));
+        new_field(std::make_unique<ratio::core::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_CAPACITY));
         // we add a constructor..
         std::vector<ratio::core::field_ptr> ctr_args;
         ctr_args.emplace_back(std::make_unique<ratio::core::field>(get_core().get_real_type(), CONSUMABLE_RESOURCE_INITIAL_AMOUNT));

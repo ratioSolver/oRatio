@@ -13,7 +13,7 @@ namespace ratio::solver
     reusable_resource::reusable_resource(solver &slv) : smart_type(slv, REUSABLE_RESOURCE_NAME)
     {
         // we add the 'capacity' field..
-        new_field(*this, std::make_unique<ratio::core::field>(slv.get_real_type(), REUSABLE_RESOURCE_CAPACITY));
+        new_field(std::make_unique<ratio::core::field>(slv.get_real_type(), REUSABLE_RESOURCE_CAPACITY));
 
         // we add a constructor..
         std::vector<ratio::core::field_ptr> ctr_args;
