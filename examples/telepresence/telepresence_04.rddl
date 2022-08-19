@@ -38,7 +38,7 @@ class Robot : StateVariable {
     predicate CognitiveExercize(int ex_id) {
         duration >= 10.0;
 
-        goal at = new nav.At(x:cogn_x, y:cogn_y);
+        goal at = new tau.nav.At(x:cogn_x, y:cogn_y);
         at.start <= start - 10.0;
         at.end >= end + 5.0;
 
@@ -49,7 +49,7 @@ class Robot : StateVariable {
     predicate PhysicalExercize(int ex_id) {
         duration >= 10.0;
 
-        goal at = new nav.At(x:phys_x, y:phys_y);
+        goal at = new tau.nav.At(x:phys_x, y:phys_y);
         at.start <= start - 10.0;
         at.end >= end + 5.0;
 
@@ -61,7 +61,7 @@ class Robot : StateVariable {
         duration >= 10.0;
         duration <= 20.0;
 
-        goal at = new nav.At(x:rem_x, y:rem_y);
+        goal at = new tau.nav.At(x:rem_x, y:rem_y);
         at.start <= start - 10.0;
         at.end >= end + 5.0;
 
@@ -73,7 +73,7 @@ class Robot : StateVariable {
         duration >= 10.0;
         duration <= 30.0;
 
-        goal at = new nav.At(x:physio_x, y:physio_y);
+        goal at = new tau.nav.At(x:physio_x, y:physio_y);
         at.start <= start - 10.0;
         at.end >= end + 5.0;
 

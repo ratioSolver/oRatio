@@ -32,7 +32,7 @@ class Robot {
     predicate CognitiveExercize(int ex_id) : Interval {
         duration >= 10.0;
 
-        goal at = new nav.At(x:cogn_x, y:cogn_y);
+        goal at = new tau.nav.At(x:cogn_x, y:cogn_y);
         at.start <= start - 10.0;
         at.end >= end + 5.0;
 
@@ -43,7 +43,7 @@ class Robot {
     predicate PhysicalExercize(int ex_id) : Interval {
         duration >= 10.0;
 
-        goal at = new nav.At(x:phys_x, y:phys_y);
+        goal at = new tau.nav.At(x:phys_x, y:phys_y);
         at.start <= start - 10.0;
         at.end >= end + 5.0;
 

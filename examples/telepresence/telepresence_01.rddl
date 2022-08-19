@@ -32,15 +32,15 @@ class Robot : StateVariable {
     predicate CognitiveExercize(int ex_id) {
         duration >= 60.0;
 
-        goal at = new nav.At(x:cogn_x, y:cogn_y);
+        goal at = new tau.nav.At(x:cogn_x, y:cogn_y);
         at.start <= start - 10.0;
         at.end >= end + 5.0;
 
         goal chck_usr = new CheckUserAround(end:start);
         chck_usr.start <= at.start;
 
-        goal going_at0 = new nav.GoingTo(start:at.end, x:base_x, y:base_y);
-        goal at0 = new nav.At(start:going_at0.end, x:base_x, y:base_y);
+        goal going_at0 = new tau.nav.GoingTo(start:at.end, x:base_x, y:base_y);
+        goal at0 = new tau.nav.At(start:going_at0.end, x:base_x, y:base_y);
         at0.start >= end;
         at0.start <= end + 300.0;
     }
@@ -48,15 +48,15 @@ class Robot : StateVariable {
     predicate PhysicalExercize(int ex_id) {
         duration >= 60.0;
 
-        goal at = new nav.At(x:phys_x, y:phys_y);
+        goal at = new tau.nav.At(x:phys_x, y:phys_y);
         at.start <= start - 10.0;
         at.end >= end + 5.0;
 
         goal chck_usr = new CheckUserAround(end:start);
         chck_usr.start <= at.start;
 
-        goal going_at0 = new nav.GoingTo(start:at.end, x:base_x, y:base_y);
-        goal at0 = new nav.At(start:going_at0.end, x:base_x, y:base_y);
+        goal going_at0 = new tau.nav.GoingTo(start:at.end, x:base_x, y:base_y);
+        goal at0 = new tau.nav.At(start:going_at0.end, x:base_x, y:base_y);
         at0.start >= end;
         at0.start <= end + 300.0;
     }
