@@ -41,7 +41,7 @@ namespace ratio::solver
 #ifdef GRAPH_PRUNING
             prune(); // we prune the graph..
 #endif
-            // we take 'gamma' decision..
+            // we take `gamma` decision..
             slv->take_decision(semitone::lit(gamma));
         }
     }

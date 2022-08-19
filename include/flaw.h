@@ -53,13 +53,13 @@ namespace ratio::solver
 
   protected:
     /**
-     * Adds the resolver 'r' to this flaw.
+     * Adds the resolver `r` to this flaw.
      */
     void add_resolver(std::unique_ptr<resolver> r);
 
   private:
     solver &slv;                                                         // the solver this flaw belongs to..
-    semitone::lit phi;                                                   // the propositional literal indicating whether the flaw is active or not (this literal is initialized by the 'init' procedure)..
+    semitone::lit phi;                                                   // the propositional literal indicating whether the flaw is active or not (this literal is initialized by the `init` procedure)..
     semitone::var position;                                              // the position variable (i.e., an integer time-point) associated to this flaw..
     semitone::rational est_cost = semitone::rational::POSITIVE_INFINITY; // the current estimated cost of the flaw..
     bool expanded = false;                                               // a boolean indicating whether the flaw has been expanded..

@@ -1,5 +1,5 @@
 /*
-* This domain represents a navigator which moves from one position to another alternating 'At' and 'GoingTo' values.
+* This domain represents a navigator which moves from one position to another alternating `At` and `GoingTo` values.
 * Starting from a position 0.0, this problem requires to reach three positions (i.e., 1.0, 2.0 and 3.0) in an unspecified order.
 */
 

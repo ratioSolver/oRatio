@@ -37,7 +37,7 @@ namespace ratio::solver
       rr_constructor(rr_constructor &&) = delete;
     };
 
-    // the reusable-resource 'Use' predicate..
+    // the reusable-resource `Use` predicate..
     class use_predicate final : public ratio::core::predicate
     {
     public:
@@ -114,9 +114,9 @@ namespace ratio::solver
       void apply() override;
 
     private:
-      ratio::core::atom &plc_atm;       // applying the resolver will force this atom on the 'plc_item' item..
-      const ratio::core::item &plc_itm; // applying the resolver will force the 'plc_atm' atom on this item..
-      ratio::core::atom &frbd_atm;      // applying the resolver will forbid this atom on the 'plc_itm' item..
+      ratio::core::atom &plc_atm;       // applying the resolver will force this atom on the `plc_item` item..
+      const ratio::core::item &plc_itm; // applying the resolver will force the `plc_atm` atom on this item..
+      ratio::core::atom &frbd_atm;      // applying the resolver will forbid this atom on the `plc_itm` item..
     };
 
     // a resolver for forbidding atoms on a specific reusable-resource..
@@ -132,8 +132,8 @@ namespace ratio::solver
       void apply() override;
 
     private:
-      ratio::core::atom &atm; // applying the resolver will forbid this atom on the 'itm' item..
-      ratio::core::item &itm; // applying the resolver will forbid the 'atm' atom on this item..
+      ratio::core::atom &atm; // applying the resolver will forbid this atom on the `itm` item..
+      ratio::core::item &itm; // applying the resolver will forbid the `atm` atom on this item..
     };
 
   private:

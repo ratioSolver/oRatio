@@ -115,13 +115,13 @@ namespace ratio::solver
                                     choices.emplace_back(plc.first, 1l - 2l / static_cast<double>(a0_vals.size() + a1_vals.size()));
                         }
                         else if (a0_tau_itm)
-                        { // only 'a1_tau' is a singleton variable..
+                        { // only `a1_tau` is a singleton variable..
                             if (const auto a0_vals = get_solver().enum_value(*a0_tau_itm); a0_vals.count(&*a1_tau))
                                 if (get_solver().get_sat_core()->value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau)) == semitone::Undefined)
                                     choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau), 1l - 1l / static_cast<double>(a0_vals.size()));
                         }
                         else if (a1_tau_itm)
-                        { // only 'a0_tau' is a singleton variable..
+                        { // only `a0_tau` is a singleton variable..
                             if (const auto a1_vals = get_solver().enum_value(*a1_tau_itm); a1_vals.count(&*a0_tau))
                                 if (get_solver().get_sat_core()->value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau)) == semitone::Undefined)
                                     choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau), 1l - 1l / static_cast<double>(a1_vals.size()));
@@ -164,10 +164,10 @@ namespace ratio::solver
         if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
-            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))        // the 'tau' parameter is a variable..
+            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))        // the `tau` parameter is a variable..
                 for (const auto &val : get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     to_check.insert(static_cast<const ratio::core::item *>(val));
-            else // the 'tau' parameter is a constant..
+            else // the `tau` parameter is a constant..
                 to_check.insert(&*c_scope);
         }
     }
@@ -210,7 +210,7 @@ namespace ratio::solver
                 }
         }
         else if (a0_tau_itm)
-        { // only 'a1_tau' is a singleton variable..
+        { // only `a1_tau` is a singleton variable..
             if (const auto a0_vals = get_solver().enum_value(*a0_tau_itm); a0_vals.count(&*a1_tau))
             { // we store the ordering variables..
 #ifdef DL_TN
@@ -226,7 +226,7 @@ namespace ratio::solver
             }
         }
         else if (a1_tau_itm)
-        { // only 'a0_tau' is a singleton variable..
+        { // only `a0_tau` is a singleton variable..
             if (const auto a1_vals = get_solver().enum_value(*a1_tau_itm); a1_vals.count(&*a0_tau))
             { // we store the ordering variables..
 #ifdef DL_TN
@@ -266,10 +266,10 @@ namespace ratio::solver
         if (sv.get_solver().get_sat_core()->value(get_sigma(sv.get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
-            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))           // the 'tau' parameter is a variable..
+            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))           // the `tau` parameter is a variable..
                 for (const auto &val : sv.get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     sv.to_check.insert(static_cast<const ratio::core::item *>(val));
-            else // the 'tau' parameter is a constant..
+            else // the `tau` parameter is a constant..
                 sv.to_check.insert(&*c_scope);
         }
     }

@@ -32,8 +32,8 @@ namespace ratio::solver
         cs.reserve(causes.size());
         for (const auto &c : causes)
         {
-            c->preconditions.push_back(this); // this flaw is a precondition of its 'c' cause..
-            supports.push_back(c);            // .. and it also supports its 'c' cause..
+            c->preconditions.push_back(this); // this flaw is a precondition of its `c` cause..
+            supports.push_back(c);            // .. and it also supports its `c` cause..
             cs.push_back(c->rho);
             [[maybe_unused]] bool dist = slv.get_sat_core()->new_clause({slv.get_idl_theory().new_distance(c->effect.position, position, -1)});
             assert(dist);

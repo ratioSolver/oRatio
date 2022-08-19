@@ -36,8 +36,8 @@ namespace ratio::solver
     virtual void new_atom_flaw(atom_flaw &);
 
   protected:
-    void set_ni(const semitone::lit &v) noexcept; // temporally sets the solver's 'ni' literal..
-    void restore_ni() noexcept;                   // restores the solver's 'ni' literal..
+    void set_ni(const semitone::lit &v) noexcept; // temporally sets the solver's `ni` literal..
+    void restore_ni() noexcept;                   // restores the solver's `ni` literal..
 
     void store_flaw(std::unique_ptr<flaw> f) noexcept; // stores the flaw waiting for its initialization at root-level..
 

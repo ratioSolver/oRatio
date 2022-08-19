@@ -19,5 +19,5 @@ HeavyBlock b3 = new HeavyBlock(3.5);
 // a variable whose domain contains all the Block's instances..
 Block b;
 
-// removes from 'b' the 'b0' instance..
+// removes from `b` the `b0` instance..
 b != b0;

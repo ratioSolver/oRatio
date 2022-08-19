@@ -120,9 +120,9 @@ namespace ratio::solver
 
   private:
     void new_atom(ratio::core::expr &atm, const bool &is_fact = true) override;
-    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw 'f' has been created..
-    void new_resolver(std::unique_ptr<resolver> r);                     // notifies the solver that a new resolver 'r' has been created..
-    void new_causal_link(flaw &f, resolver &r);                         // notifies the solver that a new causal link between a flaw 'f' and a resolver 'r' has been created..
+    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
+    void new_resolver(std::unique_ptr<resolver> r);                     // notifies the solver that a new resolver `r` has been created..
+    void new_causal_link(flaw &f, resolver &r);                         // notifies the solver that a new causal link between a flaw `f` and a resolver `r` has been created..
 
     void expand_flaw(flaw &f);                       // expands the given flaw..
     void apply_resolver(resolver &r);                // applies the given resolver..
@@ -232,7 +232,7 @@ namespace ratio::solver
       semitone::var sigma; // this variable represents the state of the atom: if the variable is true, the atom is active; if the variable is false, the atom is unified; if the variable is undefined, the atom is not justified..
       atom_flaw *reason;   // the reason for having introduced the atom..
     };
-    std::unordered_map<const ratio::core::atom *, atom_prop> atom_properties; // the atoms' properties..
+    std::unordered_map<const ratio::core::atom *, atom_prop> atom_properties; // the atoms` properties..
 
     std::unique_ptr<causal_graph> gr;                 // the causal graph..
     resolver *res = nullptr;                          // the current resolver (i.e. the cause for the new flaws)..
@@ -241,7 +241,7 @@ namespace ratio::solver
 
     struct layer
     {
-      std::unordered_map<flaw *, semitone::rational> old_f_costs; // the old estimated flaws' costs..
+      std::unordered_map<flaw *, semitone::rational> old_f_costs; // the old estimated flaws` costs..
       std::unordered_set<flaw *> new_flaws;                       // the just activated flaws..
       std::unordered_set<flaw *> solved_flaws;                    // the just solved flaws..
     };

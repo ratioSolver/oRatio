@@ -39,7 +39,7 @@ namespace ratio::solver
       cr_constructor(cr_constructor &&) = delete;
     };
 
-    // the consumable-resource 'Produce' predicate..
+    // the consumable-resource `Produce` predicate..
     class produce_predicate final : public ratio::core::predicate
     {
     public:
@@ -47,7 +47,7 @@ namespace ratio::solver
       produce_predicate(produce_predicate &&) = delete;
     };
 
-    // the consumable-resource 'Consume' predicate..
+    // the consumable-resource `Consume` predicate..
     class consume_predicate final : public ratio::core::predicate
     {
     public:

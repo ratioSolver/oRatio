@@ -11,9 +11,9 @@ namespace ratio::solver
 {
     consumable_resource::consumable_resource(solver &slv) : smart_type(slv, CONSUMABLE_RESOURCE_NAME)
     {
-        // we add the 'initial_amount' field..
+        // we add the `initial_amount` field..
         new_field(std::make_unique<ratio::core::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_INITIAL_AMOUNT));
-        // we add the 'capacity' field..
+        // we add the `capacity` field..
         new_field(std::make_unique<ratio::core::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_CAPACITY));
         // we add a constructor..
         std::vector<ratio::core::field_ptr> ctr_args;
@@ -51,14 +51,14 @@ namespace ratio::solver
         auto u_stmnt = std::unique_ptr<const riddle::ast::statement>(static_cast<const riddle::ast::expression_statement *>(new ratio::core::expression_statement(std::move(u_ge_xpr))));
         pred_stmnts.emplace_back(std::move(u_stmnt));
 
-        // we add the 'Produce' predicate, without notifying neither the resource nor its supertypes..
+        // we add the `Produce` predicate, without notifying neither the resource nor its supertypes..
         std::vector<ratio::core::field_ptr> prod_pred_args;
         prod_pred_args.push_back(std::make_unique<ratio::core::field>(get_core().get_real_type(), CONSUMABLE_RESOURCE_USE_AMOUNT_NAME));
         auto pp = std::make_unique<produce_predicate>(*this, std::move(prod_pred_args), pred_stmnts);
         p_pred = pp.get();
         ratio::core::type::new_predicate(std::move(pp));
 
-        // we add the 'Consume' predicate, without notifying neither the resource nor its supertypes..
+        // we add the `Consume` predicate, without notifying neither the resource nor its supertypes..
         std::vector<ratio::core::field_ptr> cons_pred_args;
         cons_pred_args.push_back(std::make_unique<ratio::core::field>(get_core().get_real_type(), CONSUMABLE_RESOURCE_USE_AMOUNT_NAME));
         auto cp = std::make_unique<consume_predicate>(*this, std::move(cons_pred_args), pred_stmnts);
@@ -107,10 +107,10 @@ namespace ratio::solver
         if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
-            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))        // the 'tau' parameter is a variable..
+            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))        // the `tau` parameter is a variable..
                 for (const auto &val : get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     to_check.insert(static_cast<const ratio::core::item *>(val));
-            else // the 'tau' parameter is a constant..
+            else // the `tau` parameter is a constant..
                 to_check.insert(&*c_scope);
         }
     }
@@ -128,10 +128,10 @@ namespace ratio::solver
         if (cr.get_solver().get_sat_core()->value(get_sigma(cr.get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
-            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))           // the 'tau' parameter is a variable..
+            if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))           // the `tau` parameter is a variable..
                 for (const auto &val : cr.get_solver().get_ov_theory().value(enum_scope->get_var())) // we check for all its allowed values..
                     cr.to_check.insert(static_cast<const ratio::core::item *>(val));
-            else // the 'tau' parameter is a constant..
+            else // the `tau` parameter is a constant..
                 cr.to_check.insert(&*c_scope);
         }
     }

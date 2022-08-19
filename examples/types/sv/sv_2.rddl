@@ -7,9 +7,9 @@ class TestSV : StateVariable {
 
 TestSV test = new TestSV();
 
-// we create a fact on the 'test' state variable
+// we create a fact on the `test` state variable
 fact f0 = new test.P(start:origin, x:0.0);
 f0.duration >= 10.0;
 
-// we create a goal on the 'test' state variable
+// we create a goal on the `test` state variable
 goal g0 = new test.P(end:horizon, x:10.0);
