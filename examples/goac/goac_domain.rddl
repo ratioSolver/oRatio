@@ -46,18 +46,18 @@ class Robot {
     Robot(Map map, Visibility visibility) : navigator(new Navigator(map)), visibility(visibility) {}
 
     predicate At(Location l) : Interval {
-        goal at = new navigator.At(start:start, end:end, duration:duration, l:l);
+        goal at = new tau.navigator.At(start:start, end:end, duration:duration, l:l);
     }
 
     predicate TakePicture(real id, Location l) : Interval {
         duration == 50;
-        goal at = new navigator.At(l:l); at.start <= start; at.end >= end;
+        goal at = new tau.navigator.At(l:l); at.start <= start; at.end >= end;
     }
 
     predicate Download(real id, Location l) : Interval {
         duration == picture_size/download_rate;
         goal tk_pic = new TakePicture(id:id, l:l); tk_pic.end <= start;
-        fact antenna_use = new antenna.Use(start:start, end:end, duration:duration, amount:1.0);
+        fact antenna_use = new tau.antenna.Use(start:start, end:end, duration:duration, amount:1.0);
         goal vis = new visibility.Visible(); vis.start <= start; vis.end >= end;
     }
 }
