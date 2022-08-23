@@ -7,12 +7,12 @@ namespace ratio::solver
 {
     atom_flaw::atom_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::expr &atm, const bool is_fact) : flaw(slv, std::move(causes), true), atm(atm), is_fact(is_fact) {}
 
-    ORATIO_EXPORT std::string atom_flaw::get_data() const noexcept
+    ORATIO_EXPORT json::json atom_flaw::get_data() const noexcept
     {
-        if (is_fact)
-            return "{\"type\":\"fact\", \"atom\":" + std::to_string(get_id(get_atom())) + "}";
-        else
-            return "{\"type\":\"goal\", \"atom\":" + std::to_string(get_id(get_atom())) + "}";
+        json::json j_f;
+        j_f["type"] = is_fact ? "fact" : "goal";
+        j_f["atom"] = get_id(get_atom());
+        return j_f;
     }
 
     void atom_flaw::compute_resolvers()
@@ -63,7 +63,12 @@ namespace ratio::solver
     atom_flaw::activate_fact::activate_fact(atom_flaw &f) : resolver(semitone::rational::ZERO, f) {}
     atom_flaw::activate_fact::activate_fact(const semitone::lit &r, atom_flaw &f) : resolver(r, semitone::rational::ZERO, f) {}
 
-    ORATIO_EXPORT std::string atom_flaw::activate_fact::get_data() const noexcept { return "{\"type\":\"activate\"}"; }
+    ORATIO_EXPORT json::json atom_flaw::activate_fact::get_data() const noexcept
+    {
+        json::json j_r;
+        j_r["type"] = "activate";
+        return j_r;
+    }
 
     void atom_flaw::activate_fact::apply()
     { // activating this resolver activates the fact..
@@ -74,7 +79,12 @@ namespace ratio::solver
     atom_flaw::activate_goal::activate_goal(atom_flaw &f) : resolver(semitone::rational::ONE, f) {}
     atom_flaw::activate_goal::activate_goal(const semitone::lit &r, atom_flaw &f) : resolver(r, semitone::rational::ONE, f) {}
 
-    ORATIO_EXPORT std::string atom_flaw::activate_goal::get_data() const noexcept { return "{\"type\":\"activate\"}"; }
+    ORATIO_EXPORT json::json atom_flaw::activate_goal::get_data() const noexcept
+    {
+        json::json j_r;
+        j_r["type"] = "activate";
+        return j_r;
+    }
 
     void atom_flaw::activate_goal::apply()
     { // activating this resolver activates the goal..
@@ -86,7 +96,13 @@ namespace ratio::solver
 
     atom_flaw::unify_atom::unify_atom(atom_flaw &f, ratio::core::atom &trgt, const std::vector<semitone::lit> &unif_lits) : resolver(semitone::rational::ONE, f), trgt(trgt), unif_lits(unif_lits) {}
 
-    ORATIO_EXPORT std::string atom_flaw::unify_atom::get_data() const noexcept { return "{\"type\":\"unify\", \"target\":\"" + std::to_string(get_id(trgt)) + "\"}"; }
+    ORATIO_EXPORT json::json atom_flaw::unify_atom::get_data() const noexcept
+    {
+        json::json j_r;
+        j_r["type"] = "unify";
+        j_r["target"] = get_id(trgt);
+        return j_r;
+    }
 
     void atom_flaw::unify_atom::apply()
     {

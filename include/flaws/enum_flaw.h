@@ -12,7 +12,7 @@ namespace ratio::solver
     enum_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::enum_item &v_itm);
     enum_flaw(const enum_flaw &orig) = delete;
 
-      ORATIO_EXPORT std::string get_data() const noexcept override;
+    ORATIO_EXPORT json::json get_data() const noexcept override;
 
   private:
     void compute_resolvers() override;
@@ -23,7 +23,7 @@ namespace ratio::solver
       choose_value(semitone::rational cst, enum_flaw &enm_flaw, semitone::var_value &val);
       choose_value(const choose_value &that) = delete;
 
-      ORATIO_EXPORT std::string get_data() const noexcept override;
+      ORATIO_EXPORT json::json get_data() const noexcept override;
 
     private:
       void apply() override;

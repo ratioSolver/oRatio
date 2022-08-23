@@ -85,4 +85,26 @@ namespace ratio::solver
         resolvers.push_back(r.get());
         slv.new_resolver(std::move(r));
     }
+
+    ORATIO_EXPORT json::json to_json(const flaw &rhs) noexcept
+    {
+        json::json j_f;
+        j_f["id"] = get_id(rhs);
+        json::array causes;
+        for (const auto &c : rhs.get_causes())
+            causes.push_back(get_id(*c));
+        j_f["causes"] = std::move(causes);
+        j_f["phi"] = to_string(rhs.get_phi());
+        j_f["state"] = rhs.get_solver().get_sat_core()->value(rhs.get_phi());
+        j_f["cost"] = to_json(rhs.get_estimated_cost());
+        auto [lb, ub] = rhs.get_solver().get_idl_theory().bounds(rhs.get_position());
+        json::json j_pos;
+        if (lb > std::numeric_limits<semitone::I>::min())
+            j_pos["lb"] = lb;
+        if (ub > std::numeric_limits<semitone::I>::max())
+            j_pos["ub"] = ub;
+        j_f["pos"] = std::move(j_pos);
+        j_f["data"] = rhs.get_data();
+        return j_f;
+    }
 } // namespace ratio::solver

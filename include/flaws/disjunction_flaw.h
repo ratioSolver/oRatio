@@ -13,7 +13,7 @@ namespace ratio::solver
     disjunction_flaw(solver &slv, std::vector<resolver *> causes, std::vector<std::unique_ptr<ratio::core::conjunction>> conjs);
     disjunction_flaw(const disjunction_flaw &orig) = delete;
 
-    ORATIO_EXPORT std::string get_data() const noexcept override;
+    ORATIO_EXPORT json::json get_data() const noexcept override;
 
   private:
     void compute_resolvers() override;
@@ -24,7 +24,7 @@ namespace ratio::solver
       choose_conjunction(disjunction_flaw &disj_flaw, std::unique_ptr<ratio::core::conjunction> conj);
       choose_conjunction(const choose_conjunction &that) = delete;
 
-      ORATIO_EXPORT std::string get_data() const noexcept override;
+      ORATIO_EXPORT json::json get_data() const noexcept override;
 
     private:
       void apply() override;

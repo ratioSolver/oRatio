@@ -34,7 +34,7 @@ namespace ratio::solver
     ORATIO_EXPORT resolver *get_cheapest_resolver() const noexcept;
     virtual resolver *get_best_resolver() const noexcept { return get_cheapest_resolver(); }
 
-    virtual std::string get_data() const noexcept = 0;
+    virtual json::json get_data() const noexcept = 0;
 
   private:
     /**
@@ -69,5 +69,6 @@ namespace ratio::solver
     const bool exclusive;                                                // a boolean indicating whether the flaw is exclusive (i.e. exactly one of its resolver can be applied)..
   };
 
-  inline uintptr_t get_id(const ratio::solver::flaw &f) noexcept { return reinterpret_cast<uintptr_t>(&f); }
+  inline uintptr_t get_id(const flaw &f) noexcept { return reinterpret_cast<uintptr_t>(&f); }
+  ORATIO_EXPORT json::json to_json(const flaw &rhs) noexcept;
 } // namespace ratio::solver

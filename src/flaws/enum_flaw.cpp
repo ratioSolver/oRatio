@@ -5,7 +5,12 @@ namespace ratio::solver
 {
     enum_flaw::enum_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::enum_item &v_itm) : flaw(slv, std::move(causes), true), v_itm(v_itm) {}
 
-    std::string enum_flaw::get_data() const noexcept { return "{\"type\":\"enum\"}"; }
+    json::json enum_flaw::get_data() const noexcept
+    {
+        json::json j_f;
+        j_f["type"] = "enum";
+        return j_f;
+    }
 
     void enum_flaw::compute_resolvers()
     {
@@ -16,14 +21,14 @@ namespace ratio::solver
 
     enum_flaw::choose_value::choose_value(semitone::rational cst, enum_flaw &enm_flaw, semitone::var_value &val) : resolver(enm_flaw.get_solver().get_ov_theory().allows(enm_flaw.v_itm.get_var(), val), cst, enm_flaw), v(enm_flaw.v_itm.get_var()), val(val) {}
 
-    std::string enum_flaw::choose_value::get_data() const noexcept
+    json::json enum_flaw::choose_value::get_data() const noexcept
     {
+        json::json j_r;
+        j_r["type"] = "assignment";
 #ifdef COMPUTE_NAMES
-        if (const auto itm = dynamic_cast<const ratio::core::item *>(&val))
-            return "{\"type\":\"assignment\", \"val\":" + std::to_string(get_id(*itm)) + "}";
-        else
+        j_r["val"] = get_id(static_cast<ratio::core::item &>(val));
 #endif
-            return "{\"type\":\"assignment\"}";
+        return j_r;
     }
 
     void enum_flaw::choose_value::apply()

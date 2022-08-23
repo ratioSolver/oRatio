@@ -264,4 +264,11 @@ namespace ratio::solver
     void fire_causal_link_added(const flaw &f, const resolver &r) const;
 #endif
   };
+
+  ORATIO_EXPORT json::json to_json(const solver &rhs) noexcept;
+  ORATIO_EXPORT json::json to_timelines(solver &rhs) noexcept;
+
+  ORATIO_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept;
+  ORATIO_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept;
+  ORATIO_EXPORT json::json value(const ratio::core::item &rhs) noexcept;
 } // namespace ratio::solver

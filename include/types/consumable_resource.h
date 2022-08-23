@@ -1,6 +1,7 @@
 #pragma once
 
 #include "smart_type.h"
+#include "timeline.h"
 #include "constructor.h"
 #include "predicate.h"
 #include "flaw.h"
@@ -15,7 +16,7 @@
 
 namespace ratio::solver
 {
-  class consumable_resource final : public smart_type
+  class consumable_resource final : public smart_type, public timeline
   {
   public:
     consumable_resource(solver &slv);
@@ -73,6 +74,8 @@ namespace ratio::solver
     protected:
       consumable_resource &cr;
     };
+
+    json::json extract() const noexcept;
 
   private:
     std::vector<riddle::id_token> ctr_ins;

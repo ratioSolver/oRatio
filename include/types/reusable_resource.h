@@ -73,7 +73,7 @@ namespace ratio::solver
       rr_flaw(reusable_resource &rr, const std::set<ratio::core::atom *> &atms);
       rr_flaw(rr_flaw &&) = delete;
 
-      ORATIO_EXPORT std::string get_data() const noexcept override;
+      ORATIO_EXPORT json::json get_data() const noexcept override;
 
     private:
       void compute_resolvers() override;
@@ -90,7 +90,7 @@ namespace ratio::solver
       order_resolver(rr_flaw &flw, const semitone::lit &r, const ratio::core::atom &before, const ratio::core::atom &after);
       order_resolver(const order_resolver &that) = delete;
 
-      ORATIO_EXPORT std::string get_data() const noexcept override;
+      ORATIO_EXPORT json::json get_data() const noexcept override;
 
     private:
       void apply() override;
@@ -107,7 +107,7 @@ namespace ratio::solver
       place_resolver(rr_flaw &flw, const semitone::lit &r, ratio::core::atom &plc_atm, const ratio::core::item &plc_itm, ratio::core::atom &frbd_atm);
       place_resolver(const place_resolver &that) = delete;
 
-      ORATIO_EXPORT std::string get_data() const noexcept override;
+      ORATIO_EXPORT json::json get_data() const noexcept override;
       const ratio::core::item &get_place_item() const noexcept { return plc_itm; }
 
     private:
@@ -126,7 +126,7 @@ namespace ratio::solver
       forbid_resolver(rr_flaw &flw, ratio::core::atom &atm, ratio::core::item &itm);
       forbid_resolver(const forbid_resolver &that) = delete;
 
-      ORATIO_EXPORT std::string get_data() const noexcept override;
+      ORATIO_EXPORT json::json get_data() const noexcept override;
 
     private:
       void apply() override;
@@ -135,6 +135,8 @@ namespace ratio::solver
       ratio::core::atom &atm; // applying the resolver will forbid this atom on the `itm` item..
       ratio::core::item &itm; // applying the resolver will forbid the `atm` atom on this item..
     };
+
+    json::json extract() const noexcept;
 
   private:
     std::vector<riddle::id_token> ctr_ins;

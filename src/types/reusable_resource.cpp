@@ -358,17 +358,22 @@ namespace ratio::solver
 
     reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr, const std::set<ratio::core::atom *> &atms) : flaw(rr.get_solver(), smart_type::get_resolvers(rr.get_solver(), atms), {}), rr(rr), overlapping_atoms(atms) {}
 
-    ORATIO_EXPORT std::string reusable_resource::rr_flaw::get_data() const noexcept
+    ORATIO_EXPORT json::json reusable_resource::rr_flaw::get_data() const noexcept
     {
-        std::string lbl = "{\"type\":\"rr-flaw\", \"atoms\":[";
-        for (auto as_it = overlapping_atoms.cbegin(); as_it != overlapping_atoms.cend(); ++as_it)
+        json::json j_rr_f;
+        j_rr_f["type"] = "rr-flaw";
+
+        json::array j_atms;
+        semitone::inf_rational c_usage; // the concurrent resource usage..
+        for (const auto &atm : overlapping_atoms)
         {
-            if (as_it != overlapping_atoms.cbegin())
-                lbl += ", ";
-            lbl += "\"" + std::to_string(get_id(**as_it)) + "\"";
+            c_usage += get_solver().ratio::core::core::arith_value(atm->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME));
+            j_atms.push_back(get_id(*atm));
         }
-        lbl += "]}";
-        return lbl;
+        j_rr_f["atoms"] = std::move(j_atms);
+        j_rr_f["usage"] = to_json(c_usage);
+
+        return j_rr_f;
     }
 
     void reusable_resource::rr_flaw::compute_resolvers()
@@ -403,19 +408,128 @@ namespace ratio::solver
 
     reusable_resource::order_resolver::order_resolver(rr_flaw &flw, const semitone::lit &r, const ratio::core::atom &before, const ratio::core::atom &after) : resolver(r, semitone::rational::ZERO, flw), before(before), after(after) {}
 
-    ORATIO_EXPORT std::string reusable_resource::order_resolver::get_data() const noexcept { return "{\"type\":\"order\", \"before_atom\":\"" + std::to_string(get_id(before)) + "\", \"after_atom\":\"" + std::to_string(get_id(after)) + "\"}"; }
+    ORATIO_EXPORT json::json reusable_resource::order_resolver::get_data() const noexcept
+    {
+        json::json j_r;
+        j_r["type"] = "order";
+        j_r["before_atom"] = get_id(before);
+        j_r["after_atom"] = get_id(after);
+        return j_r;
+    }
 
     void reusable_resource::order_resolver::apply() {}
 
     reusable_resource::place_resolver::place_resolver(rr_flaw &flw, const semitone::lit &r, ratio::core::atom &plc_atm, const ratio::core::item &plc_itm, ratio::core::atom &frbd_atm) : resolver(r, semitone::rational::ZERO, flw), plc_atm(plc_atm), plc_itm(plc_itm), frbd_atm(frbd_atm) {}
 
-    ORATIO_EXPORT std::string reusable_resource::place_resolver::get_data() const noexcept { return "{\"type\":\"place\", \"place_atom\":\"" + std::to_string(get_id(plc_atm)) + "\", \"forbid_atom\":\"" + std::to_string(get_id(frbd_atm)) + "\"}"; }
+    ORATIO_EXPORT json::json reusable_resource::place_resolver::get_data() const noexcept
+    {
+        json::json j_r;
+        j_r["type"] = "place";
+        j_r["place_atom"] = get_id(plc_atm);
+        j_r["forbid_atom"] = get_id(frbd_atm);
+        return j_r;
+    }
 
     void reusable_resource::place_resolver::apply() {}
 
     reusable_resource::forbid_resolver::forbid_resolver(rr_flaw &flw, ratio::core::atom &atm, ratio::core::item &itm) : resolver(semitone::rational::ZERO, flw), atm(atm), itm(itm) {}
 
-    ORATIO_EXPORT std::string reusable_resource::forbid_resolver::get_data() const noexcept { return "{\"type\":\"forbid\", \"atom\":" + std::to_string(get_id(atm)) + "}"; }
+    ORATIO_EXPORT json::json reusable_resource::forbid_resolver::get_data() const noexcept
+    {
+        json::json j_r;
+        j_r["type"] = "forbid";
+        j_r["atom"] = get_id(atm);
+        return j_r;
+    }
 
     void reusable_resource::forbid_resolver::apply() { get_solver().get_sat_core()->new_clause({!get_rho(), !get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item &>(*atm.get(TAU_KW)).get_var(), itm)}); }
+
+    json::json reusable_resource::extract() const noexcept
+    {
+        json::array tls;
+        // we partition atoms for each reusable-resource they might insist on..
+        std::unordered_map<ratio::core::item *, std::vector<ratio::core::atom *>> rr_instances;
+        for (auto &rr_instance : get_instances())
+            rr_instances[&*rr_instance];
+        for (const auto &atm : get_atoms())
+            if (get_solver().get_sat_core()->value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
+            {
+                const auto c_scope = atm->get(TAU_KW);
+                if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))
+                    for (const auto &val : get_solver().get_ov_theory().value(enum_scope->get_var()))
+                        rr_instances.at(static_cast<ratio::core::item *>(val)).emplace_back(atm);
+                else
+                    rr_instances.at(static_cast<ratio::core::item *>(&*c_scope)).emplace_back(atm);
+            }
+
+        for (const auto &[rr, atms] : rr_instances)
+        {
+            json::json tl;
+            tl["id"] = get_id(*rr);
+#ifdef COMPUTE_NAMES
+            tl["name"] = get_solver().guess_name(*rr);
+#endif
+            tl["type"] = REUSABLE_RESOURCE_NAME;
+
+            const auto c_capacity = get_solver().ratio::core::core::arith_value(static_cast<ratio::core::complex_item *>(rr)->get(REUSABLE_RESOURCE_CAPACITY));
+            tl["capacity"] = to_json(c_capacity);
+
+            // for each pulse, the atoms starting at that pulse..
+            std::map<semitone::inf_rational, std::set<ratio::core::atom *>> starting_atoms;
+            // for each pulse, the atoms ending at that pulse..
+            std::map<semitone::inf_rational, std::set<ratio::core::atom *>> ending_atoms;
+            // all the pulses of the timeline..
+            std::set<semitone::inf_rational> pulses;
+
+            for (const auto &atm : atms)
+            {
+                const auto start = get_solver().ratio::core::core::arith_value(atm->get(RATIO_START));
+                const auto end = get_solver().ratio::core::core::arith_value(atm->get(RATIO_END));
+                starting_atoms[start].insert(atm);
+                ending_atoms[end].insert(atm);
+                pulses.insert(start);
+                pulses.insert(end);
+            }
+            pulses.insert(get_solver().ratio::core::core::arith_value(get_solver().ratio::core::env::get("origin")));
+            pulses.insert(get_solver().ratio::core::core::arith_value(get_solver().ratio::core::env::get("horizon")));
+
+            std::set<ratio::core::atom *> overlapping_atoms;
+            std::set<semitone::inf_rational>::iterator p = pulses.begin();
+            if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+            if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                for (const auto &a : at_end_p->second)
+                    overlapping_atoms.erase(a);
+
+            json::array j_vals;
+            for (p = std::next(p); p != pulses.end(); ++p)
+            {
+                json::json j_val;
+                j_val["from"] = to_json(*std::prev(p));
+                j_val["to"] = to_json(*p);
+
+                json::array j_atms;
+                semitone::inf_rational c_usage; // the concurrent resource usage..
+                for (const auto &atm : overlapping_atoms)
+                {
+                    c_usage += get_solver().ratio::core::core::arith_value(atm->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME));
+                    j_atms.push_back(get_id(*atm));
+                }
+                j_val["atoms"] = std::move(j_atms);
+                j_val["usage"] = to_json(c_usage);
+                j_vals.push_back(std::move(j_val));
+
+                if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+            }
+            tl["values"] = std::move(j_vals);
+
+            tls.push_back(std::move(tl));
+        }
+
+        return tls;
+    }
 } // namespace ratio::solver

@@ -1,13 +1,14 @@
 #pragma once
 
 #include "smart_type.h"
+#include "timeline.h"
 #include "constructor.h"
 
 #define AGENT_NAME "Agent"
 
 namespace ratio::solver
 {
-  class agent final : public smart_type
+  class agent final : public smart_type, public timeline
   {
   public:
     agent(solver &slv);
@@ -47,6 +48,8 @@ namespace ratio::solver
     protected:
       agent &agnt;
     };
+
+    json::json extract() const noexcept;
 
   private:
     std::set<ratio::core::atom *> to_check;

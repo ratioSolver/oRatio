@@ -36,7 +36,7 @@ file(GLOB RATIO_HEADERS include/*.h include/flaws/*.h include/types/*.h include/
 add_library(${PROJECT_NAME} SHARED ${RATIO_SOURCES})
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/flaws $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/types $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/heuristics $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
-target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE)
+target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE json)
 
 message(STATUS "Temporal network type:  ${TEMPORAL_NETWORK_TYPE}")
 if(TEMPORAL_NETWORK_TYPE STREQUAL DL)

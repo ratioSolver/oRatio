@@ -28,7 +28,7 @@ namespace ratio::solver
     inline flaw &get_effect() const noexcept { return effect; }
     inline const std::vector<flaw *> &get_preconditions() const noexcept { return preconditions; }
 
-    virtual std::string get_data() const noexcept = 0;
+    virtual json::json get_data() const noexcept = 0;
 
   private:
     /**
@@ -46,5 +46,6 @@ namespace ratio::solver
     std::vector<flaw *> preconditions;       // the preconditions of this resolver..
   };
 
-  inline uintptr_t get_id(const ratio::solver::resolver &r) noexcept { return reinterpret_cast<uintptr_t>(&r); }
+  inline uintptr_t get_id(const resolver &r) noexcept { return reinterpret_cast<uintptr_t>(&r); }
+  ORATIO_EXPORT json::json to_json(const resolver &rhs) noexcept;
 } // namespace ratio::solver

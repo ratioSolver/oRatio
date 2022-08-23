@@ -1063,4 +1063,204 @@ namespace ratio::solver
             l->causal_link_added(f, r);
     }
 #endif
+
+    ORATIO_EXPORT json::json to_json(const solver &rhs) noexcept
+    {
+        std::set<ratio::core::item *> all_items;
+        std::set<ratio::core::atom *> all_atoms;
+        for ([[maybe_unused]] const auto &[pred_name, pred] : rhs.get_predicates())
+            for (const auto &a : pred->get_instances())
+                all_atoms.insert(static_cast<ratio::core::atom *>(&*a));
+        std::queue<ratio::core::type *> q;
+        for ([[maybe_unused]] const auto &[tp_name, tp] : rhs.get_types())
+            if (!tp->is_primitive())
+                q.push(tp.get());
+        while (!q.empty())
+        {
+            for (const auto &i : q.front()->get_instances())
+                all_items.insert(&*i);
+            for ([[maybe_unused]] const auto &[pred_name, pred] : q.front()->get_predicates())
+                for (const auto &a : pred->get_instances())
+                    all_atoms.insert(static_cast<ratio::core::atom *>(&*a));
+            for ([[maybe_unused]] const auto &[tp_name, tp] : q.front()->get_types())
+                q.push(tp.get());
+            q.pop();
+        }
+
+        json::json j_core;
+
+        if (!all_items.empty())
+        {
+            json::array j_itms;
+            for (const auto &itm : all_items)
+                j_itms.push_back(to_json(*itm));
+            j_core["items"] = std::move(j_itms);
+        }
+
+        if (!all_atoms.empty())
+        {
+            json::array j_atms;
+            for (const auto &atm : all_atoms)
+                j_atms.push_back(to_json(*atm));
+            j_core["atoms"] = std::move(j_atms);
+        }
+
+        if (!rhs.get_vars().empty())
+            j_core["exprs"] = to_json(rhs.get_vars());
+        return j_core;
+    }
+
+    ORATIO_EXPORT json::json to_timelines(solver &rhs) noexcept
+    {
+        json::array tls;
+
+        // for each pulse, the atoms starting at that pulse..
+        std::map<semitone::inf_rational, std::set<ratio::core::atom *>> starting_atoms;
+        // all the pulses of the timeline..
+        std::set<semitone::inf_rational> pulses;
+        for ([[maybe_unused]] const auto &[p_name, p] : rhs.get_predicates())
+            if (rhs.is_impulse(*p) || rhs.is_interval(*p))
+                for (const auto &atm : p->get_instances())
+                    if (&atm->get_type().get_core() != &rhs && rhs.get_sat_core()->value(get_sigma(rhs, static_cast<ratio::core::atom &>(*atm))) == semitone::True)
+                    {
+                        semitone::inf_rational start = rhs.get_core().arith_value(rhs.is_impulse(*p) ? static_cast<ratio::core::atom &>(*atm).get(RATIO_AT) : static_cast<ratio::core::atom &>(*atm).get(RATIO_START));
+                        starting_atoms[start].insert(dynamic_cast<ratio::core::atom *>(&*atm));
+                        pulses.insert(start);
+                    }
+        if (!starting_atoms.empty())
+        {
+            json::json slv_tl;
+            slv_tl["id"] = reinterpret_cast<uintptr_t>(&rhs);
+            slv_tl["name"] = "solver";
+            json::array j_atms;
+            for (const auto &p : pulses)
+                for (const auto &atm : starting_atoms.at(p))
+                    j_atms.push_back(to_json(*atm));
+            slv_tl["values"] = std::move(j_atms);
+            tls.push_back(std::move(slv_tl));
+        }
+
+        std::queue<ratio::core::type *> q;
+        for ([[maybe_unused]] const auto &[tp_name, tp] : rhs.get_types())
+            q.push(tp.get());
+
+        while (!q.empty())
+        {
+            if (auto tl_tp = dynamic_cast<timeline *>(q.front()))
+            {
+                auto j_tls = tl_tp->extract();
+                for (size_t i = 0; i < static_cast<json::array &>(j_tls).size(); ++i)
+                    tls.push_back(std::move(static_cast<json::array &>(j_tls)[i]));
+            }
+            for (const auto &[tp_name, st] : q.front()->get_types())
+                q.push(st.get());
+            q.pop();
+        }
+
+        return tls;
+    }
+
+    ORATIO_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept
+    {
+        solver &slv = static_cast<solver &>(rhs.get_type().get_core());
+        json::json j_itm;
+        j_itm["id"] = get_id(rhs);
+        j_itm["type"] = rhs.get_type().get_full_name();
+#ifdef COMPUTE_NAMES
+        auto name = slv.guess_name(rhs);
+        if (!name.empty())
+            j_itm["name"] = name;
+#endif
+        if (auto ci = dynamic_cast<const ratio::core::complex_item *>(&rhs))
+        {
+            if (dynamic_cast<const ratio::core::enum_item *>(&rhs))
+                j_itm["val"] = value(rhs);
+            if (!ci->get_vars().empty())
+                j_itm["exprs"] = to_json(ci->get_vars());
+            if (auto atm = dynamic_cast<const ratio::core::atom *>(&rhs))
+                j_itm["sigma"] = get_sigma(slv, *atm);
+        }
+        else
+            j_itm["value"] = value(rhs);
+
+        return j_itm;
+    }
+    ORATIO_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept
+    {
+        json::array j_exprs;
+        for (const auto &[xpr_name, xpr] : vars)
+        {
+            json::json j_var;
+            j_var["name"] = xpr_name;
+            j_var["type"] = xpr->get_type().get_full_name();
+            j_var["value"] = value(*xpr);
+            j_exprs.push_back(std::move(j_var));
+        }
+        return j_exprs;
+    }
+    ORATIO_EXPORT json::json value(const ratio::core::item &rhs) noexcept
+    {
+        solver &slv = static_cast<solver &>(rhs.get_type().get_core());
+        if (&rhs.get_type() == &slv.get_bool_type())
+        {
+            const auto val = static_cast<const ratio::core::bool_item &>(rhs).get_value();
+
+            json::json j_val;
+            j_val["lit"] = (sign(val) ? "b" : "!b") + std::to_string(variable(val));
+            switch (slv.get_sat_core()->value(val))
+            {
+            case semitone::True:
+                j_val["val"] = "True";
+                break;
+            case semitone::False:
+                j_val["val"] = "False";
+                break;
+            case semitone::Undefined:
+                j_val["val"] = "Undefined";
+                break;
+            }
+            return j_val;
+        }
+        else if (&rhs.get_type() == &slv.get_real_type())
+        {
+            const auto c_lin = static_cast<const ratio::core::arith_item &>(rhs).get_value();
+            const auto [lb, ub] = slv.get_lra_theory().bounds(c_lin);
+            const auto val = slv.get_lra_theory().value(c_lin);
+
+            json::json j_val = to_json(val);
+            j_val["lin"] = to_string(c_lin);
+            if (!is_negative_infinite(lb))
+                j_val["lb"] = to_json(lb);
+            if (!is_positive_infinite(ub))
+                j_val["ub"] = to_json(ub);
+            return j_val;
+        }
+        else if (&rhs.get_type() == &slv.get_time_type())
+        {
+            const auto c_lin = static_cast<const ratio::core::arith_item &>(rhs).get_value();
+            const auto [lb, ub] = slv.get_rdl_theory().bounds(c_lin);
+
+            json::json j_val = to_json(lb);
+            j_val["lin"] = to_string(c_lin);
+            if (!is_negative_infinite(lb))
+                j_val["lb"] = to_json(lb);
+            if (!is_positive_infinite(ub))
+                j_val["ub"] = to_json(ub);
+            return j_val;
+        }
+        else if (&rhs.get_type() == &slv.get_string_type())
+            return json::string_val(static_cast<const ratio::core::string_item &>(rhs).get_value());
+        else if (auto ev = dynamic_cast<const ratio::core::enum_item *>(&rhs))
+        {
+            json::json j_val;
+            j_val["var"] = std::to_string(ev->get_var());
+            json::array vals;
+            for (const auto &v : slv.get_ov_theory().value(ev->get_var()))
+                vals.push_back(get_id(static_cast<ratio::core::item &>(*v)));
+            j_val["vals"] = std::move(vals);
+            return j_val;
+        }
+        else
+            return get_id(rhs);
+    }
 } // namespace ratio::solver

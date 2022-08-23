@@ -135,4 +135,101 @@ namespace ratio::solver
                 cr.to_check.insert(&*c_scope);
         }
     }
+
+    json::json consumable_resource::extract() const noexcept
+    {
+        json::array tls;
+        // we partition atoms for each consumable-resource they might insist on..
+        std::unordered_map<ratio::core::item *, std::vector<ratio::core::atom *>> cr_instances;
+        for (auto &cr_instance : get_instances())
+            cr_instances[&*cr_instance];
+        for (const auto &atm : get_atoms())
+            if (get_solver().get_sat_core()->value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
+            {
+                const auto c_scope = atm->get(TAU_KW);
+                if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))
+                    for (const auto &val : get_solver().get_ov_theory().value(enum_scope->get_var()))
+                        cr_instances.at(static_cast<ratio::core::item *>(val)).emplace_back(atm);
+                else
+                    cr_instances.at(static_cast<ratio::core::item *>(&*c_scope)).emplace_back(atm);
+            }
+
+        for (const auto &[cres, atms] : cr_instances)
+        {
+            json::json tl;
+            tl["id"] = get_id(*cres);
+#ifdef COMPUTE_NAMES
+            tl["name"] = get_solver().guess_name(*cres);
+#endif
+            tl["type"] = CONSUMABLE_RESOURCE_NAME;
+
+            const auto c_initial_amount = get_solver().ratio::core::core::arith_value(static_cast<ratio::core::complex_item *>(cres)->get(CONSUMABLE_RESOURCE_INITIAL_AMOUNT));
+            tl["initial_amount"] = to_json(c_initial_amount);
+
+            const auto c_capacity = get_solver().ratio::core::core::arith_value(static_cast<ratio::core::complex_item *>(cres)->get(CONSUMABLE_RESOURCE_CAPACITY));
+            tl["capacity"] = to_json(c_capacity);
+
+            // for each pulse, the atoms starting at that pulse..
+            std::map<semitone::inf_rational, std::set<ratio::core::atom *>> starting_atoms;
+            // for each pulse, the atoms ending at that pulse..
+            std::map<semitone::inf_rational, std::set<ratio::core::atom *>> ending_atoms;
+            // all the pulses of the timeline..
+            std::set<semitone::inf_rational> pulses;
+
+            for (const auto &atm : atms)
+            {
+                const auto start = get_solver().ratio::core::core::arith_value(atm->get(RATIO_START));
+                const auto end = get_solver().ratio::core::core::arith_value(atm->get(RATIO_END));
+                starting_atoms[start].insert(atm);
+                ending_atoms[end].insert(atm);
+                pulses.insert(start);
+                pulses.insert(end);
+            }
+            pulses.insert(get_solver().ratio::core::core::arith_value(get_solver().ratio::core::env::get("origin")));
+            pulses.insert(get_solver().ratio::core::core::arith_value(get_solver().ratio::core::env::get("horizon")));
+
+            std::set<ratio::core::atom *> overlapping_atoms;
+            std::set<semitone::inf_rational>::iterator p = pulses.begin();
+            if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+            if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                for (const auto &a : at_end_p->second)
+                    overlapping_atoms.erase(a);
+
+            json::array j_vals;
+            semitone::inf_rational c_val = c_initial_amount;
+            for (p = std::next(p); p != pulses.end(); ++p)
+            {
+                json::json j_val;
+                j_val["from"] = to_json(*std::prev(p));
+                j_val["to"] = to_json(*p);
+
+                json::array j_atms;
+                semitone::inf_rational c_angular_coefficient; // the concurrent resource update..
+                for (const auto &atm : overlapping_atoms)
+                {
+                    auto c_coeff = get_produce_predicate().is_assignable_from(atm->get_type()) ? get_solver().ratio::core::core::arith_value(atm->get(CONSUMABLE_RESOURCE_USE_AMOUNT_NAME)) : -get_solver().ratio::core::core::arith_value(atm->get(CONSUMABLE_RESOURCE_USE_AMOUNT_NAME));
+                    c_coeff /= (get_solver().ratio::core::core::arith_value(atm->get(RATIO_END)) - get_solver().ratio::core::core::arith_value(atm->get(RATIO_START))).get_rational();
+                    c_angular_coefficient += c_coeff;
+                }
+                j_val["atoms"] = std::move(j_atms);
+                j_val["start"] = to_json(c_val);
+                c_val += (c_angular_coefficient *= (*p - *std::prev(p)).get_rational());
+                j_val["start"] = to_json(c_val);
+
+                j_vals.push_back(std::move(j_val));
+
+                if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+            }
+            tl["values"] = std::move(j_vals);
+
+            tls.push_back(std::move(tl));
+        }
+
+        return tls;
+    }
 } // namespace ratio::solver
