@@ -444,7 +444,7 @@ namespace ratio::solver
 
     void reusable_resource::forbid_resolver::apply() { get_solver().get_sat_core()->new_clause({!get_rho(), !get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item &>(*atm.get(TAU_KW)).get_var(), itm)}); }
 
-    json::json reusable_resource::extract() const noexcept
+    json::array reusable_resource::extract() const noexcept
     {
         json::array tls;
         // we partition atoms for each reusable-resource they might insist on..

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "smart_type.h"
+#include "timeline.h"
 #include "constructor.h"
 #include "predicate.h"
 #include "flaw.h"
@@ -13,7 +14,7 @@
 
 namespace ratio::solver
 {
-  class reusable_resource final : public smart_type
+  class reusable_resource final : public smart_type, public timeline
   {
   public:
     reusable_resource(solver &slv);
@@ -136,7 +137,7 @@ namespace ratio::solver
       ratio::core::item &itm; // applying the resolver will forbid the `atm` atom on this item..
     };
 
-    json::json extract() const noexcept;
+    json::array extract() const noexcept override;
 
   private:
     std::vector<riddle::id_token> ctr_ins;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "smart_type.h"
+#include "timeline.h"
 #include "constructor.h"
 #include "flaw.h"
 #include "resolver.h"
@@ -11,7 +12,7 @@ namespace ratio::solver
 {
   class order_resolver;
 
-  class state_variable final : public smart_type
+  class state_variable final : public smart_type, public timeline
   {
     friend class order_resolver;
 
@@ -127,7 +128,7 @@ namespace ratio::solver
       ratio::core::item &itm; // applying the resolver will forbid the `atm` atom on this item..
     };
 
-    json::json extract() const noexcept;
+    json::array extract() const noexcept override;
 
   private:
     std::set<const ratio::core::item *> to_check;                   // the state-variable instances whose atoms have changed..

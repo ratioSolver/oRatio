@@ -49,7 +49,7 @@ namespace ratio::solver
       agent &agnt;
     };
 
-    json::json extract() const noexcept;
+    json::array extract() const noexcept override;
 
   private:
     std::set<ratio::core::atom *> to_check;

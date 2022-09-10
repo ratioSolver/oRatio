@@ -75,7 +75,7 @@ namespace ratio::solver
       consumable_resource &cr;
     };
 
-    json::json extract() const noexcept;
+    json::array extract() const noexcept override;
 
   private:
     std::vector<riddle::id_token> ctr_ins;
