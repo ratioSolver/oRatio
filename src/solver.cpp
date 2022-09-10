@@ -1110,7 +1110,7 @@ namespace ratio::solver
         return j_core;
     }
 
-    ORATIO_EXPORT json::array to_timelines(solver &rhs) noexcept
+    ORATIO_EXPORT json::json to_timelines(solver &rhs) noexcept
     {
         json::array tls;
 
@@ -1149,8 +1149,9 @@ namespace ratio::solver
             if (auto tl_tp = dynamic_cast<timeline *>(q.front()))
             {
                 auto j_tls = tl_tp->extract();
-                for (size_t i = 0; i < j_tls.size(); ++i)
-                    tls.push_back(std::move(j_tls[i]));
+                json::array &tls_array = j_tls;
+                for (size_t i = 0; i < tls_array.size(); ++i)
+                    tls.push_back(std::move(tls_array[i]));
             }
             for (const auto &[tp_name, st] : q.front()->get_types())
                 q.push(st.get());

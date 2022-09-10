@@ -357,7 +357,7 @@ namespace ratio::solver
 
     void state_variable::forbid_resolver::apply() { get_solver().get_sat_core()->new_clause({!get_rho(), !get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item &>(*atm.get(TAU_KW)).get_var(), itm)}); }
 
-    json::array state_variable::extract() const noexcept
+    json::json state_variable::extract() const noexcept
     {
         json::array tls;
         // we partition atoms for each state-variable they might insist on..

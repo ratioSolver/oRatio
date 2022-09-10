@@ -136,7 +136,7 @@ namespace ratio::solver
         }
     }
 
-    json::array consumable_resource::extract() const noexcept
+    json::json consumable_resource::extract() const noexcept
     {
         json::array tls;
         // we partition atoms for each consumable-resource they might insist on..

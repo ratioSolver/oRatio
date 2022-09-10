@@ -9,6 +9,6 @@ namespace ratio::solver
   public:
     virtual ~timeline() {}
 
-    virtual json::array extract() const noexcept = 0;
+    virtual json::json extract() const noexcept = 0;
   };
 } // namespace ratio::solver

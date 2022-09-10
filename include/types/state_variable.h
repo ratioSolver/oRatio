@@ -128,7 +128,7 @@ namespace ratio::solver
       ratio::core::item &itm; // applying the resolver will forbid the `atm` atom on this item..
     };
 
-    json::array extract() const noexcept override;
+    json::json extract() const noexcept override;
 
   private:
     std::set<const ratio::core::item *> to_check;                   // the state-variable instances whose atoms have changed..

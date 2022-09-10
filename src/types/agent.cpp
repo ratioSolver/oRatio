@@ -51,7 +51,7 @@ namespace ratio::solver
     agent::agnt_atom_listener::~agnt_atom_listener() {}
     void agent::agnt_atom_listener::something_changed() { agnt.to_check.insert(&atm); }
 
-    json::array agent::extract() const noexcept
+    json::json agent::extract() const noexcept
     {
         json::array tls;
         // we partition atoms for each agent they might insist on..

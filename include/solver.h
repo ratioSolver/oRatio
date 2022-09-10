@@ -266,7 +266,7 @@ namespace ratio::solver
   };
 
   ORATIO_EXPORT json::json to_json(const solver &rhs) noexcept;
-  ORATIO_EXPORT json::array to_timelines(solver &rhs) noexcept;
+  ORATIO_EXPORT json::json to_timelines(solver &rhs) noexcept;
 
   ORATIO_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept;
   ORATIO_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept;

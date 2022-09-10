@@ -137,7 +137,7 @@ namespace ratio::solver
       ratio::core::item &itm; // applying the resolver will forbid the `atm` atom on this item..
     };
 
-    json::array extract() const noexcept override;
+    json::json extract() const noexcept override;
 
   private:
     std::vector<riddle::id_token> ctr_ins;
