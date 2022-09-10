@@ -215,7 +215,7 @@ namespace ratio::solver
                 j_val["atoms"] = std::move(j_atms);
                 j_val["start"] = to_json(c_val);
                 c_val += (c_angular_coefficient *= (*p - *std::prev(p)).get_rational());
-                j_val["start"] = to_json(c_val);
+                j_val["end"] = to_json(c_val);
 
                 j_vals.push_back(std::move(j_val));
 
