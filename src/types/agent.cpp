@@ -80,8 +80,6 @@ namespace ratio::solver
 
             // for each pulse, the atoms starting at that pulse..
             std::map<semitone::inf_rational, std::set<ratio::core::atom *>> starting_atoms;
-            // for each pulse, the atoms ending at that pulse..
-            std::map<semitone::inf_rational, std::set<ratio::core::atom *>> ending_atoms;
             // all the pulses of the timeline..
             std::set<semitone::inf_rational> pulses;
 
