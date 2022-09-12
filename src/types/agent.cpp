@@ -18,7 +18,6 @@ namespace ratio::solver
 
     void agent::new_predicate(ratio::core::predicate &pred) noexcept
     {
-        assert(get_solver().is_impulse(pred) || get_solver().is_interval(pred));
         // each agent predicate has a tau parameter indicating on which agents the atoms insist on..
         new_field(pred, std::make_unique<ratio::core::field>(static_cast<ratio::core::type &>(pred.get_scope()), TAU_KW));
     }

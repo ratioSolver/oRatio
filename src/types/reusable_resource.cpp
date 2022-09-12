@@ -211,8 +211,6 @@ namespace ratio::solver
 
     void reusable_resource::new_predicate(ratio::core::predicate &pred) noexcept
     {
-        assert(get_solver().is_interval(pred));
-        assert(u_pred->is_assignable_from(pred));
         // each reusable-resource predicate has a tau parameter indicating on which resource the atoms insist on..
         new_field(pred, std::make_unique<ratio::core::field>(static_cast<type &>(pred.get_scope()), TAU_KW));
     }
