@@ -14,5 +14,4 @@ class Battery : ConsumableResource {
 
 Battery cr = new Battery(2.0, 10.0);
 
-fact u0 = new cr.Use(start:0.0, amount:4.0, duration:10.0);
-fact c0 = new cr.Charge(start:15.0, amount:4.0, duration:10.0);
+fact u0 = new cr.Use(amount:4.0, duration:10.0);
