@@ -209,10 +209,11 @@ namespace ratio::solver
                     auto c_coeff = get_produce_predicate().is_assignable_from(atm->get_type()) ? get_solver().ratio::core::core::arith_value(atm->get(CONSUMABLE_RESOURCE_USE_AMOUNT_NAME)) : -get_solver().ratio::core::core::arith_value(atm->get(CONSUMABLE_RESOURCE_USE_AMOUNT_NAME));
                     c_coeff /= (get_solver().ratio::core::core::arith_value(atm->get(RATIO_END)) - get_solver().ratio::core::core::arith_value(atm->get(RATIO_START))).get_rational();
                     c_angular_coefficient += c_coeff;
+                    j_atms.push_back(get_id(*atm));
                 }
                 j_val["atoms"] = std::move(j_atms);
                 j_val["start"] = to_json(c_val);
-                c_val += (c_angular_coefficient *= (*p - *std::prev(p)).get_rational());
+                c_val += (c_angular_coefficient * (*p - *std::prev(p)).get_rational());
                 j_val["end"] = to_json(c_val);
 
                 j_vals.push_back(std::move(j_val));
