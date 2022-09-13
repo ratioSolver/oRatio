@@ -8,7 +8,7 @@ oRatio is an Integrated Logic and Constraint based solver which takes inspiratio
 
 ## Getting started
 
-The oRatio system is invoked with a list of command line arguments representing the locations of the required [compilation units](https://github.com/ratioSolver/oRatio/wiki/The-RiDDLe-Language) (e.g. domain models, problem instances or plan adaptations) and the desired output file like in the following:
+The oRatio system is invoked with a list of command line arguments representing the locations of the required [compilation units](https://github.com/ratioSolver/RiDDLe/wiki) (e.g. domain models, problem instances or plan adaptations) and the desired output file like in the following:
 
 ```shell
 oRatio cu_0.rddl cu_1.rddl ... cu_n sol.json
@@ -20,7 +20,7 @@ As an example, the following code invokes the oRatio solver using the domain mod
 oRatio examples/blocks/blocks_domain.rddl examples/blocks/blocks_problem_10.rddl solution.json
 ```
 
-Further information about the RiDDLe language, used for specifying the input files, can be found in the corresponding [wiki](https://github.com/ratioSolver/oRatio/wiki/The-RiDDLe-Language) page.
+Further information about the RiDDLe language, used for specifying the input files, can be found in the corresponding [wiki](https://github.com/ratioSolver/RiDDLe/wiki) page.
 
 ## Building oRatio
 
