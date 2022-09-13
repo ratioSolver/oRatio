@@ -10,13 +10,13 @@ oRatio is an Integrated Logic and Constraint based solver which takes inspiratio
 
 The oRatio system is invoked with a list of command line arguments representing the locations of the required [compilation units](https://github.com/ratioSolver/oRatio/wiki/The-RiDDLe-Language) (e.g. domain models, problem instances or plan adaptations) and the desired output file like in the following:
 
-```
+```shell
 oRatio cu_0.rddl cu_1.rddl ... cu_n sol.json
 ```
 
 As an example, the following code invokes the oRatio solver using the domain model defined in `examples/blocks/blocks_domain.rddl`, the problem instance specified in `examples/blocks/blocks_problem_10.rddl` and, once found a solution, writes it in the `solution.json` file:
 
-```
+```shell
 oRatio examples/blocks/blocks_domain.rddl examples/blocks/blocks_problem_10.rddl solution.json
 ```
 
@@ -34,20 +34,20 @@ The basic requirements for building oRatio are:
 
 The easiest way to install the building requirements on Ubuntu is as follows
 
-```
+```shell
 sudo apt-get install build-essential
 sudo apt-get install cmake
 ```
 
 once the building requirements are installed, move to a desired folder and clone the oRatio repository
 
-```
+```shell
 git clone https://github.com/pstlab/oRatio
 ```
 
 finally, build oRatio
 
-```
+```shell
 mkdir build
 cd build
 cmake ..
@@ -58,13 +58,13 @@ make
 
 The easiest way to install the building requirements on OS X consists in downloading and installing the [Command Line Tools](https://developer.apple.com/downloads/) and CMake. Once the building requirements are installed, open a terminal, move to a desired folder and clone the oRatio repository
 
-```
+```shell
 git clone https://github.com/pstlab/oRatio
 ```
 
 finally, build oRatio
 
-```
+```shell
 mkdir build
 cd build
 cmake ..
@@ -75,13 +75,13 @@ make
 
 The easiest way to compile oRatio on Windows is through [Visual Studio](https://www.visualstudio.com/). Download and install Visual Studio, download Git and CMake. Start a Visual Studio Command prompt, move to a desired folder and clone the oRatio repository
 
-```
+```shell
 git clone https://github.com/pstlab/oRatio
 ```
 
 finally, build oRatio
 
-```
+```shell
 mkdir build
 cd build
 cmake -G "NMake Makefiles" ..
@@ -101,7 +101,7 @@ Available targets are:
 
 As an example, an optimized target can be generated through the following command
 
-```
+```shell
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
