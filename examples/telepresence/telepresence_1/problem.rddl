@@ -1,3 +1,0 @@
-User u = new User(male, retain, true, true, 0.3);
-
-goal kh = new u.KeepHealthy();
