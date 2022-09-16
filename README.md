@@ -42,7 +42,7 @@ sudo apt-get install cmake
 once the building requirements are installed, move to a desired folder and clone the oRatio repository
 
 ```shell
-git clone https://github.com/pstlab/oRatio
+git clone --recurse-submodules https://github.com/ratioSolver/oRatio
 ```
 
 finally, build oRatio
@@ -59,7 +59,7 @@ make
 The easiest way to install the building requirements on OS X consists in downloading and installing the [Command Line Tools](https://developer.apple.com/downloads/) and CMake. Once the building requirements are installed, open a terminal, move to a desired folder and clone the oRatio repository
 
 ```shell
-git clone https://github.com/pstlab/oRatio
+git clone --recurse-submodules https://github.com/ratioSolver/oRatio
 ```
 
 finally, build oRatio
@@ -76,7 +76,7 @@ make
 The easiest way to compile oRatio on Windows is through [Visual Studio](https://www.visualstudio.com/). Download and install Visual Studio, download Git and CMake. Start a Visual Studio Command prompt, move to a desired folder and clone the oRatio repository
 
 ```shell
-git clone https://github.com/pstlab/oRatio
+git clone --recurse-submodules https://github.com/ratioSolver/oRatio
 ```
 
 finally, build oRatio
