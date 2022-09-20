@@ -134,7 +134,7 @@ namespace ratio::solver
                             }
 
                             std::vector<std::pair<semitone::lit, double>> choices;
-                            for (const auto &as : combinations(std::vector<ratio::core::atom *>(c_mcs.cbegin(), c_mcs.cend()), 2))
+                            for (const auto &as : semitone::combinations(std::vector<ratio::core::atom *>(c_mcs.cbegin(), c_mcs.cend()), 2))
                             {
                                 const auto a0_start = as[0]->get(RATIO_START);
                                 const auto a0_end = as[0]->get(RATIO_END);
@@ -376,7 +376,7 @@ namespace ratio::solver
 
     void reusable_resource::rr_flaw::compute_resolvers()
     {
-        const auto cs = combinations(std::vector<ratio::core::atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2);
+        const auto cs = semitone::combinations(std::vector<ratio::core::atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2);
         for (const auto &as : cs)
         {
             if (const auto a0_it = rr.leqs.find(as[0]); a0_it != rr.leqs.cend())

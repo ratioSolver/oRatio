@@ -58,7 +58,7 @@ namespace ratio::solver
                         overlapping_atoms.erase(a);
 
                 if (overlapping_atoms.size() > 1) // we have a 'peak'..
-                    for (const auto &as : combinations(std::vector<ratio::core::atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
+                    for (const auto &as : semitone::combinations(std::vector<ratio::core::atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
                     { // state-variable MCSs are made of two atoms..
                         std::set<ratio::core::atom *> mcs(as.cbegin(), as.cend());
                         if (!sv_flaws.count(mcs))
@@ -291,7 +291,7 @@ namespace ratio::solver
 
     void state_variable::sv_flaw::compute_resolvers()
     {
-        const auto cs = combinations(std::vector<ratio::core::atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2);
+        const auto cs = semitone::combinations(std::vector<ratio::core::atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2);
         for (const auto &as : cs)
         {
             if (const auto a0_it = sv.leqs.find(as[0]); a0_it != sv.leqs.cend())
