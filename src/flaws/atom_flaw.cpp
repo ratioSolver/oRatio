@@ -11,7 +11,11 @@ namespace ratio::solver
     {
         json::json j_f;
         j_f["type"] = is_fact ? "fact" : "goal";
-        j_f["atom"] = get_id(get_atom());
+        json::json j_atm;
+        j_atm["id"] = get_id(get_atom());
+        j_atm["sigma"] = get_sigma(get_solver(), get_atom());
+        j_atm["type"] = get_atom().get_type().get_name();
+        j_f["atom"] = std::move(j_atm);
         return j_f;
     }
 
@@ -45,8 +49,9 @@ namespace ratio::solver
 
                 auto u_res = std::make_unique<unify_atom>(*this, t_atm, std::vector<semitone::lit>({semitone::lit(get_sigma(get_solver(), get_atom()), false), semitone::lit(get_solver().atom_properties.at(&t_atm).sigma), eq_lit}));
                 assert(get_solver().get_sat_core()->value(u_res->get_rho()) != semitone::False);
-                get_solver().new_causal_link(t_flaw, *u_res);
+                auto &cl_res = *u_res;
                 add_resolver(std::move(u_res));
+                get_solver().new_causal_link(t_flaw, cl_res);
             }
 
         if (is_fact)

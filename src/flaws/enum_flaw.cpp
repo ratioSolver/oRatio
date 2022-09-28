@@ -26,8 +26,11 @@ namespace ratio::solver
         json::json j_r;
         j_r["type"] = "assignment";
 #ifdef COMPUTE_NAMES
-        j_r["val"] = get_id(static_cast<ratio::core::item &>(val));
+        auto name = get_solver().guess_name(static_cast<ratio::core::item &>(val));
+        if (!name.empty())
+            j_r["name"] = name;
 #endif
+        j_r["value"] = value(static_cast<ratio::core::item &>(val));
         return j_r;
     }
 
