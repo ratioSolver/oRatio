@@ -174,12 +174,25 @@ namespace ratio::solver
                                 const auto a0_tau_itm = dynamic_cast<ratio::core::enum_item *>(&*a0_tau);
                                 const auto a1_tau_itm = dynamic_cast<ratio::core::enum_item *>(&*a1_tau);
                                 if (a0_tau_itm && a1_tau_itm)
-                                { // we have two non-singleton variables..
+                                { // we have two, perhaps singleton, enum variables..
                                     const auto a0_vals = get_core().enum_value(*a0_tau_itm);
                                     const auto a1_vals = get_core().enum_value(*a1_tau_itm);
-                                    for (const auto &plc : plcs.at({as[0], as[1]}))
-                                        if (get_solver().get_sat_core()->value(plc.first) == semitone::Undefined)
-                                            choices.emplace_back(plc.first, 1l - 2l / static_cast<double>(a0_vals.size() + a1_vals.size()));
+                                    if (a0_vals.size() > 1 && a1_vals.size() > 1)
+                                    { // we have two non-singleton variables..
+                                        for (const auto &plc : plcs.at({as[0], as[1]}))
+                                            if (get_solver().get_sat_core()->value(plc.first) == semitone::Undefined)
+                                                choices.emplace_back(plc.first, 1l - 2l / static_cast<double>(a0_vals.size() + a1_vals.size()));
+                                    }
+                                    else if (a0_vals.size() > 1)
+                                    { // only `a1_tau` is a singleton variable..
+                                        if (get_solver().get_sat_core()->value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau)) == semitone::Undefined)
+                                            choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau), 1l - 1l / static_cast<double>(a0_vals.size()));
+                                    }
+                                    else if (a1_vals.size() > 1)
+                                    { // only `a0_tau` is a singleton variable..
+                                        if (get_solver().get_sat_core()->value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau)) == semitone::Undefined)
+                                            choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau), 1l - 1l / static_cast<double>(a1_vals.size()));
+                                    }
                                 }
                                 else if (a0_tau_itm)
                                 { // only `a1_tau` is a singleton variable..
@@ -262,14 +275,14 @@ namespace ratio::solver
         const auto a0_tau_itm = dynamic_cast<ratio::core::enum_item *>(&*a0_tau);
         const auto a1_tau_itm = dynamic_cast<ratio::core::enum_item *>(&*a1_tau);
         if (a0_tau_itm && a1_tau_itm)
-        { // we have two non-singleton variables..
+        { // we have two, perhaps singleton, enum variables..
             const auto a0_vals = get_solver().enum_value(*a0_tau_itm);
             const auto a1_vals = get_solver().enum_value(*a1_tau_itm);
 
             bool found = false;
             for (const auto &v0 : a0_vals)
                 if (a1_vals.count(v0))
-                {
+                { // the two atoms can affect the same resource..
                     if (!found)
                     { // we store the ordering variables..
 #ifdef DL_TN
@@ -284,8 +297,10 @@ namespace ratio::solver
 #endif
                         found = true;
                     }
-                    plcs[{&atm0, &atm1}].emplace_back(get_solver().get_sat_core()->new_conj({get_solver().get_ov_theory().allows(a0_tau_itm->get_var(), *v0), !get_solver().get_ov_theory().allows(a1_tau_itm->get_var(), *v0)}), static_cast<const ratio::core::item *>(v0));
+                    if (a0_vals.size() > 1 && a1_vals.size() > 1) // we store a variable for forcing a0 in v0 and a1 not in v0..
+                        plcs[{&atm0, &atm1}].emplace_back(get_solver().get_sat_core()->new_conj({get_solver().get_ov_theory().allows(a0_tau_itm->get_var(), *v0), !get_solver().get_ov_theory().allows(a1_tau_itm->get_var(), *v0)}), static_cast<const ratio::core::item *>(v0));
                 }
+            assert(!plcs.count({&atm0, &atm1}) || plcs.at({&atm0, &atm1}).size() > 1);
         }
         else if (a0_tau_itm)
         { // only `a1_tau` is a singleton variable..
@@ -393,14 +408,25 @@ namespace ratio::solver
             const auto a1_tau = as[1]->get(TAU_KW);
             ratio::core::enum_item *a0_tau_itm = dynamic_cast<ratio::core::enum_item *>(&*a0_tau);
             ratio::core::enum_item *a1_tau_itm = dynamic_cast<ratio::core::enum_item *>(&*a1_tau);
-            if (a0_tau_itm && !a1_tau_itm)
+            if (a0_tau_itm && a1_tau_itm)
+            { // we have two, perhaps singleton, enum variables..
+                const auto a0_vals = get_solver().enum_value(*a0_tau_itm);
+                const auto a1_vals = get_solver().enum_value(*a1_tau_itm);
+                if (a0_vals.size() > 1 && a1_vals.size() > 1)
+                { // we have two non-singleton variables..
+                    for (const auto &a0_a1_disp : rr.plcs.at({as[0], as[1]}))
+                        if (get_solver().get_sat_core()->value(a0_a1_disp.first) == semitone::Undefined)
+                            add_resolver(std::make_unique<place_resolver>(*this, a0_a1_disp.first, *as[0], *a0_a1_disp.second, *as[1]));
+                }
+                else if (a0_vals.size() > 1) // only `a1_tau` is a singleton variable..
+                    add_resolver(std::make_unique<forbid_resolver>(*this, *as[0], *a1_tau));
+                else if (a1_vals.size() > 1) // only `a0_tau` is a singleton variable..
+                    add_resolver(std::make_unique<forbid_resolver>(*this, *as[1], *a0_tau));
+            }
+            else if (a0_tau_itm && get_solver().enum_value(*a0_tau_itm).size() > 1) // only `a1_tau` is a singleton variable..
                 add_resolver(std::make_unique<forbid_resolver>(*this, *as[0], *a1_tau));
-            else if (!a0_tau_itm && a1_tau_itm)
+            else if (a1_tau_itm && get_solver().enum_value(*a1_tau_itm).size() > 1) // only `a0_tau` is a singleton variable..
                 add_resolver(std::make_unique<forbid_resolver>(*this, *as[1], *a0_tau));
-            else if (const auto a0_a1_it = rr.plcs.find({as[0], as[1]}); a0_a1_it != rr.plcs.cend())
-                for (const auto &a0_a1_disp : a0_a1_it->second)
-                    if (get_solver().get_sat_core()->value(a0_a1_disp.first) != semitone::False)
-                        add_resolver(std::make_unique<place_resolver>(*this, a0_a1_disp.first, *as[0], *a0_a1_disp.second, *as[1]));
         }
     }
 
