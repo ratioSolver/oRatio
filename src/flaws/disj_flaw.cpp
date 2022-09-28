@@ -20,7 +20,7 @@ namespace ratio::solver
 
     disj_flaw::choose_lit::choose_lit(semitone::rational cst, disj_flaw &disj_flaw, const semitone::lit &p) : resolver(p, cst, disj_flaw) {}
 
-    ORATIO_EXPORT json::json disj_flaw::choose_lit::get_data() const noexcept { return json::json();; }
+    ORATIO_EXPORT json::json disj_flaw::choose_lit::get_data() const noexcept { return json::object(); }
 
     void disj_flaw::choose_lit::apply() {}
 } // namespace ratio::solver

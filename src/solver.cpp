@@ -703,14 +703,14 @@ namespace ratio::solver
             {
                 while (!active_flaws.empty())
                 {
-                    assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
+                    assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
                                        { return sat->value(f->phi) == semitone::True; })); // all the current flaws must be active..
-                    assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
-                                       { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](resolver *r)
+                    assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
+                                       { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto r)
                                                              { return sat->value(r->rho) == semitone::True; }); })); // none of the current flaws must have already been solved..
 
                     // this is the next flaw (i.e. the most expensive one) to be solved..
-                    auto best_flaw = std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f0, const auto &f1)
+                    auto best_flaw = std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto f0, const auto f1)
                                                       { return f0->get_estimated_cost() > f1->get_estimated_cost(); });
                     assert(best_flaw != active_flaws.cend());
                     FIRE_CURRENT_FLAW(**best_flaw);
@@ -720,7 +720,7 @@ namespace ratio::solver
                         do
                         { // we have to search..
                             next();
-                        } while (std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f)
+                        } while (std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto f)
                                              { return is_infinite(f->get_estimated_cost()); }));
                         continue;
                     }
@@ -810,7 +810,7 @@ namespace ratio::solver
                     assert(!active_flaws.count(f.get()));
                     if (!root_level())
                         trail.back().new_flaws.insert(f.get());
-                    if (std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
+                    if (std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto r)
                                      { return sat->value(r->rho) == semitone::True; }))
                         active_flaws.insert(f.get()); // this flaw has been activated and not yet accidentally solved..
                     else if (!root_level())
@@ -850,7 +850,7 @@ namespace ratio::solver
     bool solver::check()
     {
         assert(cnfl.empty());
-        assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
+        assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
                            { return sat->value(f->phi) == semitone::True; }));
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)

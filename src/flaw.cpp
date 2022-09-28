@@ -40,7 +40,6 @@ namespace ratio::solver
         }
         // we initialize the phi variable as the conjunction of the causes' rho variables..
         phi = slv.get_sat_core()->new_conj(std::move(cs));
-        assert(phi == semitone::TRUE_lit || sign(phi));
     }
 
     void flaw::expand()

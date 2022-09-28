@@ -21,7 +21,7 @@ namespace ratio::solver
 
     bool_flaw::choose_value::choose_value(semitone::rational cst, bool_flaw &bl_flaw, const semitone::lit &val) : resolver(val, cst, bl_flaw) {}
 
-    ORATIO_EXPORT json::json bool_flaw::choose_value::get_data() const noexcept { return json::json(); }
+    ORATIO_EXPORT json::json bool_flaw::choose_value::get_data() const noexcept { return json::object(); }
 
     void bool_flaw::choose_value::apply() {}
 } // namespace ratio::solver

@@ -119,7 +119,7 @@ namespace ratio::solver
         }
 
         // we extract the inconsistencies (and translate them into flaws)..
-        std::vector<std::vector<std::pair<semitone::lit, double>>> incs = get_incs();
+        auto incs = get_incs();
 
         for (auto &f : flush_pending_flaws())
             new_flaw(std::move(f), false); // we add the flaws, without enqueuing, to the planning graph..

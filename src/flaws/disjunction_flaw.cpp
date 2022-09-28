@@ -20,7 +20,7 @@ namespace ratio::solver
 
     disjunction_flaw::choose_conjunction::choose_conjunction(disjunction_flaw &disj_flaw, std::unique_ptr<ratio::core::conjunction> conj) : resolver(conj->get_cost(), disj_flaw), conj(std::move(conj)) {}
 
-    ORATIO_EXPORT json::json disjunction_flaw::choose_conjunction::get_data() const noexcept { return json::json();; }
+    ORATIO_EXPORT json::json disjunction_flaw::choose_conjunction::get_data() const noexcept { return json::object(); }
 
     void disjunction_flaw::choose_conjunction::apply() { conj->execute(); }
 } // namespace ratio::solver
