@@ -5,7 +5,7 @@ namespace ratio::solver
 {
     disj_flaw::disj_flaw(solver &slv, std::vector<resolver *> causes, std::vector<semitone::lit> lits) : flaw(slv, std::move(causes), false), lits(std::move(lits)) {}
 
-    ORATIO_EXPORT json::json disj_flaw::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json disj_flaw::get_data() const noexcept
     {
         json::json j_f;
         j_f["type"] = "disj";
@@ -20,7 +20,7 @@ namespace ratio::solver
 
     disj_flaw::choose_lit::choose_lit(semitone::rational cst, disj_flaw &disj_flaw, const semitone::lit &p) : resolver(p, cst, disj_flaw) {}
 
-    ORATIO_EXPORT json::json disj_flaw::choose_lit::get_data() const noexcept { return json::object(); }
+    ORATIOSOLVER_EXPORT json::json disj_flaw::choose_lit::get_data() const noexcept { return json::object(); }
 
     void disj_flaw::choose_lit::apply() {}
 } // namespace ratio::solver

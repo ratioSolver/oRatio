@@ -1,5 +1,5 @@
 add_executable(solver_tests test_solver.cpp)
-target_link_libraries(solver_tests PRIVATE oRatio ratioCore RiDDLe SeMiTONE json)
+target_link_libraries(solver_tests PRIVATE oRatioSolver ratioCore RiDDLe SeMiTONE json)
 
 target_compile_definitions(solver_tests PRIVATE NUM_TESTS=1)
 

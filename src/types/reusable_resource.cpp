@@ -371,7 +371,7 @@ namespace ratio::solver
 
     reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr, const std::set<ratio::core::atom *> &atms) : flaw(rr.get_solver(), smart_type::get_resolvers(rr.get_solver(), atms), {}), rr(rr), overlapping_atoms(atms) {}
 
-    ORATIO_EXPORT json::json reusable_resource::rr_flaw::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json reusable_resource::rr_flaw::get_data() const noexcept
     {
         json::json j_rr_f;
         j_rr_f["type"] = "rr-flaw";
@@ -432,7 +432,7 @@ namespace ratio::solver
 
     reusable_resource::order_resolver::order_resolver(rr_flaw &flw, const semitone::lit &r, const ratio::core::atom &before, const ratio::core::atom &after) : resolver(r, semitone::rational::ZERO, flw), before(before), after(after) {}
 
-    ORATIO_EXPORT json::json reusable_resource::order_resolver::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json reusable_resource::order_resolver::get_data() const noexcept
     {
         json::json j_r;
         j_r["type"] = "order";
@@ -445,7 +445,7 @@ namespace ratio::solver
 
     reusable_resource::place_resolver::place_resolver(rr_flaw &flw, const semitone::lit &r, ratio::core::atom &plc_atm, const ratio::core::item &plc_itm, ratio::core::atom &frbd_atm) : resolver(r, semitone::rational::ZERO, flw), plc_atm(plc_atm), plc_itm(plc_itm), frbd_atm(frbd_atm) {}
 
-    ORATIO_EXPORT json::json reusable_resource::place_resolver::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json reusable_resource::place_resolver::get_data() const noexcept
     {
         json::json j_r;
         j_r["type"] = "place";
@@ -458,7 +458,7 @@ namespace ratio::solver
 
     reusable_resource::forbid_resolver::forbid_resolver(rr_flaw &flw, ratio::core::atom &atm, ratio::core::item &itm) : resolver(semitone::rational::ZERO, flw), atm(atm), itm(itm) {}
 
-    ORATIO_EXPORT json::json reusable_resource::forbid_resolver::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json reusable_resource::forbid_resolver::get_data() const noexcept
     {
         json::json j_r;
         j_r["type"] = "forbid";

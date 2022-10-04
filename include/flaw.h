@@ -1,6 +1,6 @@
 #pragma once
 
-#include "oratio_export.h"
+#include "oratiosolver_export.h"
 #include "lit.h"
 #include "rational.h"
 #include <vector>
@@ -17,7 +17,7 @@ namespace ratio::solver
     friend class resolver;
 
   public:
-    ORATIO_EXPORT flaw(solver &slv, std::vector<resolver *> causes, const bool &exclusive = false);
+    ORATIOSOLVER_EXPORT flaw(solver &slv, std::vector<resolver *> causes, const bool &exclusive = false);
     flaw(const flaw &orig) = delete;
     virtual ~flaw() = default;
 
@@ -31,7 +31,7 @@ namespace ratio::solver
     inline semitone::rational get_estimated_cost() const noexcept { return est_cost; }
     inline bool is_expanded() const noexcept { return expanded; }
 
-    ORATIO_EXPORT resolver *get_cheapest_resolver() const noexcept;
+    ORATIOSOLVER_EXPORT resolver *get_cheapest_resolver() const noexcept;
     virtual resolver *get_best_resolver() const noexcept { return get_cheapest_resolver(); }
 
     virtual json::json get_data() const noexcept = 0;
@@ -70,5 +70,5 @@ namespace ratio::solver
   };
 
   inline uintptr_t get_id(const flaw &f) noexcept { return reinterpret_cast<uintptr_t>(&f); }
-  ORATIO_EXPORT json::json to_json(const flaw &rhs) noexcept;
+  ORATIOSOLVER_EXPORT json::json to_json(const flaw &rhs) noexcept;
 } // namespace ratio::solver

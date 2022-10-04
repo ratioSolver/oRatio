@@ -11,7 +11,7 @@ namespace ratio::solver
     disj_flaw(solver &slv, std::vector<resolver *> causes, std::vector<semitone::lit> lits);
     disj_flaw(const disj_flaw &orig) = delete;
 
-    ORATIO_EXPORT json::json get_data() const noexcept override;
+    ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
 
   private:
     void compute_resolvers() override;
@@ -22,7 +22,7 @@ namespace ratio::solver
       choose_lit(semitone::rational cst, disj_flaw &disj_flaw, const semitone::lit &p);
       choose_lit(const choose_lit &that) = delete;
 
-      ORATIO_EXPORT json::json get_data() const noexcept override;
+      ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
 
     private:
       void apply() override;

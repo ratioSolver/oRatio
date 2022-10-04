@@ -291,7 +291,7 @@ namespace ratio::solver
 
     state_variable::sv_flaw::sv_flaw(state_variable &sv, const std::set<ratio::core::atom *> &atms) : flaw(sv.get_solver(), smart_type::get_resolvers(sv.get_solver(), atms), {}), sv(sv), overlapping_atoms(atms) {}
 
-    ORATIO_EXPORT json::json state_variable::sv_flaw::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json state_variable::sv_flaw::get_data() const noexcept
     {
         json::json j_sv_f;
         j_sv_f["type"] = "sv-flaw";
@@ -347,7 +347,7 @@ namespace ratio::solver
 
     state_variable::order_resolver::order_resolver(sv_flaw &flw, const semitone::lit &r, const ratio::core::atom &before, const ratio::core::atom &after) : resolver(r, semitone::rational::ZERO, flw), before(before), after(after) {}
 
-    ORATIO_EXPORT json::json state_variable::order_resolver::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json state_variable::order_resolver::get_data() const noexcept
     {
         json::json j_r;
         j_r["type"] = "order";
@@ -360,7 +360,7 @@ namespace ratio::solver
 
     state_variable::place_resolver::place_resolver(sv_flaw &flw, const semitone::lit &r, ratio::core::atom &plc_atm, const ratio::core::item &plc_itm, ratio::core::atom &frbd_atm) : resolver(r, semitone::rational::ZERO, flw), plc_atm(plc_atm), plc_itm(plc_itm), frbd_atm(frbd_atm) {}
 
-    ORATIO_EXPORT json::json state_variable::place_resolver::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json state_variable::place_resolver::get_data() const noexcept
     {
         json::json j_r;
         j_r["type"] = "place";
@@ -373,7 +373,7 @@ namespace ratio::solver
 
     state_variable::forbid_resolver::forbid_resolver(sv_flaw &flw, ratio::core::atom &atm, ratio::core::item &itm) : resolver(semitone::rational::ZERO, flw), atm(atm), itm(itm) {}
 
-    ORATIO_EXPORT json::json state_variable::forbid_resolver::get_data() const noexcept
+    ORATIOSOLVER_EXPORT json::json state_variable::forbid_resolver::get_data() const noexcept
     {
         json::json j_r;
         j_r["type"] = "forbid";

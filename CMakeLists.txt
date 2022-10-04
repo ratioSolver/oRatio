@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(oRatio VERSION 0.1.0)
+project(oRatioSolver VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -37,6 +37,9 @@ add_library(${PROJECT_NAME} SHARED ${RATIO_SOURCES})
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/flaws $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/types $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/heuristics $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
 target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE json)
+
+add_executable(oRatio src/exec/main.cpp)
+target_link_libraries(oRatio PRIVATE oRatioSolver ratioCore RiDDLe SeMiTONE json)
 
 message(STATUS "Temporal network type:  ${TEMPORAL_NETWORK_TYPE}")
 if(TEMPORAL_NETWORK_TYPE STREQUAL DL)
@@ -92,9 +95,14 @@ endif()
 install(
     TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 install(
-    FILES ${RATIO_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/oratio_export.h
+    TARGETS oRatio
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+install(
+    FILES ${RATIO_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/oratiosolver_export.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
 )
 configure_package_config_file(src/${PROJECT_NAME}Config.cmake.in ${PROJECT_NAME}Config.cmake INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME} PATH_VARS CMAKE_INSTALL_INCLUDEDIR)

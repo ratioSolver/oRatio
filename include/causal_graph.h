@@ -1,6 +1,6 @@
 #pragma once
 
-#include "oratio_export.h"
+#include "oratiosolver_export.h"
 #include "rational.h"
 #include "lit.h"
 #include <unordered_set>
@@ -26,7 +26,7 @@ namespace ratio::solver
     friend class solver;
 
   public:
-    ORATIO_EXPORT causal_graph();
+    ORATIOSOLVER_EXPORT causal_graph();
     causal_graph(const causal_graph &orig) = delete;
 
     inline solver &get_solver() const noexcept { return *slv; }
@@ -41,10 +41,10 @@ namespace ratio::solver
     virtual semitone::rational get_estimated_cost(const resolver &) const noexcept { return semitone::rational::ZERO; }
 
   protected:
-    ORATIO_EXPORT virtual void init(solver &s);
+    ORATIOSOLVER_EXPORT virtual void init(solver &s);
 
   private:
-    ORATIO_EXPORT void check();
+    ORATIOSOLVER_EXPORT void check();
 
     virtual void enqueue(flaw &) {}
     virtual void propagate_costs(flaw &) {}
@@ -55,10 +55,10 @@ namespace ratio::solver
 
     virtual void push() {}
     virtual void pop() {}
-    ORATIO_EXPORT virtual void activated_flaw(flaw &f);
-    ORATIO_EXPORT virtual void negated_flaw(flaw &f);
-    ORATIO_EXPORT virtual void activated_resolver(resolver &r);
-    ORATIO_EXPORT virtual void negated_resolver(resolver &r);
+    ORATIOSOLVER_EXPORT virtual void activated_flaw(flaw &f);
+    ORATIOSOLVER_EXPORT virtual void negated_flaw(flaw &f);
+    ORATIOSOLVER_EXPORT virtual void activated_resolver(resolver &r);
+    ORATIOSOLVER_EXPORT virtual void negated_resolver(resolver &r);
 
   protected:
     void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true) const noexcept;

@@ -27,16 +27,16 @@
 
 namespace ratio::solver
 {
-    ORATIO_EXPORT solver::solver(const bool &i) : solver(HEURISTIC, i) {}
-    ORATIO_EXPORT solver::solver(std::unique_ptr<causal_graph> c_gr, const bool &i) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(c_gr))
+    ORATIOSOLVER_EXPORT solver::solver(const bool &i) : solver(HEURISTIC, i) {}
+    ORATIOSOLVER_EXPORT solver::solver(std::unique_ptr<causal_graph> c_gr, const bool &i) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(c_gr))
     {
         gr->init(*this); // we initialize the causal graph..
         if (i)           // we initializa the solver..
             init();
     }
-    ORATIO_EXPORT solver::~solver() {}
+    ORATIOSOLVER_EXPORT solver::~solver() {}
 
-    ORATIO_EXPORT void solver::read(const std::string &script)
+    ORATIOSOLVER_EXPORT void solver::read(const std::string &script)
     {
         // we read the script..
         core::read(script);
@@ -47,7 +47,7 @@ namespace ratio::solver
             throw ratio::core::unsolvable_exception();
         FIRE_STATE_CHANGED();
     }
-    ORATIO_EXPORT void solver::read(const std::vector<std::string> &files)
+    ORATIOSOLVER_EXPORT void solver::read(const std::vector<std::string> &files)
     {
         // we read the files..
         core::read(files);
@@ -59,7 +59,7 @@ namespace ratio::solver
         FIRE_STATE_CHANGED();
     }
 
-    ORATIO_EXPORT void solver::init() noexcept
+    ORATIOSOLVER_EXPORT void solver::init() noexcept
     {
         read(INIT_STRING);
         imp_pred = &get_predicate(RATIO_IMPULSE);
@@ -71,19 +71,19 @@ namespace ratio::solver
         FIRE_STATE_CHANGED();
     }
 
-    ORATIO_EXPORT ratio::core::expr solver::new_bool() noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_bool() noexcept
     { // we create a new boolean expression..
         auto b_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat->new_var()));
         // we create a new boolean flaw..
         new_flaw(std::make_unique<bool_flaw>(*this, get_cause(), *b_xpr));
         return b_xpr;
     }
-    ORATIO_EXPORT ratio::core::expr solver::new_int() noexcept { return std::make_shared<ratio::core::arith_item>(get_int_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
-    ORATIO_EXPORT ratio::core::expr solver::new_real() noexcept { return std::make_shared<ratio::core::arith_item>(get_real_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
-    ORATIO_EXPORT ratio::core::expr solver::new_time_point() noexcept { return std::make_shared<ratio::core::arith_item>(get_time_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
-    ORATIO_EXPORT ratio::core::expr solver::new_string() noexcept { return std::make_shared<ratio::core::string_item>(get_string_type(), ""); }
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_int() noexcept { return std::make_shared<ratio::core::arith_item>(get_int_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_real() noexcept { return std::make_shared<ratio::core::arith_item>(get_real_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_time_point() noexcept { return std::make_shared<ratio::core::arith_item>(get_time_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_string() noexcept { return std::make_shared<ratio::core::string_item>(get_string_type(), ""); }
 
-    ORATIO_EXPORT ratio::core::expr solver::new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals)
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals)
     {
         assert(&tp != &get_bool_type());
         assert(&tp != &get_int_type());
@@ -104,7 +104,7 @@ namespace ratio::solver
             new_flaw(std::make_unique<enum_flaw>(*this, get_cause(), *e_xpr));
         return e_xpr;
     }
-    ORATIO_EXPORT ratio::core::expr solver::get(ratio::core::enum_item &var, const std::string &name)
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::get(ratio::core::enum_item &var, const std::string &name)
     {
         auto vs = ov_th.value(var.get_var());
         assert(vs.size() > 1);
@@ -242,22 +242,22 @@ namespace ratio::solver
         else
             return std::make_shared<ratio::core::enum_item>(var.get_type().get_field(name).get_type(), ov_th.new_var(c_vars, c_vals));
     }
-    ORATIO_EXPORT void solver::remove(ratio::core::expr &var, semitone::var_value &val)
+    ORATIOSOLVER_EXPORT void solver::remove(ratio::core::expr &var, semitone::var_value &val)
     {
         auto alw_var = ov_th.allows(static_cast<ratio::core::enum_item &>(*var).get_var(), val);
         if (!sat->new_clause({!ni, !alw_var}))
             throw ratio::core::unsolvable_exception();
     }
 
-    ORATIO_EXPORT ratio::core::expr solver::negate(const ratio::core::expr &var) noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), !static_cast<ratio::core::bool_item &>(*var).get_value()); }
-    ORATIO_EXPORT ratio::core::expr solver::conj(const std::vector<ratio::core::expr> &exprs) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::negate(const ratio::core::expr &var) noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), !static_cast<ratio::core::bool_item &>(*var).get_value()); }
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::conj(const std::vector<ratio::core::expr> &exprs) noexcept
     {
         std::vector<semitone::lit> lits;
         for (const auto &bex : exprs)
             lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
         return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat->new_conj(std::move(lits)));
     }
-    ORATIO_EXPORT ratio::core::expr solver::disj(const std::vector<ratio::core::expr> &exprs) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::disj(const std::vector<ratio::core::expr> &exprs) noexcept
     {
         std::vector<semitone::lit> lits;
         for (const auto &bex : exprs)
@@ -270,7 +270,7 @@ namespace ratio::solver
 
         return d_xpr;
     }
-    ORATIO_EXPORT ratio::core::expr solver::exct_one(const std::vector<ratio::core::expr> &exprs) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::exct_one(const std::vector<ratio::core::expr> &exprs) noexcept
     {
         std::vector<semitone::lit> lits;
         for (const auto &bex : exprs)
@@ -278,7 +278,7 @@ namespace ratio::solver
         return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat->new_exct_one(std::move(lits)));
     }
 
-    ORATIO_EXPORT ratio::core::expr solver::add(const std::vector<ratio::core::expr> &exprs) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::add(const std::vector<ratio::core::expr> &exprs) noexcept
     {
         assert(exprs.size() > 1);
         semitone::lin l;
@@ -286,7 +286,7 @@ namespace ratio::solver
             l += static_cast<ratio::core::arith_item &>(*aex).get_value();
         return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
     }
-    ORATIO_EXPORT ratio::core::expr solver::sub(const std::vector<ratio::core::expr> &exprs) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::sub(const std::vector<ratio::core::expr> &exprs) noexcept
     {
         assert(exprs.size() > 1);
         semitone::lin l;
@@ -297,7 +297,7 @@ namespace ratio::solver
                 l -= static_cast<ratio::core::arith_item &>(**xpr_it).get_value();
         return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
     }
-    ORATIO_EXPORT ratio::core::expr solver::mult(const std::vector<ratio::core::expr> &exprs) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::mult(const std::vector<ratio::core::expr> &exprs) noexcept
     {
         assert(exprs.size() > 1);
         if (auto var_it = std::find_if(exprs.cbegin(), exprs.cend(), [this](const auto &ae)
@@ -326,7 +326,7 @@ namespace ratio::solver
             return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
         }
     }
-    ORATIO_EXPORT ratio::core::expr solver::div(const std::vector<ratio::core::expr> &exprs) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::div(const std::vector<ratio::core::expr> &exprs) noexcept
     {
         assert(exprs.size() > 1);
         assert(std::all_of(++exprs.cbegin(), exprs.cend(), [this](const auto &ae)
@@ -341,31 +341,31 @@ namespace ratio::solver
         }
         return std::make_shared<ratio::core::arith_item>(get_type(exprs), static_cast<ratio::core::arith_item &>(*exprs.at(0)).get_value() / c);
     }
-    ORATIO_EXPORT ratio::core::expr solver::minus(const ratio::core::expr &ex) noexcept { return std::make_shared<ratio::core::arith_item>(ex->get_type(), -static_cast<ratio::core::arith_item &>(*ex).get_value()); }
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::minus(const ratio::core::expr &ex) noexcept { return std::make_shared<ratio::core::arith_item>(ex->get_type(), -static_cast<ratio::core::arith_item &>(*ex).get_value()); }
 
-    ORATIO_EXPORT ratio::core::expr solver::lt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::lt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
     {
         if (&get_type({left, right}) == &get_time_type())
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_lt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
         else
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_lt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
-    ORATIO_EXPORT ratio::core::expr solver::leq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::leq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
     {
         if (&get_type({left, right}) == &get_time_type())
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_leq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
         else
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_leq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
-    ORATIO_EXPORT ratio::core::expr solver::eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), eq(*left, *right)); }
-    ORATIO_EXPORT ratio::core::expr solver::geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), eq(*left, *right)); }
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
     {
         if (&get_type({left, right}) == &get_time_type())
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
         else
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
-    ORATIO_EXPORT ratio::core::expr solver::gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
     {
         if (&get_type({left, right}) == &get_time_type())
             return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
@@ -495,7 +495,7 @@ namespace ratio::solver
             return false;
     }
 
-    ORATIO_EXPORT void solver::new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs)
+    ORATIOSOLVER_EXPORT void solver::new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs)
     { // we create a new disjunction flaw..
         new_flaw(std::make_unique<disjunction_flaw>(*this, get_cause(), std::move(conjs)));
     }
@@ -629,20 +629,20 @@ namespace ratio::solver
         FIRE_FLAW_COST_CHANGED(f);
     }
 
-    ORATIO_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
+    ORATIOSOLVER_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
     {
         for (const auto &f : facts)
             if (!sat->new_clause({!ni, static_cast<ratio::core::bool_item &>(*f).get_value()}))
                 throw ratio::core::unsolvable_exception();
     }
-    ORATIO_EXPORT void solver::assert_facts(std::vector<semitone::lit> facts)
+    ORATIOSOLVER_EXPORT void solver::assert_facts(std::vector<semitone::lit> facts)
     {
         for (const auto &f : facts)
             if (!sat->new_clause({!ni, f}))
                 throw ratio::core::unsolvable_exception();
     }
 
-    ORATIO_EXPORT bool solver::solve()
+    ORATIOSOLVER_EXPORT bool solver::solve()
     {
         FIRE_STARTED_SOLVING();
 
@@ -752,7 +752,7 @@ namespace ratio::solver
         }
     }
 
-    ORATIO_EXPORT void solver::take_decision(const semitone::lit &ch)
+    ORATIOSOLVER_EXPORT void solver::take_decision(const semitone::lit &ch)
     {
         assert(sat->value(ch) == semitone::Undefined);
 
@@ -997,29 +997,29 @@ namespace ratio::solver
         }
     }
 
-    ORATIO_EXPORT ratio::core::predicate &solver::get_impulse() const noexcept { return *imp_pred; }
-    ORATIO_EXPORT bool solver::is_impulse(const ratio::core::type &pred) const noexcept { return get_impulse().is_assignable_from(pred); }
-    ORATIO_EXPORT bool solver::is_impulse(const ratio::core::atom &atm) const noexcept { return is_impulse(atm.get_type()); }
-    ORATIO_EXPORT ratio::core::predicate &solver::get_interval() const noexcept { return *int_pred; }
-    ORATIO_EXPORT bool solver::is_interval(const ratio::core::type &pred) const noexcept { return get_interval().is_assignable_from(pred); }
-    ORATIO_EXPORT bool solver::is_interval(const ratio::core::atom &atm) const noexcept { return is_interval(atm.get_type()); }
+    ORATIOSOLVER_EXPORT ratio::core::predicate &solver::get_impulse() const noexcept { return *imp_pred; }
+    ORATIOSOLVER_EXPORT bool solver::is_impulse(const ratio::core::type &pred) const noexcept { return get_impulse().is_assignable_from(pred); }
+    ORATIOSOLVER_EXPORT bool solver::is_impulse(const ratio::core::atom &atm) const noexcept { return is_impulse(atm.get_type()); }
+    ORATIOSOLVER_EXPORT ratio::core::predicate &solver::get_interval() const noexcept { return *int_pred; }
+    ORATIOSOLVER_EXPORT bool solver::is_interval(const ratio::core::type &pred) const noexcept { return get_interval().is_assignable_from(pred); }
+    ORATIOSOLVER_EXPORT bool solver::is_interval(const ratio::core::atom &atm) const noexcept { return is_interval(atm.get_type()); }
 
-    ORATIO_EXPORT semitone::lbool solver::bool_value([[maybe_unused]] const ratio::core::bool_item &x) const noexcept { return sat->value(x.get_value()); }
-    ORATIO_EXPORT std::pair<semitone::inf_rational, semitone::inf_rational> solver::arith_bounds([[maybe_unused]] const ratio::core::arith_item &x) const noexcept
+    ORATIOSOLVER_EXPORT semitone::lbool solver::bool_value([[maybe_unused]] const ratio::core::bool_item &x) const noexcept { return sat->value(x.get_value()); }
+    ORATIOSOLVER_EXPORT std::pair<semitone::inf_rational, semitone::inf_rational> solver::arith_bounds([[maybe_unused]] const ratio::core::arith_item &x) const noexcept
     {
         if (&x.get_type() == &get_time_type())
             return rdl_th.bounds(x.get_value());
         else
             return lra_th.bounds(x.get_value());
     }
-    ORATIO_EXPORT semitone::inf_rational solver::arith_value([[maybe_unused]] const ratio::core::arith_item &x) const noexcept
+    ORATIOSOLVER_EXPORT semitone::inf_rational solver::arith_value([[maybe_unused]] const ratio::core::arith_item &x) const noexcept
     {
         if (&x.get_type() == &get_time_type())
             return rdl_th.bounds(x.get_value()).first;
         else
             return lra_th.value(x.get_value());
     }
-    ORATIO_EXPORT std::unordered_set<semitone::var_value *> solver::enum_value([[maybe_unused]] const ratio::core::enum_item &x) const noexcept { return ov_th.value(x.get_var()); }
+    ORATIOSOLVER_EXPORT std::unordered_set<semitone::var_value *> solver::enum_value([[maybe_unused]] const ratio::core::enum_item &x) const noexcept { return ov_th.value(x.get_var()); }
 
 #ifdef BUILD_LISTENERS
     void solver::fire_new_flaw(const flaw &f) const
@@ -1064,7 +1064,7 @@ namespace ratio::solver
     }
 #endif
 
-    ORATIO_EXPORT json::json to_json(const solver &rhs) noexcept
+    ORATIOSOLVER_EXPORT json::json to_json(const solver &rhs) noexcept
     {
         std::set<ratio::core::item *> all_items;
         std::set<ratio::core::atom *> all_atoms;
@@ -1110,7 +1110,7 @@ namespace ratio::solver
         return j_core;
     }
 
-    ORATIO_EXPORT json::json to_timelines(solver &rhs) noexcept
+    ORATIOSOLVER_EXPORT json::json to_timelines(solver &rhs) noexcept
     {
         json::array tls;
 
@@ -1161,7 +1161,7 @@ namespace ratio::solver
         return tls;
     }
 
-    ORATIO_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept
+    ORATIOSOLVER_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept
     {
         solver &slv = static_cast<solver &>(rhs.get_type().get_core());
         json::json j_itm;
@@ -1186,7 +1186,7 @@ namespace ratio::solver
 
         return j_itm;
     }
-    ORATIO_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept
+    ORATIOSOLVER_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept
     {
         json::array j_exprs;
         for (const auto &[xpr_name, xpr] : vars)
@@ -1199,7 +1199,7 @@ namespace ratio::solver
         }
         return j_exprs;
     }
-    ORATIO_EXPORT json::json value(const ratio::core::item &rhs) noexcept
+    ORATIOSOLVER_EXPORT json::json value(const ratio::core::item &rhs) noexcept
     {
         solver &slv = static_cast<solver &>(rhs.get_type().get_core());
         if (&rhs.get_type() == &slv.get_bool_type())

@@ -7,14 +7,14 @@
 
 namespace ratio::solver
 {
-    ORATIO_EXPORT causal_graph::causal_graph() {}
+    ORATIOSOLVER_EXPORT causal_graph::causal_graph() {}
 
-    ORATIO_EXPORT void causal_graph::init(solver &s) { this->slv = &s; }
+    ORATIOSOLVER_EXPORT void causal_graph::init(solver &s) { this->slv = &s; }
 
-    ORATIO_EXPORT void causal_graph::activated_flaw(flaw &) {}
-    ORATIO_EXPORT void causal_graph::negated_flaw(flaw &f) { propagate_costs(f); }
-    ORATIO_EXPORT void causal_graph::activated_resolver(resolver &) {}
-    ORATIO_EXPORT void causal_graph::negated_resolver(resolver &r)
+    ORATIOSOLVER_EXPORT void causal_graph::activated_flaw(flaw &) {}
+    ORATIOSOLVER_EXPORT void causal_graph::negated_flaw(flaw &f) { propagate_costs(f); }
+    ORATIOSOLVER_EXPORT void causal_graph::activated_resolver(resolver &) {}
+    ORATIOSOLVER_EXPORT void causal_graph::negated_resolver(resolver &r)
     {
         if (slv->get_sat_core()->value(r.get_effect().get_phi()) != semitone::False)
             // we update the cost of the resolver's effect..

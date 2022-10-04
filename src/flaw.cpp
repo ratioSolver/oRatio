@@ -5,9 +5,9 @@
 
 namespace ratio::solver
 {
-    ORATIO_EXPORT flaw::flaw(solver &slv, std::vector<resolver *> causes, const bool &exclusive) : slv(slv), position(slv.get_idl_theory().new_var()), causes(std::move(causes)), exclusive(exclusive) {}
+    ORATIOSOLVER_EXPORT flaw::flaw(solver &slv, std::vector<resolver *> causes, const bool &exclusive) : slv(slv), position(slv.get_idl_theory().new_var()), causes(std::move(causes)), exclusive(exclusive) {}
 
-    ORATIO_EXPORT resolver *flaw::get_cheapest_resolver() const noexcept
+    ORATIOSOLVER_EXPORT resolver *flaw::get_cheapest_resolver() const noexcept
     {
         resolver *c_res = nullptr;
         semitone::rational c_cost = semitone::rational::POSITIVE_INFINITY;
@@ -86,7 +86,7 @@ namespace ratio::solver
         slv.new_resolver(std::move(r));
     }
 
-    ORATIO_EXPORT json::json to_json(const flaw &rhs) noexcept
+    ORATIOSOLVER_EXPORT json::json to_json(const flaw &rhs) noexcept
     {
         json::json j_f;
         j_f["id"] = get_id(rhs);

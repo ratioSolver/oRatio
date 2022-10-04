@@ -1,6 +1,6 @@
 #pragma once
 
-#include "oratio_export.h"
+#include "oratiosolver_export.h"
 #include "core.h"
 #include "theory.h"
 #include "sat_stack.h"
@@ -55,45 +55,45 @@ namespace ratio::solver
 #endif
 
   public:
-    ORATIO_EXPORT solver(const bool &i = true);
-    ORATIO_EXPORT solver(std::unique_ptr<causal_graph> gr, const bool &i = true);
+    ORATIOSOLVER_EXPORT solver(const bool &i = true);
+    ORATIOSOLVER_EXPORT solver(std::unique_ptr<causal_graph> gr, const bool &i = true);
     solver(const solver &orig) = delete;
-    ORATIO_EXPORT ~solver();
+    ORATIOSOLVER_EXPORT ~solver();
 
-    ORATIO_EXPORT void read(const std::string &script) override;
-    ORATIO_EXPORT void read(const std::vector<std::string> &files) override;
+    ORATIOSOLVER_EXPORT void read(const std::string &script) override;
+    ORATIOSOLVER_EXPORT void read(const std::vector<std::string> &files) override;
 
     /**
      * Initializes the solver.
      */
-    ORATIO_EXPORT void init() noexcept;
+    ORATIOSOLVER_EXPORT void init() noexcept;
 
-    ORATIO_EXPORT ratio::core::expr new_bool() noexcept override;
-    ORATIO_EXPORT ratio::core::expr new_int() noexcept override;
-    ORATIO_EXPORT ratio::core::expr new_real() noexcept override;
-    ORATIO_EXPORT ratio::core::expr new_time_point() noexcept override;
-    ORATIO_EXPORT ratio::core::expr new_string() noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr new_bool() noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr new_int() noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr new_real() noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr new_time_point() noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr new_string() noexcept override;
 
-    ORATIO_EXPORT ratio::core::expr new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals) override;
-    ORATIO_EXPORT ratio::core::expr get(ratio::core::enum_item &var, const std::string &name) override;
-    ORATIO_EXPORT void remove(ratio::core::expr &var, semitone::var_value &val) override;
+    ORATIOSOLVER_EXPORT ratio::core::expr new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals) override;
+    ORATIOSOLVER_EXPORT ratio::core::expr get(ratio::core::enum_item &var, const std::string &name) override;
+    ORATIOSOLVER_EXPORT void remove(ratio::core::expr &var, semitone::var_value &val) override;
 
-    ORATIO_EXPORT ratio::core::expr negate(const ratio::core::expr &var) noexcept override;
-    ORATIO_EXPORT ratio::core::expr conj(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIO_EXPORT ratio::core::expr disj(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIO_EXPORT ratio::core::expr exct_one(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr negate(const ratio::core::expr &var) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr conj(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr disj(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr exct_one(const std::vector<ratio::core::expr> &exprs) noexcept override;
 
-    ORATIO_EXPORT ratio::core::expr add(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIO_EXPORT ratio::core::expr sub(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIO_EXPORT ratio::core::expr mult(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIO_EXPORT ratio::core::expr div(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIO_EXPORT ratio::core::expr minus(const ratio::core::expr &ex) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr add(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr sub(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr mult(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr div(const std::vector<ratio::core::expr> &exprs) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr minus(const ratio::core::expr &ex) noexcept override;
 
-    ORATIO_EXPORT ratio::core::expr lt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    ORATIO_EXPORT ratio::core::expr leq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    ORATIO_EXPORT ratio::core::expr eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    ORATIO_EXPORT ratio::core::expr geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    ORATIO_EXPORT ratio::core::expr gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr lt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr leq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
+    ORATIOSOLVER_EXPORT ratio::core::expr gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
     /**
      * @brief Checks whether the two items can be made equal.
      *
@@ -116,7 +116,7 @@ namespace ratio::solver
       ni = tmp_ni;
     }
 
-    ORATIO_EXPORT void new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) override;
+    ORATIOSOLVER_EXPORT void new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) override;
 
   private:
     void new_atom(ratio::core::expr &atm, const bool &is_fact = true) override;
@@ -139,8 +139,8 @@ namespace ratio::solver
     semitone::lit eq(ratio::core::item &left, ratio::core::item &right) noexcept;
 
   public:
-    ORATIO_EXPORT void assert_facts(std::vector<ratio::core::expr> facts) override;
-    ORATIO_EXPORT void assert_facts(std::vector<semitone::lit> facts);
+    ORATIOSOLVER_EXPORT void assert_facts(std::vector<ratio::core::expr> facts) override;
+    ORATIOSOLVER_EXPORT void assert_facts(std::vector<semitone::lit> facts);
 
     /**
      * @brief Get the linear-real-arithmetic theory.
@@ -167,10 +167,10 @@ namespace ratio::solver
      */
     inline semitone::rdl_theory &get_rdl_theory() noexcept { return rdl_th; }
 
-    ORATIO_EXPORT semitone::lbool bool_value([[maybe_unused]] const ratio::core::bool_item &x) const noexcept override;
-    ORATIO_EXPORT std::pair<semitone::inf_rational, semitone::inf_rational> arith_bounds([[maybe_unused]] const ratio::core::arith_item &x) const noexcept override;
-    ORATIO_EXPORT semitone::inf_rational arith_value([[maybe_unused]] const ratio::core::arith_item &x) const noexcept override;
-    ORATIO_EXPORT std::unordered_set<semitone::var_value *> enum_value([[maybe_unused]] const ratio::core::enum_item &x) const noexcept override;
+    ORATIOSOLVER_EXPORT semitone::lbool bool_value([[maybe_unused]] const ratio::core::bool_item &x) const noexcept override;
+    ORATIOSOLVER_EXPORT std::pair<semitone::inf_rational, semitone::inf_rational> arith_bounds([[maybe_unused]] const ratio::core::arith_item &x) const noexcept override;
+    ORATIOSOLVER_EXPORT semitone::inf_rational arith_value([[maybe_unused]] const ratio::core::arith_item &x) const noexcept override;
+    ORATIOSOLVER_EXPORT std::unordered_set<semitone::var_value *> enum_value([[maybe_unused]] const ratio::core::enum_item &x) const noexcept override;
 
     inline size_t decision_level() const noexcept { return trail.size(); } // returns the current decision level..
     inline bool root_level() const noexcept { return trail.empty(); }      // checks whether the current decision level is root level..
@@ -181,11 +181,11 @@ namespace ratio::solver
     /**
      * Solves the given problem returning whether a solution has been found.
      */
-    ORATIO_EXPORT bool solve();
+    ORATIOSOLVER_EXPORT bool solve();
     /**
      * Takes the given decision and propagates its effects.
      */
-    ORATIO_EXPORT void take_decision(const semitone::lit &ch);
+    ORATIOSOLVER_EXPORT void take_decision(const semitone::lit &ch);
 
   private:
     std::vector<std::unique_ptr<flaw>> flush_pending_flaws();
@@ -203,12 +203,12 @@ namespace ratio::solver
     void reset_smart_types();
 
   public:
-    ORATIO_EXPORT ratio::core::predicate &get_impulse() const noexcept;
-    ORATIO_EXPORT bool is_impulse(const ratio::core::type &pred) const noexcept;
-    ORATIO_EXPORT bool is_impulse(const ratio::core::atom &atm) const noexcept;
-    ORATIO_EXPORT ratio::core::predicate &get_interval() const noexcept;
-    ORATIO_EXPORT bool is_interval(const ratio::core::type &pred) const noexcept;
-    ORATIO_EXPORT bool is_interval(const ratio::core::atom &atm) const noexcept;
+    ORATIOSOLVER_EXPORT ratio::core::predicate &get_impulse() const noexcept;
+    ORATIOSOLVER_EXPORT bool is_impulse(const ratio::core::type &pred) const noexcept;
+    ORATIOSOLVER_EXPORT bool is_impulse(const ratio::core::atom &atm) const noexcept;
+    ORATIOSOLVER_EXPORT ratio::core::predicate &get_interval() const noexcept;
+    ORATIOSOLVER_EXPORT bool is_interval(const ratio::core::type &pred) const noexcept;
+    ORATIOSOLVER_EXPORT bool is_interval(const ratio::core::atom &atm) const noexcept;
 
     friend inline semitone::var get_sigma(const solver &s, const ratio::core::atom &atm) { return s.atom_properties.at(&atm).sigma; }
     friend inline atom_flaw &get_reason(const solver &s, const ratio::core::atom &atm) { return *s.atom_properties.at(&atm).reason; }
@@ -265,10 +265,10 @@ namespace ratio::solver
 #endif
   };
 
-  ORATIO_EXPORT json::json to_json(const solver &rhs) noexcept;
-  ORATIO_EXPORT json::json to_timelines(solver &rhs) noexcept;
+  ORATIOSOLVER_EXPORT json::json to_json(const solver &rhs) noexcept;
+  ORATIOSOLVER_EXPORT json::json to_timelines(solver &rhs) noexcept;
 
-  ORATIO_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept;
-  ORATIO_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept;
-  ORATIO_EXPORT json::json value(const ratio::core::item &rhs) noexcept;
+  ORATIOSOLVER_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept;
+  ORATIOSOLVER_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept;
+  ORATIOSOLVER_EXPORT json::json value(const ratio::core::item &rhs) noexcept;
 } // namespace ratio::solver

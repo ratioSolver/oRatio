@@ -45,13 +45,13 @@ once the building requirements are installed, move to a desired folder and clone
 git clone --recurse-submodules https://github.com/ratioSolver/oRatio
 ```
 
-finally, build oRatio
+finally, build and install oRatio
 
 ```shell
 mkdir build
 cd build
 cmake ..
-make
+sudo make install
 ```
 
 ### Building on OS X
@@ -62,13 +62,13 @@ The easiest way to install the building requirements on OS X consists in downloa
 git clone --recurse-submodules https://github.com/ratioSolver/oRatio
 ```
 
-finally, build oRatio
+finally, build and install oRatio
 
 ```shell
 mkdir build
 cd build
 cmake ..
-make
+sudo make install
 ```
 
 ### Building on Windows
