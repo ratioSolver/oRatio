@@ -27,6 +27,7 @@ option(DEFERRABLE_FLAWS "Check for deferrable flaws" ON)
 option(GRAPH_PRUNING "Prunes the causal graph before starting the search" ON)
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
 option(BUILD_LISTENERS "Builds the solver's listeners" OFF)
+option(ADD_COVERAGE "Add coverage" OFF)
 
 add_subdirectory(extern/core)
 
@@ -90,6 +91,12 @@ if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4)
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+    if (ADD_COVERAGE)
+        if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
+            target_link_libraries(${PROJECT_NAME} PUBLIC gcov)
+        endif()
+    endif()
 endif()
 
 install(
