@@ -104,7 +104,7 @@ namespace ratio::solver
             new_flaw(std::make_unique<enum_flaw>(*this, get_cause(), *e_xpr));
         return e_xpr;
     }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::get(ratio::core::enum_item &var, const std::string &name)
+    ORATIOSOLVER_EXPORT ratio::core::expr solver::get_enum(ratio::core::enum_item &var, const std::string &name)
     {
         auto vs = ov_th.value(var.get_var());
         assert(vs.size() > 1);

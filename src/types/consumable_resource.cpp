@@ -183,8 +183,8 @@ namespace ratio::solver
                 pulses.insert(start);
                 pulses.insert(end);
             }
-            pulses.insert(get_solver().ratio::core::core::arith_value(get_solver().ratio::core::env::get("origin")));
-            pulses.insert(get_solver().ratio::core::core::arith_value(get_solver().ratio::core::env::get("horizon")));
+            pulses.insert(get_solver().ratio::core::core::arith_value(get_solver().get("origin")));
+            pulses.insert(get_solver().ratio::core::core::arith_value(get_solver().get("horizon")));
 
             std::set<ratio::core::atom *> overlapping_atoms;
             std::set<semitone::inf_rational>::iterator p = pulses.begin();

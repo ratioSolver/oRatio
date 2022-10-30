@@ -75,7 +75,7 @@ namespace ratio::solver
     ORATIOSOLVER_EXPORT ratio::core::expr new_string() noexcept override;
 
     ORATIOSOLVER_EXPORT ratio::core::expr new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals) override;
-    ORATIOSOLVER_EXPORT ratio::core::expr get(ratio::core::enum_item &var, const std::string &name) override;
+    ORATIOSOLVER_EXPORT ratio::core::expr get_enum(ratio::core::enum_item &var, const std::string &name) override;
     ORATIOSOLVER_EXPORT void remove(ratio::core::expr &var, semitone::var_value &val) override;
 
     ORATIOSOLVER_EXPORT ratio::core::expr negate(const ratio::core::expr &var) noexcept override;

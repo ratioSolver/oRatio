@@ -28,6 +28,7 @@ namespace ratio::solver
   public:
     ORATIOSOLVER_EXPORT causal_graph();
     causal_graph(const causal_graph &orig) = delete;
+    virtual ~causal_graph() {}
 
     inline solver &get_solver() const noexcept { return *slv; }
     inline const semitone::var &get_gamma() const noexcept { return gamma; }
