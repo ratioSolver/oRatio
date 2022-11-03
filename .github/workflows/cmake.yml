@@ -41,4 +41,4 @@ jobs:
 
       - name: Test
         working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure --repeat after-timeout:10
+        run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure --repeat after-timeout:10 --repeat until-pass:10
