@@ -56,6 +56,7 @@ if(TEMPORAL_NETWORK_TYPE STREQUAL LA)
 
     add_test(NAME Logistics_0 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/core/extern/riddle/examples/logistics/logistics_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/core/extern/riddle/examples/logistics/logistics_problem_0.rddl" "solution.json")
     add_test(NAME Logistics_1 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/core/extern/riddle/examples/logistics/logistics_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/core/extern/riddle/examples/logistics/logistics_problem_1.rddl" "solution.json")
+    add_test(NAME Logistics_2 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/core/extern/riddle/examples/logistics/logistics_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/core/extern/riddle/examples/logistics/logistics_problem_2.rddl" "solution.json")
 
     add_test(NAME Telepresence_0 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/core/extern/riddle/examples/telepresence/telepresence_00.rddl" "solution.json")
     add_test(NAME Telepresence_1 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/core/extern/riddle/examples/telepresence/telepresence_01.rddl" "solution.json")
