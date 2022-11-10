@@ -436,10 +436,10 @@ namespace ratio::solver
     }
     bool solver::matches(ratio::core::item &left, ratio::core::item &right) noexcept
     {
-        if (&left == &right) // the two items are the same item..
-            return true;
+        if (&left == &right)
+            return true; // the two items are the same item..
         else if (&left.get_type() != &right.get_type())
-            return false;
+            return false; // the two items have different types..
         else if (&left.get_type() == &get_bool_type() && &right.get_type() == &get_bool_type())
         { // we are comparing boolean expressions..
             auto l_val = sat->value(static_cast<ratio::core::bool_item &>(left).get_value());
@@ -470,10 +470,10 @@ namespace ratio::solver
         }
         else if (dynamic_cast<ratio::core::enum_item *>(&right))
             return matches(right, left); // we swap, for simplifying code..
-        else if (auto leci = dynamic_cast<ratio::core::complex_item *>(&left))
+        else if (auto leci = dynamic_cast<ratio::core::atom *>(&left))
         {
-            if (auto reci = dynamic_cast<ratio::core::complex_item *>(&right))
-            { // we are comparing complex items..
+            if (auto reci = dynamic_cast<ratio::core::atom *>(&right))
+            { // we are comparing atoms..
                 std::queue<ratio::core::type *> q;
                 q.push(&left.get_type());
                 while (!q.empty())
