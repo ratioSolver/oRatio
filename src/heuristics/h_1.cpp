@@ -11,7 +11,7 @@ namespace ratio::solver
 
     semitone::rational h_1::get_estimated_cost(const resolver &r) const noexcept
     {
-        if (slv->get_sat_core()->value(r.get_rho()) == semitone::False)
+        if (slv->get_sat_core().value(r.get_rho()) == semitone::False)
             return semitone::rational::POSITIVE_INFINITY;
         else if (r.get_preconditions().empty())
             return r.get_intrinsic_cost();
@@ -43,7 +43,7 @@ namespace ratio::solver
     {
         causal_graph::init(s);
         // we create the gamma variable..
-        gamma = s.get_sat_core()->new_var();
+        gamma = s.get_sat_core().new_var();
         LOG("graph var is: γ" << std::to_string(gamma));
 #ifdef GRAPH_PRUNING
         // we clear the already closed flaws so that they can be closed again..
@@ -56,7 +56,7 @@ namespace ratio::solver
     void h_1::propagate_costs(flaw &f)
     {
         semitone::rational c_cost; // the current cost..
-        if (slv->get_sat_core()->value(f.get_phi()) == semitone::False)
+        if (slv->get_sat_core().value(f.get_phi()) == semitone::False)
             c_cost = semitone::rational::POSITIVE_INFINITY;
         else
         {
@@ -79,7 +79,7 @@ namespace ratio::solver
         // we (try to) update the estimated costs of the supports' effects and enqueue them for cost propagation..
         visited.insert(&f);
         for (const auto &supp : f.get_supports())
-            if (slv->get_sat_core()->value(supp->get_rho()) != semitone::False)
+            if (slv->get_sat_core().value(supp->get_rho()) != semitone::False)
                 propagate_costs(supp->get_effect());
         visited.erase(&f);
     }
@@ -98,7 +98,7 @@ namespace ratio::solver
             flaw *c_f = flaw_q.front();
             flaw_q.pop_front();
             assert(!c_f->is_expanded());
-            if (slv->get_sat_core()->value(c_f->get_phi()) != semitone::False)
+            if (slv->get_sat_core().value(c_f->get_phi()) != semitone::False)
             {
                 if (is_deferrable(*c_f)) // we have a deferrable flaw: we can postpone its expansion..
                     flaw_q.push_back(c_f);
@@ -112,7 +112,7 @@ namespace ratio::solver
                 flaw *c_f = flaw_q.front();
                 flaw_q.pop_front();
                 assert(!c_f->is_expanded());
-                if (slv->get_sat_core()->value(c_f->get_phi()) != semitone::False)
+                if (slv->get_sat_core().value(c_f->get_phi()) != semitone::False)
                     expand_flaw(*c_f); // we expand the flaw..
             }
 #endif
@@ -125,7 +125,7 @@ namespace ratio::solver
             new_flaw(std::move(f), false); // we add the flaws, without enqueuing, to the planning graph..
 
         // we perform some cleanings..
-        if (!slv->get_sat_core()->simplify_db())
+        if (!slv->get_sat_core().simplify_db())
             throw ratio::core::unsolvable_exception();
     }
 
@@ -135,16 +135,16 @@ namespace ratio::solver
         LOG("pruning the graph..");
         for (const auto &f : flaw_q)
             if (already_closed.insert(f).second)
-                if (!slv->get_sat_core()->new_clause({semitone::lit(gamma, false), !f->get_phi()}))
+                if (!slv->get_sat_core().new_clause({semitone::lit(gamma, false), !f->get_phi()}))
                     throw ratio::core::unsolvable_exception();
-        if (!slv->get_sat_core()->propagate())
+        if (!slv->get_sat_core().propagate())
             throw ratio::core::unsolvable_exception();
     }
 #endif
 
     void h_1::add_layer()
     {
-        assert(slv->get_sat_core()->root_level());
+        assert(slv->get_sat_core().root_level());
         assert(std::none_of(get_flaws().cbegin(), get_flaws().cend(), [](flaw *f)
                             { return is_positive_infinite(f->get_estimated_cost()); }));
         LOG("adding a layer to the causal graph..");
@@ -160,7 +160,7 @@ namespace ratio::solver
             {
                 flaw *c_f = flaw_q.front();
                 flaw_q.pop_front();
-                if (slv->get_sat_core()->value(c_f->get_phi()) != semitone::False)
+                if (slv->get_sat_core().value(c_f->get_phi()) != semitone::False)
                     expand_flaw(*c_f); // we expand the flaw..
             }
         }
@@ -171,16 +171,16 @@ namespace ratio::solver
             new_flaw(std::move(f), false); // we add the flaws, without enqueuing, to the planning graph..
 
         // we perform some cleanings..
-        slv->get_sat_core()->simplify_db();
+        slv->get_sat_core().simplify_db();
     }
 
 #ifdef DEFERRABLE_FLAWS
     bool h_1::is_deferrable(flaw &f)
     {
         if (f.get_estimated_cost() < semitone::rational::POSITIVE_INFINITY || std::any_of(f.get_resolvers().cbegin(), f.get_resolvers().cend(), [this](resolver *r)
-                                                                                          { return slv->get_sat_core()->value(r->get_rho()) == semitone::True; }))
+                                                                                          { return slv->get_sat_core().value(r->get_rho()) == semitone::True; }))
             return true; // we already have a possible solution for this flaw, thus we defer..
-        if (slv->get_sat_core()->value(f.get_phi()) == semitone::True || visited.count(&f))
+        if (slv->get_sat_core().value(f.get_phi()) == semitone::True || visited.count(&f))
             return false; // we necessarily have to solve this flaw: it cannot be deferred..
         visited.insert(&f);
         bool def = std::all_of(f.get_supports().cbegin(), f.get_supports().cend(), [this](resolver *r)

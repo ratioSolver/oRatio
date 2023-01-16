@@ -92,7 +92,7 @@ namespace ratio::solver
         }
 
         // we avoid unification..
-        if (!get_solver().get_sat_core()->new_clause({!f.get_phi(), semitone::lit(get_sigma(get_solver(), atm))}))
+        if (!get_solver().get_sat_core().new_clause({!f.get_phi(), semitone::lit(get_sigma(get_solver(), atm))}))
             throw ratio::core::unsolvable_exception();
 
         // since flaws might require planning, we can't store the variables for on-line flaw resolution..
@@ -102,7 +102,7 @@ namespace ratio::solver
         listeners.emplace_back(std::make_unique<cr_atom_listener>(*this, atm));
 
         // we filter out those atoms which are not strictly active..
-        if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::True)
+        if (get_solver().get_sat_core().value(get_sigma(get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
             if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))        // the `tau` parameter is a variable..
@@ -123,7 +123,7 @@ namespace ratio::solver
     void consumable_resource::cr_atom_listener::something_changed()
     {
         // we filter out those atoms which are not strictly active..
-        if (cr.get_solver().get_sat_core()->value(get_sigma(cr.get_solver(), atm)) == semitone::True)
+        if (cr.get_solver().get_sat_core().value(get_sigma(cr.get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
             if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))           // the `tau` parameter is a variable..
@@ -142,7 +142,7 @@ namespace ratio::solver
         for (auto &cr_instance : get_instances())
             cr_instances[&*cr_instance];
         for (const auto &atm : get_atoms())
-            if (get_solver().get_sat_core()->value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
+            if (get_solver().get_sat_core().value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
             {
                 const auto c_scope = atm->get(TAU_KW);
                 if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))

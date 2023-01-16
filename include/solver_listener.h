@@ -46,7 +46,7 @@ namespace ratio::solver
     class flaw_listener : public semitone::sat_value_listener, public semitone::idl_value_listener
     {
     public:
-      flaw_listener(solver_listener &l, const flaw &f) : sat_value_listener(l.slv.get_sat_core()), idl_value_listener(l.slv.get_idl_theory()), listener(l), f(f)
+      flaw_listener(solver_listener &l, const flaw &f) : sat_value_listener(l.slv.get_sat_core_ptr()), idl_value_listener(l.slv.get_idl_theory()), listener(l), f(f)
       {
         listen_sat(variable(f.get_phi()));
         listen_idl(f.get_position());
@@ -66,7 +66,7 @@ namespace ratio::solver
     class resolver_listener : public semitone::sat_value_listener
     {
     public:
-      resolver_listener(solver_listener &l, const resolver &r) : sat_value_listener(l.slv.get_sat_core()), listener(l), r(r) { listen_sat(variable(r.get_rho())); }
+      resolver_listener(solver_listener &l, const resolver &r) : sat_value_listener(l.slv.get_sat_core_ptr()), listener(l), r(r) { listen_sat(variable(r.get_rho())); }
       resolver_listener(const resolver_listener &orig) = delete;
       virtual ~resolver_listener() {}
 

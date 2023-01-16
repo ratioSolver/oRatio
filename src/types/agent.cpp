@@ -58,7 +58,7 @@ namespace ratio::solver
         for (auto &agnt_instance : get_instances())
             agnt_instances[&*agnt_instance];
         for (const auto &atm : get_atoms())
-            if (get_solver().get_sat_core()->value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
+            if (get_solver().get_sat_core().value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
             {
                 const auto c_scope = atm->get(TAU_KW);
                 if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))

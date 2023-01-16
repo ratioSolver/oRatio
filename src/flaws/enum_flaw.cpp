@@ -36,7 +36,7 @@ namespace ratio::solver
 
     void enum_flaw::choose_value::apply()
     { // activating this resolver assigns a value to the variable..
-        if (!get_solver().get_sat_core()->new_clause({!get_rho(), get_solver().get_ov_theory().allows(static_cast<enum_flaw &>(get_effect()).v_itm.get_var(), val)}))
+        if (!get_solver().get_sat_core().new_clause({!get_rho(), get_solver().get_ov_theory().allows(static_cast<enum_flaw &>(get_effect()).v_itm.get_var(), val)}))
             throw ratio::core::unsolvable_exception();
     }
 } // namespace ratio::solver

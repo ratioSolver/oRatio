@@ -1121,7 +1121,7 @@ namespace ratio::solver
         for ([[maybe_unused]] const auto &[p_name, p] : rhs.get_predicates())
             if (rhs.is_impulse(*p) || rhs.is_interval(*p))
                 for (const auto &atm : p->get_instances())
-                    if (&atm->get_type().get_core() != &rhs && rhs.get_sat_core()->value(get_sigma(rhs, static_cast<ratio::core::atom &>(*atm))) == semitone::True)
+                    if (&atm->get_type().get_core() != &rhs && rhs.get_sat_core().value(get_sigma(rhs, static_cast<ratio::core::atom &>(*atm))) == semitone::True)
                     {
                         semitone::inf_rational start = rhs.get_core().arith_value(rhs.is_impulse(*p) ? static_cast<ratio::core::atom &>(*atm).get(RATIO_AT) : static_cast<ratio::core::atom &>(*atm).get(RATIO_START));
                         starting_atoms[start].insert(dynamic_cast<ratio::core::atom *>(&*atm));
@@ -1208,7 +1208,7 @@ namespace ratio::solver
 
             json::json j_val;
             j_val["lit"] = (sign(val) ? "b" : "!b") + std::to_string(variable(val));
-            switch (slv.get_sat_core()->value(val))
+            switch (slv.get_sat_core().value(val))
             {
             case semitone::True:
                 j_val["val"] = "True";

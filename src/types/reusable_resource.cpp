@@ -53,7 +53,7 @@ namespace ratio::solver
         // we partition atoms for each reusable-resource they might insist on..
         std::unordered_map<ratio::core::complex_item *, std::vector<ratio::core::atom *>> rr_instances;
         for (const auto &atm : atoms)
-            if (get_solver().get_sat_core()->value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
+            if (get_solver().get_sat_core().value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
             {
                 const auto c_scope = atm->get(TAU_KW);
                 if (auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))
@@ -143,7 +143,7 @@ namespace ratio::solver
 
                                 if (auto a0_it = leqs.find(as[0]); a0_it != leqs.cend())
                                     if (auto a0_a1_it = a0_it->second.find(as[1]); a0_a1_it != a0_it->second.cend())
-                                        if (get_solver().get_sat_core()->value(a0_a1_it->second) != semitone::False)
+                                        if (get_solver().get_sat_core().value(a0_a1_it->second) != semitone::False)
                                         {
 #ifdef DL_TN
                                             const auto [min, max] = get_solver().get_rdl_theory().distance(static_cast<ratio::core::arith_item &>(*a0_end).get_value(), static_cast<ratio::core::arith_item &>(*a1_start).get_value());
@@ -157,7 +157,7 @@ namespace ratio::solver
 
                                 if (auto a1_it = leqs.find(as[1]); a1_it != leqs.cend())
                                     if (auto a1_a0_it = a1_it->second.find(as[0]); a1_a0_it != a1_it->second.cend())
-                                        if (get_solver().get_sat_core()->value(a1_a0_it->second) != semitone::False)
+                                        if (get_solver().get_sat_core().value(a1_a0_it->second) != semitone::False)
                                         {
 #ifdef DL_TN
                                             const auto [min, max] = get_solver().get_rdl_theory().distance(static_cast<ratio::core::arith_item &>(*a1_end).get_value(), static_cast<ratio::core::arith_item &>(*a0_start).get_value());
@@ -180,30 +180,30 @@ namespace ratio::solver
                                     if (a0_vals.size() > 1 && a1_vals.size() > 1)
                                     { // we have two non-singleton variables..
                                         for (const auto &plc : plcs.at({as[0], as[1]}))
-                                            if (get_solver().get_sat_core()->value(plc.first) == semitone::Undefined)
+                                            if (get_solver().get_sat_core().value(plc.first) == semitone::Undefined)
                                                 choices.emplace_back(plc.first, 1l - 2l / static_cast<double>(a0_vals.size() + a1_vals.size()));
                                     }
                                     else if (a0_vals.size() > 1)
                                     { // only `a1_tau` is a singleton variable..
-                                        if (get_solver().get_sat_core()->value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau)) == semitone::Undefined)
+                                        if (get_solver().get_sat_core().value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau)) == semitone::Undefined)
                                             choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau), 1l - 1l / static_cast<double>(a0_vals.size()));
                                     }
                                     else if (a1_vals.size() > 1)
                                     { // only `a0_tau` is a singleton variable..
-                                        if (get_solver().get_sat_core()->value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau)) == semitone::Undefined)
+                                        if (get_solver().get_sat_core().value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau)) == semitone::Undefined)
                                             choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau), 1l - 1l / static_cast<double>(a1_vals.size()));
                                     }
                                 }
                                 else if (a0_tau_itm)
                                 { // only `a1_tau` is a singleton variable..
                                     if (const auto a0_vals = get_solver().enum_value(*a0_tau_itm); a0_vals.count(&*a1_tau))
-                                        if (get_solver().get_sat_core()->value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau)) == semitone::Undefined)
+                                        if (get_solver().get_sat_core().value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau)) == semitone::Undefined)
                                             choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a0_tau_itm)->get_var(), *a1_tau), 1l - 1l / static_cast<double>(a0_vals.size()));
                                 }
                                 else if (a1_tau_itm)
                                 { // only `a0_tau` is a singleton variable..
                                     if (const auto a1_vals = get_solver().enum_value(*a1_tau_itm); a1_vals.count(&*a0_tau))
-                                        if (get_solver().get_sat_core()->value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau)) == semitone::Undefined)
+                                        if (get_solver().get_sat_core().value(get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau)) == semitone::Undefined)
                                             choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item *>(a1_tau_itm)->get_var(), *a0_tau), 1l - 1l / static_cast<double>(a1_vals.size()));
                                 }
                             }
@@ -240,7 +240,7 @@ namespace ratio::solver
         }
 
         // we avoid unification..
-        if (!get_solver().get_sat_core()->new_clause({!f.get_phi(), semitone::lit(get_sigma(get_solver(), atm))}))
+        if (!get_solver().get_sat_core().new_clause({!f.get_phi(), semitone::lit(get_sigma(get_solver(), atm))}))
             throw ratio::core::unsolvable_exception();
 
         // we store the variables for on-line flaw resolution..
@@ -252,7 +252,7 @@ namespace ratio::solver
         listeners.emplace_back(new rr_atom_listener(*this, atm));
 
         // we filter out those atoms which are not strictly active..
-        if (get_solver().get_sat_core()->value(get_sigma(get_solver(), atm)) == semitone::True)
+        if (get_solver().get_sat_core().value(get_sigma(get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
             if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))        // the `tau` parameter is a variable..
@@ -292,13 +292,13 @@ namespace ratio::solver
                         leqs[&atm0][&atm1] = get_solver().get_lra_theory().new_leq(static_cast<ratio::core::arith_item &>(*a0_end).get_value(), static_cast<ratio::core::arith_item &>(*a1_start).get_value());
                         leqs[&atm1][&atm0] = get_solver().get_lra_theory().new_leq(static_cast<ratio::core::arith_item &>(*a1_end).get_value(), static_cast<ratio::core::arith_item &>(*a0_start).get_value());
                         // we boost propagation..
-                        [[maybe_unused]] bool nc = get_solver().get_sat_core()->new_clause({!leqs[&atm0][&atm1], !leqs[&atm1][&atm0]});
+                        [[maybe_unused]] bool nc = get_solver().get_sat_core().new_clause({!leqs[&atm0][&atm1], !leqs[&atm1][&atm0]});
                         assert(nc);
 #endif
                         found = true;
                     }
                     if (a0_vals.size() > 1 && a1_vals.size() > 1) // we store a variable for forcing a0 in v0 and a1 not in v0..
-                        plcs[{&atm0, &atm1}].emplace_back(get_solver().get_sat_core()->new_conj({get_solver().get_ov_theory().allows(a0_tau_itm->get_var(), *v0), !get_solver().get_ov_theory().allows(a1_tau_itm->get_var(), *v0)}), static_cast<const ratio::core::item *>(v0));
+                        plcs[{&atm0, &atm1}].emplace_back(get_solver().get_sat_core().new_conj({get_solver().get_ov_theory().allows(a0_tau_itm->get_var(), *v0), !get_solver().get_ov_theory().allows(a1_tau_itm->get_var(), *v0)}), static_cast<const ratio::core::item *>(v0));
                 }
             assert(!plcs.count({&atm0, &atm1}) || plcs.at({&atm0, &atm1}).size() > 1);
         }
@@ -313,7 +313,7 @@ namespace ratio::solver
                 leqs[&atm0][&atm1] = get_solver().get_lra_theory().new_leq(static_cast<ratio::core::arith_item &>(*a0_end).get_value(), static_cast<ratio::core::arith_item &>(*a1_start).get_value());
                 leqs[&atm1][&atm0] = get_solver().get_lra_theory().new_leq(static_cast<ratio::core::arith_item &>(*a1_end).get_value(), static_cast<ratio::core::arith_item &>(*a0_start).get_value());
                 // we boost propagation..
-                [[maybe_unused]] bool nc = get_solver().get_sat_core()->new_clause({!leqs[&atm0][&atm1], !leqs[&atm1][&atm0]});
+                [[maybe_unused]] bool nc = get_solver().get_sat_core().new_clause({!leqs[&atm0][&atm1], !leqs[&atm1][&atm0]});
                 assert(nc);
 #endif
             }
@@ -329,7 +329,7 @@ namespace ratio::solver
                 leqs[&atm0][&atm1] = get_solver().get_lra_theory().new_leq(static_cast<ratio::core::arith_item &>(*a0_end).get_value(), static_cast<ratio::core::arith_item &>(*a1_start).get_value());
                 leqs[&atm1][&atm0] = get_solver().get_lra_theory().new_leq(static_cast<ratio::core::arith_item &>(*a1_end).get_value(), static_cast<ratio::core::arith_item &>(*a0_start).get_value());
                 // we boost propagation..
-                [[maybe_unused]] bool nc = get_solver().get_sat_core()->new_clause({!leqs[&atm0][&atm1], !leqs[&atm1][&atm0]});
+                [[maybe_unused]] bool nc = get_solver().get_sat_core().new_clause({!leqs[&atm0][&atm1], !leqs[&atm1][&atm0]});
                 assert(nc);
 #endif
             }
@@ -343,7 +343,7 @@ namespace ratio::solver
             leqs[&atm0][&atm1] = get_solver().get_lra_theory().new_leq(static_cast<ratio::core::arith_item &>(*a0_end).get_value(), static_cast<ratio::core::arith_item &>(*a1_start).get_value());
             leqs[&atm1][&atm0] = get_solver().get_lra_theory().new_leq(static_cast<ratio::core::arith_item &>(*a1_end).get_value(), static_cast<ratio::core::arith_item &>(*a0_start).get_value());
             // we boost propagation..
-            [[maybe_unused]] bool nc = get_solver().get_sat_core()->new_clause({!leqs[&atm0][&atm1], !leqs[&atm1][&atm0]});
+            [[maybe_unused]] bool nc = get_solver().get_sat_core().new_clause({!leqs[&atm0][&atm1], !leqs[&atm1][&atm0]});
             assert(nc);
 #endif
         }
@@ -358,7 +358,7 @@ namespace ratio::solver
     void reusable_resource::rr_atom_listener::something_changed()
     {
         // we filter out those atoms which are not strictly active..
-        if (rr.get_solver().get_sat_core()->value(get_sigma(rr.get_solver(), atm)) == semitone::True)
+        if (rr.get_solver().get_sat_core().value(get_sigma(rr.get_solver(), atm)) == semitone::True)
         {
             const auto c_scope = atm.get(TAU_KW);
             if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))           // the `tau` parameter is a variable..
@@ -396,12 +396,12 @@ namespace ratio::solver
         {
             if (const auto a0_it = rr.leqs.find(as[0]); a0_it != rr.leqs.cend())
                 if (const auto a0_a1_it = a0_it->second.find(as[1]); a0_a1_it != a0_it->second.cend())
-                    if (get_solver().get_sat_core()->value(a0_a1_it->second) != semitone::False)
+                    if (get_solver().get_sat_core().value(a0_a1_it->second) != semitone::False)
                         add_resolver(std::make_unique<order_resolver>(*this, a0_a1_it->second, *as[0], *as[1]));
 
             if (const auto a1_it = rr.leqs.find(as[1]); a1_it != rr.leqs.cend())
                 if (const auto a1_a0_it = a1_it->second.find(as[0]); a1_a0_it != a1_it->second.cend())
-                    if (get_solver().get_sat_core()->value(a1_a0_it->second) != semitone::False)
+                    if (get_solver().get_sat_core().value(a1_a0_it->second) != semitone::False)
                         add_resolver(std::make_unique<order_resolver>(*this, a1_a0_it->second, *as[1], *as[0]));
 
             const auto a0_tau = as[0]->get(TAU_KW);
@@ -415,7 +415,7 @@ namespace ratio::solver
                 if (a0_vals.size() > 1 && a1_vals.size() > 1)
                 { // we have two non-singleton variables..
                     for (const auto &a0_a1_disp : rr.plcs.at({as[0], as[1]}))
-                        if (get_solver().get_sat_core()->value(a0_a1_disp.first) == semitone::Undefined)
+                        if (get_solver().get_sat_core().value(a0_a1_disp.first) == semitone::Undefined)
                             add_resolver(std::make_unique<place_resolver>(*this, a0_a1_disp.first, *as[0], *a0_a1_disp.second, *as[1]));
                 }
                 else if (a0_vals.size() > 1) // only `a1_tau` is a singleton variable..
@@ -466,7 +466,7 @@ namespace ratio::solver
         return j_r;
     }
 
-    void reusable_resource::forbid_resolver::apply() { get_solver().get_sat_core()->new_clause({!get_rho(), !get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item &>(*atm.get(TAU_KW)).get_var(), itm)}); }
+    void reusable_resource::forbid_resolver::apply() { get_solver().get_sat_core().new_clause({!get_rho(), !get_solver().get_ov_theory().allows(static_cast<ratio::core::enum_item &>(*atm.get(TAU_KW)).get_var(), itm)}); }
 
     json::json reusable_resource::extract() const noexcept
     {
@@ -476,7 +476,7 @@ namespace ratio::solver
         for (auto &rr_instance : get_instances())
             rr_instances[&*rr_instance];
         for (const auto &atm : get_atoms())
-            if (get_solver().get_sat_core()->value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
+            if (get_solver().get_sat_core().value(get_sigma(get_solver(), *atm)) == semitone::True) // we filter out those which are not strictly active..
             {
                 const auto c_scope = atm->get(TAU_KW);
                 if (const auto enum_scope = dynamic_cast<ratio::core::enum_item *>(&*c_scope))
