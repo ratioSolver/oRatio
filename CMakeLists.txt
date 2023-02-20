@@ -26,8 +26,6 @@ set_property(CACHE HEURISTIC_TYPE PROPERTY STRINGS ${HEURISTIC_TYPES})
 option(DEFERRABLE_FLAWS "Check for deferrable flaws" ON)
 option(GRAPH_PRUNING "Prunes the causal graph before starting the search" ON)
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
-option(BUILD_LISTENERS "Builds the solver's listeners" OFF)
-option(ADD_COVERAGE "Add coverage" OFF)
 
 add_subdirectory(extern/core)
 
@@ -76,11 +74,6 @@ endif()
 message(STATUS "Check inconsistencies:  ${CHECK_INCONSISTENCIES}")
 if(CHECK_INCONSISTENCIES)
     target_compile_definitions(${PROJECT_NAME} PRIVATE CHECK_INCONSISTENCIES)
-endif()
-
-message(STATUS "Build solver listeners: ${BUILD_LISTENERS}")
-if(BUILD_LISTENERS)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_LISTENERS)
 endif()
 
 if(BUILD_TESTING)
