@@ -1,3 +1,0 @@
-[submodule "extern/core"]
-	path = extern/core
-	url = https://github.com/ratioSolver/ratioCore
