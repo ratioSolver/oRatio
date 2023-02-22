@@ -3,7 +3,6 @@
 #include "item.h"
 #include "lin.h"
 #include "lit.h"
-#include "var_value.h"
 #include "type.h"
 
 namespace ratio
@@ -42,7 +41,7 @@ namespace ratio
    * @brief A class for representing string items.
    *
    */
-  class string_item : public riddle::item
+  class string_item : public riddle::item, public utils::enum_val
   {
   public:
     string_item(riddle::type &t, const std::string &s = "") : item(t), s(s) {}
@@ -66,16 +65,6 @@ namespace ratio
 
   private:
     const semitone::var ev;
-  };
-
-  /**
-   * @brief A class for representing standard complex items.
-   *
-   */
-  class complex_item : public riddle::complex_item, public semitone::var_value
-  {
-  public:
-    complex_item(riddle::complex_type &t) : riddle::complex_item(t) {}
   };
 
   /**

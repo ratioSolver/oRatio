@@ -40,6 +40,13 @@ namespace ratio
     const semitone::lit &get_phi() const noexcept { return phi; }
 
     /**
+     * @brief Get the position variable associated to this flaw.
+     *
+     * @return const semitone::var& The position variable.
+     */
+    const semitone::var &get_position() const noexcept { return position; }
+
+    /**
      * @brief Initialize the flaw.
      *
      * @pre the solver must be at root-level.

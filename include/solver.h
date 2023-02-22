@@ -98,6 +98,7 @@ namespace ratio
     riddle::expr new_item(riddle::complex_type &tp) override;
 
     riddle::expr new_enum(riddle::type &tp, const std::vector<riddle::expr> &xprs) override;
+    riddle::expr get_enum(riddle::expr &xpr, const std::string &name) override;
 
     riddle::expr add(const std::vector<riddle::expr> &xprs) override;
     riddle::expr sub(const std::vector<riddle::expr> &xprs) override;

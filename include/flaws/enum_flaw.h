@@ -3,7 +3,6 @@
 #include "flaw.h"
 #include "resolver.h"
 #include "items.h"
-#include "var_value.h"
 
 namespace ratio
 {
@@ -19,14 +18,14 @@ namespace ratio
     class enum_resolver final : public resolver
     {
     public:
-      enum_resolver(enum_flaw &ef, const utils::rational &cost, semitone::var_value &val);
+      enum_resolver(enum_flaw &ef, const utils::rational &cost, utils::enum_val &val);
 
       void apply() override;
 
       json::json get_data() const noexcept override;
 
     private:
-      semitone::var_value &val;
+      utils::enum_val &val;
     };
 
   private:

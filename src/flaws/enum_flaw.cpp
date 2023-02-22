@@ -10,8 +10,7 @@ namespace ratio
     { // we add a resolver for each possible value of the enum..
         auto dom = get_solver().domain(&ei);
         for (auto &v : dom)
-            if (auto val = dynamic_cast<complex_item *>(&*v))
-                add_resolver(new enum_resolver(*this, utils::rational(1, dom.size()), *val));
+            add_resolver(new enum_resolver(*this, utils::rational(1, dom.size()), static_cast<riddle::complex_item &>(*v)));
     }
 
     json::json enum_flaw::get_data() const noexcept
@@ -21,7 +20,7 @@ namespace ratio
         return j;
     }
 
-    enum_flaw::enum_resolver::enum_resolver(enum_flaw &ef, const utils::rational &cost, semitone::var_value &val) : resolver(ef, cost), val(val) {}
+    enum_flaw::enum_resolver::enum_resolver(enum_flaw &ef, const utils::rational &cost, utils::enum_val &val) : resolver(ef, cost), val(val) {}
 
     void enum_flaw::enum_resolver::apply()
     { // we add a clause to the SAT solver that enforces the enum value as a consequence of the resolver's activation..
@@ -38,7 +37,7 @@ namespace ratio
         if (!name.empty())
             j["name"] = name;
 #endif
-        j["value"] = value(static_cast<complex_item &>(val));
+        j["value"] = value(static_cast<riddle::complex_item &>(val));
         return j;
     }
 } // namespace ratio
