@@ -3,6 +3,7 @@
 #include "oratiosolver_export.h"
 #include "lit.h"
 #include "rational.h"
+#include "flaw.h"
 #include <vector>
 #include <functional>
 
@@ -17,9 +18,25 @@ namespace ratio
    */
   class resolver
   {
+    friend class flaw;
+
   public:
     resolver(const flaw &f, const utils::rational &cost);
     virtual ~resolver() = default;
+
+    /**
+     * @brief Get the solver this resolver belongs to.
+     *
+     * @return const solver& The solver.
+     */
+    solver &get_solver() noexcept { return f.s; }
+
+    /**
+     * @brief Get the flaw this resolver solves.
+     *
+     * @return const flaw& The flaw.
+     */
+    const flaw &get_flaw() const noexcept { return f; }
 
     /**
      * @brief Gets the rho variable of this resolver.
@@ -41,6 +58,13 @@ namespace ratio
      * @pre the solver must be at root-level.
      */
     virtual void apply() = 0;
+
+    /**
+     * @brief Gets a json representation of the data of this resolver.
+     *
+     * @return const json::json& the data of this resolver.
+     */
+    virtual json::json get_data() const noexcept = 0;
 
   private:
     const flaw &f;                                           // the flaw solved by this resolver..

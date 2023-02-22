@@ -1,6 +1,10 @@
 #pragma once
 
 #include "item.h"
+#include "lin.h"
+#include "lit.h"
+#include "var_value.h"
+#include "type.h"
 
 namespace ratio
 {
@@ -12,6 +16,8 @@ namespace ratio
   {
   public:
     bool_item(riddle::type &t, const semitone::lit &l) : item(t), l(l) {}
+
+    semitone::lit get_lit() const { return l; }
 
   private:
     const semitone::lit l;
@@ -26,6 +32,8 @@ namespace ratio
   public:
     arith_item(riddle::type &t, const semitone::lin &l) : item(t), l(l) {}
 
+    semitone::lin get_lin() const { return l; }
+
   private:
     const semitone::lin l;
   };
@@ -39,6 +47,8 @@ namespace ratio
   public:
     string_item(riddle::type &t, const std::string &s = "") : item(t), s(s) {}
 
+    const std::string &get_string() const { return s; }
+
   private:
     const std::string s;
   };
@@ -51,6 +61,8 @@ namespace ratio
   {
   public:
     enum_item(riddle::type &t, const semitone::var &ev) : item(t), ev(ev) {}
+
+    semitone::var get_var() const { return ev; }
 
   private:
     const semitone::var ev;

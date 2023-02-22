@@ -3,6 +3,7 @@
 #include "oratiosolver_export.h"
 #include "lit.h"
 #include "rational.h"
+#include "json.h"
 #include "memory.h"
 #include <vector>
 #include <functional>
@@ -18,6 +19,8 @@ namespace ratio
    */
   class flaw
   {
+    friend class resolver;
+
   public:
     flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, const bool &exclusive = false);
     virtual ~flaw() = default;
@@ -27,7 +30,7 @@ namespace ratio
      *
      * @return const solver& The solver.
      */
-    const solver &get_solver() const noexcept { return s; }
+    solver &get_solver() noexcept { return s; }
 
     /**
      * @brief Get the phi literal indicating whether the flaw is active or not.
@@ -50,6 +53,13 @@ namespace ratio
     void expand();
     virtual void compute_resolvers() {}
 
+    /**
+     * @brief Gets a json representation of the data of this flaw.
+     *
+     * @return json::json the data of this flaw.
+     */
+    virtual json::json get_data() const noexcept = 0;
+
   protected:
     /**
      * Adds the resolver `r` to this flaw.
@@ -63,6 +73,7 @@ namespace ratio
     semitone::lit phi;                                             // the literal indicating whether the flaw is active or not (this literal is initialized by the `init` procedure)..
     utils::rational est_cost = utils::rational::POSITIVE_INFINITY; // the current estimated cost of the flaw..
     semitone::var position;                                        // the position variable (i.e., an integer time-point) associated to this flaw..
+    bool expanded = false;                                         // whether this flaw has been expanded or not..
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
   };

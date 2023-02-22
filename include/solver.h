@@ -9,6 +9,8 @@
 #include "ov_theory.h"
 #include "idl_theory.h"
 #include "rdl_theory.h"
+#include "flaw.h"
+#include "resolver.h"
 
 namespace ratio
 {
@@ -28,6 +30,55 @@ namespace ratio
 
   public:
     solver();
+
+    /**
+     * @brief Get the linear-real-arithmetic theory.
+     *
+     * @return semitone::lra_theory& The linear-real-arithmetic theory.
+     */
+    semitone::lra_theory &get_lra_theory() { return lra_th; }
+    /**
+     * @brief Get the linear-real-arithmetic theory.
+     *
+     * @return const semitone::lra_theory& The linear-real-arithmetic theory.
+     */
+    const semitone::lra_theory &get_lra_theory() const { return lra_th; }
+    /**
+     * @brief Get the object-variable theory.
+     *
+     * @return semitone::ov_theory& The object-variable theory.
+     */
+    semitone::ov_theory &get_ov_theory() { return ov_th; }
+    /**
+     * @brief Get the object-variable theory.
+     *
+     * @return const semitone::ov_theory& The object-variable theory.
+     */
+    const semitone::ov_theory &get_ov_theory() const { return ov_th; }
+    /**
+     * @brief Get the integer difference logic theory.
+     *
+     * @return semitone::idl_theory& The integer difference logic theory.
+     */
+    semitone::idl_theory &get_idl_theory() { return idl_th; }
+    /**
+     * @brief Get the integer difference logic theory.
+     *
+     * @return const semitone::idl_theory& The integer difference logic theory.
+     */
+    const semitone::idl_theory &get_idl_theory() const { return idl_th; }
+    /**
+     * @brief Get the real difference logic theory.
+     *
+     * @return semitone::rdl_theory& The real difference logic theory.
+     */
+    semitone::rdl_theory &get_rdl_theory() { return rdl_th; }
+    /**
+     * @brief Get the real difference logic theory.
+     *
+     * @return const semitone::rdl_theory& The real difference logic theory.
+     */
+    const semitone::rdl_theory &get_rdl_theory() const { return rdl_th; }
 
     riddle::expr new_bool() override;
     riddle::expr new_bool(bool value) override;
@@ -84,6 +135,14 @@ namespace ratio
     void new_flaw(utils::u_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
     void new_resolver(utils::u_ptr<resolver> r);                     // notifies the solver that a new resolver `r` has been created..
 
+    inline const std::vector<std::reference_wrapper<resolver>> get_cause()
+    {
+      if (res)
+        return {*res};
+      else
+        return {};
+    }
+
   private:
     bool propagate(const semitone::lit &p) override;
     bool check() override;
@@ -98,6 +157,8 @@ namespace ratio
     semitone::ov_theory ov_th;   // the object-variable theory..
     semitone::idl_theory idl_th; // the integer difference logic theory..
     semitone::rdl_theory rdl_th; // the real difference logic theory..
+
+    resolver *res = nullptr; // the current resolver (i.e. the cause for the new flaws)..
 
     std::unordered_map<semitone::var, std::vector<utils::u_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
     std::unordered_map<semitone::var, std::vector<utils::u_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
@@ -116,4 +177,20 @@ namespace ratio
     void fire_causal_link_added(const flaw &f, const resolver &r) const;
 #endif
   };
+
+  json::json value(const riddle::item &itm) noexcept;
+  inline json::json to_json(const utils::rational &rat) noexcept
+  {
+    json::json j_rat;
+    j_rat["num"] = rat.numerator();
+    j_rat["den"] = rat.denominator();
+    return j_rat;
+  }
+  inline json::json to_json(const utils::inf_rational &rat) noexcept
+  {
+    json::json j_rat = to_json(rat.get_rational());
+    if (rat.get_infinitesimal() != utils::rational::ZERO)
+      j_rat["inf"] = to_json(rat.get_infinitesimal());
+    return j_rat;
+  }
 } // namespace ratio
