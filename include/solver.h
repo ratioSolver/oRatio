@@ -124,6 +124,8 @@ namespace ratio
     riddle::expr new_fact(const riddle::predicate &pred) override;
     riddle::expr new_goal(const riddle::predicate &pred) override;
 
+    bool is_constant(const riddle::expr &xpr) const override;
+
     utils::lbool bool_value(const riddle::expr &xpr) const override;
     utils::inf_rational arith_value(const riddle::expr &xpr) const override;
     utils::inf_rational time_value(const riddle::expr &xpr) const override;

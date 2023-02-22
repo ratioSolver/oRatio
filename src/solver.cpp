@@ -88,7 +88,7 @@ namespace ratio
                 [[maybe_unused]] bool nc;
                 for (size_t i = 0; i < c_vars.size(); ++i)
                 {
-                    nc = sat->new_clause({!c_vars[i], sat->new_eq(static_cast<ratio::bool_item &>(*c_vals[i]).get_lit(), static_cast<ratio::bool_item &>(*b_xpr).get_lit())});
+                    nc = sat->new_clause({!c_vars[i], sat->new_eq(static_cast<bool_item &>(*c_vals[i]).get_lit(), static_cast<bool_item &>(*b_xpr).get_lit())});
                     assert(nc);
                 }
                 return b_xpr;
@@ -100,7 +100,7 @@ namespace ratio
                 // we compute the min and max values..
                 for (const auto &val : c_vals)
                 {
-                    const auto [lb, ub] = lra_th.bounds(static_cast<ratio::arith_item *>(val)->get_lin());
+                    const auto [lb, ub] = lra_th.bounds(static_cast<arith_item *>(val)->get_lin());
                     min = std::min(min, lb);
                     max = std::max(max, ub);
                 }
@@ -113,18 +113,18 @@ namespace ratio
                     [[maybe_unused]] bool nc;
                     for (size_t i = 0; i < c_vars.size(); ++i)
                     {
-                        nc = sat->new_clause({!c_vars[i], lra_th.new_eq(static_cast<ratio::arith_item &>(*arith_xpr).get_lin(), static_cast<ratio::arith_item *>(c_vals[i])->get_lin())});
+                        nc = sat->new_clause({!c_vars[i], lra_th.new_eq(static_cast<arith_item &>(*arith_xpr).get_lin(), static_cast<arith_item *>(c_vals[i])->get_lin())});
                         assert(nc);
                     }
                     // we try to impose some bounds which might help propagation..
                     if (min.get_infinitesimal() == utils::rational::ZERO && min.get_rational() > utils::rational::NEGATIVE_INFINITY)
                     {
-                        nc = sat->new_clause({lra_th.new_geq(static_cast<ratio::arith_item &>(*arith_xpr).get_lin(), semitone::lin(min.get_rational()))});
+                        nc = sat->new_clause({lra_th.new_geq(static_cast<arith_item &>(*arith_xpr).get_lin(), semitone::lin(min.get_rational()))});
                         assert(nc);
                     }
                     if (max.get_infinitesimal() == utils::rational::ZERO && max.get_rational() < utils::rational::POSITIVE_INFINITY)
                     {
-                        nc = sat->new_clause({lra_th.new_leq(static_cast<ratio::arith_item &>(*arith_xpr).get_lin(), semitone::lin(max.get_rational()))});
+                        nc = sat->new_clause({lra_th.new_leq(static_cast<arith_item &>(*arith_xpr).get_lin(), semitone::lin(max.get_rational()))});
                         assert(nc);
                     }
                     return arith_xpr;
@@ -137,7 +137,7 @@ namespace ratio
                 // we compute the min and max values..
                 for (const auto &val : c_vals)
                 {
-                    const auto [lb, ub] = rdl_th.bounds(static_cast<ratio::arith_item *>(val)->get_lin());
+                    const auto [lb, ub] = rdl_th.bounds(static_cast<arith_item *>(val)->get_lin());
                     min = std::min(min, lb);
                     max = std::max(max, ub);
                 }
@@ -150,18 +150,18 @@ namespace ratio
                     [[maybe_unused]] bool nc;
                     for (size_t i = 0; i < c_vars.size(); ++i)
                     {
-                        nc = sat->new_clause({!c_vars[i], rdl_th.new_eq(static_cast<ratio::arith_item &>(*tp_xpr).get_lin(), static_cast<ratio::arith_item *>(c_vals[i])->get_lin())});
+                        nc = sat->new_clause({!c_vars[i], rdl_th.new_eq(static_cast<arith_item &>(*tp_xpr).get_lin(), static_cast<arith_item *>(c_vals[i])->get_lin())});
                         assert(nc);
                     }
                     // we try to impose some bounds which might help propagation..
                     if (min.get_infinitesimal() == utils::rational::ZERO && min.get_rational() > utils::rational::NEGATIVE_INFINITY)
                     {
-                        nc = sat->new_clause({rdl_th.new_geq(static_cast<ratio::arith_item &>(*tp_xpr).get_lin(), semitone::lin(min.get_rational()))});
+                        nc = sat->new_clause({rdl_th.new_geq(static_cast<arith_item &>(*tp_xpr).get_lin(), semitone::lin(min.get_rational()))});
                         assert(nc);
                     }
                     if (max.get_infinitesimal() == utils::rational::ZERO && max.get_rational() < utils::rational::POSITIVE_INFINITY)
                     {
-                        nc = sat->new_clause({rdl_th.new_leq(static_cast<ratio::arith_item &>(*tp_xpr).get_lin(), semitone::lin(max.get_rational()))});
+                        nc = sat->new_clause({rdl_th.new_leq(static_cast<arith_item &>(*tp_xpr).get_lin(), semitone::lin(max.get_rational()))});
                         assert(nc);
                     }
                     return tp_xpr;
@@ -178,6 +178,243 @@ namespace ratio
         }
         else
             throw std::runtime_error("the expression must be an enum");
+    }
+
+    riddle::expr solver::add(const std::vector<riddle::expr> &xprs)
+    {
+        if (xprs.empty())
+            return new_int(0);
+        else if (xprs.size() == 1)
+            return xprs[0];
+        else
+        {
+            semitone::lin l;
+            for (const auto &xpr : xprs)
+                if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type())
+                    l += static_cast<arith_item &>(*xpr).get_lin();
+                else
+                    throw std::runtime_error("the expression must be an integer or a real");
+            return new arith_item(get_type(xprs), l);
+        }
+    }
+
+    riddle::expr solver::sub(const std::vector<riddle::expr> &xprs)
+    {
+        if (xprs.empty())
+            throw std::runtime_error("the expression must be an integer or a real");
+        else if (xprs.size() == 1)
+            return new arith_item(get_type(xprs), -static_cast<arith_item &>(*xprs[0]).get_lin());
+        else
+        {
+            semitone::lin l = static_cast<arith_item &>(*xprs[0]).get_lin();
+            for (size_t i = 1; i < xprs.size(); ++i)
+                if (xprs[i]->get_type() == get_int_type() || xprs[i]->get_type() == get_real_type())
+                    l -= static_cast<arith_item &>(*xprs[i]).get_lin();
+                else
+                    throw std::runtime_error("the expression must be an integer or a real");
+            return new arith_item(get_type(xprs), l);
+        }
+    }
+
+    riddle::expr solver::mul(const std::vector<riddle::expr> &xprs)
+    {
+        if (xprs.empty())
+            return new_int(1);
+        else if (xprs.size() == 1)
+            return xprs[0];
+        else
+        {
+            if (auto var_it = std::find_if(xprs.cbegin(), xprs.cend(), [this](const auto &ae)
+                                           { return is_constant(ae); });
+                var_it != xprs.cend())
+            {
+                auto c_xpr = *var_it;
+                semitone::lin l = static_cast<arith_item &>(*c_xpr).get_lin();
+                for (const auto &xpr : xprs)
+                    if (xpr != c_xpr)
+                    {
+                        assert(is_constant(xpr) && "non-linear expression..");
+                        assert(lra_th.value(static_cast<arith_item &>(*xpr).get_lin()).get_infinitesimal() == utils::rational::ZERO);
+                        l *= lra_th.value(static_cast<arith_item &>(*xpr).get_lin()).get_rational();
+                    }
+                return new arith_item(get_type(xprs), l);
+            }
+            else
+            {
+                semitone::lin l = static_cast<arith_item &>(**xprs.cbegin()).get_lin();
+                for (auto xpr_it = ++xprs.cbegin(); xpr_it != xprs.cend(); ++xpr_it)
+                {
+                    assert(lra_th.value(static_cast<arith_item &>(**xpr_it).get_lin()).get_infinitesimal() == utils::rational::ZERO);
+                    l *= lra_th.value(static_cast<arith_item &>(**xpr_it).get_lin()).get_rational();
+                }
+                return new arith_item(get_type(xprs), l);
+            }
+        }
+    }
+
+    riddle::expr solver::div(const std::vector<riddle::expr> &xprs)
+    {
+        if (xprs.empty())
+            throw std::runtime_error("the expression must be an integer or a real");
+        else if (xprs.size() == 1)
+        {
+            assert(is_constant(xprs[0]));
+            assert(lra_th.value(static_cast<arith_item &>(*xprs[0]).get_lin()).get_infinitesimal() == utils::rational::ZERO);
+            semitone::lin l(utils::rational::ONE);
+            l /= static_cast<arith_item &>(*xprs[0]).get_lin().known_term;
+            return new arith_item(get_type(xprs), l);
+        }
+        else
+        {
+            semitone::lin l = static_cast<arith_item &>(*xprs[0]).get_lin();
+            for (size_t i = 1; i < xprs.size(); ++i)
+                if (xprs[i]->get_type() == get_int_type() || xprs[i]->get_type() == get_real_type())
+                {
+                    assert(is_constant(xprs[i]));
+                    assert(lra_th.value(static_cast<arith_item &>(*xprs[i]).get_lin()).get_infinitesimal() == utils::rational::ZERO);
+                    l /= lra_th.value(static_cast<arith_item &>(*xprs[i]).get_lin()).get_rational();
+                }
+                else if (xprs[i]->get_type() == get_time_type())
+                {
+                    assert(is_constant(xprs[i]));
+                    assert(rdl_th.bounds(static_cast<arith_item &>(*xprs[i]).get_lin()).first.get_infinitesimal() == utils::rational::ZERO);
+                    l /= rdl_th.bounds(static_cast<arith_item &>(*xprs[i]).get_lin()).first.get_rational();
+                }
+                else
+                    throw std::runtime_error("the expression must be an integer or a real");
+            return new arith_item(get_type(xprs), l);
+        }
+    }
+
+    riddle::expr solver::minus(const riddle::expr &xpr)
+    {
+        if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type() || xpr->get_type() == get_time_type())
+            return new arith_item(xpr->get_type(), -static_cast<arith_item &>(*xpr).get_lin());
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    riddle::expr solver::lt(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
+            return new bool_item(get_bool_type(), lra_th.new_lt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type())
+            return new bool_item(get_bool_type(), rdl_th.new_lt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    riddle::expr solver::leq(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
+            return new bool_item(get_bool_type(), lra_th.new_leq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type())
+            return new bool_item(get_bool_type(), rdl_th.new_leq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    riddle::expr solver::eq(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if (lhs == rhs) // the two items are the same item..
+            return new bool_item(get_bool_type(), semitone::TRUE_lit);
+        else if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && lhs->get_type() == rhs->get_type())
+            return new bool_item(get_bool_type(), lra_th.new_eq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && lhs->get_type() == rhs->get_type())
+            return new bool_item(get_bool_type(), rdl_th.new_eq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_bool_type() && lhs->get_type() == rhs->get_type())
+            return new bool_item(get_bool_type(), sat->new_eq(static_cast<bool_item &>(*lhs).get_lit(), static_cast<bool_item &>(*rhs).get_lit()));
+        else if (lhs->get_type() == get_string_type() && lhs->get_type() == rhs->get_type())
+            return new bool_item(get_bool_type(), static_cast<string_item &>(*lhs).get_string() == static_cast<string_item &>(*rhs).get_string() ? semitone::TRUE_lit : semitone::FALSE_lit);
+        else if (auto lee = dynamic_cast<enum_item *>(&*lhs))
+        {                                                    // we are comparing an enum with something else..
+            if (auto ree = dynamic_cast<enum_item *>(&*rhs)) // we are comparing enums..
+                return new bool_item(get_bool_type(), ov_th.new_eq(lee->get_var(), ree->get_var()));
+            else // we are comparing an enum with a singleton..
+                return new bool_item(get_bool_type(), ov_th.allows(lee->get_var(), dynamic_cast<utils::enum_val &>(*rhs)));
+        }
+        else if (dynamic_cast<enum_item *>(&*rhs))
+            return eq(rhs, lhs); // we swap, for simplifying code..
+        else if (lhs->get_type() == rhs->get_type())
+        { // we are comparing complex items..
+            auto leci = dynamic_cast<riddle::complex_item *>(&*lhs);
+            if (!leci)
+                throw std::runtime_error("the expression must be a complex item");
+            auto reci = dynamic_cast<riddle::complex_item *>(&*rhs);
+            if (!reci)
+                throw std::runtime_error("the expression must be a complex item");
+
+            std::vector<semitone::lit> eqs;
+            if (auto p = dynamic_cast<riddle::predicate *>(&lhs->get_type()))
+            {
+                std::queue<riddle::predicate *> q;
+                q.push(p);
+                while (!q.empty())
+                {
+                    for (const auto &[f_name, f] : q.front()->get_fields())
+                        if (!f->is_synthetic())
+                        {
+                            auto c_eq = eq(leci->get(f_name), reci->get(f_name));
+                            if (bool_value(c_eq) == utils::False)
+                                return new bool_item(get_bool_type(), semitone::FALSE_lit);
+                            eqs.push_back(static_cast<bool_item &>(*c_eq).get_lit());
+                        }
+                    for (const auto &stp : q.front()->get_parents())
+                        q.push(&stp.get());
+                    q.pop();
+                }
+            }
+            else if (auto ct = dynamic_cast<riddle::complex_type *>(&lhs->get_type()))
+            {
+                std::queue<riddle::complex_type *> q;
+                q.push(ct);
+                while (!q.empty())
+                {
+                    for (const auto &[f_name, f] : q.front()->get_fields())
+                        if (!f->is_synthetic())
+                        {
+                            auto c_eq = eq(leci->get(f_name), reci->get(f_name));
+                            if (bool_value(c_eq) == utils::False)
+                                return new bool_item(get_bool_type(), semitone::FALSE_lit);
+                            eqs.push_back(static_cast<bool_item &>(*c_eq).get_lit());
+                        }
+                    for (const auto &stp : q.front()->get_parents())
+                        q.push(&stp.get());
+                    q.pop();
+                }
+            }
+            switch (eqs.size())
+            {
+            case 0:
+                return new bool_item(get_bool_type(), semitone::FALSE_lit);
+            case 1:
+                return new bool_item(get_bool_type(), eqs[0]);
+            default:
+                return new bool_item(get_bool_type(), sat->new_conj(eqs));
+            }
+        }
+        else
+            return new bool_item(get_bool_type(), semitone::FALSE_lit);
+    }
+
+    riddle::expr solver::geq(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
+            return new bool_item(get_bool_type(), lra_th.new_geq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type())
+            return new bool_item(get_bool_type(), rdl_th.new_geq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    riddle::expr solver::gt(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
+            return new bool_item(get_bool_type(), lra_th.new_gt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type())
+            return new bool_item(get_bool_type(), rdl_th.new_gt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
     }
 
 #ifdef BUILD_LISTENERS
@@ -233,13 +470,13 @@ namespace ratio
             j_val["lit"] = (sign(val) ? "b" : "!b") + std::to_string(variable(val));
             switch (slv.get_sat_core().value(val))
             {
-            case semitone::True:
+            case utils::True:
                 j_val["val"] = "True";
                 break;
-            case semitone::False:
+            case utils::False:
                 j_val["val"] = "False";
                 break;
-            case semitone::Undefined:
+            case utils::Undefined:
                 j_val["val"] = "Undefined";
                 break;
             }
@@ -274,7 +511,7 @@ namespace ratio
         }
         else if (itm.get_type() == slv.get_string_type())
             return static_cast<const string_item &>(itm).get_string();
-        else if (auto ev = dynamic_cast<const ratio::enum_item *>(&itm))
+        else if (auto ev = dynamic_cast<const enum_item *>(&itm))
         {
             json::json j_val;
             j_val["var"] = std::to_string(ev->get_var());
