@@ -22,6 +22,7 @@ namespace ratio
 
   public:
     resolver(const flaw &f, const utils::rational &cost);
+    resolver(const flaw &f, const utils::rational &cost, const semitone::lit &rho);
     virtual ~resolver() = default;
 
     /**

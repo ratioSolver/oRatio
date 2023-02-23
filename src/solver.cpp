@@ -1,6 +1,7 @@
 #include "solver.h"
 #include "items.h"
 #include "enum_flaw.h"
+#include "disj_flaw.h"
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
 #endif
@@ -415,6 +416,34 @@ namespace ratio
             return new bool_item(get_bool_type(), rdl_th.new_gt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
         else
             throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    riddle::expr solver::conj(const std::vector<riddle::expr> &xprs)
+    {
+        std::vector<semitone::lit> lits;
+        for (const auto &xpr : xprs)
+            lits.push_back(static_cast<bool_item &>(*xpr).get_lit());
+        return new bool_item(get_bool_type(), sat->new_conj(lits));
+    }
+
+    riddle::expr solver::disj(const std::vector<riddle::expr> &xprs)
+    {
+        std::vector<semitone::lit> lits;
+        for (const auto &xpr : xprs)
+            lits.push_back(static_cast<bool_item &>(*xpr).get_lit());
+        if (lits.size() > 1)
+            new_flaw(new disj_flaw(*this, get_cause(), lits));
+        return new bool_item(get_bool_type(), sat->new_disj(lits));
+    }
+
+    riddle::expr solver::exct_one(const std::vector<riddle::expr> &xprs)
+    {
+        std::vector<semitone::lit> lits;
+        for (const auto &xpr : xprs)
+            lits.push_back(static_cast<bool_item &>(*xpr).get_lit());
+        if (lits.size() > 1)
+            new_flaw(new disj_flaw(*this, get_cause(), lits));
+        return new bool_item(get_bool_type(), sat->new_exct_one(lits));
     }
 
 #ifdef BUILD_LISTENERS
