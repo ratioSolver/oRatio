@@ -17,7 +17,7 @@ namespace ratio
         return j;
     }
 
-    disj_flaw::choose_lit::choose_lit(disj_flaw &ef, const utils::rational &cost, const semitone::lit &l) : resolver(ef, cost, l) {}
+    disj_flaw::choose_lit::choose_lit(disj_flaw &ef, const utils::rational &cost, const semitone::lit &l) : resolver(ef, l, cost) {}
 
     json::json disj_flaw::choose_lit::get_data() const noexcept
     {

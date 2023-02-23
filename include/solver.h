@@ -119,7 +119,7 @@ namespace ratio
 
     void assert_fact(const riddle::expr &xpr) override;
 
-    void new_disjunction(const std::vector<riddle::conjunction_ptr> &xprs) override;
+    void new_disjunction(std::vector<riddle::conjunction_ptr> xprs) override;
 
     riddle::expr new_fact(const riddle::predicate &pred) override;
     riddle::expr new_goal(const riddle::predicate &pred) override;

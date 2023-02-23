@@ -446,6 +446,23 @@ namespace ratio
         return new bool_item(get_bool_type(), sat->new_exct_one(lits));
     }
 
+    riddle::expr solver::negate(const riddle::expr &xpr) { return new bool_item(get_bool_type(), !static_cast<bool_item &>(*xpr).get_lit()); }
+
+    void solver::assert_fact(const riddle::expr &xpr)
+    { // the expression must be a boolean..
+        if (xpr->get_type() == get_bool_type())
+        {
+            if (!sat->new_clause({!ni, static_cast<ratio::bool_item &>(*xpr).get_lit()}))
+                throw riddle::unsolvable_exception(); // the problem is unsolvable
+        }
+        else
+            throw std::runtime_error("the expression must be a boolean");
+    }
+
+    void solver::new_disjunction(std::vector<riddle::conjunction_ptr> xprs)
+    {
+    }
+
 #ifdef BUILD_LISTENERS
     void solver::fire_new_flaw(const flaw &f) const
     {
