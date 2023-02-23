@@ -2,6 +2,7 @@
 #include "items.h"
 #include "enum_flaw.h"
 #include "disj_flaw.h"
+#include "disjunction_flaw.h"
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
 #endif
@@ -460,7 +461,8 @@ namespace ratio
     }
 
     void solver::new_disjunction(std::vector<riddle::conjunction_ptr> xprs)
-    {
+    { // we create a disjunction flaw..
+        new_flaw(new disjunction_flaw(*this, get_cause(), std::move(xprs)));
     }
 
 #ifdef BUILD_LISTENERS
