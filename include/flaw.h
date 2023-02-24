@@ -61,6 +61,7 @@ namespace ratio
      */
     std::vector<std::reference_wrapper<resolver>> &get_resolvers() noexcept { return resolvers; }
 
+  private:
     /**
      * @brief Initialize the flaw.
      *
@@ -73,8 +74,9 @@ namespace ratio
      * @pre the solver must be at root-level.
      */
     void expand();
-    virtual void compute_resolvers() {}
+    virtual void compute_resolvers() = 0;
 
+  public:
     /**
      * @brief Gets a json representation of the data of this flaw.
      *

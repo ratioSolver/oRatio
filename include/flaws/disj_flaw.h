@@ -10,6 +10,7 @@ namespace ratio
   public:
     disj_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, std::vector<semitone::lit> lits);
 
+  private:
     void compute_resolvers() override;
 
     json::json get_data() const noexcept override;

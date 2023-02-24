@@ -139,7 +139,9 @@ namespace ratio
 
     utils::lbool bool_value(const riddle::expr &xpr) const override;
     utils::inf_rational arith_value(const riddle::expr &xpr) const override;
+    std::pair<utils::inf_rational, utils::inf_rational> arith_bounds(const riddle::expr &xpr) const override;
     utils::inf_rational time_value(const riddle::expr &xpr) const override;
+    std::pair<utils::inf_rational, utils::inf_rational> time_bounds(const riddle::expr &xpr) const override;
 
     bool is_enum(const riddle::expr &xpr) const override;
     std::vector<riddle::expr> domain(const riddle::expr &xpr) const override;

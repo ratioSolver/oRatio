@@ -1,5 +1,6 @@
 #include "solver.h"
 #include "items.h"
+#include "bool_flaw.h"
 #include "enum_flaw.h"
 #include "disj_flaw.h"
 #include "disjunction_flaw.h"
@@ -13,7 +14,12 @@ namespace ratio
 {
     solver::solver() : theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat) {}
 
-    riddle::expr solver::new_bool() { return new bool_item(get_bool_type(), semitone::lit(sat->new_var())); }
+    riddle::expr solver::new_bool()
+    {
+        riddle::expr res = new bool_item(get_bool_type(), semitone::lit(sat->new_var()));
+        new_flaw(new bool_flaw(*this, get_cause(), res));
+        return res;
+    }
     riddle::expr solver::new_bool(bool value) { return new bool_item(get_bool_type(), value ? semitone::TRUE_lit : semitone::FALSE_lit); }
 
     riddle::expr solver::new_int() { return new arith_item(get_int_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
@@ -544,6 +550,53 @@ namespace ratio
         riddle::expr goal = new atom(pred, false, semitone::lit(sat->new_var()));
         new_flaw(new atom_flaw(*this, get_cause(), goal));
         return goal;
+    }
+
+    bool solver::is_constant(const riddle::expr &xpr) const
+    {
+        if (xpr->get_type() == get_bool_type())
+            return bool_value(xpr) != utils::Undefined;
+        else if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type())
+        {
+            auto [lb, ub] = arith_bounds(xpr);
+            return lb == ub;
+        }
+        else if (xpr->get_type() == get_time_type())
+        {
+            auto [lb, ub] = time_bounds(xpr);
+            return lb == ub;
+        }
+        else
+            throw std::runtime_error("not implemented yet");
+
+        if (is_enum(xpr))
+        {
+        }
+
+        return false;
+    }
+
+    utils::lbool solver::bool_value(const riddle::expr &xpr) const { return sat->value(static_cast<bool_item &>(*xpr).get_lit()); }
+    utils::inf_rational solver::arith_value(const riddle::expr &xpr) const { return lra_th.value(static_cast<arith_item &>(*xpr).get_lin()); }
+    std::pair<utils::inf_rational, utils::inf_rational> solver::arith_bounds(const riddle::expr &xpr) const { return lra_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
+    utils::inf_rational solver::time_value(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()).first; }
+    std::pair<utils::inf_rational, utils::inf_rational> solver::time_bounds(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
+
+    bool solver::is_enum(const riddle::expr &xpr) const { return dynamic_cast<enum_item *>(&*xpr); }
+    std::vector<riddle::expr> solver::domain(const riddle::expr &xpr) const
+    {
+        auto dom = ov_th.value(static_cast<enum_item &>(*xpr).get_var());
+        std::vector<riddle::expr> res;
+        res.reserve(dom.size());
+        for (auto &d : dom)
+            res.emplace_back(dynamic_cast<riddle::item *>(d));
+        return res;
+    }
+    void solver::prune(const riddle::expr &xpr, const riddle::expr &val)
+    {
+        auto alw_var = ov_th.allows(static_cast<ratio::enum_item &>(*xpr).get_var(), dynamic_cast<utils::enum_val &>(*val));
+        if (!sat->new_clause({!ni, alw_var}))
+            throw riddle::unsolvable_exception(); // the problem is unsolvable..
     }
 
 #ifdef BUILD_LISTENERS

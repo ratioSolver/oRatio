@@ -11,6 +11,7 @@ namespace ratio
   public:
     atom_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, riddle::expr &atom);
 
+  private:
     void compute_resolvers() override;
 
     json::json get_data() const noexcept override;
