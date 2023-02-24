@@ -7,6 +7,8 @@
 
 namespace ratio
 {
+  class atom_flaw;
+
   /**
    * @brief A class for representing boolean items.
    *
@@ -71,9 +73,17 @@ namespace ratio
    * @brief A class for representing atoms.
    *
    */
-  class atom : public riddle::complex_item
+  class atom : public riddle::atom_item
   {
+    friend class atom_flaw;
+
   public:
-    atom(riddle::predicate &p) : complex_item(p) {}
+    atom(riddle::predicate &p, bool is_fact, semitone::lit sigma) : atom_item(p, is_fact), sigma(sigma) {}
+
+    semitone::lit get_sigma() const { return sigma; }
+
+  private:
+    semitone::lit sigma; // the literal that represents this atom..
+    atom_flaw *reason;   // the atom_flaw that caused this atom to be created..
   };
 } // namespace ratio

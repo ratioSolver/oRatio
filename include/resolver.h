@@ -21,8 +21,8 @@ namespace ratio
     friend class flaw;
 
   public:
-    resolver(const flaw &f, const utils::rational &cost);
-    resolver(const flaw &f, const semitone::lit &rho, const utils::rational &cost);
+    resolver(flaw &f, const utils::rational &cost);
+    resolver(flaw &f, const semitone::lit &rho, const utils::rational &cost);
     virtual ~resolver() = default;
 
     /**
@@ -37,7 +37,7 @@ namespace ratio
      *
      * @return const flaw& The flaw.
      */
-    const flaw &get_flaw() const noexcept { return f; }
+    flaw &get_flaw() noexcept { return f; }
 
     /**
      * @brief Gets the rho variable of this resolver.
@@ -68,7 +68,7 @@ namespace ratio
     virtual json::json get_data() const noexcept = 0;
 
   private:
-    const flaw &f;                                           // the flaw solved by this resolver..
+    flaw &f;                                                 // the flaw solved by this resolver..
     const semitone::lit rho;                                 // the propositional literal indicating whether the resolver is active or not..
     const utils::rational intrinsic_cost;                    // the intrinsic cost of the resolver..
     std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..

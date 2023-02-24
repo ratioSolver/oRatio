@@ -16,6 +16,7 @@ namespace ratio
 {
   class flaw;
   class resolver;
+  class atom_flaw;
 #ifdef BUILD_LISTENERS
   class solver_listener;
 #endif
@@ -24,6 +25,7 @@ namespace ratio
   {
     friend class flaw;
     friend class resolver;
+    friend class atom_flaw;
 #ifdef BUILD_LISTENERS
     friend class solver_listener;
 #endif
@@ -111,6 +113,15 @@ namespace ratio
     riddle::expr gt(const riddle::expr &lhs, const riddle::expr &rhs) override;
     riddle::expr geq(const riddle::expr &lhs, const riddle::expr &rhs) override;
     riddle::expr eq(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    /**
+     * @brief Checks whether the two expressions can be made equal.
+     *
+     * @param left The first expression to check if it can be made equal to the other.
+     * @param right The second expression to check if it can be made equal to the other.
+     * @return true If the two expressions can be made equal.
+     * @return false If the two expressions can not be made equal.
+     */
+    bool matches(const riddle::expr &lhs, const riddle::expr &rhs) const noexcept;
 
     riddle::expr conj(const std::vector<riddle::expr> &xprs) override;
     riddle::expr disj(const std::vector<riddle::expr> &xprs) override;
@@ -121,8 +132,8 @@ namespace ratio
 
     void new_disjunction(std::vector<riddle::conjunction_ptr> xprs) override;
 
-    riddle::expr new_fact(const riddle::predicate &pred) override;
-    riddle::expr new_goal(const riddle::predicate &pred) override;
+    riddle::expr new_fact(riddle::predicate &pred) override;
+    riddle::expr new_goal(riddle::predicate &pred) override;
 
     bool is_constant(const riddle::expr &xpr) const override;
 
@@ -137,6 +148,7 @@ namespace ratio
   private:
     void new_flaw(utils::u_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
     void new_resolver(utils::u_ptr<resolver> r);                     // notifies the solver that a new resolver `r` has been created..
+    void new_causal_link(flaw &f, resolver &r);                      // notifies the solver that a new causal link between `f` and `r` has been created..
 
     inline const std::vector<std::reference_wrapper<resolver>> get_cause()
     {

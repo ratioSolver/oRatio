@@ -33,6 +33,14 @@ namespace ratio
     solver &get_solver() noexcept { return s; }
 
     /**
+     * @brief Check whether this flaw has been expanded.
+     *
+     * @return true If the flaw has been expanded.
+     * @return false If the flaw has not been expanded.
+     */
+    bool is_expanded() const noexcept { return expanded; }
+
+    /**
      * @brief Get the phi literal indicating whether the flaw is active or not.
      *
      * @return const semitone::lit& The phi literal.
@@ -45,6 +53,13 @@ namespace ratio
      * @return const semitone::var& The position variable.
      */
     const semitone::var &get_position() const noexcept { return position; }
+
+    /**
+     * @brief Get the resolvers for solving this flaw.
+     *
+     * @return std::vector<std::reference_wrapper<resolver>>& The resolvers.
+     */
+    std::vector<std::reference_wrapper<resolver>> &get_resolvers() noexcept { return resolvers; }
 
     /**
      * @brief Initialize the flaw.

@@ -3,6 +3,7 @@
 #include "enum_flaw.h"
 #include "disj_flaw.h"
 #include "disjunction_flaw.h"
+#include "atom_flaw.h"
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
 #endif
@@ -419,6 +420,72 @@ namespace ratio
             throw std::runtime_error("the expression must be an integer or a real");
     }
 
+    bool solver::matches(const riddle::expr &lhs, const riddle::expr &rhs) const noexcept
+    {
+        if (lhs == rhs) // the two expressions are the same..
+            return true;
+        else if (lhs->get_type() == get_bool_type() && rhs->get_type() == get_bool_type())
+        { // the two expressions are boolean..
+            auto lbi = sat->value(static_cast<bool_item &>(*lhs).get_lit());
+            auto rbi = sat->value(static_cast<bool_item &>(*rhs).get_lit());
+            return lbi == rbi || lbi == utils::Undefined || rbi == utils::Undefined;
+        }
+        else if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type() || lhs->get_type() == get_time_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type() || rhs->get_type() == get_time_type()))
+        { // the two expressions are arithmetics..
+            auto lbi = static_cast<arith_item &>(*lhs).get_lin();
+            auto rbi = static_cast<arith_item &>(*rhs).get_lin();
+            if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type()) // the two expressions are time arithmetics..
+                return rdl_th.matches(lbi, rbi);
+            else // the two expressions are integer or real arithmetics..
+                return lra_th.matches(lbi, rbi);
+        }
+        else if (lhs->get_type() == get_string_type() && rhs->get_type() == get_string_type()) // the two expressions are strings..
+            return static_cast<string_item &>(*lhs).get_string() == static_cast<string_item &>(*rhs).get_string();
+        else if (auto lee = dynamic_cast<enum_item *>(&*lhs))
+        {                                                    // we are comparing an enum with something else..
+            auto lee_vals = ov_th.value(lee->get_var());     // get the values of the enum..
+            if (auto ree = dynamic_cast<enum_item *>(&*rhs)) // we are comparing enums..
+            {
+                auto ree_vals = ov_th.value(ree->get_var()); // get the values of the enum..
+                for (const auto &lv : lee_vals)
+                    for (const auto &rv : ree_vals)
+                        if (lv == rv)
+                            return true;
+                return false;
+            }
+            else // we are comparing an enum with a singleton..
+                for (const auto &lv : lee_vals)
+                    if (lv == dynamic_cast<const utils::enum_val *>(&*rhs))
+                        return true;
+            return false;
+        }
+        else if (lhs->get_type() == rhs->get_type())
+        { // we are comparing two complex items..
+            if (auto p = dynamic_cast<riddle::predicate *>(&lhs->get_type()))
+            { // we are comparing two atoms..
+                auto &leci = static_cast<riddle::complex_item &>(*lhs);
+                auto &reci = static_cast<riddle::complex_item &>(*rhs);
+                std::queue<riddle::predicate *> q;
+                q.push(p);
+                while (!q.empty())
+                {
+                    for (const auto &[f_name, f] : q.front()->get_fields())
+                        if (!f->is_synthetic())
+                            if (!matches(leci.get(f_name), reci.get(f_name)))
+                                return false;
+                    for (const auto &stp : q.front()->get_parents())
+                        q.push(&stp.get());
+                    q.pop();
+                }
+                return true;
+            }
+            else // the two items do not match..
+                return false;
+        }
+        else // the two expressions are different..
+            return false;
+    }
+
     riddle::expr solver::conj(const std::vector<riddle::expr> &xprs)
     {
         std::vector<semitone::lit> lits;
@@ -463,6 +530,20 @@ namespace ratio
     void solver::new_disjunction(std::vector<riddle::conjunction_ptr> xprs)
     { // we create a disjunction flaw..
         new_flaw(new disjunction_flaw(*this, get_cause(), std::move(xprs)));
+    }
+
+    riddle::expr solver::new_fact(riddle::predicate &pred)
+    {
+        riddle::expr fact = new atom(pred, true, semitone::lit(sat->new_var()));
+        new_flaw(new atom_flaw(*this, get_cause(), fact));
+        return fact;
+    }
+
+    riddle::expr solver::new_goal(riddle::predicate &pred)
+    {
+        riddle::expr goal = new atom(pred, false, semitone::lit(sat->new_var()));
+        new_flaw(new atom_flaw(*this, get_cause(), goal));
+        return goal;
     }
 
 #ifdef BUILD_LISTENERS
