@@ -2,10 +2,12 @@
 
 #include "flaw.h"
 #include "resolver.h"
-#include "items.h"
+#include "enum.h"
 
 namespace ratio
 {
+  class enum_item;
+
   class enum_flaw final : public flaw
   {
   public:

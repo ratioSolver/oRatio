@@ -1,5 +1,4 @@
 #include "atom_flaw.h"
-#include "items.h"
 #include "solver.h"
 #include <cassert>
 

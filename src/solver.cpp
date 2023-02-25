@@ -1,5 +1,4 @@
 #include "solver.h"
-#include "items.h"
 #include "bool_flaw.h"
 #include "enum_flaw.h"
 #include "disj_flaw.h"
