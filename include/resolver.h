@@ -18,6 +18,7 @@ namespace ratio
    */
   class resolver
   {
+    friend class solver;
     friend class flaw;
 
   public:

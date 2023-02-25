@@ -4,6 +4,9 @@
 #include "disj_flaw.h"
 #include "disjunction_flaw.h"
 #include "atom_flaw.h"
+#if defined(H_MAX) || defined(H_ADD)
+#define HEURISTIC new graph(*this)
+#endif
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
 #endif
@@ -11,7 +14,8 @@
 
 namespace ratio
 {
-    solver::solver() : theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat) {}
+    solver::solver() : solver(HEURISTIC) {}
+    solver::solver(graph_ptr g) : theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(g)) {}
 
     riddle::expr solver::new_bool()
     {
@@ -596,6 +600,22 @@ namespace ratio
         auto alw_var = ov_th.allows(static_cast<ratio::enum_item &>(*xpr).get_var(), dynamic_cast<utils::enum_val &>(*val));
         if (!sat->new_clause({!ni, alw_var}))
             throw riddle::unsolvable_exception(); // the problem is unsolvable..
+    }
+
+    void solver::new_flaw(flaw_ptr f, const bool &enqueue)
+    {
+        if (std::any_of(f->get_causes().cbegin(), f->get_causes().cend(), [this](const auto &r)
+                        { return sat->value(r.get().get_rho()) == utils::False; })) // there is no reason for introducing this flaw..
+            return;
+
+        // we initialize the flaw..
+        f->init(); // flaws' initialization requires being at root-level..
+        FIRE_NEW_FLAW(*f);
+
+        if (enqueue) // we enqueue the flaw..
+            gr->enqueue(*f);
+        else // we directly expand the flaw..
+            gr->expand_flaw(*f);
     }
 
 #ifdef BUILD_LISTENERS

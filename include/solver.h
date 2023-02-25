@@ -9,13 +9,26 @@
 #include "ov_theory.h"
 #include "idl_theory.h"
 #include "rdl_theory.h"
-#include "flaw.h"
-#include "resolver.h"
+#include "graph.h"
+
+#ifdef BUILD_LISTENERS
+#define FIRE_NEW_FLAW(f) fire_new_flaw(f)
+#define FIRE_FLAW_COST_CHANGED(f) fire_flaw_cost_changed(f)
+#define FIRE_CURRENT_FLAW(f) fire_current_flaw(f)
+#define FIRE_NEW_RESOLVER(r) fire_new_resolver(r)
+#define FIRE_CURRENT_RESOLVER(r) fire_current_resolver(r)
+#define FIRE_CAUSAL_LINK_ADDED(f, r) fire_causal_link_added(f, r)
+#else
+#define FIRE_NEW_FLAW(f)
+#define FIRE_FLAW_COST_CHANGED(f)
+#define FIRE_CURRENT_FLAW(f)
+#define FIRE_NEW_RESOLVER(r)
+#define FIRE_CURRENT_RESOLVER(r)
+#define FIRE_CAUSAL_LINK_ADDED(f, r)
+#endif
 
 namespace ratio
 {
-  class flaw;
-  class resolver;
   class atom_flaw;
 #ifdef BUILD_LISTENERS
   class solver_listener;
@@ -104,12 +117,14 @@ namespace ratio
     friend class flaw;
     friend class resolver;
     friend class atom_flaw;
+    friend class graph;
 #ifdef BUILD_LISTENERS
     friend class solver_listener;
 #endif
 
   public:
     solver();
+    solver(graph_ptr g);
 
     /**
      * @brief Get the linear-real-arithmetic theory.
@@ -225,10 +240,23 @@ namespace ratio
     std::vector<riddle::expr> domain(const riddle::expr &xpr) const override;
     void prune(const riddle::expr &xpr, const riddle::expr &val) override;
 
+    /**
+     * Solves the given problem returning whether a solution has been found.
+     */
+    bool solve();
+    /**
+     * Takes the given decision and propagates its effects.
+     */
+    void take_decision(const semitone::lit &ch);
+
   private:
-    void new_flaw(utils::u_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
-    void new_resolver(utils::u_ptr<resolver> r);                     // notifies the solver that a new resolver `r` has been created..
-    void new_causal_link(flaw &f, resolver &r);                      // notifies the solver that a new causal link between `f` and `r` has been created..
+    void new_flaw(flaw_ptr f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
+    void new_resolver(utils::u_ptr<resolver> r);           // notifies the solver that a new resolver `r` has been created..
+    void new_causal_link(flaw &f, resolver &r);            // notifies the solver that a new causal link between `f` and `r` has been created..
+
+    void expand_flaw(flaw &f); // expands the given flaw..
+
+    const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
 
     inline const std::vector<std::reference_wrapper<resolver>> get_cause()
     {
@@ -253,9 +281,11 @@ namespace ratio
     semitone::idl_theory idl_th; // the integer difference logic theory..
     semitone::rdl_theory rdl_th; // the real difference logic theory..
 
-    resolver *res = nullptr; // the current resolver (i.e. the cause for the new flaws)..
+    graph_ptr gr;                            // the causal graph..
+    resolver *res = nullptr;                 // the current resolver (i.e. the cause for the new flaws)..
+    std::unordered_set<flaw *> active_flaws; // the currently active flaws..
 
-    std::unordered_map<semitone::var, std::vector<utils::u_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
+    std::unordered_map<semitone::var, std::vector<flaw_ptr>> phis;               // the phi variables (propositional variable to flaws) of the flaws..
     std::unordered_map<semitone::var, std::vector<utils::u_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
 
 #ifdef BUILD_LISTENERS

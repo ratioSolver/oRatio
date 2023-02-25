@@ -19,6 +19,7 @@ namespace ratio
    */
   class flaw
   {
+    friend class solver;
     friend class resolver;
 
   public:
@@ -31,6 +32,20 @@ namespace ratio
      * @return const solver& The solver.
      */
     solver &get_solver() noexcept { return s; }
+
+    /**
+     * @brief Get the resolvers that caused this flaw.
+     *
+     * @return std::vector<std::reference_wrapper<resolver>>& The resolvers that caused this flaw.
+     */
+    std::vector<std::reference_wrapper<resolver>> &get_causes() noexcept { return causes; }
+
+    /**
+     * @brief Gets the estimated cost of this flaw.
+     *
+     * @return const utils::rational& the estimated cost of this flaw.
+     */
+    utils::rational get_estimated_cost() const noexcept { return est_cost; }
 
     /**
      * @brief Check whether this flaw has been expanded.
@@ -101,6 +116,8 @@ namespace ratio
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
   };
+
+  using flaw_ptr = utils::u_ptr<flaw>;
 
   /**
    * @brief Gets the id of the given flaw.
