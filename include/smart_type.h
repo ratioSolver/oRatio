@@ -16,7 +16,7 @@ namespace ratio
     friend class solver;
 
   public:
-    smart_type(scope &scp, const std::string &name);
+    smart_type(riddle::scope &scp, const std::string &name);
     virtual ~smart_type() = default;
 
     inline solver &get_solver() const noexcept { return slv; }
