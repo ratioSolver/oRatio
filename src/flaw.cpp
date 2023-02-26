@@ -70,7 +70,7 @@ namespace ratio
         }
     }
 
-    ORATIOSOLVER_EXPORT void flaw::add_resolver(utils::u_ptr<resolver> r)
+    ORATIOSOLVER_EXPORT void flaw::add_resolver(resolver_ptr r)
     {
         if (!s.get_sat_core().new_clause({!r->get_rho(), phi}))
             throw riddle::unsolvable_exception();

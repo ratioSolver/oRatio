@@ -616,6 +616,93 @@ namespace ratio
             gr->enqueue(*f);
         else // we directly expand the flaw..
             gr->expand_flaw(*f);
+
+        switch (sat->value(f->phi))
+        {
+        case utils::True: // we have a top-level (a landmark) flaw..
+            if (enqueue || std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
+                                        { return sat->value(r.get().rho) == utils::True; }))
+                active_flaws.insert(&*f); // the flaw has not yet already been solved (e.g. it has a single resolver)..
+            break;
+        case utils::Undefined:      // we do not have a top-level (a landmark) flaw, nor an infeasible one..
+            bind(variable(f->phi)); // we listen for the flaw to become active..
+            break;
+        }
+
+        phis[variable(f->phi)].emplace_back(std::move(f));
+    }
+
+    void solver::new_resolver(resolver_ptr r)
+    {
+        FIRE_NEW_RESOLVER(*r);
+        if (sat->value(r->rho) == utils::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
+            bind(variable(r->rho));                 // we listen for the resolver to become inactive..
+
+        rhos[variable(r->rho)].push_back(std::move(r));
+    }
+
+    void solver::new_causal_link(flaw &f, resolver &r)
+    {
+        FIRE_CAUSAL_LINK_ADDED(f, r);
+        r.preconditions.push_back(f);
+        f.supports.push_back(r);
+        // activating the resolver requires the activation of the flaw..
+        [[maybe_unused]] bool new_clause = sat->new_clause({!r.rho, f.phi});
+        assert(new_clause);
+        // we introduce an ordering constraint..
+        [[maybe_unused]] bool new_dist = sat->new_clause({!r.rho, idl_th.new_distance(r.get_flaw().position, f.position, 0)});
+        assert(new_dist);
+    }
+
+    void solver::expand_flaw(flaw &f)
+    {
+        assert(!f.expanded);
+
+        // we expand the flaw..
+        f.expand();
+
+        // we apply the flaw's resolvers..
+        for (const auto &r : f.resolvers)
+            apply_resolver(r);
+
+        if (!sat->propagate())
+            throw riddle::unsolvable_exception(); // the problem is unsolvable..
+
+        // we clean up already solved flaws..
+        if (sat->value(f.phi) == utils::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
+                                                            { return sat->value(r.get().rho) == utils::True; }))
+            active_flaws.erase(&f); // this flaw has already been solved..
+    }
+
+    void solver::apply_resolver(resolver &r)
+    {
+        res = &r;      // we write down the resolver so that new flaws know their cause..
+        set_ni(r.rho); // we temporally set the ni variable..
+
+        try
+        { // we apply the resolver..
+            r.apply();
+        }
+        catch (const riddle::inconsistency_exception &)
+        { // the resolver is inapplicable..
+            if (!sat->new_clause({!r.rho}))
+                throw riddle::unsolvable_exception();
+        }
+
+        // we make some cleanings..
+        restore_ni();
+        res = nullptr;
+    }
+
+    void solver::set_cost(flaw &f, utils::rational cost)
+    {
+        assert(f.est_cost != cost);
+        if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
+            trail.back().old_f_costs.try_emplace(&f, f.est_cost);
+
+        // we update the flaw's estimated cost..
+        f.est_cost = cost;
+        FIRE_FLAW_COST_CHANGED(f);
     }
 
 #ifdef BUILD_LISTENERS

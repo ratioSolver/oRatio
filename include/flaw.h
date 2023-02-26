@@ -12,6 +12,7 @@ namespace ratio
 {
   class solver;
   class resolver;
+  using resolver_ptr = utils::u_ptr<resolver>;
 
   /**
    * @brief A class for representing flaws. Flaws are meta-variables that are used to represent the current state of the planning process. Flaws can be solver by applying resolvers.
@@ -103,7 +104,7 @@ namespace ratio
     /**
      * Adds the resolver `r` to this flaw.
      */
-    ORATIOSOLVER_EXPORT void add_resolver(utils::u_ptr<resolver> r);
+    ORATIOSOLVER_EXPORT void add_resolver(resolver_ptr r);
 
   private:
     solver &s;                                                     // the solver this flaw belongs to..

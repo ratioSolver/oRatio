@@ -3,7 +3,6 @@
 #include "oratiosolver_export.h"
 #include "core.h"
 #include "item.h"
-#include "theory.h"
 #include "sat_stack.h"
 #include "lra_theory.h"
 #include "ov_theory.h"
@@ -251,10 +250,20 @@ namespace ratio
 
   private:
     void new_flaw(flaw_ptr f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
-    void new_resolver(utils::u_ptr<resolver> r);           // notifies the solver that a new resolver `r` has been created..
+    void new_resolver(resolver_ptr r);                     // notifies the solver that a new resolver `r` has been created..
     void new_causal_link(flaw &f, resolver &r);            // notifies the solver that a new causal link between `f` and `r` has been created..
 
-    void expand_flaw(flaw &f); // expands the given flaw..
+    void expand_flaw(flaw &f);                    // expands the given flaw..
+    void apply_resolver(resolver &r);             // applies the given resolver..
+    void set_cost(flaw &f, utils::rational cost); // sets the cost of the given flaw..
+
+    void set_ni(const semitone::lit &v) noexcept
+    {
+      tmp_ni = ni;
+      ni = v;
+    }
+
+    void restore_ni() noexcept { ni = tmp_ni; }
 
     const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
 
@@ -285,8 +294,16 @@ namespace ratio
     resolver *res = nullptr;                 // the current resolver (i.e. the cause for the new flaws)..
     std::unordered_set<flaw *> active_flaws; // the currently active flaws..
 
-    std::unordered_map<semitone::var, std::vector<flaw_ptr>> phis;               // the phi variables (propositional variable to flaws) of the flaws..
-    std::unordered_map<semitone::var, std::vector<utils::u_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
+    std::unordered_map<semitone::var, std::vector<flaw_ptr>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
+    std::unordered_map<semitone::var, std::vector<resolver_ptr>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
+
+    struct layer
+    {
+      std::unordered_map<flaw *, utils::rational> old_f_costs; // the old estimated flaws` costs..
+      std::unordered_set<flaw *> new_flaws;                    // the just activated flaws..
+      std::unordered_set<flaw *> solved_flaws;                 // the just solved flaws..
+    };
+    std::vector<layer> trail; // the list of taken decisions, with the associated changes made, in chronological order..
 
 #ifdef BUILD_LISTENERS
   private:

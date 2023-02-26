@@ -75,6 +75,8 @@ namespace ratio
     std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
 
+  using resolver_ptr = utils::u_ptr<resolver>;
+
   /**
    * @brief Gets the id of the given resolver.
    *
