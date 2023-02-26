@@ -28,14 +28,6 @@ namespace ratio
     solver &get_solver() const noexcept { return s; }
     const semitone::var &get_gamma() const noexcept { return gamma; }
 
-    /**
-     * @brief Get the estimated cost of the given resolver.
-     *
-     * @param r The resolver whose cost is going to be estimated.
-     * @return utils::rational The estimated cost of the given resolver.
-     */
-    virtual utils::rational get_estimated_cost(const resolver &) const noexcept { return utils::rational::ZERO; }
-
   private:
     void check();
 
@@ -49,6 +41,11 @@ namespace ratio
 
     virtual void push() {}
     virtual void pop() {}
+
+    virtual void activated_flaw(flaw &) {}
+    virtual void negated_flaw(flaw &f) { propagate_costs(f); }
+    virtual void activated_resolver(resolver &) {}
+    virtual void negated_resolver(resolver &r);
 
   private:
     solver &s;           // The solver this graph belongs to.

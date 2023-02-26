@@ -34,7 +34,7 @@ namespace ratio
         phi = s.get_sat_core().new_conj(std::move(cs));
     }
 
-    ORATIOSOLVER_EXPORT void flaw::expand()
+    void flaw::expand()
     {
         assert(!expanded);
         assert(s.sat->root_level());
@@ -70,11 +70,21 @@ namespace ratio
         }
     }
 
-    ORATIOSOLVER_EXPORT void flaw::add_resolver(resolver_ptr r)
+    void flaw::add_resolver(resolver_ptr r)
     {
         if (!s.get_sat_core().new_clause({!r->get_rho(), phi}))
             throw riddle::unsolvable_exception();
         resolvers.push_back(*r);
         s.new_resolver(std::move(r)); // we notify the solver that a new resolver has been added..
+    }
+
+    resolver& flaw::get_cheapest_resolver() const noexcept
+    {
+        assert(!resolvers.empty());
+        resolver *cheapest = &resolvers[0].get();
+        for (size_t i = 1; i < resolvers.size(); ++i)
+            if (resolvers[i].get().get_estimated_cost() < cheapest->get_estimated_cost())
+                cheapest = &resolvers[i].get();
+        return *cheapest;
     }
 } // namespace ratio

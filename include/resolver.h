@@ -53,6 +53,12 @@ namespace ratio
      * @return const semitone::rational& the intrinsic cost of this resolver.
      */
     const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+    /**
+     * @brief Gets the estimated cost of this resolver.
+     *
+     * @return const utils::rational& the estimated cost of this resolver.
+     */
+    utils::rational get_estimated_cost() const noexcept;
 
     /**
      * Applies this resolver, introducing subgoals and/or constraints.

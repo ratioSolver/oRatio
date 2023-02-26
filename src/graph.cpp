@@ -40,4 +40,11 @@ namespace ratio
         // we propagate the costs starting from the just expanded flaw..
         propagate_costs(f);
     }
+
+    void graph::negated_resolver(resolver &r)
+    {
+        if (s.get_sat_core().value(r.get_flaw().get_phi()) != utils::False)
+            // we propagate the costs starting from the just negated resolver..
+            propagate_costs(r.get_flaw());
+    }
 } // namespace ratio

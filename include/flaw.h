@@ -92,6 +92,19 @@ namespace ratio
     void expand();
     virtual void compute_resolvers() = 0;
 
+    /**
+     * @brief Gets the cheapest resolver of this flaw.
+     *
+     * @return resolver& the cheapest resolver of this flaw.
+     */
+    resolver &get_cheapest_resolver() const noexcept;
+    /**
+     * @brief Gets the best resolver of this flaw which, by default, corresponds to the cheapest resolver.
+     *
+     * @return resolver& the best resolver of this flaw.
+     */
+    virtual resolver &get_best_resolver() const noexcept { return get_cheapest_resolver(); }
+
   public:
     /**
      * @brief Gets a json representation of the data of this flaw.
@@ -104,7 +117,7 @@ namespace ratio
     /**
      * Adds the resolver `r` to this flaw.
      */
-    ORATIOSOLVER_EXPORT void add_resolver(resolver_ptr r);
+    void add_resolver(resolver_ptr r);
 
   private:
     solver &s;                                                     // the solver this flaw belongs to..

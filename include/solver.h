@@ -32,6 +32,7 @@ namespace ratio
 #ifdef BUILD_LISTENERS
   class solver_listener;
 #endif
+  class smart_type;
 
   /**
    * @brief A class for representing boolean items.
@@ -240,22 +241,38 @@ namespace ratio
     void prune(const riddle::expr &xpr, const riddle::expr &val) override;
 
     /**
-     * Solves the given problem returning whether a solution has been found.
+     * @brief Solves the current problem returning whether a solution was found.
+     *
+     * @return true If a solution was found.
+     * @return false If no solution was found.
      */
     bool solve();
     /**
-     * Takes the given decision and propagates its effects.
+     * @brief Takes a decision and propagates its consequences.
+     *
+     * @param ch The decision to take.
      */
     void take_decision(const semitone::lit &ch);
+
+    /**
+     * @brief Finds the next solution.
+     *
+     */
+    void next();
 
   private:
     void new_flaw(flaw_ptr f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
     void new_resolver(resolver_ptr r);                     // notifies the solver that a new resolver `r` has been created..
     void new_causal_link(flaw &f, resolver &r);            // notifies the solver that a new causal link between `f` and `r` has been created..
 
-    void expand_flaw(flaw &f);                    // expands the given flaw..
+    void expand_flaw(flaw &f);                    // expands the given flaw, computing its resolvers and applying them..
     void apply_resolver(resolver &r);             // applies the given resolver..
-    void set_cost(flaw &f, utils::rational cost); // sets the cost of the given flaw..
+    void set_cost(flaw &f, utils::rational cost); // sets the cost of the given flaw to the given value, storing the old cost in the current layer of the trail..
+
+    void solve_inconsistencies();                                          // checks whether the types have any inconsistency and, in case, solve them..
+    std::vector<std::vector<std::pair<semitone::lit, double>>> get_incs(); // collects all the current inconsistencies..
+
+    void reset_smart_types();
 
     void set_ni(const semitone::lit &v) noexcept
     {
@@ -282,6 +299,10 @@ namespace ratio
     void pop() override;
 
   private:
+    riddle::predicate *imp_pred = nullptr; // the `Impulse` predicate..
+    riddle::predicate *int_pred = nullptr; // the `Interval` predicate..
+    std::vector<smart_type *> smart_types; // the smart-types..
+
     semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..
     semitone::lit ni = semitone::TRUE_lit; // the current controlling literal..
 
