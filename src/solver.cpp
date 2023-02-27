@@ -1,10 +1,15 @@
 #include "solver.h"
+#include "init.h"
 #include "bool_flaw.h"
 #include "enum_flaw.h"
 #include "disj_flaw.h"
 #include "disjunction_flaw.h"
 #include "atom_flaw.h"
 #include "smart_type.h"
+#include "agent.h"
+#include "state_variable.h"
+#include "reusable_resource.h"
+#include "consumable_resource.h"
 #if defined(H_MAX) || defined(H_ADD)
 #define HEURISTIC new graph(*this)
 #endif
@@ -15,8 +20,49 @@
 
 namespace ratio
 {
-    solver::solver() : solver(HEURISTIC) {}
-    solver::solver(graph_ptr g) : theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(g)) {}
+    solver::solver(const bool &i) : solver(HEURISTIC, i) {}
+    solver::solver(graph_ptr g, const bool &i) : theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(g))
+    {
+        if (i) // we initializa the solver..
+            init();
+    }
+
+    void solver::init()
+    {
+        // we read the init string..
+        read(INIT_STRING);
+        // we get the impulsive and interval predicates..
+        imp_pred = &get_predicate(RATIO_IMPULSE);
+        int_pred = &get_predicate(RATIO_INTERVAL);
+        // we add some smart types..
+        add_type(new agent(*this));
+        add_type(new state_variable(*this));
+        add_type(new reusable_resource(*this));
+        add_type(new consumable_resource(*this));
+    }
+
+    void solver::read(const std::string &script)
+    {
+        // we read the script..
+        core::read(script);
+        // we reset the smart-types if some new smart-type has been added with the previous script..
+        reset_smart_types();
+
+        if (!sat->propagate())
+            throw riddle::unsolvable_exception();
+        FIRE_STATE_CHANGED();
+    }
+    void solver::read(const std::vector<std::string> &files)
+    {
+        // we read the files..
+        core::read(files);
+        // we reset the smart-types if some new smart-type has been added with the previous files..
+        reset_smart_types();
+
+        if (!sat->propagate())
+            throw riddle::unsolvable_exception();
+        FIRE_STATE_CHANGED();
+    }
 
     riddle::expr solver::new_bool()
     {
@@ -54,7 +100,7 @@ namespace ratio
             std::vector<utils::enum_val *> vals;
             vals.reserve(xprs.size());
             for (auto &xpr : xprs)
-                if (auto vv = dynamic_cast<utils::enum_val *>(&*xpr))
+                if (auto vv = dynamic_cast<utils::enum_val *>(xpr.operator->()))
                     vals.push_back(vv);
                 else
                     throw std::runtime_error("enum values must be var values");
@@ -70,13 +116,13 @@ namespace ratio
 
     riddle::expr solver::get_enum(riddle::expr &xpr, const std::string &name)
     {
-        if (auto enum_expr = dynamic_cast<enum_item *>(&*xpr))
+        if (auto enum_expr = dynamic_cast<enum_item *>(xpr.operator->()))
         { // we retrieve the domain of the enum variable..
             auto vs = ov_th.value(enum_expr->get_var());
             assert(vs.size() > 1);
             std::unordered_map<riddle::item *, std::vector<semitone::lit>> val_vars;
             for (auto &v : vs)
-                val_vars[&*static_cast<riddle::complex_item *>(v)->get(name)].push_back(ov_th.allows(enum_expr->get_var(), *v));
+                val_vars[static_cast<riddle::complex_item *>(v)->get(name).operator->()].push_back(ov_th.allows(enum_expr->get_var(), *v));
             std::vector<semitone::lit> c_vars;
             std::vector<riddle::item *> c_vals;
             for (const auto &val : val_vars)
@@ -339,21 +385,21 @@ namespace ratio
             return new bool_item(get_bool_type(), sat->new_eq(static_cast<bool_item &>(*lhs).get_lit(), static_cast<bool_item &>(*rhs).get_lit()));
         else if (lhs->get_type() == get_string_type() && lhs->get_type() == rhs->get_type())
             return new bool_item(get_bool_type(), static_cast<string_item &>(*lhs).get_string() == static_cast<string_item &>(*rhs).get_string() ? semitone::TRUE_lit : semitone::FALSE_lit);
-        else if (auto lee = dynamic_cast<enum_item *>(&*lhs))
-        {                                                    // we are comparing an enum with something else..
-            if (auto ree = dynamic_cast<enum_item *>(&*rhs)) // we are comparing enums..
+        else if (auto lee = dynamic_cast<enum_item *>(lhs.operator->()))
+        {                                                               // we are comparing an enum with something else..
+            if (auto ree = dynamic_cast<enum_item *>(rhs.operator->())) // we are comparing enums..
                 return new bool_item(get_bool_type(), ov_th.new_eq(lee->get_var(), ree->get_var()));
             else // we are comparing an enum with a singleton..
                 return new bool_item(get_bool_type(), ov_th.allows(lee->get_var(), dynamic_cast<utils::enum_val &>(*rhs)));
         }
-        else if (dynamic_cast<enum_item *>(&*rhs))
+        else if (dynamic_cast<enum_item *>(rhs.operator->()))
             return eq(rhs, lhs); // we swap, for simplifying code..
         else if (lhs->get_type() == rhs->get_type())
         { // we are comparing complex items..
-            auto leci = dynamic_cast<riddle::complex_item *>(&*lhs);
+            auto leci = dynamic_cast<riddle::complex_item *>(lhs.operator->());
             if (!leci)
                 throw std::runtime_error("the expression must be a complex item");
-            auto reci = dynamic_cast<riddle::complex_item *>(&*rhs);
+            auto reci = dynamic_cast<riddle::complex_item *>(rhs.operator->());
             if (!reci)
                 throw std::runtime_error("the expression must be a complex item");
 
@@ -451,10 +497,10 @@ namespace ratio
         }
         else if (lhs->get_type() == get_string_type() && rhs->get_type() == get_string_type()) // the two expressions are strings..
             return static_cast<string_item &>(*lhs).get_string() == static_cast<string_item &>(*rhs).get_string();
-        else if (auto lee = dynamic_cast<enum_item *>(&*lhs))
-        {                                                    // we are comparing an enum with something else..
-            auto lee_vals = ov_th.value(lee->get_var());     // get the values of the enum..
-            if (auto ree = dynamic_cast<enum_item *>(&*rhs)) // we are comparing enums..
+        else if (auto lee = dynamic_cast<enum_item *>(lhs.operator->()))
+        {                                                               // we are comparing an enum with something else..
+            auto lee_vals = ov_th.value(lee->get_var());                // get the values of the enum..
+            if (auto ree = dynamic_cast<enum_item *>(rhs.operator->())) // we are comparing enums..
             {
                 auto ree_vals = ov_th.value(ree->get_var()); // get the values of the enum..
                 for (const auto &lv : lee_vals)
@@ -465,7 +511,7 @@ namespace ratio
             }
             else // we are comparing an enum with a singleton..
                 for (const auto &lv : lee_vals)
-                    if (lv == dynamic_cast<const utils::enum_val *>(&*rhs))
+                    if (lv == dynamic_cast<const utils::enum_val *>(rhs.operator->()))
                         return true;
             return false;
         }
@@ -586,7 +632,7 @@ namespace ratio
     utils::inf_rational solver::time_value(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()).first; }
     std::pair<utils::inf_rational, utils::inf_rational> solver::time_bounds(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
 
-    bool solver::is_enum(const riddle::expr &xpr) const { return dynamic_cast<enum_item *>(&*xpr); }
+    bool solver::is_enum(const riddle::expr &xpr) const { return dynamic_cast<enum_item *>(xpr.operator->()); }
     std::vector<riddle::expr> solver::domain(const riddle::expr &xpr) const
     {
         auto dom = ov_th.value(static_cast<enum_item &>(*xpr).get_var());
@@ -775,7 +821,7 @@ namespace ratio
         case utils::True: // we have a top-level (a landmark) flaw..
             if (enqueue || std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
                                         { return sat->value(r.get().rho) == utils::True; }))
-                active_flaws.insert(&*f); // the flaw has not yet already been solved (e.g. it has a single resolver)..
+                active_flaws.insert(f.operator->()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
             break;
         case utils::Undefined:      // we do not have a top-level (a landmark) flaw, nor an infeasible one..
             bind(variable(f->phi)); // we listen for the flaw to become active..
@@ -974,21 +1020,21 @@ namespace ratio
             case utils::True: // some flaws have been activated..
                 for (const auto &f : at_phis_p->second)
                 {
-                    assert(!active_flaws.count(&*f));
+                    assert(!active_flaws.count(f.operator->()));
                     if (!sat->root_level())
-                        trail.back().new_flaws.insert(&*f);
+                        trail.back().new_flaws.insert(f.operator->());
                     if (std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
                                      { return sat->value(r.get().rho) == utils::True; }))
-                        active_flaws.insert(&*f); // this flaw has been activated and not yet accidentally solved..
+                        active_flaws.insert(f.operator->()); // this flaw has been activated and not yet accidentally solved..
                     else if (!sat->root_level())
-                        trail.back().solved_flaws.insert(&*f); // this flaw has been accidentally solved..
+                        trail.back().solved_flaws.insert(f.operator->()); // this flaw has been accidentally solved..
                     gr->activated_flaw(*f);
                 }
                 break;
             case utils::False: // some flaws have been negated..
                 for (const auto &f : at_phis_p->second)
                 {
-                    assert(!active_flaws.count(&*f));
+                    assert(!active_flaws.count(f.operator->()));
                     gr->negated_flaw(*f);
                 }
                 break;

@@ -1,4 +1,5 @@
 #include "reusable_resource.h"
+#include "solver.h"
 
 namespace ratio
 {

@@ -12,6 +12,9 @@ namespace ratio
     state_variable(riddle::scope &scp);
 
   private:
-    /* data */
+    std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
+
+    void new_predicate(riddle::predicate &pred) noexcept override;
+    void new_atom(atom &atm) override;
   };
 } // namespace ratio

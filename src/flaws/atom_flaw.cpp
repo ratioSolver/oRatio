@@ -16,7 +16,7 @@ namespace ratio
         if (get_solver().get_sat_core().value(c_atm.sigma) == utils::Undefined)
             for (auto &i : static_cast<riddle::predicate &>(c_atm.get_type()).get_instances())
             { // we check for possible unifications (i.e. all the instances of the atom's type)..
-                if (&*i == &c_atm)
+                if (i.operator->() == &c_atm)
                     continue; // the current atom cannot unify with itself..
 
                 // this is the target (i.e. the atom we are trying to unify with)..

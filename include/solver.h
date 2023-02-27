@@ -10,6 +10,13 @@
 #include "rdl_theory.h"
 #include "graph.h"
 
+#define RATIO_AT "at"
+#define RATIO_START "start"
+#define RATIO_END "end"
+#define RATIO_DURATION "duration"
+#define RATIO_IMPULSE "Impulse"
+#define RATIO_INTERVAL "Interval"
+
 #ifdef BUILD_LISTENERS
 #define FIRE_NEW_FLAW(f) fire_new_flaw(f)
 #define FIRE_FLAW_COST_CHANGED(f) fire_flaw_cost_changed(f)
@@ -29,10 +36,10 @@
 namespace ratio
 {
   class atom_flaw;
+  class smart_type;
 #ifdef BUILD_LISTENERS
   class solver_listener;
 #endif
-  class smart_type;
 
   /**
    * @brief A class for representing boolean items.
@@ -118,13 +125,23 @@ namespace ratio
     friend class resolver;
     friend class atom_flaw;
     friend class graph;
+    friend class smart_type;
 #ifdef BUILD_LISTENERS
     friend class solver_listener;
 #endif
 
   public:
-    solver();
-    solver(graph_ptr g);
+    solver(const bool &i = true);
+    solver(graph_ptr g, const bool &i = true);
+
+    /**
+     * @brief Initialize the solver.
+     *
+     */
+    void init();
+
+    void read(const std::string &script) override;
+    void read(const std::vector<std::string> &files) override;
 
     /**
      * @brief Get the linear-real-arithmetic theory.
@@ -297,6 +314,14 @@ namespace ratio
     bool check() override;
     void push() override;
     void pop() override;
+
+  public:
+    riddle::predicate &get_impulse() const noexcept { return *imp_pred; }
+    bool is_impulse(const riddle::type &pred) const noexcept { return pred == *imp_pred; }
+    bool is_impulse(const atom &atm) const noexcept { return atm.get_type() == *imp_pred; }
+    riddle::predicate &get_interval() const noexcept { return *int_pred; }
+    bool is_interval(const riddle::type &pred) const noexcept { return pred == *int_pred; }
+    bool is_interval(const atom &atm) const noexcept { return atm.get_type() == *int_pred; }
 
   private:
     riddle::predicate *imp_pred = nullptr; // the `Impulse` predicate..

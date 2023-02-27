@@ -34,7 +34,11 @@ namespace ratio
      *
      * @param atm The new atom that has been created.
      */
-    virtual void new_atom(atom &atm);
+    virtual void new_atom(atom &atm) = 0;
+
+  protected:
+    void set_ni(const semitone::lit &v) noexcept; // temporally sets the solver's `ni` literal..
+    void restore_ni() noexcept;                   // restores the solver's `ni` literal..
 
   private:
     solver &slv;
@@ -44,10 +48,17 @@ namespace ratio
   {
   public:
     atom_listener(atom &atm);
-    atom_listener(const atom_listener &that) = delete;
     virtual ~atom_listener() = default;
 
   protected:
     atom &atm;
+  };
+
+  class timeline
+  {
+  public:
+    virtual ~timeline() = default;
+
+    virtual json::json extract() const noexcept = 0;
   };
 } // namespace ratio
