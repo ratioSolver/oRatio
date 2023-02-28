@@ -100,10 +100,7 @@ namespace ratio
             std::vector<utils::enum_val *> vals;
             vals.reserve(xprs.size());
             for (auto &xpr : xprs)
-                if (auto vv = dynamic_cast<utils::enum_val *>(xpr.operator->()))
-                    vals.push_back(vv);
-                else
-                    throw std::runtime_error("enum values must be var values");
+                vals.push_back(static_cast<riddle::complex_item *>(xpr.operator->()));
 
             // we create a new enum expression..
             // notice that we do not enforce the exct_one constraint!
@@ -231,7 +228,7 @@ namespace ratio
                 std::vector<utils::enum_val *> e_vals;
                 e_vals.reserve(c_vals.size());
                 for (const auto &val : c_vals)
-                    e_vals.push_back(dynamic_cast<utils::enum_val *>(val));
+                    e_vals.push_back(static_cast<riddle::complex_item *>(val));
                 return new enum_item(static_cast<riddle::complex_type &>(xpr->get_type()).get_field(name).get_type(), ov_th.new_var(c_vars, e_vals));
             }
         }
@@ -390,7 +387,7 @@ namespace ratio
             if (auto ree = dynamic_cast<enum_item *>(rhs.operator->())) // we are comparing enums..
                 return new bool_item(get_bool_type(), ov_th.new_eq(lee->get_var(), ree->get_var()));
             else // we are comparing an enum with a singleton..
-                return new bool_item(get_bool_type(), ov_th.allows(lee->get_var(), dynamic_cast<utils::enum_val &>(*rhs)));
+                return new bool_item(get_bool_type(), ov_th.allows(lee->get_var(), static_cast<riddle::complex_item &>(*rhs)));
         }
         else if (dynamic_cast<enum_item *>(rhs.operator->()))
             return eq(rhs, lhs); // we swap, for simplifying code..
@@ -644,7 +641,7 @@ namespace ratio
     }
     void solver::prune(const riddle::expr &xpr, const riddle::expr &val)
     {
-        auto alw_var = ov_th.allows(static_cast<ratio::enum_item &>(*xpr).get_var(), dynamic_cast<utils::enum_val &>(*val));
+        auto alw_var = ov_th.allows(static_cast<ratio::enum_item &>(*xpr).get_var(), static_cast<riddle::complex_item &>(*val));
         if (!sat->new_clause({!ni, alw_var}))
             throw riddle::unsolvable_exception(); // the problem is unsolvable..
     }

@@ -114,6 +114,8 @@ namespace ratio
 
     semitone::lit get_sigma() const { return sigma; }
 
+    atom_flaw &get_reason() const { return *reason; }
+
   private:
     semitone::lit sigma; // the literal that represents this atom..
     atom_flaw *reason;   // the atom_flaw that caused this atom to be created..

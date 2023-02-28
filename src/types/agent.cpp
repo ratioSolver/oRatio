@@ -3,7 +3,7 @@
 
 namespace ratio
 {
-    agent::agent(riddle::scope &scp) : smart_type(scp, AGENT_NAME) {}
+    agent::agent(riddle::scope &scp) : smart_type(scp, AGENT_NAME) { add_constructor(new agnt_constructor(*this)); }
 
     void agent::new_atom(atom &atm)
     {
@@ -19,10 +19,6 @@ namespace ratio
         }
 
         atoms.emplace_back(&atm);
-        // we store, for the atom, its atom listener..
-        listeners.emplace_back(new agnt_atom_listener(*this, atm));
-
-        to_check.insert(&atm);
     }
 
     json::json agent::extract() const noexcept
@@ -32,7 +28,7 @@ namespace ratio
         std::unordered_map<const riddle::item *, std::vector<atom *>> agnt_instances;
         for (auto &agnt_instance : get_instances())
             agnt_instances[&*agnt_instance];
-        for (const auto &atm : get_atoms())
+        for (const auto &atm : atoms)
             if (get_solver().get_sat_core().value(atm->get_sigma()) == utils::True) // we filter out those which are not strictly active..
             {
                 const auto c_scope = atm->get(TAU_KW);
