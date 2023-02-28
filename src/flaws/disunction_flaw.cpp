@@ -13,7 +13,7 @@ namespace ratio
 
     json::json disjunction_flaw::get_data() const noexcept
     {
-        json::json data = flaw::get_data();
+        json::json data;
         data["type"] = "disjunction";
         return data;
     }
@@ -24,7 +24,7 @@ namespace ratio
 
     json::json disjunction_flaw::choose_conjunction::get_data() const noexcept
     {
-        json::json data = resolver::get_data();
+        json::json data;
         data["type"] = "choose_conjunction";
         data["cost"] = to_json(xpr->get_cost());
         return data;

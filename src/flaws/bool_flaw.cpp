@@ -12,7 +12,7 @@ namespace ratio
 
     json::json bool_flaw::get_data() const noexcept
     {
-        json::json data = flaw::get_data();
+        json::json data;
         data["type"] = "bool_flaw";
         data["item"] = get_id(*b_item);
         return data;
@@ -24,7 +24,7 @@ namespace ratio
 
     json::json bool_flaw::choose_value::get_data() const noexcept
     {
-        json::json data = resolver::get_data();
+        json::json data;
         data["type"] = "choose_value";
         data["value"] = value;
         return data;
