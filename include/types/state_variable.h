@@ -67,7 +67,7 @@ namespace ratio
         json::json get_data() const noexcept override;
 
       private:
-        void apply() override;
+        void apply() override {}
 
       private:
         const atom &before; // applying the resolver will order this atom before the other..
@@ -84,7 +84,7 @@ namespace ratio
         const riddle::item &get_place_item() const noexcept { return plc_itm; }
 
       private:
-        void apply() override;
+        void apply() override {}
 
       private:
         atom &plc_atm;               // applying the resolver will force this atom on the `plc_item` item..
@@ -101,7 +101,7 @@ namespace ratio
         json::json get_data() const noexcept override;
 
       private:
-        void apply() override;
+        void apply() override {}
 
       private:
         atom &atm;         // applying the resolver will forbid this atom on the `itm` item..

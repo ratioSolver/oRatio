@@ -12,6 +12,7 @@ namespace ratio
   class atom;
   class flaw;
   using flaw_ptr = utils::u_ptr<flaw>;
+  class resolver;
 
   class smart_type : public riddle::complex_type
   {
@@ -43,6 +44,8 @@ namespace ratio
     void restore_ni() noexcept;                   // restores the solver's `ni` literal..
 
     void store_flaw(flaw_ptr f) noexcept; // stores the flaw waiting for its initialization at root-level..
+
+    static std::vector<std::reference_wrapper<resolver>> get_resolvers(const std::set<atom *> &atms) noexcept; // returns the vector of resolvers which has given rise to the given atoms..
 
   private:
     solver &slv;

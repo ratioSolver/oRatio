@@ -1,11 +1,12 @@
 #include "resolver.h"
 #include "flaw.h"
 #include "solver.h"
+#include <cassert>
 
 namespace ratio
 {
     resolver::resolver(flaw &f, const utils::rational &cost) : resolver(f, semitone::lit(f.s.sat->new_var()), cost) {}
-    resolver::resolver(flaw &f, const semitone::lit &rho, const utils::rational &cost) : f(f), rho(rho), intrinsic_cost(cost) {}
+    resolver::resolver(flaw &f, const semitone::lit &rho, const utils::rational &cost) : f(f), rho(rho), intrinsic_cost(cost) { assert(f.s.get_sat_core().value(rho) != utils::False); }
 
     utils::rational resolver::get_estimated_cost() const noexcept
     {
