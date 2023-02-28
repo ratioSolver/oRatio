@@ -129,4 +129,18 @@ namespace ratio
 #endif
         }
     }
+
+    void reusable_resource::rr_atom_listener::something_changed()
+    {
+        if (rr.get_solver().get_sat_core().value(atm.get_sigma()) == utils::True)
+        { // the atom is active..
+            const auto a0_tau = atm.get(TAU_KW);
+            rr.to_check.insert(&atm);
+            if (const auto a0_tau_itm = dynamic_cast<enum_item *>(a0_tau.operator->())) // the `tau` parameter is a variable..
+                for (const auto &val : rr.get_solver().get_ov_theory().value(a0_tau_itm->get_var()))
+                    rr.to_check.insert(dynamic_cast<const riddle::item *>(val));
+            else // the `tau` parameter is a constant..
+                rr.to_check.insert(a0_tau.operator->());
+        }
+    }
 } // namespace ratio
