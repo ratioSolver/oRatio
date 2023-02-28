@@ -1,6 +1,7 @@
 #include "consumable_resource.h"
 #include "solver.h"
 #include "atom_flaw.h"
+#include "combinations.h"
 #include <cassert>
 
 namespace ratio
@@ -142,5 +143,95 @@ namespace ratio
             else // the `tau` parameter is a constant..
                 cr.to_check.insert(a0_tau.operator->());
         }
+    }
+
+    consumable_resource::cr_flaw::cr_flaw(consumable_resource &cr, const std::set<atom *> &atms) : flaw(cr.get_solver(), smart_type::get_resolvers(atms), true), cr(cr), overlapping_atoms(atms) {}
+
+    json::json consumable_resource::cr_flaw::get_data() const noexcept
+    {
+        json::json data;
+        data["type"] = "cr-flaw";
+
+        json::json atoms(json::json_type::array);
+        for (const auto &atm : overlapping_atoms)
+            atoms.push_back(get_id(*atm));
+        data["atoms"] = atoms;
+
+        return data;
+    }
+
+    void consumable_resource::cr_flaw::compute_resolvers()
+    {
+        const auto cs = utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2);
+        for (const auto &as : cs)
+        {
+            if (const auto a0_it = cr.leqs.find(as[0]); a0_it != cr.leqs.cend())
+                if (const auto a0_a1_it = a0_it->second.find(as[1]); a0_a1_it != a0_it->second.cend())
+                    if (get_solver().get_sat_core().value(a0_a1_it->second) != utils::False)
+                        add_resolver(new order_resolver(*this, a0_a1_it->second, *as[0], *as[1]));
+
+            if (const auto a1_it = cr.leqs.find(as[1]); a1_it != cr.leqs.cend())
+                if (const auto a1_a0_it = a1_it->second.find(as[0]); a1_a0_it != a1_it->second.cend())
+                    if (get_solver().get_sat_core().value(a1_a0_it->second) != utils::False)
+                        add_resolver(new order_resolver(*this, a1_a0_it->second, *as[1], *as[0]));
+
+            const auto a0_tau = as[0]->get(TAU_KW);
+            const auto a1_tau = as[1]->get(TAU_KW);
+            enum_item *a0_tau_itm = dynamic_cast<enum_item *>(&*a0_tau);
+            enum_item *a1_tau_itm = dynamic_cast<enum_item *>(&*a1_tau);
+            if (a0_tau_itm && a1_tau_itm)
+            { // we have two, perhaps singleton, enum variables..
+                const auto a0_vals = get_solver().get_ov_theory().value(a0_tau_itm->get_var());
+                const auto a1_vals = get_solver().get_ov_theory().value(a1_tau_itm->get_var());
+                if (a0_vals.size() > 1 && a1_vals.size() > 1)
+                { // we have two non-singleton variables..
+                    for (const auto &a0_a1_disp : cr.plcs.at({as[0], as[1]}))
+                        if (get_solver().get_sat_core().value(a0_a1_disp.first) == utils::Undefined)
+                            add_resolver(new place_resolver(*this, a0_a1_disp.first, *as[0], *a0_a1_disp.second, *as[1]));
+                }
+                else if (a0_vals.size() > 1) // only `a1_tau` is a singleton variable..
+                    add_resolver(new forbid_resolver(*this, *as[0], *a1_tau));
+                else if (a1_vals.size() > 1) // only `a0_tau` is a singleton variable..
+                    add_resolver(new forbid_resolver(*this, *as[1], *a0_tau));
+            }
+            else if (a0_tau_itm && get_solver().get_ov_theory().value(a0_tau_itm->get_var()).size() > 1) // only `a1_tau` is a singleton variable..
+                add_resolver(new forbid_resolver(*this, *as[0], *a1_tau));
+            else if (a1_tau_itm && get_solver().get_ov_theory().value(a1_tau_itm->get_var()).size() > 1) // only `a0_tau` is a singleton variable..
+                add_resolver(new forbid_resolver(*this, *as[1], *a0_tau));
+        }
+    }
+
+    consumable_resource::cr_flaw::order_resolver::order_resolver(cr_flaw &flw, const semitone::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::ZERO), before(before), after(after) {}
+
+    json::json consumable_resource::cr_flaw::order_resolver::get_data() const noexcept
+    {
+        json::json data;
+        data["type"] = "order";
+        data["before"] = get_id(before);
+        data["after"] = get_id(after);
+        return data;
+    }
+
+    consumable_resource::cr_flaw::place_resolver::place_resolver(cr_flaw &flw, const semitone::lit &r, atom &plc_atm, const riddle::item &plc_itm, atom &frbd_atm) : resolver(flw, r, utils::rational::ZERO), plc_atm(plc_atm), plc_itm(plc_itm), frbd_atm(frbd_atm) {}
+
+    json::json consumable_resource::cr_flaw::place_resolver::get_data() const noexcept
+    {
+        json::json data;
+        data["type"] = "place";
+        data["place_atom"] = get_id(plc_atm);
+        data["place_item"] = get_id(plc_itm);
+        data["forbid_atom"] = get_id(frbd_atm);
+        return data;
+    }
+
+    consumable_resource::cr_flaw::forbid_resolver::forbid_resolver(cr_flaw &flw, atom &atm, riddle::item &itm) : resolver(flw, semitone::lit(), utils::rational::ZERO), atm(atm), itm(itm) {}
+
+    json::json consumable_resource::cr_flaw::forbid_resolver::get_data() const noexcept
+    {
+        json::json data;
+        data["type"] = "forbid";
+        data["forbid_atom"] = get_id(atm);
+        data["forbid_item"] = get_id(itm);
+        return data;
     }
 } // namespace ratio
