@@ -1,10 +1,149 @@
 #include "state_variable.h"
 #include "solver.h"
+#include "combinations.h"
 #include <cassert>
 
 namespace ratio
 {
     state_variable::state_variable(riddle::scope &scp) : smart_type(scp, STATE_VARIABLE_NAME) { add_constructor(new sv_constructor(*this)); }
+
+    std::vector<std::vector<std::pair<semitone::lit, double>>> state_variable::get_current_incs()
+    {
+        std::vector<std::vector<std::pair<semitone::lit, double>>> incs;
+        // we partition atoms for each state-variable they might insist on..
+        std::unordered_map<const riddle::complex_item *, std::vector<atom *>> sv_instances;
+        for (const auto &atm : atoms)
+            if (get_solver().get_sat_core().value(atm->get_sigma()) == utils::True) // we filter out those atoms which are not strictly active..
+            {
+                const auto sv = atm->get(TAU_KW); // we get the state-variable..
+                if (auto enum_scope = dynamic_cast<enum_item *>(sv.operator->()))
+                { // the `tau` parameter is a variable..
+                    for (const auto &sv_val : get_solver().get_ov_theory().value(enum_scope->get_var()))
+                        if (to_check.count(static_cast<const riddle::complex_item *>(sv_val))) // we consider only those state-variables which are still to be checked..
+                            sv_instances[static_cast<const riddle::complex_item *>(sv_val)].emplace_back(atm);
+                }
+                else if (to_check.count(static_cast<riddle::complex_item *>(sv.operator->()))) // we consider only those state-variables which are still to be checked..
+                    sv_instances[static_cast<riddle::complex_item *>(sv.operator->())].emplace_back(atm);
+            }
+
+        // we detect inconsistencies for each of the state-variable instances..
+        for ([[maybe_unused]] const auto &[sv, atms] : sv_instances)
+        {
+            // for each pulse, the atoms starting at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
+            // for each pulse, the atoms ending at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> ending_atoms;
+            // all the pulses of the timeline..
+            std::set<utils::inf_rational> pulses;
+
+            for (const auto &atm : atms)
+            {
+                const auto start = get_solver().arith_value(atm->get(RATIO_START));
+                const auto end = get_solver().arith_value(atm->get(RATIO_END));
+                starting_atoms[start].insert(atm);
+                ending_atoms[end].insert(atm);
+                pulses.insert(start);
+                pulses.insert(end);
+            }
+
+            std::set<atom *> overlapping_atoms;
+            for (const auto &p : pulses)
+            {
+                if (const auto at_start_p = starting_atoms.find(p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                if (const auto at_end_p = ending_atoms.find(p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+
+                if (overlapping_atoms.size() > 1) // we have a 'peak'..
+                    for (const auto &as : utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
+                    { // state-variable MCSs are made of two atoms..
+                        std::set<atom *> mcs(as.cbegin(), as.cend());
+                        if (!sv_flaws.count(mcs))
+                        { // we create a new state-variable flaw..
+                            auto flw = new sv_flaw(*this, mcs);
+                            sv_flaws.insert({mcs, flw});
+                            store_flaw(flw); // we store the flaw for retrieval when at root-level..
+                        }
+
+                        std::vector<std::pair<semitone::lit, double>> choices;
+                        const auto a0_start = as[0]->get(RATIO_START);
+                        const auto a0_end = as[0]->get(RATIO_END);
+                        const auto a1_start = as[1]->get(RATIO_START);
+                        const auto a1_end = as[1]->get(RATIO_END);
+
+                        if (auto a0_it = leqs.find(as[0]); a0_it != leqs.cend())
+                            if (auto a0_a1_it = a0_it->second.find(as[1]); a0_a1_it != a0_it->second.cend())
+                                if (get_solver().get_sat_core().value(a0_a1_it->second) != utils::False)
+                                {
+#ifdef DL_TN
+                                    const auto [min, max] = get_solver().get_rdl_theory().distance(static_cast<arith_item &>(*a0_end).get_value(), static_cast<arith_item &>(*a1_start).get_value());
+                                    const auto commit = is_infinite(min) || is_infinite(max) ? 0.5 : (std::min(to_double(max.get_rational()), 0.0) - std::min(to_double(min.get_rational()), 0.0)) / (to_double(max.get_rational()) - to_double(min.get_rational()));
+#elif LA_TN
+                                    const auto work = (get_solver().arith_value(a1_end).get_rational() - get_solver().arith_value(a1_start).get_rational()) * (get_solver().arith_value(a0_end).get_rational() - get_solver().arith_value(a1_start).get_rational());
+                                    const auto commit = work == utils::rational::ZERO ? -std::numeric_limits<double>::max() : 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator());
+#endif
+                                    choices.emplace_back(a0_a1_it->second, commit);
+                                }
+
+                        if (auto a1_it = leqs.find(as[1]); a1_it != leqs.cend())
+                            if (auto a1_a0_it = a1_it->second.find(as[0]); a1_a0_it != a1_it->second.cend())
+                                if (get_solver().get_sat_core().value(a1_a0_it->second) != utils::False)
+                                {
+#ifdef DL_TN
+                                    const auto [min, max] = get_solver().get_rdl_theory().distance(static_cast<arith_item &>(*a1_end).get_value(), static_cast<arith_item &>(*a0_start).get_value());
+                                    const auto commit = is_infinite(min) || is_infinite(max) ? 0.5 : (std::min(to_double(max.get_rational()), 0.0) - std::min(to_double(min.get_rational()), 0.0)) / (to_double(max.get_rational()) - to_double(min.get_rational()));
+#elif LA_TN
+                                    const auto work = (get_solver().arith_value(a0_end).get_rational() - get_solver().arith_value(a0_start).get_rational()) * (get_solver().arith_value(a1_end).get_rational() - get_solver().arith_value(a0_start).get_rational());
+                                    const auto commit = work == utils::rational::ZERO ? -std::numeric_limits<double>::max() : 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator());
+#endif
+                                    choices.emplace_back(a1_a0_it->second, commit);
+                                }
+
+                        const auto a0_tau = as[0]->get(TAU_KW);
+                        const auto a1_tau = as[1]->get(TAU_KW);
+
+                        const auto a0_tau_itm = dynamic_cast<enum_item *>(a0_tau.operator->());
+                        const auto a1_tau_itm = dynamic_cast<enum_item *>(a1_tau.operator->());
+                        if (a0_tau_itm && a1_tau_itm)
+                        { // we have two, perhaps singleton, enum variables..
+                            const auto a0_vals = get_solver().get_ov_theory().value(a0_tau_itm->get_var());
+                            const auto a1_vals = get_solver().get_ov_theory().value(a1_tau_itm->get_var());
+                            if (a0_vals.size() > 1 && a1_vals.size() > 1)
+                            { // we have two non-singleton variables..
+                                for (const auto &plc : plcs.at({as[0], as[1]}))
+                                    if (get_solver().get_sat_core().value(plc.first) == utils::Undefined)
+                                        choices.emplace_back(plc.first, 1l - 2l / static_cast<double>(a0_vals.size() + a1_vals.size()));
+                            }
+                            else if (a0_vals.size() > 1)
+                            { // only `a1_tau` is a singleton variable..
+                                if (get_solver().get_sat_core().value(get_solver().get_ov_theory().allows(static_cast<enum_item *>(a0_tau_itm)->get_var(), static_cast<riddle::complex_item &>(*a1_tau))) == utils::Undefined)
+                                    choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<enum_item *>(a0_tau_itm)->get_var(), static_cast<riddle::complex_item &>(*a1_tau)), 1l - 1l / static_cast<double>(a0_vals.size()));
+                            }
+                            else if (a1_vals.size() > 1)
+                            { // only `a0_tau` is a singleton variable..
+                                if (get_solver().get_sat_core().value(get_solver().get_ov_theory().allows(static_cast<enum_item *>(a1_tau_itm)->get_var(), static_cast<riddle::complex_item &>(*a0_tau))) == utils::Undefined)
+                                    choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<enum_item *>(a1_tau_itm)->get_var(), static_cast<riddle::complex_item &>(*a0_tau)), 1l - 1l / static_cast<double>(a1_vals.size()));
+                            }
+                        }
+                        else if (a0_tau_itm)
+                        { // only `a1_tau` is a singleton variable..
+                            if (const auto a0_vals = get_solver().get_ov_theory().value(a0_tau_itm->get_var()); a0_vals.count(static_cast<riddle::complex_item *>(a1_tau.operator->())))
+                                if (get_solver().get_sat_core().value(get_solver().get_ov_theory().allows(static_cast<enum_item *>(a0_tau_itm)->get_var(), static_cast<riddle::complex_item &>(*a1_tau))) == utils::Undefined)
+                                    choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<enum_item *>(a0_tau_itm)->get_var(), static_cast<riddle::complex_item &>(*a1_tau)), 1l - 1l / static_cast<double>(a0_vals.size()));
+                        }
+                        else if (a1_tau_itm)
+                        { // only `a0_tau` is a singleton variable..
+                            if (const auto a1_vals = get_solver().get_ov_theory().value(a1_tau_itm->get_var()); a1_vals.count(static_cast<riddle::complex_item *>(a0_tau.operator->())))
+                                if (get_solver().get_sat_core().value(get_solver().get_ov_theory().allows(static_cast<enum_item *>(a1_tau_itm)->get_var(), static_cast<riddle::complex_item &>(*a0_tau))) == utils::Undefined)
+                                    choices.emplace_back(!get_solver().get_ov_theory().allows(static_cast<enum_item *>(a1_tau_itm)->get_var(), static_cast<riddle::complex_item &>(*a0_tau)), 1l - 1l / static_cast<double>(a1_vals.size()));
+                        }
+                        incs.emplace_back(choices);
+                    }
+            }
+        }
+        return incs;
+    }
 
     void state_variable::new_atom(atom &atm)
     {

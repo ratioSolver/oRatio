@@ -90,10 +90,10 @@ namespace ratio
    * @brief A class for representing enum items.
    *
    */
-  class enum_item : public riddle::item
+  class enum_item : public riddle::enum_item
   {
   public:
-    enum_item(riddle::type &t, const semitone::var &ev) : item(t), ev(ev) {}
+    enum_item(riddle::type &t, const semitone::var &ev) : riddle::enum_item(t), ev(ev) {}
 
     semitone::var get_var() const { return ev; }
 
@@ -105,12 +105,12 @@ namespace ratio
    * @brief A class for representing atoms.
    *
    */
-  class atom : public riddle::atom_item
+  class atom : public riddle::atom
   {
     friend class atom_flaw;
 
   public:
-    atom(riddle::predicate &p, bool is_fact, semitone::lit sigma) : atom_item(p, is_fact), sigma(sigma) {}
+    atom(riddle::predicate &p, bool is_fact, semitone::lit sigma) : riddle::atom(p, is_fact), sigma(sigma) {}
 
     semitone::lit get_sigma() const { return sigma; }
 
@@ -341,6 +341,7 @@ namespace ratio
     graph_ptr gr;                            // the causal graph..
     resolver *res = nullptr;                 // the current resolver (i.e. the cause for the new flaws)..
     std::unordered_set<flaw *> active_flaws; // the currently active flaws..
+    std::vector<flaw_ptr> pending_flaws;     // pending flaws, waiting for root-level to be initialized..
 
     std::unordered_map<semitone::var, std::vector<flaw_ptr>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
     std::unordered_map<semitone::var, std::vector<resolver_ptr>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..

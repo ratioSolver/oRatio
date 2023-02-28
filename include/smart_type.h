@@ -10,6 +10,8 @@ namespace ratio
 {
   class solver;
   class atom;
+  class flaw;
+  using flaw_ptr = utils::u_ptr<flaw>;
 
   class smart_type : public riddle::complex_type
   {
@@ -39,6 +41,8 @@ namespace ratio
   protected:
     void set_ni(const semitone::lit &v) noexcept; // temporally sets the solver's `ni` literal..
     void restore_ni() noexcept;                   // restores the solver's `ni` literal..
+
+    void store_flaw(flaw_ptr f) noexcept; // stores the flaw waiting for its initialization at root-level..
 
   private:
     solver &slv;

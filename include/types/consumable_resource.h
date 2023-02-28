@@ -19,7 +19,7 @@ namespace ratio
     consumable_resource(riddle::scope &scp);
 
   private:
-    std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
+    std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override { return {}; }
 
     void new_atom(atom &atm) override;
 
