@@ -56,6 +56,7 @@ namespace ratio
 #endif
                     expand_flaw(f);
             }
+            flaw_q.pop_front();
         }
 
         // we extract the inconsistencies (and translate them into flaws)..

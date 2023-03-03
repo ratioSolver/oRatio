@@ -102,7 +102,10 @@ namespace ratio
             std::vector<utils::enum_val *> vals;
             vals.reserve(xprs.size());
             for (auto &xpr : xprs)
-                vals.push_back(static_cast<riddle::complex_item *>(xpr.operator->()));
+                if (auto ev = dynamic_cast<utils::enum_val *>(xpr.operator->()))
+                    vals.push_back(ev);
+                else
+                    throw std::runtime_error("invalid enum expression");
 
             // we create a new enum expression..
             // notice that we do not enforce the exct_one constraint!
@@ -230,7 +233,7 @@ namespace ratio
                 std::vector<utils::enum_val *> e_vals;
                 e_vals.reserve(c_vals.size());
                 for (const auto &val : c_vals)
-                    e_vals.push_back(static_cast<riddle::complex_item *>(val));
+                    e_vals.push_back(dynamic_cast<utils::enum_val *>(val));
                 return new enum_item(static_cast<riddle::complex_type &>(xpr->get_type()).get_field(name).get_type(), ov_th.new_var(c_vars, e_vals));
             }
         }
@@ -389,7 +392,7 @@ namespace ratio
             if (auto ree = dynamic_cast<enum_item *>(rhs.operator->())) // we are comparing enums..
                 return new bool_item(get_bool_type(), ov_th.new_eq(lee->get_var(), ree->get_var()));
             else // we are comparing an enum with a singleton..
-                return new bool_item(get_bool_type(), ov_th.allows(lee->get_var(), static_cast<riddle::complex_item &>(*rhs)));
+                return new bool_item(get_bool_type(), ov_th.allows(lee->get_var(), dynamic_cast<utils::enum_val &>(*rhs)));
         }
         else if (dynamic_cast<enum_item *>(rhs.operator->()))
             return eq(rhs, lhs); // we swap, for simplifying code..
@@ -643,7 +646,7 @@ namespace ratio
     }
     void solver::prune(const riddle::expr &xpr, const riddle::expr &val)
     {
-        auto alw_var = ov_th.allows(static_cast<ratio::enum_item &>(*xpr).get_var(), static_cast<riddle::complex_item &>(*val));
+        auto alw_var = ov_th.allows(static_cast<ratio::enum_item &>(*xpr).get_var(), dynamic_cast<utils::enum_val &>(*val));
         if (!sat->new_clause({!ni, alw_var}))
             throw riddle::unsolvable_exception(); // the problem is unsolvable..
     }
@@ -1167,7 +1170,14 @@ namespace ratio
         std::queue<riddle::complex_type *> q;
         for (const auto &tp : rhs.get_types())
             if (!tp.get().is_primitive())
-                q.push(static_cast<riddle::complex_type *>(&tp.get()));
+                if (auto ct = dynamic_cast<riddle::complex_type *>(&tp.get()))
+                    q.push(ct);
+                else if (auto et = dynamic_cast<riddle::enum_type *>(&tp.get()))
+                    for (const auto &etv : et->get_all_values())
+                        all_items.insert(&*etv);
+                else
+                    throw std::runtime_error("cannot manage type " + tp.get().get_name());
+
         while (!q.empty())
         {
             for (const auto &i : q.front()->get_instances())
@@ -1176,7 +1186,13 @@ namespace ratio
                 for (const auto &a : pred.get().get_instances())
                     all_atoms.insert(static_cast<atom *>(&*a));
             for (const auto &tp : q.front()->get_types())
-                q.push(static_cast<riddle::complex_type *>(&tp.get()));
+                if (auto ct = dynamic_cast<riddle::complex_type *>(&tp.get()))
+                    q.push(ct);
+                else if (auto et = dynamic_cast<riddle::enum_type *>(&tp.get()))
+                    for (const auto &etv : et->get_all_values())
+                        all_items.insert(&*etv);
+                else
+                    throw std::runtime_error("cannot manage type " + tp.get().get_name());
             q.pop();
         }
 
