@@ -11,7 +11,8 @@
 #include "reusable_resource.h"
 #include "consumable_resource.h"
 #if defined(H_MAX) || defined(H_ADD)
-#define HEURISTIC new graph(*this)
+#include "h_1.h"
+#define HEURISTIC new h_1(*this)
 #endif
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
@@ -804,6 +805,12 @@ namespace ratio
         if (std::any_of(f->get_causes().cbegin(), f->get_causes().cend(), [this](const auto &r)
                         { return sat->value(r.get().get_rho()) == utils::False; })) // there is no reason for introducing this flaw..
             return;
+
+        if (!sat->root_level())
+        { // we postpone the flaw's initialization..
+            pending_flaws.push_back(std::move(f));
+            return;
+        }
 
         // we initialize the flaw..
         f->init(); // flaws' initialization requires being at root-level..

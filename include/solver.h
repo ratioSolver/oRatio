@@ -291,6 +291,8 @@ namespace ratio
     void solve_inconsistencies();                                          // checks whether the types have any inconsistency and, in case, solve them..
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_incs(); // collects all the current inconsistencies..
 
+    std::vector<flaw_ptr> flush_pending_flaws() noexcept { return std::move(pending_flaws); } // flushes the pending flaws, returning them..
+
     void reset_smart_types();
 
     void set_ni(const semitone::lit &v) noexcept

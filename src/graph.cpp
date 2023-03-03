@@ -53,4 +53,14 @@ namespace ratio
             // we propagate the costs starting from the just negated resolver..
             propagate_costs(r.get_flaw());
     }
+
+    void graph::new_flaw(flaw_ptr f, const bool &enqueue) const noexcept { s.new_flaw(std::move(f), enqueue); }
+
+    const std::unordered_set<flaw *> &graph::get_flaws() const noexcept { return s.get_active_flaws(); }
+
+    void graph::set_cost(flaw &f, const utils::rational &cost) const noexcept { s.set_cost(f, cost); }
+
+    std::vector<flaw_ptr> graph::flush_pending_flaws() const noexcept { return s.flush_pending_flaws(); }
+
+    std::vector<std::vector<std::pair<semitone::lit, double>>> graph::get_incs() const noexcept { return s.get_incs(); }
 } // namespace ratio

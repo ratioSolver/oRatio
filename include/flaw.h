@@ -41,6 +41,13 @@ namespace ratio
     std::vector<std::reference_wrapper<resolver>> &get_causes() noexcept { return causes; }
 
     /**
+     * @brief Get the resolvers that supported by this flaw.
+     *
+     * @return std::vector<std::reference_wrapper<resolver>>& The resolvers that supported by this flaw.
+     */
+    std::vector<std::reference_wrapper<resolver>> &get_supports() noexcept { return supports; }
+
+    /**
      * @brief Gets the estimated cost of this flaw.
      *
      * @return const utils::rational& the estimated cost of this flaw.
@@ -76,6 +83,19 @@ namespace ratio
      */
     std::vector<std::reference_wrapper<resolver>> &get_resolvers() noexcept { return resolvers; }
 
+    /**
+     * @brief Gets the cheapest resolver of this flaw.
+     *
+     * @return resolver& the cheapest resolver of this flaw.
+     */
+    resolver &get_cheapest_resolver() const noexcept;
+    /**
+     * @brief Gets the best resolver of this flaw which, by default, corresponds to the cheapest resolver.
+     *
+     * @return resolver& the best resolver of this flaw.
+     */
+    virtual resolver &get_best_resolver() const noexcept { return get_cheapest_resolver(); }
+
   private:
     /**
      * @brief Initialize the flaw.
@@ -90,19 +110,6 @@ namespace ratio
      */
     void expand();
     virtual void compute_resolvers() = 0;
-
-    /**
-     * @brief Gets the cheapest resolver of this flaw.
-     *
-     * @return resolver& the cheapest resolver of this flaw.
-     */
-    resolver &get_cheapest_resolver() const noexcept;
-    /**
-     * @brief Gets the best resolver of this flaw which, by default, corresponds to the cheapest resolver.
-     *
-     * @return resolver& the best resolver of this flaw.
-     */
-    virtual resolver &get_best_resolver() const noexcept { return get_cheapest_resolver(); }
 
   public:
     /**

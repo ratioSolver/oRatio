@@ -9,7 +9,7 @@ namespace ratio
     void smart_type::set_ni(const semitone::lit &v) noexcept { slv.set_ni(v); }
     void smart_type::restore_ni() noexcept { slv.restore_ni(); }
 
-    void smart_type::store_flaw(flaw_ptr f) noexcept { slv.pending_flaws.emplace_back(std::move(f)); }
+    void smart_type::store_flaw(flaw_ptr f) noexcept { slv.new_flaw(std::move(f)); }
 
     std::vector<std::reference_wrapper<resolver>> smart_type::get_resolvers(const std::set<atom *> &atms) noexcept
     {
