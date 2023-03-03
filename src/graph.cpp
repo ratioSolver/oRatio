@@ -4,7 +4,13 @@
 
 namespace ratio
 {
-    graph::graph(solver &s) : s(s), gamma(s.get_sat_core().new_var()) {}
+    graph::graph(solver &s) : s(s) {}
+
+    void graph::reset_gamma()
+    {
+        gamma = s.get_sat_core().new_var();
+        LOG("graph var is: γ" << std::to_string(gamma));
+    }
 
     void graph::check()
     {
@@ -13,7 +19,7 @@ namespace ratio
         {
         case utils::False:
             // we create a new gamma variable..
-            gamma = s.get_sat_core().new_var();
+            reset_gamma();
             if (!s.get_active_flaws().empty())
             { // we check if we have an estimated solution for the current problem..
                 if (std::any_of(s.get_active_flaws().cbegin(), s.get_active_flaws().cend(), [](const auto &f)

@@ -29,6 +29,8 @@ namespace ratio
     const semitone::var &get_gamma() const noexcept { return gamma; }
 
   private:
+    void reset_gamma();
+
     void check();
 
     virtual void enqueue(flaw &) {}

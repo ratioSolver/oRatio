@@ -23,6 +23,7 @@ namespace ratio
     solver::solver(const bool &i) : solver(HEURISTIC, i) {}
     solver::solver(graph_ptr g, const bool &i) : theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(g))
     {
+        gr->reset_gamma();
         if (i) // we initializa the solver..
             init();
     }
