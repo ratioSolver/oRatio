@@ -1248,11 +1248,11 @@ namespace ratio
 
     json::json to_json(const riddle::item &rhs) noexcept
     {
-        auto &slv = static_cast<const solver &>(rhs.get_type().get_core());
         json::json j_itm;
         j_itm["id"] = get_id(rhs);
         j_itm["type"] = rhs.get_type().get_full_name();
 #ifdef COMPUTE_NAMES
+        auto &slv = static_cast<const solver &>(rhs.get_type().get_core());
         auto name = slv.guess_name(rhs);
         if (!name.empty())
             j_itm["name"] = name;

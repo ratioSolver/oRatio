@@ -1,6 +1,5 @@
 #pragma once
 
-#include "oratiosolver_export.h"
 #include "lit.h"
 #include "rational.h"
 #include "json.h"
