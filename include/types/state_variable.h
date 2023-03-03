@@ -8,7 +8,7 @@
 
 namespace ratio
 {
-  class state_variable final : public smart_type
+  class state_variable final : public smart_type, public timeline
   {
   public:
     state_variable(riddle::scope &scp);
@@ -112,6 +112,8 @@ namespace ratio
       state_variable &sv;
       const std::set<atom *> overlapping_atoms;
     };
+
+    json::json extract() const noexcept override;
 
   private:
     std::set<const riddle::item *> to_check;     // the state-variable instances whose atoms have changed..

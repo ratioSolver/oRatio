@@ -367,4 +367,86 @@ namespace ratio
         data["forbid_item"] = get_id(itm);
         return data;
     }
+
+    json::json state_variable::extract() const noexcept
+    {
+        json::json tls(json::json_type::array);
+        // we partition atoms for each state-variable they might insist on..
+        std::unordered_map<const riddle::complex_item *, std::vector<atom *>> sv_instances;
+        for (const auto &atm : atoms)
+            if (get_solver().get_sat_core().value(atm->get_sigma()) == utils::True) // we filter out those atoms which are not strictly active..
+            {
+                const auto sv = atm->get(TAU_KW); // we get the state-variable..
+                if (auto enum_scope = dynamic_cast<enum_item *>(sv.operator->()))
+                { // the `tau` parameter is a variable..
+                    for (const auto &sv_val : get_solver().get_ov_theory().value(enum_scope->get_var()))
+                        if (to_check.count(static_cast<const riddle::complex_item *>(sv_val))) // we consider only those state-variables which are still to be checked..
+                            sv_instances[static_cast<const riddle::complex_item *>(sv_val)].emplace_back(atm);
+                }
+                else if (to_check.count(static_cast<riddle::complex_item *>(sv.operator->()))) // we consider only those state-variables which are still to be checked..
+                    sv_instances[static_cast<riddle::complex_item *>(sv.operator->())].emplace_back(atm);
+            }
+
+        for (const auto &[sv, atms] : sv_instances)
+        {
+            json::json tl;
+            tl["id"] = get_id(*sv);
+#ifdef COMPUTE_NAMES
+            tl["name"] = get_solver().guess_name(*sv);
+#endif
+            tl["type"] = STATE_VARIABLE_NAME;
+
+            // for each pulse, the atoms starting at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
+            // for each pulse, the atoms ending at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> ending_atoms;
+            // all the pulses of the timeline..
+            std::set<utils::inf_rational> pulses;
+
+            for (const auto &atm : atms)
+            {
+                const auto start = get_solver().arith_value(atm->get(RATIO_START));
+                const auto end = get_solver().arith_value(atm->get(RATIO_END));
+                starting_atoms[start].insert(atm);
+                ending_atoms[end].insert(atm);
+                pulses.insert(start);
+                pulses.insert(end);
+            }
+            pulses.insert(get_solver().arith_value(get_solver().get("origin")));
+            pulses.insert(get_solver().arith_value(get_solver().get("horizon")));
+
+            std::set<atom *> overlapping_atoms;
+            std::set<utils::inf_rational>::iterator p = pulses.begin();
+            if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+            if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                for (const auto &a : at_end_p->second)
+                    overlapping_atoms.erase(a);
+
+            json::json j_vals(json::json_type::array);
+            for (p = std::next(p); p != pulses.end(); ++p)
+            {
+                json::json j_val;
+                j_val["from"] = to_json(*std::prev(p));
+                j_val["to"] = to_json(*p);
+
+                json::json j_atms(json::json_type::array);
+                for (const auto &atm : overlapping_atoms)
+                    j_atms.push_back(get_id(*atm));
+                j_val["atoms"] = std::move(j_atms);
+                j_vals.push_back(std::move(j_val));
+
+                if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+            }
+            tl["values"] = std::move(j_vals);
+
+            tls.push_back(std::move(tl));
+        }
+
+        return tls;
+    }
 } // namespace ratio

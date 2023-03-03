@@ -13,13 +13,16 @@
 
 namespace ratio
 {
-  class consumable_resource final : public smart_type
+  class consumable_resource final : public smart_type, public timeline
   {
   public:
     consumable_resource(riddle::scope &scp);
 
+    const riddle::predicate &get_produce_predicate() const noexcept { return *p_pred; }
+    const riddle::predicate &get_consume_predicate() const noexcept { return *c_pred; }
+
   private:
-    std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override { return {}; }
+    std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
 
     void new_atom(atom &atm) override;
 
@@ -118,7 +121,16 @@ namespace ratio
       const std::set<atom *> overlapping_atoms;
     };
 
+    json::json extract() const noexcept override;
+
   private:
+    std::vector<riddle::id_token> ctr_ins;
+    std::vector<std::vector<riddle::ast::expression_ptr>> ctr_ivs;
+    std::vector<riddle::ast::statement_ptr> ctr_stmnts;
+    riddle::predicate *p_pred = nullptr;
+    riddle::predicate *c_pred = nullptr;
+    std::vector<riddle::ast::statement_ptr> pred_stmnts;
+
     std::set<const riddle::item *> to_check;     // the reusable-resource instances whose atoms have changed..
     std::vector<atom *> atoms;                   // we store, for each atom, its atom listener..
     std::vector<cr_atom_listener_ptr> listeners; // we store, for each atom, its atom listener..

@@ -1148,6 +1148,143 @@ namespace ratio
     }
 #endif
 
+    json::json to_json(const solver &rhs) noexcept
+    {
+        // we collect all the items and atoms..
+        std::set<riddle::item *> all_items;
+        std::set<atom *> all_atoms;
+        for (const auto &pred : rhs.get_predicates())
+            for (const auto &a : pred.get().get_instances())
+                all_atoms.insert(static_cast<atom *>(&*a));
+        std::queue<riddle::complex_type *> q;
+        for (const auto &tp : rhs.get_types())
+            if (!tp.get().is_primitive())
+                q.push(static_cast<riddle::complex_type *>(&tp.get()));
+        while (!q.empty())
+        {
+            for (const auto &i : q.front()->get_instances())
+                all_items.insert(&*i);
+            for (const auto &pred : q.front()->get_predicates())
+                for (const auto &a : pred.get().get_instances())
+                    all_atoms.insert(static_cast<atom *>(&*a));
+            for (const auto &tp : q.front()->get_types())
+                q.push(static_cast<riddle::complex_type *>(&tp.get()));
+            q.pop();
+        }
+
+        json::json j_core;
+
+        if (!all_items.empty())
+        {
+            json::json j_itms(json::json_type::array);
+            for (const auto &itm : all_items)
+                j_itms.push_back(to_json(*itm));
+            j_core["items"] = std::move(j_itms);
+        }
+
+        if (!all_atoms.empty())
+        {
+            json::json j_atms(json::json_type::array);
+            for (const auto &atm : all_atoms)
+                j_atms.push_back(to_json(*atm));
+            j_core["atoms"] = std::move(j_atms);
+        }
+
+        if (!rhs.get_vars().empty())
+            j_core["exprs"] = to_json(rhs.get_vars());
+        return j_core;
+    }
+
+    json::json to_timelines(solver &rhs) noexcept
+    {
+        json::json tls(json::json_type::array);
+
+        // for each pulse, the atoms starting at that pulse..
+        std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
+        // all the pulses of the timeline..
+        std::set<utils::inf_rational> pulses;
+        for (const auto &pred : rhs.get_predicates())
+            if (rhs.is_impulse(pred.get()) || rhs.is_interval(pred.get()))
+                for (const auto &atm : pred.get().get_instances())
+                    if (&atm->get_type().get_core() != &rhs && rhs.get_sat_core().value(static_cast<atom &>(*atm).get_sigma()) == utils::True)
+                    {
+                        utils::inf_rational start = rhs.get_core().arith_value(rhs.is_impulse(pred.get()) ? static_cast<atom &>(*atm).get(RATIO_AT) : static_cast<atom &>(*atm).get(RATIO_START));
+                        starting_atoms[start].insert(dynamic_cast<atom *>(&*atm));
+                        pulses.insert(start);
+                    }
+        if (!starting_atoms.empty())
+        {
+            json::json slv_tl;
+            slv_tl["id"] = reinterpret_cast<uintptr_t>(&rhs);
+            slv_tl["name"] = "solver";
+            json::json j_atms(json::json_type::array);
+            for (const auto &p : pulses)
+                for (const auto &atm : starting_atoms.at(p))
+                    j_atms.push_back(to_json(*atm));
+            slv_tl["values"] = std::move(j_atms);
+            tls.push_back(std::move(slv_tl));
+        }
+
+        std::queue<riddle::complex_type *> q;
+        for (const auto &tp : rhs.get_types())
+            if (!tp.get().is_primitive())
+                q.push(static_cast<riddle::complex_type *>(&tp.get()));
+
+        while (!q.empty())
+        {
+            if (auto tl_tp = dynamic_cast<timeline *>(q.front()))
+            {
+                auto j_tls = tl_tp->extract();
+                for (size_t i = 0; i < j_tls.size(); ++i)
+                    tls.push_back(std::move(j_tls[i]));
+            }
+            for (const auto &tp : q.front()->get_types())
+                q.push(static_cast<riddle::complex_type *>(&tp.get()));
+            q.pop();
+        }
+
+        return tls;
+    }
+
+    json::json to_json(const riddle::item &rhs) noexcept
+    {
+        auto &slv = static_cast<const solver &>(rhs.get_type().get_core());
+        json::json j_itm;
+        j_itm["id"] = get_id(rhs);
+        j_itm["type"] = rhs.get_type().get_full_name();
+#ifdef COMPUTE_NAMES
+        auto name = slv.guess_name(rhs);
+        if (!name.empty())
+            j_itm["name"] = name;
+#endif
+        if (auto ci = dynamic_cast<const riddle::complex_item *>(&rhs))
+        {
+            if (dynamic_cast<const riddle::enum_item *>(&rhs))
+                j_itm["val"] = value(rhs);
+            if (!ci->get_vars().empty())
+                j_itm["exprs"] = to_json(ci->get_vars());
+            if (auto atm = dynamic_cast<const atom *>(&rhs))
+                j_itm["sigma"] = variable(atm->get_sigma());
+        }
+        else
+            j_itm["value"] = value(rhs);
+
+        return j_itm;
+    }
+    json::json to_json(const std::map<std::string, riddle::expr> &vars) noexcept
+    {
+        json::json j_exprs;
+        for (const auto &[xpr_name, xpr] : vars)
+        {
+            json::json j_var;
+            j_var["name"] = xpr_name;
+            j_var["type"] = xpr->get_type().get_full_name();
+            j_var["value"] = value(*xpr);
+            j_exprs.push_back(std::move(j_var));
+        }
+        return j_exprs;
+    }
+
     json::json value(const riddle::item &itm) noexcept
     {
         const solver &slv = static_cast<const solver &>(itm.get_type().get_scope().get_core());

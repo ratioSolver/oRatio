@@ -408,4 +408,94 @@ namespace ratio
         data["forbid_item"] = get_id(itm);
         return data;
     }
+
+    json::json reusable_resource::extract() const noexcept
+    {
+        json::json tls(json::json_type::array);
+        // we partition atoms for each reusable-resource they might insist on..
+        std::unordered_map<riddle::complex_item *, std::vector<atom *>> rr_instances;
+        for (const auto &atm : atoms)
+            if (get_solver().get_sat_core().value(atm->get_sigma()) == utils::True) // we filter out those atoms which are not strictly active..
+            {
+                const auto rr = atm->get(TAU_KW); // we get the reusable-resource..
+                if (auto enum_scope = dynamic_cast<enum_item *>(rr.operator->()))
+                { // the `tau` parameter is a variable..
+                    for (const auto &rr_val : get_solver().get_ov_theory().value(enum_scope->get_var()))
+                        if (to_check.count(static_cast<riddle::complex_item *>(rr_val))) // we consider only those reusable-resources which are still to be checked..
+                            rr_instances[static_cast<riddle::complex_item *>(rr_val)].emplace_back(atm);
+                }
+                else if (to_check.count(static_cast<riddle::complex_item *>(rr.operator->()))) // we consider only those reusable-resources which are still to be checked..
+                    rr_instances[static_cast<riddle::complex_item *>(rr.operator->())].emplace_back(atm);
+            }
+
+        for (const auto &[rr, atms] : rr_instances)
+        {
+            json::json tl;
+            tl["id"] = get_id(*rr);
+#ifdef COMPUTE_NAMES
+            tl["name"] = get_solver().guess_name(*rr);
+#endif
+            tl["type"] = REUSABLE_RESOURCE_NAME;
+
+            const auto c_capacity = get_solver().arith_value(rr->get(REUSABLE_RESOURCE_CAPACITY));
+            tl["capacity"] = to_json(c_capacity);
+
+            // for each pulse, the atoms starting at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
+            // for each pulse, the atoms ending at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> ending_atoms;
+            // all the pulses of the timeline..
+            std::set<utils::inf_rational> pulses;
+
+            for (const auto &atm : atms)
+            {
+                const auto start = get_solver().arith_value(atm->get(RATIO_START));
+                const auto end = get_solver().arith_value(atm->get(RATIO_END));
+                starting_atoms[start].insert(atm);
+                ending_atoms[end].insert(atm);
+                pulses.insert(start);
+                pulses.insert(end);
+            }
+            pulses.insert(get_solver().arith_value(get_solver().get("origin")));
+            pulses.insert(get_solver().arith_value(get_solver().get("horizon")));
+
+            std::set<atom *> overlapping_atoms;
+            std::set<utils::inf_rational>::iterator p = pulses.begin();
+            if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+            if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                for (const auto &a : at_end_p->second)
+                    overlapping_atoms.erase(a);
+
+            json::json j_vals(json::json_type::array);
+            for (p = std::next(p); p != pulses.end(); ++p)
+            {
+                json::json j_val;
+                j_val["from"] = to_json(*std::prev(p));
+                j_val["to"] = to_json(*p);
+
+                json::json j_atms(json::json_type::array);
+                utils::inf_rational c_usage; // the concurrent resource usage..
+                for (const auto &atm : overlapping_atoms)
+                {
+                    c_usage += get_solver().arith_value(atm->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME));
+                    j_atms.push_back(get_id(*atm));
+                }
+                j_val["atoms"] = std::move(j_atms);
+                j_val["usage"] = to_json(c_usage);
+                j_vals.push_back(std::move(j_val));
+
+                if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+            }
+            tl["values"] = std::move(j_vals);
+
+            tls.push_back(std::move(tl));
+        }
+
+        return tls;
+    }
 } // namespace ratio

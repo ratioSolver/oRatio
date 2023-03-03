@@ -11,7 +11,7 @@
 
 namespace ratio
 {
-  class reusable_resource final : public smart_type
+  class reusable_resource final : public smart_type, public timeline
   {
   public:
     reusable_resource(riddle::scope &scp);
@@ -115,6 +115,8 @@ namespace ratio
       reusable_resource &rr;
       const std::set<atom *> overlapping_atoms;
     };
+
+    json::json extract() const noexcept override;
 
   private:
     std::set<const riddle::item *> to_check;     // the reusable-resource instances whose atoms have changed..

@@ -369,6 +369,12 @@ namespace ratio
 #endif
   };
 
+  json::json to_json(const solver &rhs) noexcept;
+  json::json to_timelines(solver &rhs) noexcept;
+
+  json::json to_json(const riddle::item &rhs) noexcept;
+  json::json to_json(const std::map<std::string, riddle::expr> &vars) noexcept;
+
   json::json value(const riddle::item &itm) noexcept;
   inline json::json to_json(const utils::rational &rat) noexcept
   {
