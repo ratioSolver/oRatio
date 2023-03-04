@@ -60,6 +60,6 @@ namespace ratio
     };
 
   private:
-    riddle::expr &atm;
+    riddle::expr atm;
   };
 } // namespace ratio

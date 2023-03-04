@@ -78,26 +78,25 @@ namespace ratio
         assert(std::none_of(get_flaws().cbegin(), get_flaws().cend(), [](flaw *f)
                             { return is_positive_infinite(f->get_estimated_cost()); }));
 
-        if (flaw_q.empty()) // we have no flaws to expand..
-            throw riddle::unsolvable_exception();
-
-        // we make a copy of the flaws' queue..
+        // we make a copy of the flaws queue..
         auto f_q = flaw_q;
-        while (std::all_of(f_q.cbegin(), f_q.cend(), [](flaw *f)
+        assert(std::all_of(f_q.cbegin(), f_q.cend(), [this](auto f)
+                           { return is_deferrable(*f); }));
+        while (std::all_of(f_q.cbegin(), f_q.cend(), [](auto f)
                            { return is_infinite(f->get_estimated_cost()); }))
-        { // we expand all the flaws in the queue..
-            auto &f = *f_q.front();
-            assert(!f.is_expanded());
-            if (s.get_sat_core().value(f.get_phi()) != utils::False)
+        {
+            if (flaw_q.empty()) // we have no flaws to expand..
+                throw riddle::unsolvable_exception();
+            // we expand all the flaws in the queue..
+            auto q_size = flaw_q.size();
+            for (size_t i = 0; i < q_size; ++i)
             {
-#ifdef DEFERRABLE_FLAWS
-                if (is_deferrable(f))
-                    flaw_q.push_back(&f);
-                else
-#endif
+                auto &f = *flaw_q.front();
+                assert(!f.is_expanded());
+                if (s.get_sat_core().value(f.get_phi()) != utils::False)
                     expand_flaw(f);
+                flaw_q.pop_front();
             }
-            f_q.pop_front();
         }
 
         // we extract the inconsistencies (and translate them into flaws)..

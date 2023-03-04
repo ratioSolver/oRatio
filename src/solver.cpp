@@ -1170,14 +1170,15 @@ namespace ratio
         std::queue<riddle::complex_type *> q;
         for (const auto &tp : rhs.get_types())
             if (!tp.get().is_primitive())
+            {
                 if (auto ct = dynamic_cast<riddle::complex_type *>(&tp.get()))
                     q.push(ct);
                 else if (auto et = dynamic_cast<riddle::enum_type *>(&tp.get()))
                     for (const auto &etv : et->get_all_values())
                         all_items.insert(&*etv);
                 else
-                    throw std::runtime_error("cannot manage type " + tp.get().get_name());
-
+                    assert(false);
+            }
         while (!q.empty())
         {
             for (const auto &i : q.front()->get_instances())
@@ -1192,7 +1193,7 @@ namespace ratio
                     for (const auto &etv : et->get_all_values())
                         all_items.insert(&*etv);
                 else
-                    throw std::runtime_error("cannot manage type " + tp.get().get_name());
+                    assert(false);
             q.pop();
         }
 
@@ -1366,7 +1367,7 @@ namespace ratio
             j_val["var"] = std::to_string(ev->get_var());
             json::json vals;
             for (const auto &v : slv.get_ov_theory().value(ev->get_var()))
-                vals.push_back(get_id(static_cast<riddle::complex_item &>(*v)));
+                vals.push_back(get_id(dynamic_cast<riddle::item &>(*v)));
             j_val["vals"] = std::move(vals);
             return j_val;
         }
