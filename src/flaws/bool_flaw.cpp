@@ -1,4 +1,5 @@
 #include "bool_flaw.h"
+#include "solver.h"
 
 namespace ratio
 {
@@ -6,8 +7,20 @@ namespace ratio
 
     void bool_flaw::compute_resolvers()
     {
-        add_resolver(new choose_value(*this, true));
-        add_resolver(new choose_value(*this, false));
+        auto &bi = static_cast<bool_item &>(*b_item);
+        switch (get_solver().get_sat_core().value(bi.get_lit()))
+        {
+        case utils::True: // we add only the positive resolver (which is already active)
+            add_resolver(new choose_value(*this, bi.get_lit()));
+            break;
+        case utils::False: // we add only the negative resolver (which is already active)
+            add_resolver(new choose_value(*this, !bi.get_lit()));
+            break;
+        case utils::Undefined: // we add both resolvers
+            add_resolver(new choose_value(*this, bi.get_lit()));
+            add_resolver(new choose_value(*this, !bi.get_lit()));
+            break;
+        }
     }
 
     json::json bool_flaw::get_data() const noexcept
@@ -18,7 +31,7 @@ namespace ratio
         return data;
     }
 
-    bool_flaw::choose_value::choose_value(bool_flaw &ef, bool value) : resolver(ef, utils::rational(1, 2)), value(value) {}
+    bool_flaw::choose_value::choose_value(bool_flaw &ef, const semitone::lit &rho) : resolver(ef, rho, utils::rational(1, 2)) {}
 
     void bool_flaw::choose_value::apply() {}
 
@@ -26,7 +39,6 @@ namespace ratio
     {
         json::json data;
         data["type"] = "choose_value";
-        data["value"] = value;
         return data;
     }
 } // namespace ratio

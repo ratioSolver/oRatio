@@ -21,17 +21,14 @@ namespace ratio
     class choose_value final : public resolver
     {
     public:
-      choose_value(bool_flaw &ef, bool value);
+      choose_value(bool_flaw &ef, const semitone::lit &rho);
 
       void apply() override;
 
       json::json get_data() const noexcept override;
-
-    private:
-      bool value;
     };
 
   private:
-    riddle::expr &b_item;
+    riddle::expr b_item;
   };
 } // namespace ratio

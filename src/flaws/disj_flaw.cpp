@@ -1,4 +1,5 @@
 #include "disj_flaw.h"
+#include "solver.h"
 
 namespace ratio
 {
@@ -7,7 +8,8 @@ namespace ratio
     void disj_flaw::compute_resolvers()
     {
         for (auto &l : lits)
-            add_resolver(new choose_lit(*this, utils::rational(1, lits.size()), l));
+            if (get_solver().get_sat_core().value(l) != utils::False)
+                add_resolver(new choose_lit(*this, utils::rational(1, lits.size()), l));
     }
 
     json::json disj_flaw::get_data() const noexcept
