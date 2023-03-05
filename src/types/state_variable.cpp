@@ -145,6 +145,8 @@ namespace ratio
         return incs;
     }
 
+    void state_variable::new_predicate(riddle::predicate &pred) noexcept { add_parent(pred, get_solver().get_interval()); }
+
     void state_variable::new_atom(atom &atm)
     {
         if (atm.is_fact())

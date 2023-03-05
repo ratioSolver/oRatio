@@ -16,6 +16,8 @@ namespace ratio
   private:
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() override;
 
+    void new_predicate(riddle::predicate &pred) noexcept override;
+
     void new_atom(atom &atm) override;
 
     void store_variables(atom &atm0, atom &atm1);
