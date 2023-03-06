@@ -83,9 +83,17 @@ namespace ratio
     {
         assert(!resolvers.empty());
         resolver *cheapest = &resolvers[0].get();
+        utils::rational cheapest_cost = cheapest->get_estimated_cost();
         for (size_t i = 1; i < resolvers.size(); ++i)
-            if (resolvers[i].get().get_estimated_cost() < cheapest->get_estimated_cost())
-                cheapest = &resolvers[i].get();
+        {
+            resolver &r = resolvers[i].get();
+            utils::rational cost = resolvers[i].get().get_estimated_cost();
+            if (cost < cheapest_cost)
+            {
+                cheapest = &r;
+                cheapest_cost = cost;
+            }
+        }
         return *cheapest;
     }
 

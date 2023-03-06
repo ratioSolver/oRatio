@@ -41,7 +41,7 @@ namespace ratio
                 auto u_res = new unify_atom(*this, i, eq_lit);
                 assert(get_solver().get_sat_core().value(u_res->get_rho()) != utils::False);
                 add_resolver(u_res);
-                get_solver().new_causal_link(*this, *u_res);
+                get_solver().new_causal_link(*t_atm.reason, *u_res);
             }
 
         if (c_atm.is_fact())
