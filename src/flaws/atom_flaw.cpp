@@ -88,8 +88,8 @@ namespace ratio
         return data;
     }
 
-    atom_flaw::activate_goal::activate_goal(atom_flaw &ef) : resolver(ef, utils::rational::ZERO) {}
-    atom_flaw::activate_goal::activate_goal(atom_flaw &ef, const semitone::lit &l) : resolver(ef, l, utils::rational::ZERO) {}
+    atom_flaw::activate_goal::activate_goal(atom_flaw &ef) : resolver(ef, utils::rational::ONE) {}
+    atom_flaw::activate_goal::activate_goal(atom_flaw &ef, const semitone::lit &l) : resolver(ef, l, utils::rational::ONE) {}
 
     void atom_flaw::activate_goal::apply()
     { // activating this resolver activates the goal..
@@ -125,11 +125,9 @@ namespace ratio
 
         assert(t_atm.reason->is_expanded());
         for (auto &r : t_atm.reason->get_resolvers())
-            if (dynamic_cast<activate_fact *>(&r.get()) || dynamic_cast<activate_goal *>(&r.get()))
-            { // we disable this unification if the target atom is not activable..
-                if (get_solver().get_sat_core().new_clause({!get_rho(), r.get().get_rho()}))
+            if (dynamic_cast<activate_fact *>(&r.get()) || dynamic_cast<activate_goal *>(&r.get())) // we disable this unification if the target atom is not activable..
+                if (!get_solver().get_sat_core().new_clause({!get_rho(), r.get().get_rho()}))
                     throw riddle::unsolvable_exception();
-            }
 
         // as a consequence of the activation of this resolver:
         //  - we make the current atom's sigma false (unified atom)..

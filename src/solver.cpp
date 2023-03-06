@@ -1378,7 +1378,7 @@ namespace ratio
     std::string to_string(const atom &atm) noexcept
     {
         std::string str = (atm.is_fact() ? "fact" : "goal");
-        str += " σ" + variable(atm.get_sigma());
+        str += " σ" + std::to_string(variable(atm.get_sigma()));
         str += " " + atm.get_type().get_name();
         switch (static_cast<const solver &>(atm.get_core()).get_sat_core().value(atm.get_sigma()))
         {
