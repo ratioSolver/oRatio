@@ -34,6 +34,13 @@ namespace ratio
     solver &get_solver() noexcept { return s; }
 
     /**
+     * @brief Get the solver this flaw belongs to.
+     *
+     * @return const solver& The solver.
+     */
+    const solver &get_solver() const noexcept { return s; }
+
+    /**
      * @brief Get the resolvers that caused this flaw.
      *
      * @return std::vector<std::reference_wrapper<resolver>>& The resolvers that caused this flaw.
@@ -118,6 +125,8 @@ namespace ratio
      * @return json::json the data of this flaw.
      */
     virtual json::json get_data() const noexcept = 0;
+
+    friend std::string to_string(const flaw &f) noexcept;
 
   protected:
     /**

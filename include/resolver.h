@@ -73,6 +73,8 @@ namespace ratio
      */
     virtual json::json get_data() const noexcept = 0;
 
+    friend std::string to_string(const resolver &r) noexcept;
+
   private:
     flaw &f;                                                 // the flaw solved by this resolver..
     const semitone::lit rho;                                 // the propositional literal indicating whether the resolver is active or not..

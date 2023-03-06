@@ -116,6 +116,8 @@ namespace ratio
 
     atom_flaw &get_reason() const { return *reason; }
 
+    friend std::string to_string(const atom &a) noexcept;
+
   private:
     semitone::lit sigma; // the literal that represents this atom..
     atom_flaw *reason;   // the atom_flaw that caused this atom to be created..

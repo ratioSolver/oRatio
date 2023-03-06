@@ -34,4 +34,22 @@ namespace ratio
 #endif
         return est_cost + intrinsic_cost;
     }
+
+    std::string to_string(const resolver &r) noexcept
+    {
+        std::string state;
+        switch (r.f.get_solver().get_sat_core().value(r.get_rho()))
+        {
+        case utils::True: // the resolver is active..
+            state = "active";
+            break;
+        case utils::False: // the resolver is forbidden..
+            state = "forbidden";
+            break;
+        default: // the resolver is inactive..
+            state = "inactive";
+            break;
+        }
+        return "ρ" + std::to_string(variable(r.get_rho())) + " (" + state + ")";
+    }
 } // namespace ratio

@@ -11,6 +11,7 @@ namespace ratio
         assert(get_solver().get_sat_core().value(get_phi()) != utils::False);
         // this is the current atom..
         auto &c_atm = static_cast<atom &>(*atm);
+        LOG("computing resolvers for " << to_string(c_atm) << "..");
         assert(get_solver().get_sat_core().value(c_atm.sigma) != utils::False);
         // we check if the atom can unify..
         if (get_solver().get_sat_core().value(c_atm.sigma) == utils::Undefined)
@@ -33,6 +34,8 @@ namespace ratio
 
                 if (get_solver().get_sat_core().value(eq_lit) == utils::False)
                     continue; // the two atoms cannot unify, hence, we skip this instance..
+
+                LOG("found possible unification with " << to_string(t_atm) << "..");
 
                 // we add the resolver..
                 auto u_res = new unify_atom(*this, i, eq_lit);
@@ -68,12 +71,12 @@ namespace ratio
     atom_flaw::activate_fact::activate_fact(atom_flaw &ef, const semitone::lit &l) : resolver(ef, l, utils::rational::ZERO) {}
 
     void atom_flaw::activate_fact::apply()
-    {
+    { // activating this resolver activates the fact..
         auto &af = static_cast<const atom_flaw &>(get_flaw());
         auto &c_atm = static_cast<atom &>(*af.get_atom());
         assert(get_solver().get_sat_core().value(c_atm.sigma) != utils::False);
         assert(get_solver().get_sat_core().value(get_rho()) != utils::False);
-        if (!get_solver().get_sat_core().new_clause({get_rho(), c_atm.sigma}))
+        if (!get_solver().get_sat_core().new_clause({!get_rho(), c_atm.sigma}))
             throw riddle::unsolvable_exception();
     }
 
@@ -89,12 +92,12 @@ namespace ratio
     atom_flaw::activate_goal::activate_goal(atom_flaw &ef, const semitone::lit &l) : resolver(ef, l, utils::rational::ZERO) {}
 
     void atom_flaw::activate_goal::apply()
-    {
+    { // activating this resolver activates the goal..
         auto &af = static_cast<atom_flaw &>(get_flaw());
         auto &c_atm = static_cast<atom &>(*af.get_atom());
         assert(get_solver().get_sat_core().value(c_atm.sigma) != utils::False);
         assert(get_solver().get_sat_core().value(get_rho()) != utils::False);
-        if (!get_solver().get_sat_core().new_clause({get_rho(), c_atm.sigma}))
+        if (!get_solver().get_sat_core().new_clause({!get_rho(), c_atm.sigma}))
             throw riddle::unsolvable_exception();
 
         // we apply the corresponding rule..
@@ -109,18 +112,16 @@ namespace ratio
         return data;
     }
 
-    atom_flaw::unify_atom::unify_atom(atom_flaw &ef, riddle::expr target, const semitone::lit &unif_lit) : resolver(ef, unif_lit, utils::rational::ZERO), target(target) {}
+    atom_flaw::unify_atom::unify_atom(atom_flaw &ef, riddle::expr target, const semitone::lit &unif_lit) : resolver(ef, utils::rational::ZERO), target(target), unif_lit(unif_lit) {}
 
     void atom_flaw::unify_atom::apply()
     {
         auto &af = static_cast<const atom_flaw &>(get_flaw());
         auto &c_atm = static_cast<atom &>(*af.get_atom());
         auto &t_atm = static_cast<atom &>(*target);
-        assert(get_solver().get_sat_core().value(c_atm.sigma) != utils::False);
-        assert(get_solver().get_sat_core().value(t_atm.sigma) != utils::False);
-        assert(get_solver().get_sat_core().value(get_rho()) != utils::False);
-        if (!get_solver().get_sat_core().new_clause({get_rho(), c_atm.sigma, t_atm.sigma}))
-            throw riddle::unsolvable_exception();
+        assert(get_solver().get_sat_core().value(c_atm.sigma) != utils::True);  // the current atom must be unifiable..
+        assert(get_solver().get_sat_core().value(t_atm.sigma) != utils::False); // the target atom must be activable..
+        assert(get_solver().get_sat_core().value(get_rho()) != utils::False);   // this resolver must be activable..
 
         assert(t_atm.reason->is_expanded());
         for (auto &r : t_atm.reason->get_resolvers())

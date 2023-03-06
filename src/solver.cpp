@@ -1374,4 +1374,24 @@ namespace ratio
         else
             return get_id(itm);
     }
+
+    std::string to_string(const atom &atm) noexcept
+    {
+        std::string str = (atm.is_fact() ? "fact" : "goal");
+        str += " σ" + variable(atm.get_sigma());
+        str += " " + atm.get_type().get_name();
+        switch (static_cast<const solver &>(atm.get_core()).get_sat_core().value(atm.get_sigma()))
+        {
+        case utils::True: // the atom is active..
+            str += " (active)";
+            break;
+        case utils::False: // the atom is unified..
+            str += " (unified)";
+            break;
+        case utils::Undefined: // the atom is inactive..
+            str += " (inactive)";
+            break;
+        }
+        return str;
+    }
 } // namespace ratio

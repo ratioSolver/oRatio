@@ -36,6 +36,7 @@ namespace ratio
 
     void flaw::expand()
     {
+        LOG("expanding flaw " << to_string(*this));
         assert(!expanded);
         assert(s.sat->root_level());
 
@@ -78,7 +79,7 @@ namespace ratio
         s.new_resolver(std::move(r)); // we notify the solver that a new resolver has been added..
     }
 
-    resolver& flaw::get_cheapest_resolver() const noexcept
+    resolver &flaw::get_cheapest_resolver() const noexcept
     {
         assert(!resolvers.empty());
         resolver *cheapest = &resolvers[0].get();
@@ -86,5 +87,23 @@ namespace ratio
             if (resolvers[i].get().get_estimated_cost() < cheapest->get_estimated_cost())
                 cheapest = &resolvers[i].get();
         return *cheapest;
+    }
+
+    std::string to_string(const flaw &f) noexcept
+    {
+        std::string state;
+        switch (f.get_solver().get_sat_core().value(f.get_phi()))
+        {
+        case utils::True: // the flaw is active..
+            state = "active";
+            break;
+        case utils::False: // the flaw is forbidden..
+            state = "forbidden";
+            break;
+        default: // the flaw is inactive..
+            state = "inactive";
+            break;
+        }
+        return "ϕ" + std::to_string(variable(f.get_phi())) + " (" + state + ")";
     }
 } // namespace ratio
