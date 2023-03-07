@@ -37,9 +37,15 @@ namespace ratio
     virtual void enqueue(flaw &) {}
     virtual void propagate_costs(flaw &) {}
     virtual void build() {} // builds the graph..
-    virtual void prune() {} // prunes the current graph..
+#ifdef GRAPH_PRUNING
+    virtual void prune()
+    {
+    } // prunes the current graph..
+#endif
 
-    virtual void add_layer() {} // adds a layer to the graph..
+    virtual void add_layer()
+    {
+    } // adds a layer to the graph..
 
     virtual void push() {}
     virtual void pop() {}

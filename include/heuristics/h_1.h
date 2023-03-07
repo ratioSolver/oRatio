@@ -18,7 +18,9 @@ namespace ratio
 
     void build() override;
 
+#ifdef GRAPH_PRUNING
     void prune() override;
+#endif
 
     void add_layer() override;
 

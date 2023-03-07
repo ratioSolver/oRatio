@@ -111,6 +111,7 @@ namespace ratio
             throw riddle::unsolvable_exception();
     }
 
+#ifdef GRAPH_PRUNING
     void h_1::prune()
     {
         LOG("pruning the causal graph..");
@@ -125,6 +126,7 @@ namespace ratio
         if (!s.get_sat_core().propagate())
             throw riddle::unsolvable_exception();
     }
+#endif
 
     bool h_1::is_deferrable(flaw &f)
     {

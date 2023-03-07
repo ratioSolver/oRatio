@@ -677,8 +677,8 @@ namespace ratio
                 assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
                                    { return sat->value(f->phi) == utils::True; })); // all the current flaws must be active..
                 assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
-                                   { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](resolver *r)
-                                                         { return sat->value(r->rho) == utils::True; }); })); // none of the current flaws must have already been solved..
+                                   { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
+                                                         { return sat->value(r.get().rho) == utils::True; }); })); // none of the current flaws must have already been solved..
 
                 // this is the next flaw (i.e. the most expensive one) to be solved..
                 auto &best_flaw = **std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f0, const auto &f1)
@@ -717,7 +717,7 @@ namespace ratio
                     assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
                                        { return sat->value(f->phi) == utils::True; })); // all the current flaws must be active..
                     assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
-                                       { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto r)
+                                       { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
                                                              { return sat->value(r.get().rho) == utils::True; }); })); // none of the current flaws must have already been solved..
 
                     // this is the next flaw (i.e. the most expensive one) to be solved..
