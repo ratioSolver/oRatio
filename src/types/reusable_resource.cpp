@@ -6,7 +6,37 @@
 
 namespace ratio
 {
-    reusable_resource::reusable_resource(riddle::scope &scp) : smart_type(scp, REUSABLE_RESOURCE_NAME) {}
+    reusable_resource::reusable_resource(riddle::scope &scp) : smart_type(scp, REUSABLE_RESOURCE_NAME)
+    {
+        // we add the `capacity` parameter..
+        add_field(new riddle::field(get_solver().get_real_type(), REUSABLE_RESOURCE_CAPACITY));
+
+        // we create the constructor's arguments..
+        std::vector<riddle::field_ptr> ctr_args;
+        ctr_args.push_back(new riddle::field(get_solver().get_real_type(), REUSABLE_RESOURCE_CAPACITY));
+
+        // we create the constructor's initialization list..
+        ctr_ins.emplace_back(0, 0, 0, 0, REUSABLE_RESOURCE_CAPACITY);
+        std::vector<riddle::ast::expression_ptr> ivs;
+        ivs.push_back(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, REUSABLE_RESOURCE_CAPACITY)}));
+        ctr_ivs.emplace_back(std::move(ivs));
+
+        // we create the constructor's body..
+        ctr_body.emplace_back(new riddle::ast::expression_statement(new riddle::ast::geq_expression(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, REUSABLE_RESOURCE_CAPACITY)}), new riddle::ast::real_literal_expression({riddle::real_token(0, 0, 0, 0, utils::rational::ZERO)}))));
+
+        // we add the constructor..
+        add_constructor(new riddle::constructor(*this, std::move(ctr_args), ctr_ins, ctr_ivs, ctr_body));
+
+        // we create the `Use` predicate's arguments..
+        std::vector<riddle::field_ptr> use_args;
+        use_args.push_back(new riddle::field(get_solver().get_real_type(), REUSABLE_RESOURCE_AMOUNT_NAME));
+
+        // we create the `Use` predicate's body..
+        pred_body.emplace_back(new riddle::ast::expression_statement(new riddle::ast::geq_expression(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, REUSABLE_RESOURCE_AMOUNT_NAME)}), new riddle::ast::real_literal_expression({riddle::real_token(0, 0, 0, 0, utils::rational::ZERO)}))));
+
+        // we add the `Use` predicate..
+        add_predicate(new riddle::predicate(*this, REUSABLE_RESOURCE_USE_PREDICATE_NAME, std::move(use_args), pred_body));
+    }
 
     std::vector<std::vector<std::pair<semitone::lit, double>>> reusable_resource::get_current_incs()
     {
@@ -60,7 +90,7 @@ namespace ratio
 
                 utils::inf_rational c_usage; // the concurrent resource usage..
                 for (const auto &a : overlapping_atoms)
-                    c_usage += get_solver().arith_value(a->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME));
+                    c_usage += get_solver().arith_value(a->get(REUSABLE_RESOURCE_AMOUNT_NAME));
 
                 if (c_usage > c_capacity) // we have a 'peak'..
                 {
@@ -68,7 +98,7 @@ namespace ratio
                     // we sort the overlapping atoms, according to their resource usage, in descending order..
                     std::vector<atom *> inc_atoms(overlapping_atoms.cbegin(), overlapping_atoms.cend());
                     std::sort(inc_atoms.begin(), inc_atoms.end(), [this](const auto &atm0, const auto &atm1)
-                              { return get_solver().arith_value(atm0->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME)) > get_solver().arith_value(atm1->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME)); });
+                              { return get_solver().arith_value(atm0->get(REUSABLE_RESOURCE_AMOUNT_NAME)) > get_solver().arith_value(atm1->get(REUSABLE_RESOURCE_AMOUNT_NAME)); });
 
                     utils::inf_rational mcs_usage;       // the concurrent mcs resource usage..
                     auto mcs_begin = inc_atoms.cbegin(); // the beginning of the current mcs..
@@ -78,7 +108,7 @@ namespace ratio
                         // we increase the size of the current mcs..
                         while (mcs_usage <= c_capacity && mcs_end != inc_atoms.cend())
                         {
-                            mcs_usage += get_solver().arith_value((*mcs_end)->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME));
+                            mcs_usage += get_solver().arith_value((*mcs_end)->get(REUSABLE_RESOURCE_AMOUNT_NAME));
                             ++mcs_end;
                         }
 
@@ -170,7 +200,7 @@ namespace ratio
                                 incs.emplace_back(choices);
 
                                 // we decrease the size of the mcs..
-                                mcs_usage -= get_solver().arith_value((*mcs_begin)->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME));
+                                mcs_usage -= get_solver().arith_value((*mcs_begin)->get(REUSABLE_RESOURCE_AMOUNT_NAME));
                                 assert(mcs_usage <= c_capacity);
                                 ++mcs_begin;
                             }
@@ -478,7 +508,7 @@ namespace ratio
                 utils::inf_rational c_usage; // the concurrent resource usage..
                 for (const auto &atm : overlapping_atoms)
                 {
-                    c_usage += get_solver().arith_value(atm->get(REUSABLE_RESOURCE_USE_AMOUNT_NAME));
+                    c_usage += get_solver().arith_value(atm->get(REUSABLE_RESOURCE_AMOUNT_NAME));
                     j_atms.push_back(get_id(*atm));
                 }
                 j_val["atoms"] = std::move(j_atms);

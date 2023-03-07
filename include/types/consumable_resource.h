@@ -9,7 +9,7 @@
 #define CONSUMABLE_RESOURCE_CAPACITY "capacity"
 #define CONSUMABLE_RESOURCE_PRODUCE_PREDICATE_NAME "Produce"
 #define CONSUMABLE_RESOURCE_CONSUME_PREDICATE_NAME "Consume"
-#define CONSUMABLE_RESOURCE_USE_AMOUNT_NAME "amount"
+#define CONSUMABLE_RESOURCE_AMOUNT_NAME "amount"
 
 namespace ratio
 {
@@ -27,12 +27,6 @@ namespace ratio
     void new_atom(atom &atm) override;
 
     void store_variables(atom &atm0, atom &atm1);
-
-    class cr_constructor final : public riddle::constructor
-    {
-    public:
-      cr_constructor(consumable_resource &cr) : riddle::constructor(cr, {}, {}, {}, {}) {}
-    };
 
     class cr_atom_listener final : public atom_listener
     {
@@ -126,11 +120,12 @@ namespace ratio
   private:
     std::vector<riddle::id_token> ctr_ins;
     std::vector<std::vector<riddle::ast::expression_ptr>> ctr_ivs;
-    std::vector<riddle::ast::statement_ptr> ctr_stmnts;
+    std::vector<riddle::ast::statement_ptr> ctr_body;
     riddle::predicate *p_pred = nullptr;
     riddle::predicate *c_pred = nullptr;
-    std::vector<riddle::ast::statement_ptr> pred_stmnts;
+    std::vector<riddle::ast::statement_ptr> pred_body;
 
+  private:
     std::set<const riddle::item *> to_check;     // the reusable-resource instances whose atoms have changed..
     std::vector<atom *> atoms;                   // we store, for each atom, its atom listener..
     std::vector<cr_atom_listener_ptr> listeners; // we store, for each atom, its atom listener..

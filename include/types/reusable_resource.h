@@ -7,7 +7,7 @@
 #define REUSABLE_RESOURCE_NAME "ReusableResource"
 #define REUSABLE_RESOURCE_CAPACITY "capacity"
 #define REUSABLE_RESOURCE_USE_PREDICATE_NAME "Use"
-#define REUSABLE_RESOURCE_USE_AMOUNT_NAME "amount"
+#define REUSABLE_RESOURCE_AMOUNT_NAME "amount"
 
 namespace ratio
 {
@@ -22,12 +22,6 @@ namespace ratio
     void new_atom(atom &atm) override;
 
     void store_variables(atom &atm0, atom &atm1);
-
-    class rr_constructor final : public riddle::constructor
-    {
-    public:
-      rr_constructor(reusable_resource &rr) : riddle::constructor(rr, {}, {}, {}, {}) {}
-    };
 
     class rr_atom_listener final : public atom_listener
     {
@@ -117,6 +111,13 @@ namespace ratio
     };
 
     json::json extract() const noexcept override;
+
+  private:
+    std::vector<riddle::id_token> ctr_ins;
+    std::vector<std::vector<riddle::ast::expression_ptr>> ctr_ivs;
+    std::vector<riddle::ast::statement_ptr> ctr_body;
+    riddle::predicate *u_pred = nullptr;
+    std::vector<riddle::ast::statement_ptr> pred_body;
 
   private:
     std::set<const riddle::item *> to_check;     // the reusable-resource instances whose atoms have changed..

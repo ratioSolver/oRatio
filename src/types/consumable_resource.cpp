@@ -6,7 +6,51 @@
 
 namespace ratio
 {
-    consumable_resource::consumable_resource(riddle::scope &scp) : smart_type(scp, CONSUMABLE_RESOURCE_NAME) {}
+    consumable_resource::consumable_resource(riddle::scope &scp) : smart_type(scp, CONSUMABLE_RESOURCE_NAME)
+    {
+        // we add the `initial_amount` field..
+        add_field(new riddle::field(get_solver().get_real_type(), CONSUMABLE_RESOURCE_INITIAL_AMOUNT));
+        // we add the `capacity` parameter..
+        add_field(new riddle::field(get_solver().get_real_type(), CONSUMABLE_RESOURCE_CAPACITY));
+
+        // we create the constructor's arguments..
+        std::vector<riddle::field_ptr> ctr_args;
+        ctr_args.push_back(new riddle::field(get_solver().get_real_type(), CONSUMABLE_RESOURCE_INITIAL_AMOUNT));
+        ctr_args.push_back(new riddle::field(get_solver().get_real_type(), CONSUMABLE_RESOURCE_CAPACITY));
+
+        // we create the constructor's initialization list..
+        ctr_ins.emplace_back(0, 0, 0, 0, CONSUMABLE_RESOURCE_INITIAL_AMOUNT);
+        ctr_ins.emplace_back(0, 0, 0, 0, CONSUMABLE_RESOURCE_CAPACITY);
+        std::vector<riddle::ast::expression_ptr> ia_ivs;
+        ia_ivs.push_back(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, CONSUMABLE_RESOURCE_INITIAL_AMOUNT)}));
+        ctr_ivs.emplace_back(std::move(ia_ivs));
+        std::vector<riddle::ast::expression_ptr> cap_ivs;
+        cap_ivs.push_back(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, CONSUMABLE_RESOURCE_CAPACITY)}));
+        ctr_ivs.emplace_back(std::move(cap_ivs));
+
+        // we create the constructor's body..
+        ctr_body.emplace_back(new riddle::ast::expression_statement(new riddle::ast::geq_expression(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, CONSUMABLE_RESOURCE_CAPACITY)}), new riddle::ast::real_literal_expression({riddle::real_token(0, 0, 0, 0, utils::rational::ZERO)}))));
+
+        // we add the constructor..
+        add_constructor(new riddle::constructor(*this, std::move(ctr_args), ctr_ins, ctr_ivs, ctr_body));
+
+        // we create the `Produce` predicate's arguments..
+        std::vector<riddle::field_ptr> prod_args;
+        prod_args.push_back(new riddle::field(get_solver().get_real_type(), CONSUMABLE_RESOURCE_AMOUNT_NAME));
+
+        // we create the `Consume` predicate's arguments..
+        std::vector<riddle::field_ptr> cons_args;
+        cons_args.push_back(new riddle::field(get_solver().get_real_type(), CONSUMABLE_RESOURCE_AMOUNT_NAME));
+
+        // we create the predicates' body..
+        pred_body.push_back(new riddle::ast::expression_statement(new riddle::ast::geq_expression(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, CONSUMABLE_RESOURCE_AMOUNT_NAME)}), new riddle::ast::real_literal_expression({riddle::real_token(0, 0, 0, 0, utils::rational::ZERO)}))));
+
+        // we add the `Produce` predicate..
+        add_predicate(new riddle::predicate(*this, CONSUMABLE_RESOURCE_PRODUCE_PREDICATE_NAME, std::move(prod_args), pred_body));
+
+        // we add the `Consume` predicate..
+        add_predicate(new riddle::predicate(*this, CONSUMABLE_RESOURCE_CONSUME_PREDICATE_NAME, std::move(cons_args), pred_body));
+    }
 
     std::vector<std::vector<std::pair<semitone::lit, double>>> consumable_resource::get_current_incs()
     {
@@ -330,7 +374,7 @@ namespace ratio
                 utils::inf_rational c_angular_coefficient; // the concurrent resource update..
                 for (const auto &atm : overlapping_atoms)
                 {
-                    auto c_coeff = get_produce_predicate().is_assignable_from(atm->get_type()) ? get_solver().arith_value(atm->get(CONSUMABLE_RESOURCE_USE_AMOUNT_NAME)) : -get_solver().arith_value(atm->get(CONSUMABLE_RESOURCE_USE_AMOUNT_NAME));
+                    auto c_coeff = get_produce_predicate().is_assignable_from(atm->get_type()) ? get_solver().arith_value(atm->get(CONSUMABLE_RESOURCE_AMOUNT_NAME)) : -get_solver().arith_value(atm->get(CONSUMABLE_RESOURCE_AMOUNT_NAME));
                     c_coeff /= (get_solver().arith_value(atm->get(RATIO_END)) - get_solver().arith_value(atm->get(RATIO_START))).get_rational();
                     c_angular_coefficient += c_coeff;
                     j_atms.push_back(get_id(*atm));
