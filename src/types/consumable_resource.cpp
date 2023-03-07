@@ -46,10 +46,14 @@ namespace ratio
         pred_body.push_back(new riddle::ast::expression_statement(new riddle::ast::geq_expression(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, CONSUMABLE_RESOURCE_AMOUNT_NAME)}), new riddle::ast::real_literal_expression({riddle::real_token(0, 0, 0, 0, utils::rational::ZERO)}))));
 
         // we add the `Produce` predicate..
-        add_predicate(new riddle::predicate(*this, CONSUMABLE_RESOURCE_PRODUCE_PREDICATE_NAME, std::move(prod_args), pred_body));
+        p_pred = new riddle::predicate(*this, CONSUMABLE_RESOURCE_PRODUCE_PREDICATE_NAME, std::move(prod_args), pred_body);
+        add_parent(*p_pred, get_solver().get_interval());
+        add_predicate(p_pred);
 
         // we add the `Consume` predicate..
-        add_predicate(new riddle::predicate(*this, CONSUMABLE_RESOURCE_CONSUME_PREDICATE_NAME, std::move(cons_args), pred_body));
+        c_pred = new riddle::predicate(*this, CONSUMABLE_RESOURCE_CONSUME_PREDICATE_NAME, std::move(cons_args), pred_body);
+        add_parent(*c_pred, get_solver().get_interval());
+        add_predicate(c_pred);
     }
 
     std::vector<std::vector<std::pair<semitone::lit, double>>> consumable_resource::get_current_incs()

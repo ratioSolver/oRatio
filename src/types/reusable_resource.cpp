@@ -35,7 +35,9 @@ namespace ratio
         pred_body.emplace_back(new riddle::ast::expression_statement(new riddle::ast::geq_expression(new riddle::ast::id_expression({riddle::id_token(0, 0, 0, 0, REUSABLE_RESOURCE_AMOUNT_NAME)}), new riddle::ast::real_literal_expression({riddle::real_token(0, 0, 0, 0, utils::rational::ZERO)}))));
 
         // we add the `Use` predicate..
-        add_predicate(new riddle::predicate(*this, REUSABLE_RESOURCE_USE_PREDICATE_NAME, std::move(use_args), pred_body));
+        u_pred = new riddle::predicate(*this, REUSABLE_RESOURCE_USE_PREDICATE_NAME, std::move(use_args), pred_body);
+        add_parent(*u_pred, get_solver().get_interval());
+        add_predicate(u_pred);
     }
 
     std::vector<std::vector<std::pair<semitone::lit, double>>> reusable_resource::get_current_incs()
