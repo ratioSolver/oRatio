@@ -26,7 +26,7 @@ namespace ratio
     class rr_constructor final : public riddle::constructor
     {
     public:
-      rr_constructor(reusable_resource &rr) : riddle::constructor(rr, {}, {}) {}
+      rr_constructor(reusable_resource &rr) : riddle::constructor(rr, {}, {}, {}, {}) {}
     };
 
     class rr_atom_listener final : public atom_listener

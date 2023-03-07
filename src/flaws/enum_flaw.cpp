@@ -33,11 +33,11 @@ namespace ratio
         json::json j;
         j["type"] = "assignment";
 #ifdef COMPUTE_NAMES
-        auto name = get_solver().guess_name(static_cast<complex_item &>(val));
+        auto name = get_solver().guess_name(dynamic_cast<riddle::item &>(val));
         if (!name.empty())
             j["name"] = name;
 #endif
-        j["value"] = value(static_cast<riddle::complex_item &>(val));
+        j["value"] = value(dynamic_cast<riddle::item &>(val));
         return j;
     }
 } // namespace ratio

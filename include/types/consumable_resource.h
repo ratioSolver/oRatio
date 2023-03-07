@@ -31,7 +31,7 @@ namespace ratio
     class cr_constructor final : public riddle::constructor
     {
     public:
-      cr_constructor(consumable_resource &cr) : riddle::constructor(cr, {}, {}) {}
+      cr_constructor(consumable_resource &cr) : riddle::constructor(cr, {}, {}, {}, {}) {}
     };
 
     class cr_atom_listener final : public atom_listener

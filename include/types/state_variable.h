@@ -25,7 +25,7 @@ namespace ratio
     class sv_constructor final : public riddle::constructor
     {
     public:
-      sv_constructor(state_variable &sv) : riddle::constructor(sv, {}, {}) {}
+      sv_constructor(state_variable &sv) : riddle::constructor(sv, {}, {}, {}, {}) {}
     };
 
     class sv_atom_listener final : public atom_listener

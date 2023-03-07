@@ -10,7 +10,7 @@ namespace ratio
 
     utils::rational resolver::get_estimated_cost() const noexcept
     {
-        if (f.s.get_sat_core().value(rho) == utils::False)
+        if (get_solver().get_sat_core().value(rho) == utils::False)
             return utils::rational::POSITIVE_INFINITY;
         else if (preconditions.empty())
             return intrinsic_cost;

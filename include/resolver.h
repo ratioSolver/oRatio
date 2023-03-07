@@ -33,6 +33,13 @@ namespace ratio
     solver &get_solver() noexcept { return f.s; }
 
     /**
+     * @brief Get the solver this resolver belongs to.
+     *
+     * @return const solver& The solver.
+     */
+    const solver &get_solver() const noexcept { return f.s; }
+
+    /**
      * @brief Get the flaw this resolver solves.
      *
      * @return const flaw& The flaw.

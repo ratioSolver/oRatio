@@ -124,7 +124,7 @@ namespace ratio
             assert(vs.size() > 1);
             std::unordered_map<riddle::item *, std::vector<semitone::lit>> val_vars;
             for (auto &v : vs)
-                val_vars[static_cast<riddle::complex_item *>(v)->get(name).operator->()].push_back(ov_th.allows(enum_expr->get_var(), *v));
+                val_vars[dynamic_cast<riddle::env *>(v)->get(name).operator->()].push_back(ov_th.allows(enum_expr->get_var(), *v));
             std::vector<semitone::lit> c_vars;
             std::vector<riddle::item *> c_vals;
             for (const auto &val : val_vars)
@@ -521,8 +521,8 @@ namespace ratio
         { // we are comparing two complex items..
             if (auto p = dynamic_cast<riddle::predicate *>(&lhs->get_type()))
             { // we are comparing two atoms..
-                auto &leci = static_cast<riddle::complex_item &>(*lhs);
-                auto &reci = static_cast<riddle::complex_item &>(*rhs);
+                auto &leci = dynamic_cast<riddle::env &>(*lhs);
+                auto &reci = dynamic_cast<riddle::env &>(*rhs);
                 std::queue<riddle::predicate *> q;
                 q.push(p);
                 while (!q.empty())

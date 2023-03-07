@@ -21,7 +21,7 @@ namespace ratio
     class agnt_constructor final : public riddle::constructor
     {
     public:
-      agnt_constructor(agent &agnt) : riddle::constructor(agnt, {}, {}) {}
+      agnt_constructor(agent &agnt) : riddle::constructor(agnt, {}, {}, {}, {}) {}
     };
 
     json::json extract() const noexcept override;
