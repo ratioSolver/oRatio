@@ -379,10 +379,13 @@ namespace ratio
     {
         if (lhs == rhs) // the two items are the same item..
             return new bool_item(get_bool_type(), semitone::TRUE_lit);
-        else if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && lhs->get_type() == rhs->get_type())
-            return new bool_item(get_bool_type(), lra_th.new_eq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
-        else if (lhs->get_type() == get_time_type() && lhs->get_type() == rhs->get_type())
-            return new bool_item(get_bool_type(), rdl_th.new_eq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type() || lhs->get_type() == get_time_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type() || rhs->get_type() == get_time_type()))
+        { // we are comparing two arithmetic expressions..
+            if (get_type({lhs, rhs}) == get_time_type())
+                return new bool_item(get_bool_type(), rdl_th.new_eq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+            else
+                return new bool_item(get_bool_type(), lra_th.new_eq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        }
         else if (lhs->get_type() == get_bool_type() && lhs->get_type() == rhs->get_type())
             return new bool_item(get_bool_type(), sat->new_eq(static_cast<bool_item &>(*lhs).get_lit(), static_cast<bool_item &>(*rhs).get_lit()));
         else if (lhs->get_type() == get_string_type() && lhs->get_type() == rhs->get_type())
