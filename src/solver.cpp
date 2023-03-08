@@ -21,15 +21,15 @@
 
 namespace ratio
 {
-    solver::solver(const bool &i) : solver(HEURISTIC, i) {}
-    solver::solver(graph_ptr g, const bool &i) : countable(true), theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(g))
+    ORATIOSOLVER_EXPORT solver::solver(const bool &i) : solver(HEURISTIC, i) {}
+    ORATIOSOLVER_EXPORT solver::solver(graph_ptr g, const bool &i) : countable(true), theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(g))
     {
         gr->reset_gamma();
         if (i) // we initializa the solver..
             init();
     }
 
-    void solver::init()
+    ORATIOSOLVER_EXPORT void solver::init()
     {
         // we read the init string..
         read(INIT_STRING);
@@ -43,7 +43,7 @@ namespace ratio
         add_type(new consumable_resource(*this));
     }
 
-    void solver::read(const std::string &script)
+    ORATIOSOLVER_EXPORT void solver::read(const std::string &script)
     {
         // we read the script..
         core::read(script);
@@ -54,7 +54,7 @@ namespace ratio
             throw riddle::unsolvable_exception();
         FIRE_STATE_CHANGED();
     }
-    void solver::read(const std::vector<std::string> &files)
+    ORATIOSOLVER_EXPORT void solver::read(const std::vector<std::string> &files)
     {
         // we read the files..
         core::read(files);
@@ -66,29 +66,29 @@ namespace ratio
         FIRE_STATE_CHANGED();
     }
 
-    riddle::expr solver::new_bool()
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_bool()
     {
         riddle::expr b_xpr = new bool_item(get_bool_type(), semitone::lit(sat->new_var()));
         new_flaw(new bool_flaw(*this, get_cause(), b_xpr));
         return b_xpr;
     }
-    riddle::expr solver::new_bool(bool value) { return new bool_item(get_bool_type(), value ? semitone::TRUE_lit : semitone::FALSE_lit); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_bool(bool value) { return new bool_item(get_bool_type(), value ? semitone::TRUE_lit : semitone::FALSE_lit); }
 
-    riddle::expr solver::new_int() { return new arith_item(get_int_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
-    riddle::expr solver::new_int(utils::I value) { return new arith_item(get_int_type(), semitone::lin(utils::rational(value))); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_int() { return new arith_item(get_int_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_int(utils::I value) { return new arith_item(get_int_type(), semitone::lin(utils::rational(value))); }
 
-    riddle::expr solver::new_real() { return new arith_item(get_real_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
-    riddle::expr solver::new_real(utils::rational value) { return new arith_item(get_real_type(), semitone::lin(value)); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_real() { return new arith_item(get_real_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_real(utils::rational value) { return new arith_item(get_real_type(), semitone::lin(value)); }
 
-    riddle::expr solver::new_time_point() { return new arith_item(get_time_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
-    riddle::expr solver::new_time_point(utils::rational value) { return new arith_item(get_time_type(), semitone::lin(value)); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_time_point() { return new arith_item(get_time_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_time_point(utils::rational value) { return new arith_item(get_time_type(), semitone::lin(value)); }
 
-    riddle::expr solver::new_string() { return new string_item(get_string_type()); }
-    riddle::expr solver::new_string(const std::string &value) { return new string_item(get_string_type(), value); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_string() { return new string_item(get_string_type()); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_string(const std::string &value) { return new string_item(get_string_type(), value); }
 
     riddle::expr solver::new_item(riddle::complex_type &tp) { return new riddle::complex_item(tp); }
 
-    riddle::expr solver::new_enum(riddle::type &tp, const std::vector<riddle::expr> &xprs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_enum(riddle::type &tp, const std::vector<riddle::expr> &xprs)
     {
         assert(tp != get_bool_type() && tp != get_int_type() && tp != get_real_type() && tp != get_time_type() && tp != get_string_type());
         switch (xprs.size())
@@ -241,7 +241,7 @@ namespace ratio
             throw std::runtime_error("the expression must be an enum");
     }
 
-    riddle::expr solver::add(const std::vector<riddle::expr> &xprs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::add(const std::vector<riddle::expr> &xprs)
     {
         if (xprs.empty())
             return new_int(0);
@@ -259,7 +259,7 @@ namespace ratio
         }
     }
 
-    riddle::expr solver::sub(const std::vector<riddle::expr> &xprs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::sub(const std::vector<riddle::expr> &xprs)
     {
         if (xprs.empty())
             throw std::runtime_error("the expression must be an integer or a real");
@@ -277,7 +277,7 @@ namespace ratio
         }
     }
 
-    riddle::expr solver::mul(const std::vector<riddle::expr> &xprs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::mul(const std::vector<riddle::expr> &xprs)
     {
         if (xprs.empty())
             return new_int(1);
@@ -313,7 +313,7 @@ namespace ratio
         }
     }
 
-    riddle::expr solver::div(const std::vector<riddle::expr> &xprs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::div(const std::vector<riddle::expr> &xprs)
     {
         if (xprs.empty())
             throw std::runtime_error("the expression must be an integer or a real");
@@ -347,7 +347,7 @@ namespace ratio
         }
     }
 
-    riddle::expr solver::minus(const riddle::expr &xpr)
+    ORATIOSOLVER_EXPORT riddle::expr solver::minus(const riddle::expr &xpr)
     {
         if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type() || xpr->get_type() == get_time_type())
             return new arith_item(xpr->get_type(), -static_cast<arith_item &>(*xpr).get_lin());
@@ -355,7 +355,7 @@ namespace ratio
             throw std::runtime_error("the expression must be an integer or a real");
     }
 
-    riddle::expr solver::lt(const riddle::expr &lhs, const riddle::expr &rhs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::lt(const riddle::expr &lhs, const riddle::expr &rhs)
     {
         if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
             return new bool_item(get_bool_type(), lra_th.new_lt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
@@ -365,7 +365,7 @@ namespace ratio
             throw std::runtime_error("the expression must be an integer or a real");
     }
 
-    riddle::expr solver::leq(const riddle::expr &lhs, const riddle::expr &rhs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::leq(const riddle::expr &lhs, const riddle::expr &rhs)
     {
         if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
             return new bool_item(get_bool_type(), lra_th.new_leq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
@@ -375,7 +375,7 @@ namespace ratio
             throw std::runtime_error("the expression must be an integer or a real");
     }
 
-    riddle::expr solver::eq(const riddle::expr &lhs, const riddle::expr &rhs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::eq(const riddle::expr &lhs, const riddle::expr &rhs)
     {
         if (lhs == rhs) // the two items are the same item..
             return new bool_item(get_bool_type(), semitone::TRUE_lit);
@@ -461,7 +461,7 @@ namespace ratio
             return new bool_item(get_bool_type(), semitone::FALSE_lit);
     }
 
-    riddle::expr solver::geq(const riddle::expr &lhs, const riddle::expr &rhs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::geq(const riddle::expr &lhs, const riddle::expr &rhs)
     {
         if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
             return new bool_item(get_bool_type(), lra_th.new_geq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
@@ -471,7 +471,7 @@ namespace ratio
             throw std::runtime_error("the expression must be an integer or a real");
     }
 
-    riddle::expr solver::gt(const riddle::expr &lhs, const riddle::expr &rhs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::gt(const riddle::expr &lhs, const riddle::expr &rhs)
     {
         if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
             return new bool_item(get_bool_type(), lra_th.new_gt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
@@ -547,7 +547,7 @@ namespace ratio
             return false;
     }
 
-    riddle::expr solver::conj(const std::vector<riddle::expr> &xprs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::conj(const std::vector<riddle::expr> &xprs)
     {
         std::vector<semitone::lit> lits;
         for (const auto &xpr : xprs)
@@ -555,7 +555,7 @@ namespace ratio
         return new bool_item(get_bool_type(), sat->new_conj(lits));
     }
 
-    riddle::expr solver::disj(const std::vector<riddle::expr> &xprs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::disj(const std::vector<riddle::expr> &xprs)
     {
         std::vector<semitone::lit> lits;
         for (const auto &xpr : xprs)
@@ -565,7 +565,7 @@ namespace ratio
         return new bool_item(get_bool_type(), sat->new_disj(lits));
     }
 
-    riddle::expr solver::exct_one(const std::vector<riddle::expr> &xprs)
+    ORATIOSOLVER_EXPORT riddle::expr solver::exct_one(const std::vector<riddle::expr> &xprs)
     {
         std::vector<semitone::lit> lits;
         for (const auto &xpr : xprs)
@@ -575,9 +575,9 @@ namespace ratio
         return new bool_item(get_bool_type(), sat->new_exct_one(lits));
     }
 
-    riddle::expr solver::negate(const riddle::expr &xpr) { return new bool_item(get_bool_type(), !static_cast<bool_item &>(*xpr).get_lit()); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::negate(const riddle::expr &xpr) { return new bool_item(get_bool_type(), !static_cast<bool_item &>(*xpr).get_lit()); }
 
-    void solver::assert_fact(const riddle::expr &xpr)
+    ORATIOSOLVER_EXPORT void solver::assert_fact(const riddle::expr &xpr)
     { // the expression must be a boolean..
         if (xpr->get_type() == get_bool_type())
         {
@@ -607,7 +607,7 @@ namespace ratio
         return goal;
     }
 
-    bool solver::is_constant(const riddle::expr &xpr) const
+    ORATIOSOLVER_EXPORT bool solver::is_constant(const riddle::expr &xpr) const
     {
         if (xpr->get_type() == get_bool_type())
             return bool_value(xpr) != utils::Undefined;
@@ -627,14 +627,14 @@ namespace ratio
             throw std::runtime_error("not implemented yet");
     }
 
-    utils::lbool solver::bool_value(const riddle::expr &xpr) const { return sat->value(static_cast<bool_item &>(*xpr).get_lit()); }
-    utils::inf_rational solver::arith_value(const riddle::expr &xpr) const { return lra_th.value(static_cast<arith_item &>(*xpr).get_lin()); }
-    std::pair<utils::inf_rational, utils::inf_rational> solver::arith_bounds(const riddle::expr &xpr) const { return lra_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
-    utils::inf_rational solver::time_value(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()).first; }
-    std::pair<utils::inf_rational, utils::inf_rational> solver::time_bounds(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
+    ORATIOSOLVER_EXPORT utils::lbool solver::bool_value(const riddle::expr &xpr) const { return sat->value(static_cast<bool_item &>(*xpr).get_lit()); }
+    ORATIOSOLVER_EXPORT utils::inf_rational solver::arith_value(const riddle::expr &xpr) const { return lra_th.value(static_cast<arith_item &>(*xpr).get_lin()); }
+    ORATIOSOLVER_EXPORT std::pair<utils::inf_rational, utils::inf_rational> solver::arith_bounds(const riddle::expr &xpr) const { return lra_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
+    ORATIOSOLVER_EXPORT utils::inf_rational solver::time_value(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()).first; }
+    ORATIOSOLVER_EXPORT std::pair<utils::inf_rational, utils::inf_rational> solver::time_bounds(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
 
-    bool solver::is_enum(const riddle::expr &xpr) const { return dynamic_cast<enum_item *>(xpr.operator->()); }
-    std::vector<riddle::expr> solver::domain(const riddle::expr &xpr) const
+    ORATIOSOLVER_EXPORT bool solver::is_enum(const riddle::expr &xpr) const { return dynamic_cast<enum_item *>(xpr.operator->()); }
+    ORATIOSOLVER_EXPORT std::vector<riddle::expr> solver::domain(const riddle::expr &xpr) const
     {
         assert(is_enum(xpr));
         auto vals = ov_th.value(static_cast<enum_item &>(*xpr).get_var());
@@ -652,7 +652,7 @@ namespace ratio
             throw riddle::unsolvable_exception(); // the problem is unsolvable..
     }
 
-    bool solver::solve()
+    ORATIOSOLVER_EXPORT bool solver::solve()
     {
         FIRE_STARTED_SOLVING();
 
@@ -760,7 +760,7 @@ namespace ratio
         }
     }
 
-    void solver::take_decision(const semitone::lit &ch)
+    ORATIOSOLVER_EXPORT void solver::take_decision(const semitone::lit &ch)
     {
         assert(sat->value(ch) == utils::Undefined);
 
@@ -782,7 +782,7 @@ namespace ratio
         FIRE_STATE_CHANGED();
     }
 
-    void solver::next()
+    ORATIOSOLVER_EXPORT void solver::next()
     {
         assert(!sat->root_level());
 

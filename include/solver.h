@@ -135,17 +135,17 @@ namespace ratio
 #endif
 
   public:
-    solver(const bool &i = true);
-    solver(graph_ptr g, const bool &i = true);
+    ORATIOSOLVER_EXPORT solver(const bool &i = true);
+    ORATIOSOLVER_EXPORT solver(graph_ptr g, const bool &i = true);
 
     /**
      * @brief Initialize the solver.
      *
      */
-    void init();
+    ORATIOSOLVER_EXPORT void init();
 
-    void read(const std::string &script) override;
-    void read(const std::vector<std::string> &files) override;
+    ORATIOSOLVER_EXPORT void read(const std::string &script) override;
+    ORATIOSOLVER_EXPORT void read(const std::vector<std::string> &files) override;
 
     /**
      * @brief Get the linear-real-arithmetic theory.
@@ -196,37 +196,37 @@ namespace ratio
      */
     const semitone::rdl_theory &get_rdl_theory() const { return rdl_th; }
 
-    riddle::expr new_bool() override;
-    riddle::expr new_bool(bool value) override;
+    ORATIOSOLVER_EXPORT riddle::expr new_bool() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_bool(bool value) override;
 
-    riddle::expr new_int() override;
-    riddle::expr new_int(utils::I value) override;
+    ORATIOSOLVER_EXPORT riddle::expr new_int() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_int(utils::I value) override;
 
-    riddle::expr new_real() override;
-    riddle::expr new_real(utils::rational value) override;
+    ORATIOSOLVER_EXPORT riddle::expr new_real() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_real(utils::rational value) override;
 
-    riddle::expr new_time_point() override;
-    riddle::expr new_time_point(utils::rational value) override;
+    ORATIOSOLVER_EXPORT riddle::expr new_time_point() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_time_point(utils::rational value) override;
 
-    riddle::expr new_string() override;
-    riddle::expr new_string(const std::string &value) override;
+    ORATIOSOLVER_EXPORT riddle::expr new_string() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_string(const std::string &value) override;
 
     riddle::expr new_item(riddle::complex_type &tp) override;
 
-    riddle::expr new_enum(riddle::type &tp, const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr new_enum(riddle::type &tp, const std::vector<riddle::expr> &xprs) override;
     riddle::expr get_enum(riddle::expr &xpr, const std::string &name) override;
 
-    riddle::expr add(const std::vector<riddle::expr> &xprs) override;
-    riddle::expr sub(const std::vector<riddle::expr> &xprs) override;
-    riddle::expr mul(const std::vector<riddle::expr> &xprs) override;
-    riddle::expr div(const std::vector<riddle::expr> &xprs) override;
-    riddle::expr minus(const riddle::expr &xpr) override;
+    ORATIOSOLVER_EXPORT riddle::expr add(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr sub(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr mul(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr div(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr minus(const riddle::expr &xpr) override;
 
-    riddle::expr lt(const riddle::expr &lhs, const riddle::expr &rhs) override;
-    riddle::expr leq(const riddle::expr &lhs, const riddle::expr &rhs) override;
-    riddle::expr gt(const riddle::expr &lhs, const riddle::expr &rhs) override;
-    riddle::expr geq(const riddle::expr &lhs, const riddle::expr &rhs) override;
-    riddle::expr eq(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr lt(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr leq(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr gt(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr geq(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr eq(const riddle::expr &lhs, const riddle::expr &rhs) override;
     /**
      * @brief Checks whether the two expressions can be made equal.
      *
@@ -237,28 +237,28 @@ namespace ratio
      */
     bool matches(const riddle::expr &lhs, const riddle::expr &rhs) const noexcept;
 
-    riddle::expr conj(const std::vector<riddle::expr> &xprs) override;
-    riddle::expr disj(const std::vector<riddle::expr> &xprs) override;
-    riddle::expr exct_one(const std::vector<riddle::expr> &xprs) override;
-    riddle::expr negate(const riddle::expr &xpr) override;
+    ORATIOSOLVER_EXPORT riddle::expr conj(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr disj(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr exct_one(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr negate(const riddle::expr &xpr) override;
 
-    void assert_fact(const riddle::expr &xpr) override;
+    ORATIOSOLVER_EXPORT void assert_fact(const riddle::expr &xpr) override;
 
     void new_disjunction(std::vector<riddle::conjunction_ptr> xprs) override;
 
     riddle::expr new_fact(riddle::predicate &pred) override;
     riddle::expr new_goal(riddle::predicate &pred) override;
 
-    bool is_constant(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT bool is_constant(const riddle::expr &xpr) const override;
 
-    utils::lbool bool_value(const riddle::expr &xpr) const override;
-    utils::inf_rational arith_value(const riddle::expr &xpr) const override;
-    std::pair<utils::inf_rational, utils::inf_rational> arith_bounds(const riddle::expr &xpr) const override;
-    utils::inf_rational time_value(const riddle::expr &xpr) const override;
-    std::pair<utils::inf_rational, utils::inf_rational> time_bounds(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT utils::lbool bool_value(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT utils::inf_rational arith_value(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT std::pair<utils::inf_rational, utils::inf_rational> arith_bounds(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT utils::inf_rational time_value(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT std::pair<utils::inf_rational, utils::inf_rational> time_bounds(const riddle::expr &xpr) const override;
 
-    bool is_enum(const riddle::expr &xpr) const override;
-    std::vector<riddle::expr> domain(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT bool is_enum(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT std::vector<riddle::expr> domain(const riddle::expr &xpr) const override;
     void prune(const riddle::expr &xpr, const riddle::expr &val) override;
 
     /**
@@ -267,19 +267,19 @@ namespace ratio
      * @return true If a solution was found.
      * @return false If no solution was found.
      */
-    bool solve();
+    ORATIOSOLVER_EXPORT bool solve();
     /**
      * @brief Takes a decision and propagates its consequences.
      *
      * @param ch The decision to take.
      */
-    void take_decision(const semitone::lit &ch);
+    ORATIOSOLVER_EXPORT void take_decision(const semitone::lit &ch);
 
     /**
      * @brief Finds the next solution.
      *
      */
-    void next();
+    ORATIOSOLVER_EXPORT void next();
 
   private:
     void new_flaw(flaw_ptr f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
