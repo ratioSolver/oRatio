@@ -1,8 +1,10 @@
 add_executable(core_tests test_core.cpp)
-target_link_libraries(core_tests PRIVATE oRatioSolver RiDDLe SeMiTONE json utils)
+add_dependencies(core_tests oRatioSolver)
+target_link_libraries(core_tests PRIVATE oRatioSolver)
 
 add_executable(solver_tests test_solver.cpp)
-target_link_libraries(solver_tests PRIVATE oRatioSolver RiDDLe SeMiTONE json utils)
+add_dependencies(solver_tests oRatioSolver)
+target_link_libraries(solver_tests PRIVATE oRatioSolver)
 
 target_compile_definitions(solver_tests PRIVATE NUM_TESTS=1)
 
