@@ -124,7 +124,6 @@ namespace ratio
                                 store_flaw(flw); // we store the flaw for retrieval when at root-level..
                             }
 
-                            std::vector<std::pair<semitone::lit, double>> choices;
                             for (const auto &as : utils::combinations(std::vector<atom *>(mcs_begin, mcs_end), 2))
                             {
                                 std::vector<std::pair<semitone::lit, double>> choices;

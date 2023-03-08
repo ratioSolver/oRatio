@@ -625,8 +625,6 @@ namespace ratio
             return domain(xpr).size() == 1;
         else
             throw std::runtime_error("not implemented yet");
-
-        return false;
     }
 
     utils::lbool solver::bool_value(const riddle::expr &xpr) const { return sat->value(static_cast<bool_item &>(*xpr).get_lit()); }

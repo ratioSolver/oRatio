@@ -9,8 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: [ubuntu-latest, windows-latest, macos-latest]
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Debug, Release]
         temporal_network: [LA, DL]
         heuristic_type: [h_max, h_add]
