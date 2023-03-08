@@ -68,9 +68,9 @@ namespace ratio
 
     riddle::expr solver::new_bool()
     {
-        riddle::expr res = new bool_item(get_bool_type(), semitone::lit(sat->new_var()));
-        new_flaw(new bool_flaw(*this, get_cause(), res));
-        return res;
+        riddle::expr b_xpr = new bool_item(get_bool_type(), semitone::lit(sat->new_var()));
+        new_flaw(new bool_flaw(*this, get_cause(), b_xpr));
+        return b_xpr;
     }
     riddle::expr solver::new_bool(bool value) { return new bool_item(get_bool_type(), value ? semitone::TRUE_lit : semitone::FALSE_lit); }
 
@@ -640,12 +640,12 @@ namespace ratio
     bool solver::is_enum(const riddle::expr &xpr) const { return dynamic_cast<enum_item *>(xpr.operator->()); }
     std::vector<riddle::expr> solver::domain(const riddle::expr &xpr) const
     {
-        auto dom = ov_th.value(static_cast<enum_item &>(*xpr).get_var());
-        std::vector<riddle::expr> res;
-        res.reserve(dom.size());
-        for (auto &d : dom)
-            res.emplace_back(dynamic_cast<riddle::item *>(d));
-        return res;
+        auto vals = ov_th.value(static_cast<enum_item &>(*xpr).get_var());
+        std::vector<riddle::expr> dom; // the domain of the variable..
+        dom.reserve(vals.size());
+        for (auto &d : vals)
+            dom.emplace_back(dynamic_cast<riddle::item *>(d));
+        return dom;
     }
     void solver::prune(const riddle::expr &xpr, const riddle::expr &val)
     {
@@ -1015,8 +1015,8 @@ namespace ratio
             if (const auto st = dynamic_cast<smart_type *>(ct); st)
                 smart_types.emplace_back(st);
             for (const auto &t : ct->get_types())
-                if (auto ct = dynamic_cast<riddle::complex_type *>(&t.get()))
-                    q.push(ct);
+                if (auto c_ct = dynamic_cast<riddle::complex_type *>(&t.get()))
+                    q.push(c_ct);
         }
     }
 
@@ -1243,7 +1243,7 @@ namespace ratio
         if (!starting_atoms.empty())
         {
             json::json slv_tl;
-            slv_tl["id"] = reinterpret_cast<uintptr_t>(&rhs);
+            slv_tl["id"] = get_id(rhs);
             slv_tl["name"] = "solver";
             json::json j_atms(json::json_type::array);
             for (const auto &p : pulses)

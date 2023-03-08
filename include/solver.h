@@ -394,4 +394,12 @@ namespace ratio
       j_rat["inf"] = to_json(rat.get_infinitesimal());
     return j_rat;
   }
+
+  /**
+   * @brief Gets the id of the given solver.
+   *
+   * @param f the solver to get the id of.
+   * @return uintptr_t the id of the given solver.
+   */
+  inline uintptr_t get_id(const solver &s) noexcept { return reinterpret_cast<uintptr_t>(&s); }
 } // namespace ratio
