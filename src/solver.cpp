@@ -625,8 +625,7 @@ namespace ratio
             throw std::runtime_error("not implemented yet");
 
         if (is_enum(xpr))
-        {
-        }
+            return domain(xpr).size() == 1;
 
         return false;
     }
@@ -640,6 +639,7 @@ namespace ratio
     bool solver::is_enum(const riddle::expr &xpr) const { return dynamic_cast<enum_item *>(xpr.operator->()); }
     std::vector<riddle::expr> solver::domain(const riddle::expr &xpr) const
     {
+        assert(is_enum(xpr));
         auto vals = ov_th.value(static_cast<enum_item &>(*xpr).get_var());
         std::vector<riddle::expr> dom; // the domain of the variable..
         dom.reserve(vals.size());
@@ -649,6 +649,7 @@ namespace ratio
     }
     void solver::prune(const riddle::expr &xpr, const riddle::expr &val)
     {
+        assert(is_enum(xpr));
         auto alw_var = ov_th.allows(static_cast<ratio::enum_item &>(*xpr).get_var(), dynamic_cast<utils::enum_val &>(*val));
         if (!sat->new_clause({!ni, alw_var}))
             throw riddle::unsolvable_exception(); // the problem is unsolvable..

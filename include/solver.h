@@ -323,11 +323,11 @@ namespace ratio
 
   public:
     riddle::predicate &get_impulse() const noexcept { return *imp_pred; }
-    bool is_impulse(const riddle::type &pred) const noexcept { return pred == *imp_pred; }
-    bool is_impulse(const atom &atm) const noexcept { return atm.get_type() == *imp_pred; }
+    bool is_impulse(const riddle::type &pred) const noexcept { return imp_pred->is_assignable_from(pred); }
+    bool is_impulse(const atom &atm) const noexcept { return imp_pred->is_assignable_from(atm.get_type()); }
     riddle::predicate &get_interval() const noexcept { return *int_pred; }
-    bool is_interval(const riddle::type &pred) const noexcept { return pred == *int_pred; }
-    bool is_interval(const atom &atm) const noexcept { return atm.get_type() == *int_pred; }
+    bool is_interval(const riddle::type &pred) const noexcept { return int_pred->is_assignable_from(pred); }
+    bool is_interval(const atom &atm) const noexcept { return int_pred->is_assignable_from(atm.get_type()); }
 
   private:
     riddle::predicate *imp_pred = nullptr; // the `Impulse` predicate..
