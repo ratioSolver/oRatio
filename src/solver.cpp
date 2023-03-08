@@ -1160,7 +1160,7 @@ namespace ratio
     }
 #endif
 
-    json::json to_json(const solver &rhs) noexcept
+    ORATIOSOLVER_EXPORT json::json to_json(const solver &rhs) noexcept
     {
         // we collect all the items and atoms..
         std::set<riddle::item *> all_items;
@@ -1221,7 +1221,7 @@ namespace ratio
         return j_core;
     }
 
-    json::json to_timelines(solver &rhs) noexcept
+    ORATIOSOLVER_EXPORT json::json to_timelines(solver &rhs) noexcept
     {
         json::json tls(json::json_type::array);
 
