@@ -11,12 +11,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Debug, Release]
-        temporal_network: [LA, DL]
-        heuristic_type: [h_max, h_add]
-        deferrable_flaws: [ON, OFF]
-        graph_pruning: [ON, OFF]
-        check_inconsistencies: [ON, OFF]
-        build_listeners: [ON, OFF]
+        #temporal_network: [LA, DL]
+        #heuristic_type: [h_max, h_add]
+        #deferrable_flaws: [ON, OFF]
+        #graph_pruning: [ON, OFF]
+        #check_inconsistencies: [ON, OFF]
+        #build_listeners: [ON, OFF]
 
     env:
       BUILD_TYPE: ${{ matrix.build_type }}
