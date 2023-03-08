@@ -10,7 +10,7 @@ namespace ratio
     { // we add a resolver for each possible value of the enum..
         auto dom = get_solver().domain(&ei);
         for (auto &v : dom)
-            add_resolver(new enum_resolver(*this, utils::rational(1, dom.size()), dynamic_cast<utils::enum_val &>(*v)));
+            add_resolver(new enum_resolver(*this, utils::rational(1, static_cast<utils::I>(dom.size())), dynamic_cast<utils::enum_val &>(*v)));
     }
 
     json::json enum_flaw::get_data() const noexcept

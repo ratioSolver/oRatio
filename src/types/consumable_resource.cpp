@@ -222,10 +222,10 @@ namespace ratio
         json::json data;
         data["type"] = "cr-flaw";
 
-        json::json atoms(json::json_type::array);
+        json::json atms(json::json_type::array);
         for (const auto &atm : overlapping_atoms)
-            atoms.push_back(get_id(*atm));
-        data["atoms"] = atoms;
+            atms.push_back(get_id(*atm));
+        data["atoms"] = atms;
 
         return data;
     }

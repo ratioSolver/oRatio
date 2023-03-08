@@ -621,11 +621,10 @@ namespace ratio
             auto [lb, ub] = time_bounds(xpr);
             return lb == ub;
         }
+        else if (is_enum(xpr))
+            return domain(xpr).size() == 1;
         else
             throw std::runtime_error("not implemented yet");
-
-        if (is_enum(xpr))
-            return domain(xpr).size() == 1;
 
         return false;
     }

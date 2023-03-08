@@ -9,7 +9,7 @@ namespace ratio
     {
         for (auto &l : lits)
             if (get_solver().get_sat_core().value(l) != utils::False)
-                add_resolver(new choose_lit(*this, utils::rational(1, lits.size()), l));
+                add_resolver(new choose_lit(*this, utils::rational(1, static_cast<utils::I>(lits.size())), l));
     }
 
     json::json disj_flaw::get_data() const noexcept
