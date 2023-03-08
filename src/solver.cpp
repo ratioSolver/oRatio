@@ -1,13 +1,8 @@
 #include "solver.h"
 #include "init.h"
-#include "item.h"
-#include "predicate.h"
-#include "field.h"
-#include "conjunction.h"
-#include "causal_graph.h"
 #include "bool_flaw.h"
-#include "disj_flaw.h"
 #include "enum_flaw.h"
+#include "disj_flaw.h"
 #include "disjunction_flaw.h"
 #include "atom_flaw.h"
 #include "smart_type.h"
@@ -17,24 +12,36 @@
 #include "consumable_resource.h"
 #if defined(H_MAX) || defined(H_ADD)
 #include "h_1.h"
-#define HEURISTIC std::make_unique<h_1>()
+#define HEURISTIC new h_1(*this)
 #endif
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
 #endif
-#include <algorithm>
 #include <cassert>
 
-namespace ratio::solver
+namespace ratio
 {
     ORATIOSOLVER_EXPORT solver::solver(const bool &i) : solver(HEURISTIC, i) {}
-    ORATIOSOLVER_EXPORT solver::solver(std::unique_ptr<causal_graph> c_gr, const bool &i) : theory(std::make_shared<semitone::sat_core>()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(c_gr))
+    ORATIOSOLVER_EXPORT solver::solver(graph_ptr g, const bool &i) : countable(true), theory(new semitone::sat_core()), lra_th(sat), ov_th(sat), idl_th(sat), rdl_th(sat), gr(std::move(g))
     {
-        gr->init(*this); // we initialize the causal graph..
-        if (i)           // we initializa the solver..
+        gr->reset_gamma();
+        if (i) // we initializa the solver..
             init();
     }
-    ORATIOSOLVER_EXPORT solver::~solver() {}
+
+    ORATIOSOLVER_EXPORT void solver::init()
+    {
+        // we read the init string..
+        read(INIT_STRING);
+        // we get the impulsive and interval predicates..
+        imp_pred = &get_predicate(RATIO_IMPULSE);
+        int_pred = &get_predicate(RATIO_INTERVAL);
+        // we add some smart types..
+        add_type(new agent(*this));
+        add_type(new state_variable(*this));
+        add_type(new reusable_resource(*this));
+        add_type(new consumable_resource(*this));
+    }
 
     ORATIOSOLVER_EXPORT void solver::read(const std::string &script)
     {
@@ -44,7 +51,7 @@ namespace ratio::solver
         reset_smart_types();
 
         if (!sat->propagate())
-            throw ratio::core::unsolvable_exception();
+            throw riddle::unsolvable_exception();
         FIRE_STATE_CHANGED();
     }
     ORATIOSOLVER_EXPORT void solver::read(const std::vector<std::string> &files)
@@ -55,591 +62,594 @@ namespace ratio::solver
         reset_smart_types();
 
         if (!sat->propagate())
-            throw ratio::core::unsolvable_exception();
+            throw riddle::unsolvable_exception();
         FIRE_STATE_CHANGED();
     }
 
-    ORATIOSOLVER_EXPORT void solver::init() noexcept
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_bool()
     {
-        read(INIT_STRING);
-        imp_pred = &get_predicate(RATIO_IMPULSE);
-        int_pred = &get_predicate(RATIO_INTERVAL);
-        new_type(std::make_unique<agent>(*this));
-        new_type(std::make_unique<state_variable>(*this));
-        new_type(std::make_unique<reusable_resource>(*this));
-        new_type(std::make_unique<consumable_resource>(*this));
-        FIRE_STATE_CHANGED();
-    }
-
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_bool() noexcept
-    { // we create a new boolean expression..
-        auto b_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), semitone::lit(sat->new_var()));
-        // we create a new boolean flaw..
-        new_flaw(std::make_unique<bool_flaw>(*this, get_cause(), *b_xpr));
+        riddle::expr b_xpr = new bool_item(get_bool_type(), semitone::lit(sat->new_var()));
+        new_flaw(new bool_flaw(*this, get_cause(), b_xpr));
         return b_xpr;
     }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_int() noexcept { return std::make_shared<ratio::core::arith_item>(get_int_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_real() noexcept { return std::make_shared<ratio::core::arith_item>(get_real_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_time_point() noexcept { return std::make_shared<ratio::core::arith_item>(get_time_type(), semitone::lin(lra_th.new_var(), semitone::rational::ONE)); }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_string() noexcept { return std::make_shared<ratio::core::string_item>(get_string_type(), ""); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_bool(bool value) { return new bool_item(get_bool_type(), value ? semitone::TRUE_lit : semitone::FALSE_lit); }
 
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals)
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_int() { return new arith_item(get_int_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_int(utils::I value) { return new arith_item(get_int_type(), semitone::lin(utils::rational(value))); }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_real() { return new arith_item(get_real_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_real(utils::rational value) { return new arith_item(get_real_type(), semitone::lin(value)); }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_time_point() { return new arith_item(get_time_type(), semitone::lin(lra_th.new_var(), utils::rational::ONE)); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_time_point(utils::rational value) { return new arith_item(get_time_type(), semitone::lin(value)); }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_string() { return new string_item(get_string_type()); }
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_string(const std::string &value) { return new string_item(get_string_type(), value); }
+
+    riddle::expr solver::new_item(riddle::complex_type &tp) { return new riddle::complex_item(tp); }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::new_enum(riddle::type &tp, const std::vector<riddle::expr> &xprs)
     {
-        assert(&tp != &get_bool_type());
-        assert(&tp != &get_int_type());
-        assert(&tp != &get_real_type());
-        assert(&tp != &get_time_type());
-        if (allowed_vals.empty())
-            throw ratio::core::inconsistency_exception();
-
-        std::vector<semitone::var_value *> vals;
-        vals.reserve(allowed_vals.size());
-        for (const auto &i : allowed_vals)
-            vals.push_back(i.get());
-
-        // we create a new enum expression..
-        // notice that we do not enforce the exct_one constraint!
-        auto e_xpr = std::make_shared<ratio::core::enum_item>(tp, ov_th.new_var(vals, false));
-        if (allowed_vals.size() > 1) // we create a new enum flaw..
-            new_flaw(std::make_unique<enum_flaw>(*this, get_cause(), *e_xpr));
-        return e_xpr;
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::get_enum(ratio::core::enum_item &var, const std::string &name)
-    {
-        auto vs = ov_th.value(var.get_var());
-        assert(vs.size() > 1);
-        std::unordered_map<ratio::core::item *, std::vector<semitone::lit>> val_vars;
-        for (const auto &val : vs)
-            val_vars[&*static_cast<ratio::core::complex_item *>(val)->get(name)].push_back(ov_th.allows(var.get_var(), *val));
-        std::vector<semitone::lit> c_vars;
-        std::vector<semitone::var_value *> c_vals;
-        for (const auto &val : val_vars)
+        assert(tp != get_bool_type() && tp != get_int_type() && tp != get_real_type() && tp != get_time_type() && tp != get_string_type());
+        switch (xprs.size())
         {
-            const auto c_var = sat->new_disj(val.second);
-            c_vars.push_back(c_var);
-            c_vals.push_back(val.first);
-            for (const auto &val_not : val_vars)
-                if (val != val_not)
-                    for (const auto &v : val_not.second)
+        case 0: // empty enum, we throw an exception..
+            throw riddle::inconsistency_exception();
+        case 1: // singleton enum, we return the expression..
+            return xprs[0];
+        default:
+        {
+            std::vector<utils::enum_val *> vals;
+            vals.reserve(xprs.size());
+            for (auto &xpr : xprs)
+                if (auto ev = dynamic_cast<utils::enum_val *>(xpr.operator->()))
+                    vals.push_back(ev);
+                else
+                    throw std::runtime_error("invalid enum expression");
+
+            // we create a new enum expression..
+            // notice that we do not enforce the exct_one constraint!
+            auto enum_expr = new enum_item(tp, ov_th.new_var(vals, false));
+            new_flaw(new enum_flaw(*this, get_cause(), *enum_expr));
+            return enum_expr;
+        }
+        }
+    }
+
+    riddle::expr solver::get_enum(riddle::expr &xpr, const std::string &name)
+    {
+        if (auto enum_expr = dynamic_cast<enum_item *>(xpr.operator->()))
+        { // we retrieve the domain of the enum variable..
+            auto vs = ov_th.value(enum_expr->get_var());
+            assert(vs.size() > 1);
+            std::unordered_map<riddle::item *, std::vector<semitone::lit>> val_vars;
+            for (auto &v : vs)
+                val_vars[dynamic_cast<riddle::env *>(v)->get(name).operator->()].push_back(ov_th.allows(enum_expr->get_var(), *v));
+            std::vector<semitone::lit> c_vars;
+            std::vector<riddle::item *> c_vals;
+            for (const auto &val : val_vars)
+            {
+                const auto c_var = sat->new_disj(val.second);
+                c_vars.push_back(c_var);
+                c_vals.push_back(val.first);
+                for (const auto &val_not : val_vars)
+                    if (val != val_not)
+                        for (const auto &v : val_not.second)
+                        {
+                            [[maybe_unused]] bool nc = sat->new_clause({!c_var, !v});
+                            assert(nc);
+                        }
+            }
+
+            if (xpr->get_type() == get_bool_type())
+            { // we have an enum of booleans..
+                // we create a new boolean variable..
+                auto b_xpr = new_bool();
+                // .. and we add the constraints..
+                [[maybe_unused]] bool nc;
+                for (size_t i = 0; i < c_vars.size(); ++i)
+                {
+                    nc = sat->new_clause({!c_vars[i], sat->new_eq(static_cast<bool_item &>(*c_vals[i]).get_lit(), static_cast<bool_item &>(*b_xpr).get_lit())});
+                    assert(nc);
+                }
+                return b_xpr;
+            }
+            else if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type())
+            {
+                auto min = utils::inf_rational(utils::rational::POSITIVE_INFINITY);
+                auto max = utils::inf_rational(utils::rational::NEGATIVE_INFINITY);
+                // we compute the min and max values..
+                for (const auto &val : c_vals)
+                {
+                    const auto [lb, ub] = lra_th.bounds(static_cast<arith_item *>(val)->get_lin());
+                    min = std::min(min, lb);
+                    max = std::max(max, ub);
+                }
+                if (min == max) // we have a constant..
+                    return xpr->get_type() == get_int_type() ? new_int(min.get_rational().numerator()) : new_real(min.get_rational());
+                else
+                { // we create a new arithmetic variable..
+                    auto arith_xpr = xpr->get_type() == get_int_type() ? new_int() : new_real();
+                    // .. and we add the constraints..
+                    [[maybe_unused]] bool nc;
+                    for (size_t i = 0; i < c_vars.size(); ++i)
                     {
-                        [[maybe_unused]] bool nc = sat->new_clause({!c_var, !v});
+                        nc = sat->new_clause({!c_vars[i], lra_th.new_eq(static_cast<arith_item &>(*arith_xpr).get_lin(), static_cast<arith_item *>(c_vals[i])->get_lin())});
                         assert(nc);
                     }
-        }
-
-        if (&var.get_type() == &get_bool_type())
-        {
-            auto b = new_bool();
-            [[maybe_unused]] bool nc;
-            for (size_t i = 0; i < c_vars.size(); ++i)
-            {
-                nc = sat->new_clause({!c_vars[i], sat->new_eq(static_cast<ratio::core::bool_item &>(*c_vals[i]).get_value(), static_cast<ratio::core::bool_item &>(*b).get_value())});
-                assert(nc);
-            }
-            return b;
-        }
-        else if (&var.get_type() == &get_int_type())
-        {
-            auto min = semitone::inf_rational(semitone::rational::POSITIVE_INFINITY);
-            auto max = semitone::inf_rational(semitone::rational::NEGATIVE_INFINITY);
-            for (const auto &val : c_vals)
-            {
-                const auto [lb, ub] = lra_th.bounds(static_cast<ratio::core::arith_item &>(*val).get_value());
-                if (min > lb)
-                    min = lb;
-                if (max < ub)
-                    max = ub;
-            }
-            assert(min.get_infinitesimal() == semitone::rational::ZERO);
-            assert(max.get_infinitesimal() == semitone::rational::ZERO);
-            assert(min.get_rational().denominator() == 1);
-            assert(max.get_rational().denominator() == 1);
-            if (min == max) // we have a constant..
-                return ratio::core::core::new_int(min.get_rational().numerator());
-            else
-            { // we need to create a new (bounded) integer variable..
-                auto ie = new_int();
-                [[maybe_unused]] bool nc;
-                for (size_t i = 0; i < c_vars.size(); ++i)
-                {
-                    nc = sat->new_clause({!c_vars[i], lra_th.new_eq(static_cast<ratio::core::arith_item &>(*ie).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
-                    assert(nc);
+                    // we try to impose some bounds which might help propagation..
+                    if (min.get_infinitesimal() == utils::rational::ZERO && min.get_rational() > utils::rational::NEGATIVE_INFINITY)
+                    {
+                        nc = sat->new_clause({lra_th.new_geq(static_cast<arith_item &>(*arith_xpr).get_lin(), semitone::lin(min.get_rational()))});
+                        assert(nc);
+                    }
+                    if (max.get_infinitesimal() == utils::rational::ZERO && max.get_rational() < utils::rational::POSITIVE_INFINITY)
+                    {
+                        nc = sat->new_clause({lra_th.new_leq(static_cast<arith_item &>(*arith_xpr).get_lin(), semitone::lin(max.get_rational()))});
+                        assert(nc);
+                    }
+                    return arith_xpr;
                 }
-                // we impose some bounds which might help propagation..
-                nc = sat->new_clause({lra_th.new_geq(static_cast<ratio::core::arith_item &>(*ie).get_value(), semitone::lin(min.get_rational()))});
-                assert(nc);
-                nc = sat->new_clause({lra_th.new_leq(static_cast<ratio::core::arith_item &>(*ie).get_value(), semitone::lin(max.get_rational()))});
-                assert(nc);
-                return ie;
             }
-        }
-        else if (&var.get_type() == &get_real_type())
-        {
-            auto min = semitone::inf_rational(semitone::rational::POSITIVE_INFINITY);
-            auto max = semitone::inf_rational(semitone::rational::NEGATIVE_INFINITY);
-            for (const auto &val : c_vals)
+            else if (xpr->get_type() == get_time_type())
             {
-                const auto [lb, ub] = lra_th.bounds(static_cast<ratio::core::arith_item &>(*val).get_value());
-                if (min > lb)
-                    min = lb;
-                if (max < ub)
-                    max = ub;
-            }
-            assert(min.get_infinitesimal() == semitone::rational::ZERO);
-            assert(max.get_infinitesimal() == semitone::rational::ZERO);
-            if (min == max) // we have a constant..
-                return ratio::core::core::new_real(min.get_rational());
-            else
-            { // we need to create a new (bounded) real variable..
-                auto re = new_real();
-                [[maybe_unused]] bool nc;
-                for (size_t i = 0; i < c_vars.size(); ++i)
+                auto min = utils::inf_rational(utils::rational::POSITIVE_INFINITY);
+                auto max = utils::inf_rational(utils::rational::NEGATIVE_INFINITY);
+                // we compute the min and max values..
+                for (const auto &val : c_vals)
                 {
-                    nc = sat->new_clause({!c_vars[i], lra_th.new_eq(static_cast<ratio::core::arith_item &>(*re).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
-                    assert(nc);
+                    const auto [lb, ub] = rdl_th.bounds(static_cast<arith_item *>(val)->get_lin());
+                    min = std::min(min, lb);
+                    max = std::max(max, ub);
                 }
-                // we impose some bounds which might help propagation..
-                nc = sat->new_clause({lra_th.new_geq(static_cast<ratio::core::arith_item &>(*re).get_value(), semitone::lin(min.get_rational()))});
-                assert(nc);
-                nc = sat->new_clause({lra_th.new_leq(static_cast<ratio::core::arith_item &>(*re).get_value(), semitone::lin(max.get_rational()))});
-                assert(nc);
-                return re;
+                if (min == max) // we have a constant..
+                    return new_time_point(min.get_rational());
+                else
+                { // we create a new temporal variable..
+                    auto tp_xpr = new_time_point();
+                    // .. and we add the constraints..
+                    [[maybe_unused]] bool nc;
+                    for (size_t i = 0; i < c_vars.size(); ++i)
+                    {
+                        nc = sat->new_clause({!c_vars[i], rdl_th.new_eq(static_cast<arith_item &>(*tp_xpr).get_lin(), static_cast<arith_item *>(c_vals[i])->get_lin())});
+                        assert(nc);
+                    }
+                    // we try to impose some bounds which might help propagation..
+                    if (min.get_infinitesimal() == utils::rational::ZERO && min.get_rational() > utils::rational::NEGATIVE_INFINITY)
+                    {
+                        nc = sat->new_clause({rdl_th.new_geq(static_cast<arith_item &>(*tp_xpr).get_lin(), semitone::lin(min.get_rational()))});
+                        assert(nc);
+                    }
+                    if (max.get_infinitesimal() == utils::rational::ZERO && max.get_rational() < utils::rational::POSITIVE_INFINITY)
+                    {
+                        nc = sat->new_clause({rdl_th.new_leq(static_cast<arith_item &>(*tp_xpr).get_lin(), semitone::lin(max.get_rational()))});
+                        assert(nc);
+                    }
+                    return tp_xpr;
+                }
             }
-        }
-        else if (&var.get_type() == &get_time_type())
-        {
-            auto min = semitone::inf_rational(semitone::rational::POSITIVE_INFINITY);
-            auto max = semitone::inf_rational(semitone::rational::NEGATIVE_INFINITY);
-            for (const auto &val : c_vals)
+            else
             {
-                const auto [lb, ub] = rdl_th.bounds(static_cast<ratio::core::arith_item &>(*val).get_value());
-                if (min > lb)
-                    min = lb;
-                if (max < ub)
-                    max = ub;
-            }
-            assert(min.get_infinitesimal() == semitone::rational::ZERO);
-            assert(max.get_infinitesimal() == semitone::rational::ZERO);
-            if (min == max) // we have a constant..
-                return ratio::core::core::new_time_point(min.get_rational());
-            else
-            { // we need to create a new time-point variable..
-                auto tm_pt = new_time_point();
-                [[maybe_unused]] bool nc;
-                for (size_t i = 0; i < c_vars.size(); ++i)
-                {
-                    nc = sat->new_clause({!c_vars[i], rdl_th.new_eq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), static_cast<ratio::core::arith_item &>(*c_vals[i]).get_value())});
-                    assert(nc);
-                }
-                // we impose some bounds which might help propagation..
-                nc = sat->new_clause({rdl_th.new_geq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), semitone::lin(min.get_rational()))});
-                assert(nc);
-                nc = sat->new_clause({rdl_th.new_leq(static_cast<ratio::core::arith_item &>(*tm_pt).get_value(), semitone::lin(max.get_rational()))});
-                assert(nc);
-                return tm_pt;
+                std::vector<utils::enum_val *> e_vals;
+                e_vals.reserve(c_vals.size());
+                for (const auto &val : c_vals)
+                    e_vals.push_back(dynamic_cast<utils::enum_val *>(val));
+                return new enum_item(static_cast<riddle::complex_type &>(xpr->get_type()).get_field(name).get_type(), ov_th.new_var(c_vars, e_vals));
             }
         }
         else
-            return std::make_shared<ratio::core::enum_item>(var.get_type().get_field(name).get_type(), ov_th.new_var(c_vars, c_vals));
-    }
-    ORATIOSOLVER_EXPORT void solver::remove(ratio::core::expr &var, semitone::var_value &val)
-    {
-        auto alw_var = ov_th.allows(static_cast<ratio::core::enum_item &>(*var).get_var(), val);
-        if (!sat->new_clause({!ni, !alw_var}))
-            throw ratio::core::unsolvable_exception();
+            throw std::runtime_error("the expression must be an enum");
     }
 
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::negate(const ratio::core::expr &var) noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), !static_cast<ratio::core::bool_item &>(*var).get_value()); }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::conj(const std::vector<ratio::core::expr> &exprs) noexcept
+    ORATIOSOLVER_EXPORT riddle::expr solver::add(const std::vector<riddle::expr> &xprs)
     {
-        std::vector<semitone::lit> lits;
-        for (const auto &bex : exprs)
-            lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
-        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat->new_conj(std::move(lits)));
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::disj(const std::vector<ratio::core::expr> &exprs) noexcept
-    {
-        std::vector<semitone::lit> lits;
-        for (const auto &bex : exprs)
-            lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
-
-        auto d_xpr = std::make_shared<ratio::core::bool_item>(get_bool_type(), sat->new_disj(lits));
-
-        if (exprs.size() > 1) // we create a new var flaw..
-            new_flaw(std::make_unique<disj_flaw>(*this, get_cause(), std::move(lits)));
-
-        return d_xpr;
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::exct_one(const std::vector<ratio::core::expr> &exprs) noexcept
-    {
-        std::vector<semitone::lit> lits;
-        for (const auto &bex : exprs)
-            lits.push_back(static_cast<ratio::core::bool_item &>(*bex).get_value());
-        return std::make_shared<ratio::core::bool_item>(get_bool_type(), sat->new_exct_one(std::move(lits)));
-    }
-
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::add(const std::vector<ratio::core::expr> &exprs) noexcept
-    {
-        assert(exprs.size() > 1);
-        semitone::lin l;
-        for (const auto &aex : exprs)
-            l += static_cast<ratio::core::arith_item &>(*aex).get_value();
-        return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::sub(const std::vector<ratio::core::expr> &exprs) noexcept
-    {
-        assert(exprs.size() > 1);
-        semitone::lin l;
-        for (auto xpr_it = exprs.cbegin(); xpr_it != exprs.cend(); ++xpr_it)
-            if (xpr_it == exprs.cbegin())
-                l += static_cast<ratio::core::arith_item &>(**xpr_it).get_value();
-            else
-                l -= static_cast<ratio::core::arith_item &>(**xpr_it).get_value();
-        return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::mult(const std::vector<ratio::core::expr> &exprs) noexcept
-    {
-        assert(exprs.size() > 1);
-        if (auto var_it = std::find_if(exprs.cbegin(), exprs.cend(), [this](const auto &ae)
-                                       { return is_constant(static_cast<ratio::core::arith_item &>(*ae)); });
-            var_it != exprs.cend())
-        {
-            auto c_xpr = *var_it;
-            semitone::lin l = static_cast<ratio::core::arith_item &>(*c_xpr).get_value();
-            for (const auto &xpr : exprs)
-                if (xpr != c_xpr)
-                {
-                    assert(is_constant(static_cast<ratio::core::arith_item &>(*xpr)) && "non-linear expression..");
-                    assert(lra_th.value(static_cast<ratio::core::arith_item &>(*xpr).get_value()).get_infinitesimal() == semitone::rational::ZERO);
-                    l *= lra_th.value(static_cast<ratio::core::arith_item &>(*xpr).get_value()).get_rational();
-                }
-            return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
-        }
+        if (xprs.empty())
+            return new_int(0);
+        else if (xprs.size() == 1)
+            return xprs[0];
         else
         {
-            semitone::lin l = static_cast<ratio::core::arith_item &>(**exprs.cbegin()).get_value();
-            for (auto xpr_it = ++exprs.cbegin(); xpr_it != exprs.cend(); ++xpr_it)
+            semitone::lin l;
+            for (const auto &xpr : xprs)
+                if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type())
+                    l += static_cast<arith_item &>(*xpr).get_lin();
+                else
+                    throw std::runtime_error("the expression must be an integer or a real");
+            return new arith_item(get_type(xprs), l);
+        }
+    }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::sub(const std::vector<riddle::expr> &xprs)
+    {
+        if (xprs.empty())
+            throw std::runtime_error("the expression must be an integer or a real");
+        else if (xprs.size() == 1)
+            return new arith_item(get_type(xprs), -static_cast<arith_item &>(*xprs[0]).get_lin());
+        else
+        {
+            semitone::lin l = static_cast<arith_item &>(*xprs[0]).get_lin();
+            for (size_t i = 1; i < xprs.size(); ++i)
+                if (xprs[i]->get_type() == get_int_type() || xprs[i]->get_type() == get_real_type())
+                    l -= static_cast<arith_item &>(*xprs[i]).get_lin();
+                else
+                    throw std::runtime_error("the expression must be an integer or a real");
+            return new arith_item(get_type(xprs), l);
+        }
+    }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::mul(const std::vector<riddle::expr> &xprs)
+    {
+        if (xprs.empty())
+            return new_int(1);
+        else if (xprs.size() == 1)
+            return xprs[0];
+        else
+        {
+            if (auto var_it = std::find_if(xprs.cbegin(), xprs.cend(), [this](const auto &ae)
+                                           { return is_constant(ae); });
+                var_it != xprs.cend())
             {
-                assert(lra_th.value(static_cast<ratio::core::arith_item &>(**xpr_it).get_value()).get_infinitesimal() == semitone::rational::ZERO);
-                l *= lra_th.value(static_cast<ratio::core::arith_item &>(**xpr_it).get_value()).get_rational();
+                auto c_xpr = *var_it;
+                semitone::lin l = static_cast<arith_item &>(*c_xpr).get_lin();
+                for (const auto &xpr : xprs)
+                    if (xpr != c_xpr)
+                    {
+                        assert(is_constant(xpr) && "non-linear expression..");
+                        assert(lra_th.value(static_cast<arith_item &>(*xpr).get_lin()).get_infinitesimal() == utils::rational::ZERO);
+                        l *= lra_th.value(static_cast<arith_item &>(*xpr).get_lin()).get_rational();
+                    }
+                return new arith_item(get_type(xprs), l);
             }
-            return std::make_shared<ratio::core::arith_item>(get_type(exprs), l);
+            else
+            {
+                semitone::lin l = static_cast<arith_item &>(**xprs.cbegin()).get_lin();
+                for (auto xpr_it = ++xprs.cbegin(); xpr_it != xprs.cend(); ++xpr_it)
+                {
+                    assert(lra_th.value(static_cast<arith_item &>(**xpr_it).get_lin()).get_infinitesimal() == utils::rational::ZERO);
+                    l *= lra_th.value(static_cast<arith_item &>(**xpr_it).get_lin()).get_rational();
+                }
+                return new arith_item(get_type(xprs), l);
+            }
         }
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::div(const std::vector<ratio::core::expr> &exprs) noexcept
-    {
-        assert(exprs.size() > 1);
-        assert(std::all_of(++exprs.cbegin(), exprs.cend(), [this](const auto &ae)
-                           { return is_constant(static_cast<ratio::core::arith_item &>(*ae)); }) &&
-               "non-linear expression..");
-        assert(lra_th.value(static_cast<ratio::core::arith_item &>(*exprs[1]).get_value()).get_infinitesimal() == semitone::rational::ZERO);
-        auto c = lra_th.value(static_cast<ratio::core::arith_item &>(*exprs[1]).get_value()).get_rational();
-        for (size_t i = 2; i < exprs.size(); ++i)
-        {
-            assert(lra_th.value(static_cast<ratio::core::arith_item &>(*exprs[i]).get_value()).get_infinitesimal() == semitone::rational::ZERO);
-            c *= lra_th.value(static_cast<ratio::core::arith_item &>(*exprs[i]).get_value()).get_rational();
-        }
-        return std::make_shared<ratio::core::arith_item>(get_type(exprs), static_cast<ratio::core::arith_item &>(*exprs.at(0)).get_value() / c);
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::minus(const ratio::core::expr &ex) noexcept { return std::make_shared<ratio::core::arith_item>(ex->get_type(), -static_cast<ratio::core::arith_item &>(*ex).get_value()); }
-
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::lt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
-    {
-        if (&get_type({left, right}) == &get_time_type())
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_lt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-        else
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_lt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::leq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
-    {
-        if (&get_type({left, right}) == &get_time_type())
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_leq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-        else
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_leq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept { return std::make_shared<ratio::core::bool_item>(get_bool_type(), eq(*left, *right)); }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
-    {
-        if (&get_type({left, right}) == &get_time_type())
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-        else
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_geq(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-    }
-    ORATIOSOLVER_EXPORT ratio::core::expr solver::gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept
-    {
-        if (&get_type({left, right}) == &get_time_type())
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), rdl_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
-        else
-            return std::make_shared<ratio::core::bool_item>(get_bool_type(), lra_th.new_gt(static_cast<ratio::core::arith_item &>(*left).get_value(), static_cast<ratio::core::arith_item &>(*right).get_value()));
     }
 
-    semitone::lit solver::eq(ratio::core::item &left, ratio::core::item &right) noexcept
+    ORATIOSOLVER_EXPORT riddle::expr solver::div(const std::vector<riddle::expr> &xprs)
     {
-        if (&left == &right) // the two items are the same item..
-            return semitone::TRUE_lit;
-        else if (&left.get_type() == &get_bool_type() && &right.get_type() == &get_bool_type()) // we are comparing boolean expressions..
-            return sat->new_eq(static_cast<ratio::core::bool_item &>(left).get_value(), static_cast<ratio::core::bool_item &>(right).get_value());
-        else if (&left.get_type() == &get_string_type() && &right.get_type() == &get_string_type()) // we are comparing string expressions..
-            return static_cast<ratio::core::string_item &>(left).get_value() == static_cast<ratio::core::string_item &>(right).get_value() ? semitone::TRUE_lit : semitone::FALSE_lit;
-        else if ((&left.get_type() == &get_int_type() || &left.get_type() == &get_real_type() || &left.get_type() == &get_time_type()) && (&right.get_type() == &get_int_type() || &right.get_type() == &get_real_type() || &right.get_type() == &get_time_type()))
-        { // we are comparing arithmetic expressions..
-            if (&get_type(std::vector<const ratio::core::item *>({&left, &right})) == &get_time_type())
-                return rdl_th.new_eq(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
-            else
-                return lra_th.new_eq(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
-        }
-        else if (auto lee = dynamic_cast<ratio::core::enum_item *>(&left))
+        if (xprs.empty())
+            throw std::runtime_error("the expression must be an integer or a real");
+        else if (xprs.size() == 1)
         {
-            if (auto ree = dynamic_cast<ratio::core::enum_item *>(&right)) // we are comparing enums..
-                return ov_th.new_eq(lee->get_var(), ree->get_var());
-            else
-                return ov_th.allows(lee->get_var(), right);
+            assert(is_constant(xprs[0]));
+            assert(lra_th.value(static_cast<arith_item &>(*xprs[0]).get_lin()).get_infinitesimal() == utils::rational::ZERO);
+            semitone::lin l(utils::rational::ONE);
+            l /= static_cast<arith_item &>(*xprs[0]).get_lin().known_term;
+            return new arith_item(get_type(xprs), l);
         }
-        else if (dynamic_cast<ratio::core::enum_item *>(&right))
-            return eq(right, left); // we swap, for simplifying code..
-        else if (auto leci = dynamic_cast<ratio::core::complex_item *>(&left))
+        else
         {
-            if (auto reci = dynamic_cast<ratio::core::complex_item *>(&right))
-            { // we are comparing complex items..
-                std::vector<semitone::lit> eqs;
-                std::queue<ratio::core::type *> q;
-                q.push(&left.get_type());
+            semitone::lin l = static_cast<arith_item &>(*xprs[0]).get_lin();
+            for (size_t i = 1; i < xprs.size(); ++i)
+                if (xprs[i]->get_type() == get_int_type() || xprs[i]->get_type() == get_real_type())
+                {
+                    assert(is_constant(xprs[i]));
+                    assert(lra_th.value(static_cast<arith_item &>(*xprs[i]).get_lin()).get_infinitesimal() == utils::rational::ZERO);
+                    l /= lra_th.value(static_cast<arith_item &>(*xprs[i]).get_lin()).get_rational();
+                }
+                else if (xprs[i]->get_type() == get_time_type())
+                {
+                    assert(is_constant(xprs[i]));
+                    assert(rdl_th.bounds(static_cast<arith_item &>(*xprs[i]).get_lin()).first.get_infinitesimal() == utils::rational::ZERO);
+                    l /= rdl_th.bounds(static_cast<arith_item &>(*xprs[i]).get_lin()).first.get_rational();
+                }
+                else
+                    throw std::runtime_error("the expression must be an integer or a real");
+            return new arith_item(get_type(xprs), l);
+        }
+    }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::minus(const riddle::expr &xpr)
+    {
+        if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type() || xpr->get_type() == get_time_type())
+            return new arith_item(xpr->get_type(), -static_cast<arith_item &>(*xpr).get_lin());
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::lt(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
+            return new bool_item(get_bool_type(), lra_th.new_lt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type())
+            return new bool_item(get_bool_type(), rdl_th.new_lt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::leq(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
+            return new bool_item(get_bool_type(), lra_th.new_leq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type())
+            return new bool_item(get_bool_type(), rdl_th.new_leq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::eq(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if (lhs == rhs) // the two items are the same item..
+            return new bool_item(get_bool_type(), semitone::TRUE_lit);
+        else if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type() || lhs->get_type() == get_time_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type() || rhs->get_type() == get_time_type()))
+        { // we are comparing two arithmetic expressions..
+            if (get_type({lhs, rhs}) == get_time_type())
+                return new bool_item(get_bool_type(), rdl_th.new_eq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+            else
+                return new bool_item(get_bool_type(), lra_th.new_eq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        }
+        else if (lhs->get_type() == get_bool_type() && lhs->get_type() == rhs->get_type())
+            return new bool_item(get_bool_type(), sat->new_eq(static_cast<bool_item &>(*lhs).get_lit(), static_cast<bool_item &>(*rhs).get_lit()));
+        else if (lhs->get_type() == get_string_type() && lhs->get_type() == rhs->get_type())
+            return new bool_item(get_bool_type(), static_cast<string_item &>(*lhs).get_string() == static_cast<string_item &>(*rhs).get_string() ? semitone::TRUE_lit : semitone::FALSE_lit);
+        else if (auto lee = dynamic_cast<enum_item *>(lhs.operator->()))
+        {                                                               // we are comparing an enum with something else..
+            if (auto ree = dynamic_cast<enum_item *>(rhs.operator->())) // we are comparing enums..
+                return new bool_item(get_bool_type(), ov_th.new_eq(lee->get_var(), ree->get_var()));
+            else // we are comparing an enum with a singleton..
+                return new bool_item(get_bool_type(), ov_th.allows(lee->get_var(), dynamic_cast<utils::enum_val &>(*rhs)));
+        }
+        else if (dynamic_cast<enum_item *>(rhs.operator->()))
+            return eq(rhs, lhs); // we swap, for simplifying code..
+        else if (lhs->get_type() == rhs->get_type())
+        { // we are comparing complex items..
+            auto leci = dynamic_cast<riddle::complex_item *>(lhs.operator->());
+            if (!leci)
+                throw std::runtime_error("the expression must be a complex item");
+            auto reci = dynamic_cast<riddle::complex_item *>(rhs.operator->());
+            if (!reci)
+                throw std::runtime_error("the expression must be a complex item");
+
+            std::vector<semitone::lit> eqs;
+            if (auto p = dynamic_cast<riddle::predicate *>(&lhs->get_type()))
+            {
+                std::queue<riddle::predicate *> q;
+                q.push(p);
                 while (!q.empty())
                 {
                     for (const auto &[f_name, f] : q.front()->get_fields())
                         if (!f->is_synthetic())
                         {
-                            auto c_eq = eq(*leci->get(f_name), *reci->get(f_name));
-                            if (sat->value(c_eq) == semitone::False)
-                                return semitone::FALSE_lit;
-                            eqs.push_back(c_eq);
+                            auto c_eq = eq(leci->get(f_name), reci->get(f_name));
+                            if (bool_value(c_eq) == utils::False)
+                                return new bool_item(get_bool_type(), semitone::FALSE_lit);
+                            eqs.push_back(static_cast<bool_item &>(*c_eq).get_lit());
                         }
-                    for (const auto &stp : q.front()->get_supertypes())
-                        q.push(stp);
+                    for (const auto &stp : q.front()->get_parents())
+                        q.push(&stp.get());
                     q.pop();
                 }
-                switch (eqs.size())
-                {
-                case 0:
-                    return semitone::FALSE_lit;
-                case 1:
-                    return *eqs.cbegin();
-                default:
-                    return sat->new_conj(std::move(eqs));
-                }
             }
-            else
-                return semitone::FALSE_lit;
-        }
-        else
-            return semitone::FALSE_lit;
-    }
-    bool solver::matches(ratio::core::item &left, ratio::core::item &right) noexcept
-    {
-        if (&left == &right)
-            return true; // the two items are the same item..
-        else if (&left.get_type() != &right.get_type())
-            return false; // the two items have different types..
-        else if (&left.get_type() == &get_bool_type() && &right.get_type() == &get_bool_type())
-        { // we are comparing boolean expressions..
-            auto l_val = sat->value(static_cast<ratio::core::bool_item &>(left).get_value());
-            auto r_val = sat->value(static_cast<ratio::core::bool_item &>(right).get_value());
-            return l_val == r_val || l_val == semitone::Undefined || r_val == semitone::Undefined;
-        }
-        else if (&left.get_type() == &get_string_type() && &right.get_type() == &get_string_type()) // we are comparing string expressions..
-            return static_cast<ratio::core::string_item &>(left).get_value() == static_cast<ratio::core::string_item &>(right).get_value();
-        else if ((&left.get_type() == &get_int_type() || &left.get_type() == &get_real_type() || &left.get_type() == &get_time_type()) && (&right.get_type() == &get_int_type() || &right.get_type() == &get_real_type() || &right.get_type() == &get_time_type()))
-        { // we are comparing arithmetic expressions..
-            if (&get_type(std::vector<const ratio::core::item *>({&left, &right})) == &get_time_type())
-                return rdl_th.matches(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
-            else
-                return lra_th.matches(static_cast<ratio::core::arith_item &>(left).get_value(), static_cast<ratio::core::arith_item &>(right).get_value());
-        }
-        else if (auto lee = dynamic_cast<ratio::core::enum_item *>(&left))
-        {
-            if (auto ree = dynamic_cast<ratio::core::enum_item *>(&right))
-            { // we are comparing enums..
-                auto r_vals = ov_th.value(ree->get_var());
-                for (const auto &c_v : ov_th.value(lee->get_var()))
-                    if (r_vals.count(c_v))
-                        return true;
-                return false;
-            }
-            else
-                return ov_th.value(lee->get_var()).count(&right);
-        }
-        else if (dynamic_cast<ratio::core::enum_item *>(&right))
-            return matches(right, left); // we swap, for simplifying code..
-        else if (auto leci = dynamic_cast<ratio::core::atom *>(&left))
-        {
-            if (auto reci = dynamic_cast<ratio::core::atom *>(&right))
-            { // we are comparing atoms..
-                std::queue<ratio::core::type *> q;
-                q.push(&left.get_type());
+            else if (auto ct = dynamic_cast<riddle::complex_type *>(&lhs->get_type()))
+            {
+                std::queue<riddle::complex_type *> q;
+                q.push(ct);
                 while (!q.empty())
                 {
                     for (const auto &[f_name, f] : q.front()->get_fields())
                         if (!f->is_synthetic())
-                            if (!matches(*leci->get(f_name), *reci->get(f_name)))
+                        {
+                            auto c_eq = eq(leci->get(f_name), reci->get(f_name));
+                            if (bool_value(c_eq) == utils::False)
+                                return new bool_item(get_bool_type(), semitone::FALSE_lit);
+                            eqs.push_back(static_cast<bool_item &>(*c_eq).get_lit());
+                        }
+                    for (const auto &stp : q.front()->get_parents())
+                        q.push(&stp.get());
+                    q.pop();
+                }
+            }
+            switch (eqs.size())
+            {
+            case 0:
+                return new bool_item(get_bool_type(), semitone::FALSE_lit);
+            case 1:
+                return new bool_item(get_bool_type(), eqs[0]);
+            default:
+                return new bool_item(get_bool_type(), sat->new_conj(eqs));
+            }
+        }
+        else
+            return new bool_item(get_bool_type(), semitone::FALSE_lit);
+    }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::geq(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
+            return new bool_item(get_bool_type(), lra_th.new_geq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type())
+            return new bool_item(get_bool_type(), rdl_th.new_geq(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    ORATIOSOLVER_EXPORT riddle::expr solver::gt(const riddle::expr &lhs, const riddle::expr &rhs)
+    {
+        if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type()))
+            return new bool_item(get_bool_type(), lra_th.new_gt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type())
+            return new bool_item(get_bool_type(), rdl_th.new_gt(static_cast<arith_item &>(*lhs).get_lin(), static_cast<arith_item &>(*rhs).get_lin()));
+        else
+            throw std::runtime_error("the expression must be an integer or a real");
+    }
+
+    bool solver::matches(const riddle::expr &lhs, const riddle::expr &rhs) const noexcept
+    {
+        if (lhs == rhs) // the two expressions are the same..
+            return true;
+        else if (lhs->get_type() == get_bool_type() && rhs->get_type() == get_bool_type())
+        { // the two expressions are boolean..
+            auto lbi = sat->value(static_cast<bool_item &>(*lhs).get_lit());
+            auto rbi = sat->value(static_cast<bool_item &>(*rhs).get_lit());
+            return lbi == rbi || lbi == utils::Undefined || rbi == utils::Undefined;
+        }
+        else if ((lhs->get_type() == get_int_type() || lhs->get_type() == get_real_type() || lhs->get_type() == get_time_type()) && (rhs->get_type() == get_int_type() || rhs->get_type() == get_real_type() || rhs->get_type() == get_time_type()))
+        { // the two expressions are arithmetics..
+            auto lbi = static_cast<arith_item &>(*lhs).get_lin();
+            auto rbi = static_cast<arith_item &>(*rhs).get_lin();
+            if (lhs->get_type() == get_time_type() && rhs->get_type() == get_time_type()) // the two expressions are time arithmetics..
+                return rdl_th.matches(lbi, rbi);
+            else // the two expressions are integer or real arithmetics..
+                return lra_th.matches(lbi, rbi);
+        }
+        else if (lhs->get_type() == get_string_type() && rhs->get_type() == get_string_type()) // the two expressions are strings..
+            return static_cast<string_item &>(*lhs).get_string() == static_cast<string_item &>(*rhs).get_string();
+        else if (auto lee = dynamic_cast<enum_item *>(lhs.operator->()))
+        {                                                               // we are comparing an enum with something else..
+            auto lee_vals = ov_th.value(lee->get_var());                // get the values of the enum..
+            if (auto ree = dynamic_cast<enum_item *>(rhs.operator->())) // we are comparing enums..
+            {
+                auto ree_vals = ov_th.value(ree->get_var()); // get the values of the enum..
+                for (const auto &lv : lee_vals)
+                    for (const auto &rv : ree_vals)
+                        if (lv == rv)
+                            return true;
+                return false;
+            }
+            else // we are comparing an enum with a singleton..
+                for (const auto &lv : lee_vals)
+                    if (lv == dynamic_cast<const utils::enum_val *>(rhs.operator->()))
+                        return true;
+            return false;
+        }
+        else if (lhs->get_type() == rhs->get_type())
+        { // we are comparing two complex items..
+            if (auto p = dynamic_cast<riddle::predicate *>(&lhs->get_type()))
+            { // we are comparing two atoms..
+                auto &leci = dynamic_cast<riddle::env &>(*lhs);
+                auto &reci = dynamic_cast<riddle::env &>(*rhs);
+                std::queue<riddle::predicate *> q;
+                q.push(p);
+                while (!q.empty())
+                {
+                    for (const auto &[f_name, f] : q.front()->get_fields())
+                        if (!f->is_synthetic())
+                            if (!matches(leci.get(f_name), reci.get(f_name)))
                                 return false;
-                    for (const auto &stp : q.front()->get_supertypes())
-                        q.push(stp);
+                    for (const auto &stp : q.front()->get_parents())
+                        q.push(&stp.get());
                     q.pop();
                 }
                 return true;
             }
-            else
+            else // the two items do not match..
                 return false;
         }
-        else
+        else // the two expressions are different..
             return false;
     }
 
-    ORATIOSOLVER_EXPORT void solver::new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs)
-    { // we create a new disjunction flaw..
-        new_flaw(std::make_unique<disjunction_flaw>(*this, get_cause(), std::move(conjs)));
+    ORATIOSOLVER_EXPORT riddle::expr solver::conj(const std::vector<riddle::expr> &xprs)
+    {
+        std::vector<semitone::lit> lits;
+        for (const auto &xpr : xprs)
+            lits.push_back(static_cast<bool_item &>(*xpr).get_lit());
+        return new bool_item(get_bool_type(), sat->new_conj(lits));
     }
 
-    void solver::new_atom(ratio::core::expr &atm, const bool &is_fact)
+    ORATIOSOLVER_EXPORT riddle::expr solver::disj(const std::vector<riddle::expr> &xprs)
     {
-        // we create a new atom flaw..
-        auto af = std::make_unique<atom_flaw>(*this, get_cause(), atm, is_fact);
-        auto &c_af = *af;
-        // we store some properties..
-        atom_properties[&af->get_atom()] = {sat->new_var(), af.get()};
+        std::vector<semitone::lit> lits;
+        for (const auto &xpr : xprs)
+            lits.push_back(static_cast<bool_item &>(*xpr).get_lit());
+        if (lits.size() > 1)
+            new_flaw(new disj_flaw(*this, get_cause(), lits));
+        return new bool_item(get_bool_type(), sat->new_disj(lits));
+    }
 
-        // we store the flaw..
-        new_flaw(std::move(af));
+    ORATIOSOLVER_EXPORT riddle::expr solver::exct_one(const std::vector<riddle::expr> &xprs)
+    {
+        std::vector<semitone::lit> lits;
+        for (const auto &xpr : xprs)
+            lits.push_back(static_cast<bool_item &>(*xpr).get_lit());
+        if (lits.size() > 1)
+            new_flaw(new disj_flaw(*this, get_cause(), lits));
+        return new bool_item(get_bool_type(), sat->new_exct_one(lits));
+    }
 
-        // we check if we need to notify the new atom to any smart types..
-        if (&atm->get_type().get_scope() != this)
+    ORATIOSOLVER_EXPORT riddle::expr solver::negate(const riddle::expr &xpr) { return new bool_item(get_bool_type(), !static_cast<bool_item &>(*xpr).get_lit()); }
+
+    ORATIOSOLVER_EXPORT void solver::assert_fact(const riddle::expr &xpr)
+    { // the expression must be a boolean..
+        if (xpr->get_type() == get_bool_type())
         {
-            std::queue<ratio::core::type *> q;
-            q.push(static_cast<ratio::core::type *>(&atm->get_type().get_scope()));
-            while (!q.empty())
-            {
-                if (auto smrtp = dynamic_cast<smart_type *>(q.front()))
-                    smrtp->new_atom_flaw(c_af);
-                for (const auto &stp : q.front()->get_supertypes())
-                    q.push(stp);
-                q.pop();
-            }
+            if (!sat->new_clause({!ni, static_cast<ratio::bool_item &>(*xpr).get_lit()}))
+                throw riddle::unsolvable_exception(); // the problem is unsolvable
         }
+        else
+            throw std::runtime_error("the expression must be a boolean");
     }
 
-    void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
+    void solver::new_disjunction(std::vector<riddle::conjunction_ptr> xprs)
+    { // we create a disjunction flaw..
+        new_flaw(new disjunction_flaw(*this, get_cause(), std::move(xprs)));
+    }
+
+    riddle::expr solver::new_fact(riddle::predicate &pred)
     {
-        if (std::any_of(f->get_causes().cbegin(), f->get_causes().cend(), [this](const auto &r)
-                        { return sat->value(r->rho) == semitone::False; })) // there is no reason for introducing this flaw..
-            return;
-        // we initialize the flaw..
-        f->init(); // flaws' initialization requires being at root-level..
-        FIRE_NEW_FLAW(*f);
+        riddle::expr fact = new atom(pred, true, semitone::lit(sat->new_var()));
+        new_flaw(new atom_flaw(*this, get_cause(), fact));
+        return fact;
+    }
 
-        if (enqueue) // we enqueue the flaw..
-            gr->enqueue(*f);
-        else // we directly expand the flaw..
-            gr->expand_flaw(*f);
+    riddle::expr solver::new_goal(riddle::predicate &pred)
+    {
+        riddle::expr goal = new atom(pred, false, semitone::lit(sat->new_var()));
+        new_flaw(new atom_flaw(*this, get_cause(), goal));
+        return goal;
+    }
 
-        switch (sat->value(f->phi))
+    ORATIOSOLVER_EXPORT bool solver::is_constant(const riddle::expr &xpr) const
+    {
+        if (xpr->get_type() == get_bool_type())
+            return bool_value(xpr) != utils::Undefined;
+        else if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type())
         {
-        case semitone::True: // we have a top-level (a landmark) flaw..
-            if (enqueue || std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
-                                        { return sat->value(r->rho) == semitone::True; }))
-                active_flaws.insert(f.get()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
-            break;
-        case semitone::Undefined:   // we do not have a top-level (a landmark) flaw, nor an infeasible one..
-            bind(variable(f->phi)); // we listen for the flaw to become active..
-            break;
+            auto [lb, ub] = arith_bounds(xpr);
+            return lb == ub;
         }
-
-        phis[variable(f->phi)].emplace_back(std::move(f));
-    }
-
-    void solver::new_resolver(std::unique_ptr<resolver> r)
-    {
-        FIRE_NEW_RESOLVER(*r);
-        if (sat->value(r->rho) == semitone::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
-            bind(variable(r->rho));                    // we listen for the resolver to become inactive..
-
-        rhos[variable(r->rho)].push_back(std::move(r));
-    }
-
-    void solver::new_causal_link(flaw &f, resolver &r)
-    {
-        FIRE_CAUSAL_LINK_ADDED(f, r);
-        r.preconditions.push_back(&f);
-        f.supports.push_back(&r);
-        // activating the resolver requires the activation of the flaw..
-        [[maybe_unused]] bool new_clause = sat->new_clause({!r.rho, f.phi});
-        assert(new_clause);
-        // we introduce an ordering constraint..
-        [[maybe_unused]] bool new_dist = sat->new_clause({!r.rho, idl_th.new_distance(r.effect.position, f.position, 0)});
-        assert(new_dist);
-    }
-
-    void solver::expand_flaw(flaw &f)
-    {
-        assert(!f.expanded);
-
-        // we expand the flaw..
-        f.expand();
-
-        // we apply the flaw's resolvers..
-        for (const auto &r : f.resolvers)
-            apply_resolver(*r);
-
-        if (!sat->propagate())
-            throw ratio::core::unsolvable_exception();
-
-        // we clean up already solved flaws..
-        if (sat->value(f.phi) == semitone::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
-                                                               { return sat->value(r->rho) == semitone::True; }))
-            active_flaws.erase(&f); // this flaw has already been solved..
-    }
-
-    void solver::apply_resolver(resolver &r)
-    {
-        res = &r;      // we write down the resolver so that new flaws know their cause..
-        set_ni(r.rho); // we temporally set the ni variable..
-
-        try
-        { // we apply the resolver..
-            r.apply();
+        else if (xpr->get_type() == get_time_type())
+        {
+            auto [lb, ub] = time_bounds(xpr);
+            return lb == ub;
         }
-        catch (const ratio::core::inconsistency_exception &)
-        { // the resolver is inapplicable..
-            if (!sat->new_clause({!r.rho}))
-                throw ratio::core::unsolvable_exception();
-        }
-
-        // we make some cleanings..
-        restore_ni();
-        res = nullptr;
+        else if (is_enum(xpr))
+            return domain(xpr).size() == 1;
+        else
+            throw std::runtime_error("not implemented yet");
     }
 
-    void solver::set_cost(flaw &f, semitone::rational cost)
-    {
-        assert(f.est_cost != cost);
-        if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
-            trail.back().old_f_costs.try_emplace(&f, f.est_cost);
+    ORATIOSOLVER_EXPORT utils::lbool solver::bool_value(const riddle::expr &xpr) const { return sat->value(static_cast<bool_item &>(*xpr).get_lit()); }
+    ORATIOSOLVER_EXPORT utils::inf_rational solver::arith_value(const riddle::expr &xpr) const { return lra_th.value(static_cast<arith_item &>(*xpr).get_lin()); }
+    ORATIOSOLVER_EXPORT std::pair<utils::inf_rational, utils::inf_rational> solver::arith_bounds(const riddle::expr &xpr) const { return lra_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
+    ORATIOSOLVER_EXPORT utils::inf_rational solver::time_value(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()).first; }
+    ORATIOSOLVER_EXPORT std::pair<utils::inf_rational, utils::inf_rational> solver::time_bounds(const riddle::expr &xpr) const { return rdl_th.bounds(static_cast<arith_item &>(*xpr).get_lin()); }
 
-        // we update the flaw's estimated cost..
-        f.est_cost = cost;
-        FIRE_FLAW_COST_CHANGED(f);
-    }
-
-    ORATIOSOLVER_EXPORT void solver::assert_facts(std::vector<ratio::core::expr> facts)
+    ORATIOSOLVER_EXPORT bool solver::is_enum(const riddle::expr &xpr) const { return dynamic_cast<enum_item *>(xpr.operator->()); }
+    ORATIOSOLVER_EXPORT std::vector<riddle::expr> solver::domain(const riddle::expr &xpr) const
     {
-        for (const auto &f : facts)
-            if (!sat->new_clause({!ni, static_cast<ratio::core::bool_item &>(*f).get_value()}))
-                throw ratio::core::unsolvable_exception();
+        assert(is_enum(xpr));
+        auto vals = ov_th.value(static_cast<enum_item &>(*xpr).get_var());
+        std::vector<riddle::expr> dom; // the domain of the variable..
+        dom.reserve(vals.size());
+        for (auto &d : vals)
+            dom.emplace_back(dynamic_cast<riddle::item *>(d));
+        return dom;
     }
-    ORATIOSOLVER_EXPORT void solver::assert_facts(std::vector<semitone::lit> facts)
+    void solver::prune(const riddle::expr &xpr, const riddle::expr &val)
     {
-        for (const auto &f : facts)
-            if (!sat->new_clause({!ni, f}))
-                throw ratio::core::unsolvable_exception();
+        assert(is_enum(xpr));
+        auto alw_var = ov_th.allows(static_cast<ratio::enum_item &>(*xpr).get_var(), dynamic_cast<utils::enum_val &>(*val));
+        if (!sat->new_clause({!ni, alw_var}))
+            throw riddle::unsolvable_exception(); // the problem is unsolvable..
     }
 
     ORATIOSOLVER_EXPORT bool solver::solve()
@@ -648,12 +658,12 @@ namespace ratio::solver
 
         try
         {
-            if (root_level())
+            if (sat->root_level())
             { // we make sure that gamma is at true..
                 gr->build();
                 gr->check();
             }
-            assert(sat->value(gr->gamma) == semitone::True);
+            assert(sat->value(gr->gamma) == utils::True);
 
             // we search for a consistent solution without flaws..
 #ifdef CHECK_INCONSISTENCIES
@@ -663,18 +673,17 @@ namespace ratio::solver
             while (!active_flaws.empty())
             {
                 assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
-                                   { return sat->value(f->phi) == semitone::True; })); // all the current flaws must be active..
+                                   { return sat->value(f->phi) == utils::True; })); // all the current flaws must be active..
                 assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
-                                   { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](resolver *r)
-                                                         { return sat->value(r->rho) == semitone::True; }); })); // none of the current flaws must have already been solved..
+                                   { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
+                                                         { return sat->value(r.get().rho) == utils::True; }); })); // none of the current flaws must have already been solved..
 
                 // this is the next flaw (i.e. the most expensive one) to be solved..
-                auto best_flaw = std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f0, const auto &f1)
-                                                  { return f0->get_estimated_cost() > f1->get_estimated_cost(); });
-                assert(best_flaw != active_flaws.cend());
-                FIRE_CURRENT_FLAW(**best_flaw);
+                auto &best_flaw = **std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f0, const auto &f1)
+                                                     { return f0->get_estimated_cost() > f1->get_estimated_cost(); });
+                FIRE_CURRENT_FLAW(best_flaw);
 
-                if (is_infinite((*best_flaw)->get_estimated_cost()))
+                if (is_infinite(best_flaw.get_estimated_cost()))
                 { // we don't know how to solve this flaw :(
                     do
                     { // we have to search..
@@ -687,13 +696,13 @@ namespace ratio::solver
                 }
 
                 // this is the next resolver (i.e. the cheapest one) to be applied..
-                auto *best_res = (*best_flaw)->get_best_resolver();
-                FIRE_CURRENT_RESOLVER(*best_res);
+                auto &best_res = best_flaw.get_best_resolver();
+                FIRE_CURRENT_RESOLVER(best_res);
 
-                assert(!is_infinite(best_res->get_estimated_cost()));
+                assert(!is_infinite(best_res.get_estimated_cost()));
 
                 // we apply the resolver..
-                take_decision(best_res->get_rho());
+                take_decision(best_res.get_rho());
 
                 // we solve all the current inconsistencies..
                 solve_inconsistencies();
@@ -704,18 +713,17 @@ namespace ratio::solver
                 while (!active_flaws.empty())
                 {
                     assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
-                                       { return sat->value(f->phi) == semitone::True; })); // all the current flaws must be active..
+                                       { return sat->value(f->phi) == utils::True; })); // all the current flaws must be active..
                     assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
-                                       { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto r)
-                                                             { return sat->value(r->rho) == semitone::True; }); })); // none of the current flaws must have already been solved..
+                                       { return std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
+                                                             { return sat->value(r.get().rho) == utils::True; }); })); // none of the current flaws must have already been solved..
 
                     // this is the next flaw (i.e. the most expensive one) to be solved..
-                    auto best_flaw = std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto f0, const auto f1)
-                                                      { return f0->get_estimated_cost() > f1->get_estimated_cost(); });
-                    assert(best_flaw != active_flaws.cend());
-                    FIRE_CURRENT_FLAW(**best_flaw);
+                    auto &best_flaw = **std::min_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto f0, const auto f1)
+                                                         { return f0->get_estimated_cost() > f1->get_estimated_cost(); });
+                    FIRE_CURRENT_FLAW(best_flaw);
 
-                    if (is_infinite((*best_flaw)->get_estimated_cost()))
+                    if (is_infinite(best_flaw.get_estimated_cost()))
                     { // we don't know how to solve this flaw :(
                         do
                         { // we have to search..
@@ -726,13 +734,13 @@ namespace ratio::solver
                     }
 
                     // this is the next resolver (i.e. the cheapest one) to be applied..
-                    auto *best_res = (*best_flaw)->get_best_resolver();
-                    FIRE_CURRENT_RESOLVER(*best_res);
+                    auto &best_res = best_flaw.get_best_resolver();
+                    FIRE_CURRENT_RESOLVER(best_res);
 
-                    assert(!is_infinite(best_res->get_estimated_cost()));
+                    assert(!is_infinite(best_res.get_estimated_cost()));
 
                     // we apply the resolver..
-                    take_decision(best_res->get_rho());
+                    take_decision(best_res.get_rho());
                 }
 
                 // we solve all the current inconsistencies..
@@ -745,7 +753,7 @@ namespace ratio::solver
             FIRE_SOLUTION_FOUND();
             return true;
         }
-        catch (const ratio::core::unsolvable_exception &)
+        catch (const riddle::unsolvable_exception &)
         { // the problem is unsolvable..
             FIRE_INCONSISTENT_PROBLEM();
             return false;
@@ -754,145 +762,155 @@ namespace ratio::solver
 
     ORATIOSOLVER_EXPORT void solver::take_decision(const semitone::lit &ch)
     {
-        assert(sat->value(ch) == semitone::Undefined);
+        assert(sat->value(ch) == utils::Undefined);
 
         // we take the decision..
         if (!sat->assume(ch))
-            throw ratio::core::unsolvable_exception();
+            throw riddle::unsolvable_exception();
 
-        if (root_level()) // we make sure that gamma is at true..
+        if (sat->root_level()) // we make sure that gamma is at true..
             gr->check();
-        assert(sat->value(gr->gamma) == semitone::True);
+        assert(sat->value(gr->gamma) == utils::True);
 
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return (sat->value(f->phi) != semitone::False && f->get_estimated_cost() == (f->get_best_resolver() ? f->get_best_resolver()->get_estimated_cost() : semitone::rational::POSITIVE_INFINITY)) || is_positive_infinite(f->get_estimated_cost()); }); }));
+                                                { return (sat->value(f->phi) != utils::False && f->get_estimated_cost() == (f->get_resolvers().empty() ? utils::rational::POSITIVE_INFINITY : f->get_best_resolver().get_estimated_cost())) || is_positive_infinite(f->get_estimated_cost()); }); }));
         assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
                            { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
-                                                { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != semitone::False; }); }));
+                                                { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != utils::False; }); }));
 
         FIRE_STATE_CHANGED();
     }
 
-    std::vector<std::unique_ptr<flaw>> solver::flush_pending_flaws() { return std::move(pending_flaws); }
-
-    void solver::next()
+    ORATIOSOLVER_EXPORT void solver::next()
     {
+        assert(!sat->root_level());
+
         LOG("next..");
         if (!sat->next())
-            throw ratio::core::unsolvable_exception();
+            throw riddle::unsolvable_exception();
 
-        if (root_level()) // we make sure that gamma is at true..
+        if (sat->root_level()) // we make sure that gamma is at true..
             gr->check();
-        assert(sat->value(gr->gamma) == semitone::True);
+        assert(sat->value(gr->gamma) == utils::True);
 
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
                            { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return (sat->value(f->phi) != semitone::False && f->get_estimated_cost() == (f->get_best_resolver() ? f->get_best_resolver()->get_estimated_cost() : semitone::rational::POSITIVE_INFINITY)) || is_positive_infinite(f->get_estimated_cost()); }); }));
+                                                { return (sat->value(f->phi) != utils::False && f->get_estimated_cost() == (f->get_resolvers().empty() ? utils::rational::POSITIVE_INFINITY : f->get_best_resolver().get_estimated_cost())) || is_positive_infinite(f->get_estimated_cost()); }); }));
         assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
                            { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
-                                                { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != semitone::False; }); }));
+                                                { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != utils::False; }); }));
 
         FIRE_STATE_CHANGED();
     }
 
-    bool solver::propagate(const semitone::lit &p)
+    void solver::new_flaw(flaw_ptr f, const bool &enqueue)
     {
-        assert(cnfl.empty());
-        assert(phis.count(variable(p)) || rhos.count(variable(p)));
+        if (std::any_of(f->get_causes().cbegin(), f->get_causes().cend(), [this](const auto &r)
+                        { return sat->value(r.get().get_rho()) == utils::False; })) // there is no reason for introducing this flaw..
+            return;
 
-        if (const auto at_phis_p = phis.find(variable(p)); at_phis_p != phis.cend())
-            switch (sat->value(at_phis_p->first))
-            {
-            case semitone::True: // some flaws have been activated..
-                for (const auto &f : at_phis_p->second)
-                {
-                    assert(!active_flaws.count(f.get()));
-                    if (!root_level())
-                        trail.back().new_flaws.insert(f.get());
-                    if (std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto r)
-                                     { return sat->value(r->rho) == semitone::True; }))
-                        active_flaws.insert(f.get()); // this flaw has been activated and not yet accidentally solved..
-                    else if (!root_level())
-                        trail.back().solved_flaws.insert(f.get()); // this flaw has been accidentally solved..
-                    gr->activated_flaw(*f);
-                }
-                break;
-            case semitone::False: // some flaws have been negated..
-                for (const auto &f : at_phis_p->second)
-                {
-                    assert(!active_flaws.count(f.get()));
-                    gr->negated_flaw(*f);
-                }
-                break;
-            }
-
-        if (const auto at_rhos_p = rhos.find(variable(p)); at_rhos_p != rhos.cend())
-            switch (sat->value(at_rhos_p->first))
-            {
-            case semitone::True: // some resolvers have been activated..
-                for (const auto &r : at_rhos_p->second)
-                {
-                    if (active_flaws.erase(&r->effect) && !root_level()) // this resolver has been activated, hence its effect flaw has been resolved (notice that we remove its effect only in case it was already active)..
-                        trail.back().solved_flaws.insert(&r->effect);
-                    gr->activated_resolver(*r);
-                }
-                break;
-            case semitone::False: // some resolvers have been negated..
-                for (const auto &r : at_rhos_p->second)
-                    gr->negated_resolver(*r);
-                break;
-            }
-
-        return true;
-    }
-
-    bool solver::check()
-    {
-        assert(cnfl.empty());
-        assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
-                           { return sat->value(f->phi) == semitone::True; }));
-        assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
-                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return sat->value(f->phi) != semitone::False || is_positive_infinite(f->get_estimated_cost()); }); }));
-        assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
-                           { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
-                                                { return sat->value(r->rho) != semitone::False || is_positive_infinite(r->get_estimated_cost()); }); }));
-        return true;
-    }
-
-    void solver::push()
-    {
-        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
-
-        trail.emplace_back();
-        gr->push();
-    }
-
-    void solver::pop()
-    {
-        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
-
-        // we reintroduce the solved flaw..
-        for (const auto &f : trail.back().solved_flaws)
-            active_flaws.insert(f);
-
-        // we erase the new flaws..
-        for (const auto &f : trail.back().new_flaws)
-            active_flaws.erase(f);
-
-        // we restore the flaws' estimated costs..
-        for (const auto &[f, cost] : trail.back().old_f_costs)
-        {
-            // assert(f.first->est_cost != cost);
-            f->est_cost = cost;
-            FIRE_FLAW_COST_CHANGED(*f);
+        if (!sat->root_level())
+        { // we postpone the flaw's initialization..
+            pending_flaws.push_back(std::move(f));
+            return;
         }
 
-        trail.pop_back();
-        gr->pop();
+        // we initialize the flaw..
+        f->init(); // flaws' initialization requires being at root-level..
+        FIRE_NEW_FLAW(*f);
 
-        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+        if (enqueue) // we enqueue the flaw..
+            gr->enqueue(*f);
+        else // we directly expand the flaw..
+            gr->expand_flaw(*f);
+
+        switch (sat->value(f->phi))
+        {
+        case utils::True: // we have a top-level (a landmark) flaw..
+            if (enqueue || std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
+                                        { return sat->value(r.get().rho) == utils::True; }))
+                active_flaws.insert(f.operator->()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
+            break;
+        case utils::Undefined:      // we do not have a top-level (a landmark) flaw, nor an infeasible one..
+            bind(variable(f->phi)); // we listen for the flaw to become active..
+            break;
+        }
+
+        phis[variable(f->phi)].emplace_back(std::move(f));
+    }
+
+    void solver::new_resolver(resolver_ptr r)
+    {
+        FIRE_NEW_RESOLVER(*r);
+        if (sat->value(r->rho) == utils::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
+            bind(variable(r->rho));                 // we listen for the resolver to become inactive..
+
+        rhos[variable(r->rho)].push_back(std::move(r));
+    }
+
+    void solver::new_causal_link(flaw &f, resolver &r)
+    {
+        FIRE_CAUSAL_LINK_ADDED(f, r);
+        r.preconditions.push_back(f);
+        f.supports.push_back(r);
+        // activating the resolver requires the activation of the flaw..
+        [[maybe_unused]] bool new_clause = sat->new_clause({!r.rho, f.phi});
+        assert(new_clause);
+        // we introduce an ordering constraint..
+        [[maybe_unused]] bool new_dist = sat->new_clause({!r.rho, idl_th.new_distance(r.get_flaw().position, f.position, 0)});
+        assert(new_dist);
+    }
+
+    void solver::expand_flaw(flaw &f)
+    {
+        assert(!f.expanded);
+
+        // we expand the flaw..
+        f.expand();
+
+        // we apply the flaw's resolvers..
+        for (const auto &r : f.resolvers)
+            apply_resolver(r);
+
+        if (!sat->propagate())
+            throw riddle::unsolvable_exception(); // the problem is unsolvable..
+
+        // we clean up already solved flaws..
+        if (sat->value(f.phi) == utils::True && std::any_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
+                                                            { return sat->value(r.get().rho) == utils::True; }))
+            active_flaws.erase(&f); // this flaw has already been solved..
+    }
+
+    void solver::apply_resolver(resolver &r)
+    {
+        res = &r;      // we write down the resolver so that new flaws know their cause..
+        set_ni(r.rho); // we temporally set the ni variable..
+
+        try
+        { // we apply the resolver..
+            r.apply();
+        }
+        catch (const riddle::inconsistency_exception &)
+        { // the resolver is inapplicable..
+            if (!sat->new_clause({!r.rho}))
+                throw riddle::unsolvable_exception();
+        }
+
+        // we make some cleanings..
+        restore_ni();
+        res = nullptr;
+    }
+
+    void solver::set_cost(flaw &f, utils::rational cost)
+    {
+        assert(f.est_cost != cost);
+        if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
+            trail.back().old_f_costs.try_emplace(&f, f.est_cost);
+
+        // we update the flaw's estimated cost..
+        f.est_cost = cost;
+        FIRE_FLAW_COST_CHANGED(f);
     }
 
     void solver::solve_inconsistencies()
@@ -914,8 +932,8 @@ namespace ratio::solver
                                                         { return v.size() == 1; });
                      det_flw != incs.cend())
             { // we have deterministic flaw: i.e., a flaw with a single resolver..
-                assert(sat->value(det_flw->front().first) != semitone::False);
-                if (sat->value(det_flw->front().first) == semitone::Undefined)
+                assert(sat->value(det_flw->front().first) != utils::False);
+                if (sat->value(det_flw->front().first) == utils::Undefined)
                 { // we can learn something from it..
                     std::vector<semitone::lit> learnt;
                     learnt.reserve(trail.size() + 1);
@@ -924,11 +942,11 @@ namespace ratio::solver
                         learnt.push_back(!l);
                     record(learnt);
                     if (!sat->propagate())
-                        throw ratio::core::unsolvable_exception();
+                        throw riddle::unsolvable_exception();
 
-                    if (root_level()) // we make sure that gamma is at true..
+                    if (sat->root_level()) // we make sure that gamma is at true..
                         gr->check();
-                    assert(sat->value(gr->gamma) == semitone::True);
+                    assert(sat->value(gr->gamma) == utils::True);
                 }
 
                 // we re-collect all the inconsistencies from all the smart-types..
@@ -981,109 +999,202 @@ namespace ratio::solver
 
     void solver::reset_smart_types()
     {
-        // some cleanings..
+        // we reset the smart types..
         smart_types.clear();
-        std::queue<ratio::core::type *> q;
-        for ([[maybe_unused]] const auto &[tp_name, tp] : get_types())
-            if (!tp->is_primitive())
-                q.push(tp.get());
+        // we seek for the existing smart types..
+        std::queue<riddle::complex_type *> q;
+        for (const auto &t : get_types())
+            if (auto ct = dynamic_cast<riddle::complex_type *>(&t.get()))
+                q.push(ct);
         while (!q.empty())
         {
-            if (auto smrtp = dynamic_cast<smart_type *>(q.front()))
-                smart_types.push_back(smrtp);
-            for ([[maybe_unused]] const auto &[tp_name, tp] : q.front()->get_types())
-                q.push(tp.get());
+            auto ct = q.front();
             q.pop();
+            if (const auto st = dynamic_cast<smart_type *>(ct); st)
+                smart_types.emplace_back(st);
+            for (const auto &t : ct->get_types())
+                if (auto c_ct = dynamic_cast<riddle::complex_type *>(&t.get()))
+                    q.push(c_ct);
         }
     }
 
-    ORATIOSOLVER_EXPORT ratio::core::predicate &solver::get_impulse() const noexcept { return *imp_pred; }
-    ORATIOSOLVER_EXPORT bool solver::is_impulse(const ratio::core::type &pred) const noexcept { return get_impulse().is_assignable_from(pred); }
-    ORATIOSOLVER_EXPORT bool solver::is_impulse(const ratio::core::atom &atm) const noexcept { return is_impulse(atm.get_type()); }
-    ORATIOSOLVER_EXPORT ratio::core::predicate &solver::get_interval() const noexcept { return *int_pred; }
-    ORATIOSOLVER_EXPORT bool solver::is_interval(const ratio::core::type &pred) const noexcept { return get_interval().is_assignable_from(pred); }
-    ORATIOSOLVER_EXPORT bool solver::is_interval(const ratio::core::atom &atm) const noexcept { return is_interval(atm.get_type()); }
+    bool solver::propagate(const semitone::lit &p)
+    {
+        assert(cnfl.empty());
+        assert(phis.count(variable(p)) || rhos.count(variable(p)));
 
-    ORATIOSOLVER_EXPORT semitone::lbool solver::bool_value([[maybe_unused]] const ratio::core::bool_item &x) const noexcept { return sat->value(x.get_value()); }
-    ORATIOSOLVER_EXPORT std::pair<semitone::inf_rational, semitone::inf_rational> solver::arith_bounds([[maybe_unused]] const ratio::core::arith_item &x) const noexcept
-    {
-        if (&x.get_type() == &get_time_type())
-            return rdl_th.bounds(x.get_value());
-        else
-            return lra_th.bounds(x.get_value());
+        if (const auto at_phis_p = phis.find(variable(p)); at_phis_p != phis.cend())
+            switch (sat->value(at_phis_p->first))
+            {
+            case utils::True: // some flaws have been activated..
+                for (const auto &f : at_phis_p->second)
+                {
+                    assert(!active_flaws.count(f.operator->()));
+                    if (!sat->root_level())
+                        trail.back().new_flaws.insert(f.operator->());
+                    if (std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
+                                     { return sat->value(r.get().rho) == utils::True; }))
+                        active_flaws.insert(f.operator->()); // this flaw has been activated and not yet accidentally solved..
+                    else if (!sat->root_level())
+                        trail.back().solved_flaws.insert(f.operator->()); // this flaw has been accidentally solved..
+                    gr->activated_flaw(*f);
+                }
+                break;
+            case utils::False: // some flaws have been negated..
+                for (const auto &f : at_phis_p->second)
+                {
+                    assert(!active_flaws.count(f.operator->()));
+                    gr->negated_flaw(*f);
+                }
+                break;
+            }
+
+        if (const auto at_rhos_p = rhos.find(variable(p)); at_rhos_p != rhos.cend())
+            switch (sat->value(at_rhos_p->first))
+            {
+            case utils::True: // some resolvers have been activated..
+                for (const auto &r : at_rhos_p->second)
+                {
+                    if (active_flaws.erase(&r->f) && !sat->root_level()) // this resolver has been activated, hence its effect flaw has been resolved (notice that we remove its effect only in case it was already active)..
+                        trail.back().solved_flaws.insert(&r->f);
+                    gr->activated_resolver(*r);
+                }
+                break;
+            case utils::False: // some resolvers have been negated..
+                for (const auto &r : at_rhos_p->second)
+                    gr->negated_resolver(*r);
+                break;
+            }
+
+        return true;
     }
-    ORATIOSOLVER_EXPORT semitone::inf_rational solver::arith_value([[maybe_unused]] const ratio::core::arith_item &x) const noexcept
+
+    bool solver::check()
     {
-        if (&x.get_type() == &get_time_type())
-            return rdl_th.bounds(x.get_value()).first;
-        else
-            return lra_th.value(x.get_value());
+        assert(cnfl.empty());
+        assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
+                           { return sat->value(f->phi) == utils::True; }));
+        assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
+                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
+                                                { return sat->value(f->phi) != utils::False || is_positive_infinite(f->get_estimated_cost()); }); }));
+        assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
+                           { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
+                                                { return sat->value(r->rho) != utils::False || is_positive_infinite(r->get_estimated_cost()); }); }));
+        return true;
     }
-    ORATIOSOLVER_EXPORT std::unordered_set<semitone::var_value *> solver::enum_value([[maybe_unused]] const ratio::core::enum_item &x) const noexcept { return ov_th.value(x.get_var()); }
+
+    void solver::push()
+    {
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+
+        trail.emplace_back(); // we add a new layer to the trail..
+        gr->push();           // we push the graph..
+    }
+
+    void solver::pop()
+    {
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+
+        // we reintroduce the solved flaw..
+        for (const auto &f : trail.back().solved_flaws)
+            active_flaws.insert(f);
+
+        // we erase the new flaws..
+        for (const auto &f : trail.back().new_flaws)
+            active_flaws.erase(f);
+
+        // we restore the flaws' estimated costs..
+        for (const auto &[f, cost] : trail.back().old_f_costs)
+        {
+            // assert(f.first->est_cost != cost);
+            f->est_cost = cost;
+            FIRE_FLAW_COST_CHANGED(*f);
+        }
+
+        trail.pop_back(); // we remove the last layer from the trail..
+        gr->pop();        // we pop the graph..
+
+        LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+    }
 
 #ifdef BUILD_LISTENERS
     void solver::fire_new_flaw(const flaw &f) const
     {
-        for (const auto &l : listeners)
+        for (auto &l : listeners)
             l->new_flaw(f);
     }
     void solver::fire_flaw_state_changed(const flaw &f) const
     {
-        for (const auto &l : listeners)
+        for (auto &l : listeners)
             l->flaw_state_changed(f);
     }
     void solver::fire_flaw_cost_changed(const flaw &f) const
     {
-        for (const auto &l : listeners)
+        for (auto &l : listeners)
             l->flaw_cost_changed(f);
     }
     void solver::fire_current_flaw(const flaw &f) const
     {
-        for (const auto &l : listeners)
+        for (auto &l : listeners)
             l->current_flaw(f);
     }
     void solver::fire_new_resolver(const resolver &r) const
     {
-        for (const auto &l : listeners)
+        for (auto &l : listeners)
             l->new_resolver(r);
     }
     void solver::fire_resolver_state_changed(const resolver &r) const
     {
-        for (const auto &l : listeners)
+        for (auto &l : listeners)
             l->resolver_state_changed(r);
     }
     void solver::fire_current_resolver(const resolver &r) const
     {
-        for (const auto &l : listeners)
+        for (auto &l : listeners)
             l->current_resolver(r);
     }
     void solver::fire_causal_link_added(const flaw &f, const resolver &r) const
     {
-        for (const auto &l : listeners)
+        for (auto &l : listeners)
             l->causal_link_added(f, r);
     }
 #endif
 
     ORATIOSOLVER_EXPORT json::json to_json(const solver &rhs) noexcept
     {
-        std::set<ratio::core::item *> all_items;
-        std::set<ratio::core::atom *> all_atoms;
-        for ([[maybe_unused]] const auto &[pred_name, pred] : rhs.get_predicates())
-            for (const auto &a : pred->get_instances())
-                all_atoms.insert(static_cast<ratio::core::atom *>(&*a));
-        std::queue<ratio::core::type *> q;
-        for ([[maybe_unused]] const auto &[tp_name, tp] : rhs.get_types())
-            if (!tp->is_primitive())
-                q.push(tp.get());
+        // we collect all the items and atoms..
+        std::set<riddle::item *> all_items;
+        std::set<atom *> all_atoms;
+        for (const auto &pred : rhs.get_predicates())
+            for (const auto &a : pred.get().get_instances())
+                all_atoms.insert(static_cast<atom *>(&*a));
+        std::queue<riddle::complex_type *> q;
+        for (const auto &tp : rhs.get_types())
+            if (!tp.get().is_primitive())
+            {
+                if (auto ct = dynamic_cast<riddle::complex_type *>(&tp.get()))
+                    q.push(ct);
+                else if (auto et = dynamic_cast<riddle::enum_type *>(&tp.get()))
+                    for (const auto &etv : et->get_all_values())
+                        all_items.insert(&*etv);
+                else
+                    assert(false);
+            }
         while (!q.empty())
         {
             for (const auto &i : q.front()->get_instances())
                 all_items.insert(&*i);
-            for ([[maybe_unused]] const auto &[pred_name, pred] : q.front()->get_predicates())
-                for (const auto &a : pred->get_instances())
-                    all_atoms.insert(static_cast<ratio::core::atom *>(&*a));
-            for ([[maybe_unused]] const auto &[tp_name, tp] : q.front()->get_types())
-                q.push(tp.get());
+            for (const auto &pred : q.front()->get_predicates())
+                for (const auto &a : pred.get().get_instances())
+                    all_atoms.insert(static_cast<atom *>(&*a));
+            for (const auto &tp : q.front()->get_types())
+                if (auto ct = dynamic_cast<riddle::complex_type *>(&tp.get()))
+                    q.push(ct);
+                else if (auto et = dynamic_cast<riddle::enum_type *>(&tp.get()))
+                    for (const auto &etv : et->get_all_values())
+                        all_items.insert(&*etv);
+                else
+                    assert(false);
             q.pop();
         }
 
@@ -1091,7 +1202,7 @@ namespace ratio::solver
 
         if (!all_items.empty())
         {
-            json::array j_itms;
+            json::json j_itms(json::json_type::array);
             for (const auto &itm : all_items)
                 j_itms.push_back(to_json(*itm));
             j_core["items"] = std::move(j_itms);
@@ -1099,7 +1210,7 @@ namespace ratio::solver
 
         if (!all_atoms.empty())
         {
-            json::array j_atms;
+            json::json j_atms(json::json_type::array);
             for (const auto &atm : all_atoms)
                 j_atms.push_back(to_json(*atm));
             j_core["atoms"] = std::move(j_atms);
@@ -1112,27 +1223,27 @@ namespace ratio::solver
 
     ORATIOSOLVER_EXPORT json::json to_timelines(solver &rhs) noexcept
     {
-        json::array tls;
+        json::json tls(json::json_type::array);
 
         // for each pulse, the atoms starting at that pulse..
-        std::map<semitone::inf_rational, std::set<ratio::core::atom *>> starting_atoms;
+        std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
         // all the pulses of the timeline..
-        std::set<semitone::inf_rational> pulses;
-        for ([[maybe_unused]] const auto &[p_name, p] : rhs.get_predicates())
-            if (rhs.is_impulse(*p) || rhs.is_interval(*p))
-                for (const auto &atm : p->get_instances())
-                    if (&atm->get_type().get_core() != &rhs && rhs.get_sat_core().value(get_sigma(rhs, static_cast<ratio::core::atom &>(*atm))) == semitone::True)
+        std::set<utils::inf_rational> pulses;
+        for (const auto &pred : rhs.get_predicates())
+            if (rhs.is_impulse(pred.get()) || rhs.is_interval(pred.get()))
+                for (const auto &atm : pred.get().get_instances())
+                    if (&atm->get_type().get_core() != &rhs && rhs.get_sat_core().value(static_cast<atom &>(*atm).get_sigma()) == utils::True)
                     {
-                        semitone::inf_rational start = rhs.get_core().arith_value(rhs.is_impulse(*p) ? static_cast<ratio::core::atom &>(*atm).get(RATIO_AT) : static_cast<ratio::core::atom &>(*atm).get(RATIO_START));
-                        starting_atoms[start].insert(dynamic_cast<ratio::core::atom *>(&*atm));
+                        utils::inf_rational start = rhs.get_core().arith_value(rhs.is_impulse(pred.get()) ? static_cast<atom &>(*atm).get(RATIO_AT) : static_cast<atom &>(*atm).get(RATIO_START));
+                        starting_atoms[start].insert(dynamic_cast<atom *>(&*atm));
                         pulses.insert(start);
                     }
         if (!starting_atoms.empty())
         {
             json::json slv_tl;
-            slv_tl["id"] = reinterpret_cast<uintptr_t>(&rhs);
+            slv_tl["id"] = get_id(rhs);
             slv_tl["name"] = "solver";
-            json::array j_atms;
+            json::json j_atms(json::json_type::array);
             for (const auto &p : pulses)
                 for (const auto &atm : starting_atoms.at(p))
                     j_atms.push_back(to_json(*atm));
@@ -1140,55 +1251,55 @@ namespace ratio::solver
             tls.push_back(std::move(slv_tl));
         }
 
-        std::queue<ratio::core::type *> q;
-        for ([[maybe_unused]] const auto &[tp_name, tp] : rhs.get_types())
-            q.push(tp.get());
+        std::queue<riddle::complex_type *> q;
+        for (const auto &tp : rhs.get_types())
+            if (!tp.get().is_primitive())
+                q.push(static_cast<riddle::complex_type *>(&tp.get()));
 
         while (!q.empty())
         {
             if (auto tl_tp = dynamic_cast<timeline *>(q.front()))
             {
                 auto j_tls = tl_tp->extract();
-                json::array &tls_array = j_tls;
-                for (size_t i = 0; i < tls_array.size(); ++i)
-                    tls.push_back(std::move(tls_array[i]));
+                for (size_t i = 0; i < j_tls.size(); ++i)
+                    tls.push_back(std::move(j_tls[i]));
             }
-            for (const auto &[tp_name, st] : q.front()->get_types())
-                q.push(st.get());
+            for (const auto &tp : q.front()->get_types())
+                q.push(static_cast<riddle::complex_type *>(&tp.get()));
             q.pop();
         }
 
         return tls;
     }
 
-    ORATIOSOLVER_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept
+    json::json to_json(const riddle::item &rhs) noexcept
     {
-        solver &slv = static_cast<solver &>(rhs.get_type().get_core());
         json::json j_itm;
         j_itm["id"] = get_id(rhs);
         j_itm["type"] = rhs.get_type().get_full_name();
 #ifdef COMPUTE_NAMES
+        auto &slv = static_cast<const solver &>(rhs.get_type().get_core());
         auto name = slv.guess_name(rhs);
         if (!name.empty())
             j_itm["name"] = name;
 #endif
-        if (auto ci = dynamic_cast<const ratio::core::complex_item *>(&rhs))
+        if (auto ci = dynamic_cast<const riddle::complex_item *>(&rhs))
         {
-            if (dynamic_cast<const ratio::core::enum_item *>(&rhs))
+            if (dynamic_cast<const riddle::enum_item *>(&rhs))
                 j_itm["val"] = value(rhs);
             if (!ci->get_vars().empty())
                 j_itm["exprs"] = to_json(ci->get_vars());
-            if (auto atm = dynamic_cast<const ratio::core::atom *>(&rhs))
-                j_itm["sigma"] = get_sigma(slv, *atm);
+            if (auto atm = dynamic_cast<const atom *>(&rhs))
+                j_itm["sigma"] = variable(atm->get_sigma());
         }
         else
             j_itm["value"] = value(rhs);
 
         return j_itm;
     }
-    ORATIOSOLVER_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept
+    json::json to_json(const std::map<std::string, riddle::expr> &vars) noexcept
     {
-        json::array j_exprs;
+        json::json j_exprs;
         for (const auto &[xpr_name, xpr] : vars)
         {
             json::json j_var;
@@ -1199,69 +1310,89 @@ namespace ratio::solver
         }
         return j_exprs;
     }
-    ORATIOSOLVER_EXPORT json::json value(const ratio::core::item &rhs) noexcept
-    {
-        solver &slv = static_cast<solver &>(rhs.get_type().get_core());
-        if (&rhs.get_type() == &slv.get_bool_type())
-        {
-            const auto val = static_cast<const ratio::core::bool_item &>(rhs).get_value();
 
+    json::json value(const riddle::item &itm) noexcept
+    {
+        const solver &slv = static_cast<const solver &>(itm.get_type().get_scope().get_core());
+        if (itm.get_type() == slv.get_bool_type())
+        {
+            auto val = static_cast<const bool_item &>(itm).get_lit();
             json::json j_val;
             j_val["lit"] = (sign(val) ? "b" : "!b") + std::to_string(variable(val));
             switch (slv.get_sat_core().value(val))
             {
-            case semitone::True:
+            case utils::True:
                 j_val["val"] = "True";
                 break;
-            case semitone::False:
+            case utils::False:
                 j_val["val"] = "False";
                 break;
-            case semitone::Undefined:
+            case utils::Undefined:
                 j_val["val"] = "Undefined";
                 break;
             }
             return j_val;
         }
-        else if (&rhs.get_type() == &slv.get_real_type())
+        else if (itm.get_type() == slv.get_int_type() || itm.get_type() == slv.get_real_type())
         {
-            const auto c_lin = static_cast<const ratio::core::arith_item &>(rhs).get_value();
-            const auto [lb, ub] = slv.get_lra_theory().bounds(c_lin);
-            const auto val = slv.get_lra_theory().value(c_lin);
+            auto lin = static_cast<const arith_item &>(itm).get_lin();
+            const auto [lb, ub] = slv.get_lra_theory().bounds(lin);
+            const auto val = slv.get_lra_theory().value(lin);
 
             json::json j_val = to_json(val);
-            j_val["lin"] = to_string(c_lin);
+            j_val["lin"] = to_string(lin);
             if (!is_negative_infinite(lb))
                 j_val["lb"] = to_json(lb);
             if (!is_positive_infinite(ub))
                 j_val["ub"] = to_json(ub);
             return j_val;
         }
-        else if (&rhs.get_type() == &slv.get_time_type())
+        else if (itm.get_type() == slv.get_time_type())
         {
-            const auto c_lin = static_cast<const ratio::core::arith_item &>(rhs).get_value();
-            const auto [lb, ub] = slv.get_rdl_theory().bounds(c_lin);
+            auto lin = static_cast<const arith_item &>(itm).get_lin();
+            const auto [lb, ub] = slv.get_rdl_theory().bounds(lin);
 
             json::json j_val = to_json(lb);
-            j_val["lin"] = to_string(c_lin);
+            j_val["lin"] = to_string(lin);
             if (!is_negative_infinite(lb))
                 j_val["lb"] = to_json(lb);
             if (!is_positive_infinite(ub))
                 j_val["ub"] = to_json(ub);
             return j_val;
         }
-        else if (&rhs.get_type() == &slv.get_string_type())
-            return json::string_val(static_cast<const ratio::core::string_item &>(rhs).get_value());
-        else if (auto ev = dynamic_cast<const ratio::core::enum_item *>(&rhs))
+        else if (itm.get_type() == slv.get_string_type())
+            return static_cast<const string_item &>(itm).get_string();
+        else if (auto ev = dynamic_cast<const enum_item *>(&itm))
         {
             json::json j_val;
             j_val["var"] = std::to_string(ev->get_var());
-            json::array vals;
+            json::json vals;
             for (const auto &v : slv.get_ov_theory().value(ev->get_var()))
-                vals.push_back(get_id(static_cast<ratio::core::item &>(*v)));
+                vals.push_back(get_id(dynamic_cast<riddle::item &>(*v)));
             j_val["vals"] = std::move(vals);
             return j_val;
         }
         else
-            return get_id(rhs);
+            return get_id(itm);
     }
-} // namespace ratio::solver
+
+    std::string to_string(const atom &atm) noexcept
+    {
+        std::string str = (atm.is_fact() ? "fact" : "goal");
+        str += " σ" + std::to_string(variable(atm.get_sigma()));
+        str += " " + atm.get_type().get_name();
+        switch (static_cast<const solver &>(atm.get_core()).get_sat_core().value(atm.get_sigma()))
+        {
+        case utils::True: // the atom is active..
+            str += " (active)";
+            break;
+        case utils::False: // the atom is unified..
+            str += " (unified)";
+            break;
+        case utils::Undefined: // the atom is inactive..
+            str += " (inactive)";
+            break;
+        }
+        return str;
+    }
+} // namespace ratio

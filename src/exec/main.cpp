@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-int main(int argc, char *argv[])
+int main(int argc, char const *argv[])
 {
     if (argc < 3)
     {
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 #endif
     std::cout << "..\n";
 
-    ratio::solver::solver s;
+    ratio::solver s;
     try
     {
         std::cout << "parsing input files..\n";
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
         std::ofstream sol_file;
         sol_file.open(sol_name);
-        sol_file << to_json(s).dump();
+        sol_file << to_json(s).to_string();
         sol_file.close();
     }
     catch (const std::exception &ex)

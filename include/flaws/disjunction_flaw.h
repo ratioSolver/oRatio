@@ -2,38 +2,34 @@
 
 #include "flaw.h"
 #include "resolver.h"
-#include "core_defs.h"
 #include "conjunction.h"
 
-namespace ratio::solver
+namespace ratio
 {
   class disjunction_flaw final : public flaw
   {
   public:
-    disjunction_flaw(solver &slv, std::vector<resolver *> causes, std::vector<std::unique_ptr<ratio::core::conjunction>> conjs);
-    disjunction_flaw(const disjunction_flaw &orig) = delete;
-
-    ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
+    disjunction_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, std::vector<riddle::conjunction_ptr> xprs);
 
   private:
     void compute_resolvers() override;
 
+    json::json get_data() const noexcept override;
+
     class choose_conjunction final : public resolver
     {
     public:
-      choose_conjunction(disjunction_flaw &disj_flaw, std::unique_ptr<ratio::core::conjunction> conj);
-      choose_conjunction(const choose_conjunction &that) = delete;
+      choose_conjunction(disjunction_flaw &df, const riddle::conjunction_ptr &xpr);
 
-      ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
-
-    private:
       void apply() override;
 
+      json::json get_data() const noexcept override;
+
     private:
-      std::unique_ptr<ratio::core::conjunction> conj; // the conjunction to execute..
+      const riddle::conjunction_ptr &xpr;
     };
 
   private:
-    std::vector<std::unique_ptr<ratio::core::conjunction>> conjs; // the disjunction to execute..
+    std::vector<riddle::conjunction_ptr> xprs; // the disjunction..
   };
-} // namespace ratio::solver
+} // namespace ratio

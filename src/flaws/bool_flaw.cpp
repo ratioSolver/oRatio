@@ -1,27 +1,44 @@
 #include "bool_flaw.h"
 #include "solver.h"
-#include "item.h"
 
-namespace ratio::solver
+namespace ratio
 {
-    bool_flaw::bool_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::bool_item &b_itm) : flaw(slv, std::move(causes), true), b_itm(b_itm) {}
-
-    ORATIOSOLVER_EXPORT json::json bool_flaw::get_data() const noexcept
-    {
-        json::json j_f;
-        j_f["type"] = "bool";
-        return j_f;
-    }
+    bool_flaw::bool_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, riddle::expr &b_item) : flaw(s, std::move(causes)), b_item(b_item) {}
 
     void bool_flaw::compute_resolvers()
     {
-        add_resolver(std::make_unique<choose_value>(semitone::rational(1, 2), *this, b_itm.get_value()));
-        add_resolver(std::make_unique<choose_value>(semitone::rational(1, 2), *this, !b_itm.get_value()));
+        auto &bi = static_cast<bool_item &>(*b_item);
+        switch (get_solver().get_sat_core().value(bi.get_lit()))
+        {
+        case utils::True: // we add only the positive resolver (which is already active)
+            add_resolver(new choose_value(*this, bi.get_lit()));
+            break;
+        case utils::False: // we add only the negative resolver (which is already active)
+            add_resolver(new choose_value(*this, !bi.get_lit()));
+            break;
+        case utils::Undefined: // we add both resolvers
+            add_resolver(new choose_value(*this, bi.get_lit()));
+            add_resolver(new choose_value(*this, !bi.get_lit()));
+            break;
+        }
     }
 
-    bool_flaw::choose_value::choose_value(semitone::rational cst, bool_flaw &bl_flaw, const semitone::lit &val) : resolver(val, cst, bl_flaw) {}
+    json::json bool_flaw::get_data() const noexcept
+    {
+        json::json data;
+        data["type"] = "bool_flaw";
+        data["item"] = get_id(*b_item);
+        return data;
+    }
 
-    ORATIOSOLVER_EXPORT json::json bool_flaw::choose_value::get_data() const noexcept { return json::object(); }
+    bool_flaw::choose_value::choose_value(bool_flaw &ef, const semitone::lit &rho) : resolver(ef, rho, utils::rational(1, 2)) {}
 
     void bool_flaw::choose_value::apply() {}
-} // namespace ratio::solver
+
+    json::json bool_flaw::choose_value::get_data() const noexcept
+    {
+        json::json data;
+        data["type"] = "choose_value";
+        return data;
+    }
+} // namespace ratio

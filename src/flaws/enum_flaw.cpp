@@ -1,42 +1,43 @@
 #include "enum_flaw.h"
 #include "solver.h"
+#include "ov_theory.h"
 
-namespace ratio::solver
+namespace ratio
 {
-    enum_flaw::enum_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::enum_item &v_itm) : flaw(slv, std::move(causes), true), v_itm(v_itm) {}
+    enum_flaw::enum_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, enum_item &ei) : flaw(s, std::move(causes), true), ei(ei) {}
+
+    void enum_flaw::compute_resolvers()
+    { // we add a resolver for each possible value of the enum..
+        auto dom = get_solver().domain(&ei);
+        for (auto &v : dom)
+            add_resolver(new enum_resolver(*this, utils::rational(1, static_cast<utils::I>(dom.size())), dynamic_cast<utils::enum_val &>(*v)));
+    }
 
     json::json enum_flaw::get_data() const noexcept
     {
-        json::json j_f;
-        j_f["type"] = "enum";
-        return j_f;
+        json::json j;
+        j["type"] = "enum";
+        return j;
     }
 
-    void enum_flaw::compute_resolvers()
-    {
-        std::unordered_set<semitone::var_value *> vals = get_solver().get_ov_theory().value(v_itm.get_var());
-        for (const auto &v : vals)
-            add_resolver(std::make_unique<choose_value>(semitone::rational(1, static_cast<semitone::I>(vals.size())), *this, *v));
+    enum_flaw::enum_resolver::enum_resolver(enum_flaw &ef, const utils::rational &cost, utils::enum_val &val) : resolver(ef, cost), val(val) {}
+
+    void enum_flaw::enum_resolver::apply()
+    { // we add a clause to the SAT solver that enforces the enum value as a consequence of the resolver's activation..
+        if (!get_solver().get_sat_core().new_clause({!get_rho(), get_solver().get_ov_theory().allows(static_cast<const enum_flaw &>(get_flaw()).ei.get_var(), val)}))
+            throw riddle::unsolvable_exception();
     }
 
-    enum_flaw::choose_value::choose_value(semitone::rational cst, enum_flaw &enm_flaw, semitone::var_value &val) : resolver(enm_flaw.get_solver().get_ov_theory().allows(enm_flaw.v_itm.get_var(), val), cst, enm_flaw), v(enm_flaw.v_itm.get_var()), val(val) {}
-
-    json::json enum_flaw::choose_value::get_data() const noexcept
+    json::json enum_flaw::enum_resolver::get_data() const noexcept
     {
-        json::json j_r;
-        j_r["type"] = "assignment";
+        json::json j;
+        j["type"] = "assignment";
 #ifdef COMPUTE_NAMES
-        auto name = get_solver().guess_name(static_cast<ratio::core::item &>(val));
+        auto name = get_solver().guess_name(dynamic_cast<riddle::item &>(val));
         if (!name.empty())
-            j_r["name"] = name;
+            j["name"] = name;
 #endif
-        j_r["value"] = value(static_cast<ratio::core::item &>(val));
-        return j_r;
+        j["value"] = value(dynamic_cast<riddle::item &>(val));
+        return j;
     }
-
-    void enum_flaw::choose_value::apply()
-    { // activating this resolver assigns a value to the variable..
-        if (!get_solver().get_sat_core().new_clause({!get_rho(), get_solver().get_ov_theory().allows(static_cast<enum_flaw &>(get_effect()).v_itm.get_var(), val)}))
-            throw ratio::core::unsolvable_exception();
-    }
-} // namespace ratio::solver
+} // namespace ratio

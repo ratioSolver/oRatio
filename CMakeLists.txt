@@ -26,21 +26,24 @@ set_property(CACHE HEURISTIC_TYPE PROPERTY STRINGS ${HEURISTIC_TYPES})
 option(DEFERRABLE_FLAWS "Check for deferrable flaws" ON)
 option(GRAPH_PRUNING "Prunes the causal graph before starting the search" ON)
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
-option(BUILD_LISTENERS "Builds the solver's listeners" OFF)
-option(ADD_COVERAGE "Add coverage" OFF)
 
-add_subdirectory(extern/core)
+set(JSON_INCLUDE_UTILS OFF CACHE BOOL "Include utils library" FORCE)
+
+add_subdirectory(extern/riddle)
+add_subdirectory(extern/semitone)
 
 file(GLOB RATIO_SOURCES src/*.cpp src/flaws/*.cpp src/types/*.cpp src/heuristics/*.cpp)
 file(GLOB RATIO_HEADERS include/*.h include/flaws/*.h include/types/*.h include/heuristics/*.h)
 
 add_library(${PROJECT_NAME} SHARED ${RATIO_SOURCES})
+add_dependencies(${PROJECT_NAME} RiDDLe SeMiTONE)
 GENERATE_EXPORT_HEADER(${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/flaws $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/types $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/include/heuristics $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:>)
-target_link_libraries(${PROJECT_NAME} PRIVATE ratioCore RiDDLe SeMiTONE json)
+target_link_libraries(${PROJECT_NAME} PUBLIC RiDDLe SeMiTONE)
 
 add_executable(oRatio src/exec/main.cpp)
-target_link_libraries(oRatio PRIVATE oRatioSolver ratioCore RiDDLe SeMiTONE json)
+add_dependencies(oRatio ${PROJECT_NAME})
+target_link_libraries(oRatio PRIVATE oRatioSolver)
 
 message(STATUS "Temporal network type:  ${TEMPORAL_NETWORK_TYPE}")
 if(TEMPORAL_NETWORK_TYPE STREQUAL DL)
@@ -76,11 +79,6 @@ endif()
 message(STATUS "Check inconsistencies:  ${CHECK_INCONSISTENCIES}")
 if(CHECK_INCONSISTENCIES)
     target_compile_definitions(${PROJECT_NAME} PRIVATE CHECK_INCONSISTENCIES)
-endif()
-
-message(STATUS "Build solver listeners: ${BUILD_LISTENERS}")
-if(BUILD_LISTENERS)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC BUILD_LISTENERS)
 endif()
 
 if(BUILD_TESTING)

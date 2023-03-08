@@ -2,38 +2,36 @@
 
 #include "flaw.h"
 #include "resolver.h"
-#include "item.h"
+#include "enum.h"
 
-namespace ratio::solver
+namespace ratio
 {
+  class enum_item;
+
   class enum_flaw final : public flaw
   {
   public:
-    enum_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::enum_item &v_itm);
-    enum_flaw(const enum_flaw &orig) = delete;
-
-    ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
+    enum_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, enum_item &ei);
 
   private:
     void compute_resolvers() override;
 
-    class choose_value final : public resolver
+    json::json get_data() const noexcept override;
+
+    class enum_resolver final : public resolver
     {
     public:
-      choose_value(semitone::rational cst, enum_flaw &enm_flaw, semitone::var_value &val);
-      choose_value(const choose_value &that) = delete;
+      enum_resolver(enum_flaw &ef, const utils::rational &cost, utils::enum_val &val);
 
-      ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
-
-    private:
       void apply() override;
 
+      json::json get_data() const noexcept override;
+
     private:
-      semitone::var v;          // the object variable whose value has to be decided..
-      semitone::var_value &val; // the decided value..
+      utils::enum_val &val;
     };
 
   private:
-    ratio::core::enum_item &v_itm; // the enum variable whose value has to be decided..
+    enum_item &ei;
   };
-} // namespace ratio::solver
+} // namespace ratio

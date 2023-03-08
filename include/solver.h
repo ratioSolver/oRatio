@@ -2,12 +2,13 @@
 
 #include "oratiosolver_export.h"
 #include "core.h"
-#include "theory.h"
+#include "item.h"
 #include "sat_stack.h"
 #include "lra_theory.h"
 #include "ov_theory.h"
 #include "idl_theory.h"
 #include "rdl_theory.h"
+#include "graph.h"
 
 #define RATIO_AT "at"
 #define RATIO_START "start"
@@ -32,23 +33,102 @@
 #define FIRE_CAUSAL_LINK_ADDED(f, r)
 #endif
 
-namespace ratio::solver
+namespace ratio
 {
-  class causal_graph;
-  class flaw;
   class atom_flaw;
-  class resolver;
   class smart_type;
 #ifdef BUILD_LISTENERS
   class solver_listener;
 #endif
 
-  class solver : public ratio::core::core, public semitone::theory
+  /**
+   * @brief A class for representing boolean items.
+   *
+   */
+  class bool_item : public riddle::item
   {
-    friend class causal_graph;
-    friend class flaw;
+  public:
+    bool_item(riddle::type &t, const semitone::lit &l) : item(t), l(l) {}
+
+    semitone::lit get_lit() const { return l; }
+
+  private:
+    const semitone::lit l;
+  };
+
+  /**
+   * @brief A class for representing arithmetic items. Arithmetic items can be either integers, reals, or time points.
+   *
+   */
+  class arith_item : public riddle::item
+  {
+  public:
+    arith_item(riddle::type &t, const semitone::lin &l) : item(t), l(l) {}
+
+    semitone::lin get_lin() const { return l; }
+
+  private:
+    const semitone::lin l;
+  };
+
+  /**
+   * @brief A class for representing string items.
+   *
+   */
+  class string_item : public riddle::item, public utils::enum_val
+  {
+  public:
+    string_item(riddle::type &t, const std::string &s = "") : item(t), s(s) {}
+
+    const std::string &get_string() const { return s; }
+
+  private:
+    const std::string s;
+  };
+
+  /**
+   * @brief A class for representing enum items.
+   *
+   */
+  class enum_item : public riddle::enum_item
+  {
+  public:
+    enum_item(riddle::type &t, const semitone::var &ev) : riddle::enum_item(t), ev(ev) {}
+
+    semitone::var get_var() const { return ev; }
+
+  private:
+    const semitone::var ev;
+  };
+
+  /**
+   * @brief A class for representing atoms.
+   *
+   */
+  class atom : public riddle::atom
+  {
     friend class atom_flaw;
+
+  public:
+    atom(riddle::predicate &p, bool is_fact, semitone::lit sigma) : riddle::atom(p, is_fact), sigma(sigma) {}
+
+    semitone::lit get_sigma() const { return sigma; }
+
+    atom_flaw &get_reason() const { return *reason; }
+
+    friend std::string to_string(const atom &a) noexcept;
+
+  private:
+    semitone::lit sigma; // the literal that represents this atom..
+    atom_flaw *reason;   // the atom_flaw that caused this atom to be created..
+  };
+
+  class solver : public riddle::core, public semitone::theory
+  {
+    friend class flaw;
     friend class resolver;
+    friend class atom_flaw;
+    friend class graph;
     friend class smart_type;
 #ifdef BUILD_LISTENERS
     friend class solver_listener;
@@ -56,169 +136,204 @@ namespace ratio::solver
 
   public:
     ORATIOSOLVER_EXPORT solver(const bool &i = true);
-    ORATIOSOLVER_EXPORT solver(std::unique_ptr<causal_graph> gr, const bool &i = true);
-    solver(const solver &orig) = delete;
-    ORATIOSOLVER_EXPORT ~solver();
+    ORATIOSOLVER_EXPORT solver(graph_ptr g, const bool &i = true);
+
+    /**
+     * @brief Initialize the solver.
+     *
+     */
+    ORATIOSOLVER_EXPORT void init();
 
     ORATIOSOLVER_EXPORT void read(const std::string &script) override;
     ORATIOSOLVER_EXPORT void read(const std::vector<std::string> &files) override;
-
-    /**
-     * Initializes the solver.
-     */
-    ORATIOSOLVER_EXPORT void init() noexcept;
-
-    ORATIOSOLVER_EXPORT ratio::core::expr new_bool() noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr new_int() noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr new_real() noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr new_time_point() noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr new_string() noexcept override;
-
-    ORATIOSOLVER_EXPORT ratio::core::expr new_enum(ratio::core::type &tp, const std::vector<ratio::core::expr> &allowed_vals) override;
-    ORATIOSOLVER_EXPORT ratio::core::expr get_enum(ratio::core::enum_item &var, const std::string &name) override;
-    ORATIOSOLVER_EXPORT void remove(ratio::core::expr &var, semitone::var_value &val) override;
-
-    ORATIOSOLVER_EXPORT ratio::core::expr negate(const ratio::core::expr &var) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr conj(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr disj(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr exct_one(const std::vector<ratio::core::expr> &exprs) noexcept override;
-
-    ORATIOSOLVER_EXPORT ratio::core::expr add(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr sub(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr mult(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr div(const std::vector<ratio::core::expr> &exprs) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr minus(const ratio::core::expr &ex) noexcept override;
-
-    ORATIOSOLVER_EXPORT ratio::core::expr lt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr leq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr eq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr geq(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    ORATIOSOLVER_EXPORT ratio::core::expr gt(const ratio::core::expr &left, const ratio::core::expr &right) noexcept override;
-    /**
-     * @brief Checks whether the two items can be made equal.
-     *
-     * @param left The first item to check if it can be made equal to the other.
-     * @param right The second expression to check if it can be made equal to the other.
-     * @return true If the two items can be made equal.
-     * @return false If the two items can not be made equal.
-     */
-    bool matches(ratio::core::item &left, ratio::core::item &right) noexcept;
-
-    inline semitone::lit get_ni() const noexcept { return ni; }
-    inline void set_ni(const semitone::lit &v) noexcept
-    {
-      tmp_ni = ni;
-      ni = v;
-    }
-
-    inline void restore_ni() noexcept
-    {
-      ni = tmp_ni;
-    }
-
-    ORATIOSOLVER_EXPORT void new_disjunction(std::vector<std::unique_ptr<ratio::core::conjunction>> conjs) override;
-
-  private:
-    void new_atom(ratio::core::expr &atm, const bool &is_fact = true) override;
-    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
-    void new_resolver(std::unique_ptr<resolver> r);                     // notifies the solver that a new resolver `r` has been created..
-    void new_causal_link(flaw &f, resolver &r);                         // notifies the solver that a new causal link between a flaw `f` and a resolver `r` has been created..
-
-    void expand_flaw(flaw &f);                       // expands the given flaw..
-    void apply_resolver(resolver &r);                // applies the given resolver..
-    void set_cost(flaw &f, semitone::rational cost); // sets the cost of the given flaw..
-
-    inline const std::vector<resolver *> get_cause()
-    {
-      if (res)
-        return {res};
-      else
-        return {};
-    }
-
-    semitone::lit eq(ratio::core::item &left, ratio::core::item &right) noexcept;
-
-  public:
-    ORATIOSOLVER_EXPORT void assert_facts(std::vector<ratio::core::expr> facts) override;
-    ORATIOSOLVER_EXPORT void assert_facts(std::vector<semitone::lit> facts);
 
     /**
      * @brief Get the linear-real-arithmetic theory.
      *
      * @return semitone::lra_theory& The linear-real-arithmetic theory.
      */
-    inline semitone::lra_theory &get_lra_theory() noexcept { return lra_th; }
+    semitone::lra_theory &get_lra_theory() { return lra_th; }
+    /**
+     * @brief Get the linear-real-arithmetic theory.
+     *
+     * @return const semitone::lra_theory& The linear-real-arithmetic theory.
+     */
+    const semitone::lra_theory &get_lra_theory() const { return lra_th; }
     /**
      * @brief Get the object-variable theory.
      *
      * @return semitone::ov_theory& The object-variable theory.
      */
-    inline semitone::ov_theory &get_ov_theory() noexcept { return ov_th; }
+    semitone::ov_theory &get_ov_theory() { return ov_th; }
+    /**
+     * @brief Get the object-variable theory.
+     *
+     * @return const semitone::ov_theory& The object-variable theory.
+     */
+    const semitone::ov_theory &get_ov_theory() const { return ov_th; }
     /**
      * @brief Get the integer difference logic theory.
      *
      * @return semitone::idl_theory& The integer difference logic theory.
      */
-    inline semitone::idl_theory &get_idl_theory() noexcept { return idl_th; }
+    semitone::idl_theory &get_idl_theory() { return idl_th; }
+    /**
+     * @brief Get the integer difference logic theory.
+     *
+     * @return const semitone::idl_theory& The integer difference logic theory.
+     */
+    const semitone::idl_theory &get_idl_theory() const { return idl_th; }
     /**
      * @brief Get the real difference logic theory.
      *
      * @return semitone::rdl_theory& The real difference logic theory.
      */
-    inline semitone::rdl_theory &get_rdl_theory() noexcept { return rdl_th; }
+    semitone::rdl_theory &get_rdl_theory() { return rdl_th; }
+    /**
+     * @brief Get the real difference logic theory.
+     *
+     * @return const semitone::rdl_theory& The real difference logic theory.
+     */
+    const semitone::rdl_theory &get_rdl_theory() const { return rdl_th; }
 
-    ORATIOSOLVER_EXPORT semitone::lbool bool_value([[maybe_unused]] const ratio::core::bool_item &x) const noexcept override;
-    ORATIOSOLVER_EXPORT std::pair<semitone::inf_rational, semitone::inf_rational> arith_bounds([[maybe_unused]] const ratio::core::arith_item &x) const noexcept override;
-    ORATIOSOLVER_EXPORT semitone::inf_rational arith_value([[maybe_unused]] const ratio::core::arith_item &x) const noexcept override;
-    ORATIOSOLVER_EXPORT std::unordered_set<semitone::var_value *> enum_value([[maybe_unused]] const ratio::core::enum_item &x) const noexcept override;
+    ORATIOSOLVER_EXPORT riddle::expr new_bool() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_bool(bool value) override;
 
-    inline size_t decision_level() const noexcept { return trail.size(); } // returns the current decision level..
-    inline bool root_level() const noexcept { return trail.empty(); }      // checks whether the current decision level is root level..
+    ORATIOSOLVER_EXPORT riddle::expr new_int() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_int(utils::I value) override;
 
-    const causal_graph &get_causal_graph() const noexcept { return *gr; }
-    const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
+    ORATIOSOLVER_EXPORT riddle::expr new_real() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_real(utils::rational value) override;
+
+    ORATIOSOLVER_EXPORT riddle::expr new_time_point() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_time_point(utils::rational value) override;
+
+    ORATIOSOLVER_EXPORT riddle::expr new_string() override;
+    ORATIOSOLVER_EXPORT riddle::expr new_string(const std::string &value) override;
+
+    riddle::expr new_item(riddle::complex_type &tp) override;
+
+    ORATIOSOLVER_EXPORT riddle::expr new_enum(riddle::type &tp, const std::vector<riddle::expr> &xprs) override;
+    riddle::expr get_enum(riddle::expr &xpr, const std::string &name) override;
+
+    ORATIOSOLVER_EXPORT riddle::expr add(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr sub(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr mul(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr div(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr minus(const riddle::expr &xpr) override;
+
+    ORATIOSOLVER_EXPORT riddle::expr lt(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr leq(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr gt(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr geq(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    ORATIOSOLVER_EXPORT riddle::expr eq(const riddle::expr &lhs, const riddle::expr &rhs) override;
+    /**
+     * @brief Checks whether the two expressions can be made equal.
+     *
+     * @param left The first expression to check if it can be made equal to the other.
+     * @param right The second expression to check if it can be made equal to the other.
+     * @return true If the two expressions can be made equal.
+     * @return false If the two expressions can not be made equal.
+     */
+    bool matches(const riddle::expr &lhs, const riddle::expr &rhs) const noexcept;
+
+    ORATIOSOLVER_EXPORT riddle::expr conj(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr disj(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr exct_one(const std::vector<riddle::expr> &xprs) override;
+    ORATIOSOLVER_EXPORT riddle::expr negate(const riddle::expr &xpr) override;
+
+    ORATIOSOLVER_EXPORT void assert_fact(const riddle::expr &xpr) override;
+
+    void new_disjunction(std::vector<riddle::conjunction_ptr> xprs) override;
+
+    riddle::expr new_fact(riddle::predicate &pred) override;
+    riddle::expr new_goal(riddle::predicate &pred) override;
+
+    ORATIOSOLVER_EXPORT bool is_constant(const riddle::expr &xpr) const override;
+
+    ORATIOSOLVER_EXPORT utils::lbool bool_value(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT utils::inf_rational arith_value(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT std::pair<utils::inf_rational, utils::inf_rational> arith_bounds(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT utils::inf_rational time_value(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT std::pair<utils::inf_rational, utils::inf_rational> time_bounds(const riddle::expr &xpr) const override;
+
+    ORATIOSOLVER_EXPORT bool is_enum(const riddle::expr &xpr) const override;
+    ORATIOSOLVER_EXPORT std::vector<riddle::expr> domain(const riddle::expr &xpr) const override;
+    void prune(const riddle::expr &xpr, const riddle::expr &val) override;
 
     /**
-     * Solves the given problem returning whether a solution has been found.
+     * @brief Solves the current problem returning whether a solution was found.
+     *
+     * @return true If a solution was found.
+     * @return false If no solution was found.
      */
     ORATIOSOLVER_EXPORT bool solve();
     /**
-     * Takes the given decision and propagates its effects.
+     * @brief Takes a decision and propagates its consequences.
+     *
+     * @param ch The decision to take.
      */
     ORATIOSOLVER_EXPORT void take_decision(const semitone::lit &ch);
 
+    /**
+     * @brief Finds the next solution.
+     *
+     */
+    ORATIOSOLVER_EXPORT void next();
+
   private:
-    std::vector<std::unique_ptr<flaw>> flush_pending_flaws();
+    void new_flaw(flaw_ptr f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
+    void new_resolver(resolver_ptr r);                     // notifies the solver that a new resolver `r` has been created..
+    void new_causal_link(flaw &f, resolver &r);            // notifies the solver that a new causal link between `f` and `r` has been created..
 
-    void next();
+    void expand_flaw(flaw &f);                    // expands the given flaw, computing its resolvers and applying them..
+    void apply_resolver(resolver &r);             // applies the given resolver..
+    void set_cost(flaw &f, utils::rational cost); // sets the cost of the given flaw to the given value, storing the old cost in the current layer of the trail..
 
+    void solve_inconsistencies();                                          // checks whether the types have any inconsistency and, in case, solve them..
+    std::vector<std::vector<std::pair<semitone::lit, double>>> get_incs(); // collects all the current inconsistencies..
+
+    std::vector<flaw_ptr> flush_pending_flaws() noexcept { return std::move(pending_flaws); } // flushes the pending flaws, returning them..
+
+    void reset_smart_types();
+
+    void set_ni(const semitone::lit &v) noexcept
+    {
+      tmp_ni = ni;
+      ni = v;
+    }
+
+    void restore_ni() noexcept { ni = tmp_ni; }
+
+    const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
+
+    inline const std::vector<std::reference_wrapper<resolver>> get_cause()
+    {
+      if (res)
+        return {*res};
+      else
+        return {};
+    }
+
+  private:
     bool propagate(const semitone::lit &p) override;
     bool check() override;
     void push() override;
     void pop() override;
 
-    void solve_inconsistencies();                                          // checks whether the types have any inconsistency and, in case, solve them..
-    std::vector<std::vector<std::pair<semitone::lit, double>>> get_incs(); // collects all the current inconsistencies..
-
-    void reset_smart_types();
-
   public:
-    ORATIOSOLVER_EXPORT ratio::core::predicate &get_impulse() const noexcept;
-    ORATIOSOLVER_EXPORT bool is_impulse(const ratio::core::type &pred) const noexcept;
-    ORATIOSOLVER_EXPORT bool is_impulse(const ratio::core::atom &atm) const noexcept;
-    ORATIOSOLVER_EXPORT ratio::core::predicate &get_interval() const noexcept;
-    ORATIOSOLVER_EXPORT bool is_interval(const ratio::core::type &pred) const noexcept;
-    ORATIOSOLVER_EXPORT bool is_interval(const ratio::core::atom &atm) const noexcept;
-
-    friend inline semitone::var get_sigma(const solver &s, const ratio::core::atom &atm) { return s.atom_properties.at(&atm).sigma; }
-    friend inline atom_flaw &get_reason(const solver &s, const ratio::core::atom &atm) { return *s.atom_properties.at(&atm).reason; }
+    riddle::predicate &get_impulse() const noexcept { return *imp_pred; }
+    bool is_impulse(const riddle::type &pred) const noexcept { return imp_pred->is_assignable_from(pred); }
+    bool is_impulse(const atom &atm) const noexcept { return imp_pred->is_assignable_from(atm.get_type()); }
+    riddle::predicate &get_interval() const noexcept { return *int_pred; }
+    bool is_interval(const riddle::type &pred) const noexcept { return int_pred->is_assignable_from(pred); }
+    bool is_interval(const atom &atm) const noexcept { return int_pred->is_assignable_from(atm.get_type()); }
 
   private:
-    ratio::core::predicate *imp_pred = nullptr; // the `Impulse` predicate..
-    ratio::core::predicate *int_pred = nullptr; // the `Interval` predicate..
-    std::vector<smart_type *> smart_types;      // the smart-types..
+    riddle::predicate *imp_pred = nullptr; // the `Impulse` predicate..
+    riddle::predicate *int_pred = nullptr; // the `Interval` predicate..
+    std::vector<smart_type *> smart_types; // the smart-types..
 
-  private:
     semitone::lit tmp_ni;                  // the temporary controlling literal, used for restoring the controlling literal..
     semitone::lit ni = semitone::TRUE_lit; // the current controlling literal..
 
@@ -227,28 +342,21 @@ namespace ratio::solver
     semitone::idl_theory idl_th; // the integer difference logic theory..
     semitone::rdl_theory rdl_th; // the real difference logic theory..
 
-    struct atom_prop
-    {
-      semitone::var sigma; // this variable represents the state of the atom: if the variable is true, the atom is active; if the variable is false, the atom is unified; if the variable is undefined, the atom is not justified..
-      atom_flaw *reason;   // the reason for having introduced the atom..
-    };
-    std::unordered_map<const ratio::core::atom *, atom_prop> atom_properties; // the atoms` properties..
+    graph_ptr gr;                            // the causal graph..
+    resolver *res = nullptr;                 // the current resolver (i.e. the cause for the new flaws)..
+    std::unordered_set<flaw *> active_flaws; // the currently active flaws..
+    std::vector<flaw_ptr> pending_flaws;     // pending flaws, waiting for root-level to be initialized..
 
-    std::unique_ptr<causal_graph> gr;                 // the causal graph..
-    resolver *res = nullptr;                          // the current resolver (i.e. the cause for the new flaws)..
-    std::unordered_set<flaw *> active_flaws;          // the currently active flaws..
-    std::vector<std::unique_ptr<flaw>> pending_flaws; // pending flaws, waiting for root-level to be initialized..
+    std::unordered_map<semitone::var, std::vector<flaw_ptr>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
+    std::unordered_map<semitone::var, std::vector<resolver_ptr>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
 
     struct layer
     {
-      std::unordered_map<flaw *, semitone::rational> old_f_costs; // the old estimated flaws` costs..
-      std::unordered_set<flaw *> new_flaws;                       // the just activated flaws..
-      std::unordered_set<flaw *> solved_flaws;                    // the just solved flaws..
+      std::unordered_map<flaw *, utils::rational> old_f_costs; // the old estimated flaws` costs..
+      std::unordered_set<flaw *> new_flaws;                    // the just activated flaws..
+      std::unordered_set<flaw *> solved_flaws;                 // the just solved flaws..
     };
     std::vector<layer> trail; // the list of taken decisions, with the associated changes made, in chronological order..
-
-    std::unordered_map<semitone::var, std::vector<std::unique_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
-    std::unordered_map<semitone::var, std::vector<std::unique_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
 
 #ifdef BUILD_LISTENERS
   private:
@@ -268,7 +376,30 @@ namespace ratio::solver
   ORATIOSOLVER_EXPORT json::json to_json(const solver &rhs) noexcept;
   ORATIOSOLVER_EXPORT json::json to_timelines(solver &rhs) noexcept;
 
-  ORATIOSOLVER_EXPORT json::json to_json(const ratio::core::item &rhs) noexcept;
-  ORATIOSOLVER_EXPORT json::json to_json(const std::map<std::string, ratio::core::expr> &vars) noexcept;
-  ORATIOSOLVER_EXPORT json::json value(const ratio::core::item &rhs) noexcept;
-} // namespace ratio::solver
+  json::json to_json(const riddle::item &rhs) noexcept;
+  json::json to_json(const std::map<std::string, riddle::expr> &vars) noexcept;
+
+  json::json value(const riddle::item &itm) noexcept;
+  inline json::json to_json(const utils::rational &rat) noexcept
+  {
+    json::json j_rat;
+    j_rat["num"] = rat.numerator();
+    j_rat["den"] = rat.denominator();
+    return j_rat;
+  }
+  inline json::json to_json(const utils::inf_rational &rat) noexcept
+  {
+    json::json j_rat = to_json(rat.get_rational());
+    if (rat.get_infinitesimal() != utils::rational::ZERO)
+      j_rat["inf"] = to_json(rat.get_infinitesimal());
+    return j_rat;
+  }
+
+  /**
+   * @brief Gets the id of the given solver.
+   *
+   * @param f the solver to get the id of.
+   * @return uintptr_t the id of the given solver.
+   */
+  inline uintptr_t get_id(const solver &s) noexcept { return reinterpret_cast<uintptr_t>(&s); }
+} // namespace ratio

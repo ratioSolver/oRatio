@@ -3,32 +3,29 @@
 #include "flaw.h"
 #include "resolver.h"
 
-namespace ratio::solver
+namespace ratio
 {
   class disj_flaw final : public flaw
   {
   public:
-    disj_flaw(solver &slv, std::vector<resolver *> causes, std::vector<semitone::lit> lits);
-    disj_flaw(const disj_flaw &orig) = delete;
-
-    ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
+    disj_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, std::vector<semitone::lit> lits);
 
   private:
     void compute_resolvers() override;
 
+    json::json get_data() const noexcept override;
+
     class choose_lit final : public resolver
     {
     public:
-      choose_lit(semitone::rational cst, disj_flaw &disj_flaw, const semitone::lit &p);
-      choose_lit(const choose_lit &that) = delete;
+      choose_lit(disj_flaw &ef, const utils::rational &cost, const semitone::lit &l);
 
-      ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
+      void apply() override {}
 
-    private:
-      void apply() override;
+      json::json get_data() const noexcept override;
     };
 
   private:
-    std::vector<semitone::lit> lits; // the disjunction..
+    const std::vector<semitone::lit> lits; // the disjunction..
   };
-} // namespace ratio::solver
+} // namespace ratio

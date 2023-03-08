@@ -1,26 +1,25 @@
 #pragma once
 
-#include "item.h"
 #include "type.h"
 #include "sat_value_listener.h"
 #include "lra_value_listener.h"
 #include "rdl_value_listener.h"
 #include "ov_value_listener.h"
 
-namespace ratio::solver
+namespace ratio
 {
   class solver;
+  class atom;
   class flaw;
-  class atom_flaw;
+  using flaw_ptr = utils::u_ptr<flaw>;
   class resolver;
 
-  class smart_type : public ratio::core::type
+  class smart_type : public riddle::complex_type
   {
     friend class solver;
 
   public:
-    smart_type(scope &scp, const std::string &name);
-    smart_type(const smart_type &that) = delete;
+    smart_type(riddle::scope &scp, const std::string &name);
     virtual ~smart_type() = default;
 
     inline solver &get_solver() const noexcept { return slv; }
@@ -33,15 +32,20 @@ namespace ratio::solver
      */
     virtual std::vector<std::vector<std::pair<semitone::lit, double>>> get_current_incs() = 0;
 
-    virtual void new_atom_flaw(atom_flaw &);
+    /**
+     * @brief Notifies the smart type that a new atom has been created.
+     *
+     * @param atm The new atom that has been created.
+     */
+    virtual void new_atom(atom &atm) = 0;
 
   protected:
     void set_ni(const semitone::lit &v) noexcept; // temporally sets the solver's `ni` literal..
     void restore_ni() noexcept;                   // restores the solver's `ni` literal..
 
-    void store_flaw(std::unique_ptr<flaw> f) noexcept; // stores the flaw waiting for its initialization at root-level..
+    void store_flaw(flaw_ptr f) noexcept; // stores the flaw waiting for its initialization at root-level..
 
-    static std::vector<resolver *> get_resolvers(solver &slv, const std::set<ratio::core::atom *> &atms) noexcept; // returns the vector of resolvers which has given rise to the given atoms..
+    static std::vector<std::reference_wrapper<resolver>> get_resolvers(const std::set<atom *> &atms) noexcept; // returns the vector of resolvers which has given rise to the given atoms..
 
   private:
     solver &slv;
@@ -50,11 +54,18 @@ namespace ratio::solver
   class atom_listener : public semitone::sat_value_listener, public semitone::lra_value_listener, public semitone::rdl_value_listener, public semitone::ov_value_listener
   {
   public:
-    atom_listener(ratio::core::atom &atm);
-    atom_listener(const atom_listener &that) = delete;
+    atom_listener(atom &atm);
     virtual ~atom_listener() = default;
 
   protected:
-    ratio::core::atom &atm;
+    atom &atm;
   };
-} // namespace ratio::solver
+
+  class timeline
+  {
+  public:
+    virtual ~timeline() = default;
+
+    virtual json::json extract() const noexcept = 0;
+  };
+} // namespace ratio

@@ -1,51 +1,45 @@
 #include "flaw.h"
-#include "resolver.h"
 #include "solver.h"
+#include "resolver.h"
+#include "sat_core.h"
 #include <cassert>
 
-namespace ratio::solver
+namespace ratio
 {
-    ORATIOSOLVER_EXPORT flaw::flaw(solver &slv, std::vector<resolver *> causes, const bool &exclusive) : slv(slv), position(slv.get_idl_theory().new_var()), causes(std::move(causes)), exclusive(exclusive) {}
-
-    ORATIOSOLVER_EXPORT resolver *flaw::get_cheapest_resolver() const noexcept
-    {
-        resolver *c_res = nullptr;
-        semitone::rational c_cost = semitone::rational::POSITIVE_INFINITY;
-        for (const auto &r : resolvers)
-            if (slv.get_sat_core().value(r->get_rho()) != semitone::False && r->get_estimated_cost() < c_cost)
-            {
-                c_res = r;
-                c_cost = r->get_estimated_cost();
-            }
-        return c_res;
-    }
+    flaw::flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, const bool &exclusive) : s(s), causes(causes), exclusive(exclusive), position(s.idl_th.new_var()) {}
 
     void flaw::init() noexcept
     {
         assert(!expanded);
-        assert(slv.root_level());
+        assert(s.sat->root_level());
 
-        [[maybe_unused]] bool add_distance = slv.get_sat_core().new_clause({slv.get_idl_theory().new_distance(position, 0, 0)});
+        // this flaw's position must be greater than 0..
+        [[maybe_unused]] bool add_distance = s.get_sat_core().new_clause({s.idl_th.new_distance(position, 0, 0)});
         assert(add_distance);
 
+        // we consider the causes of this flaw..
         std::vector<semitone::lit> cs;
         cs.reserve(causes.size());
-        for (const auto &c : causes)
+        for (auto &c : causes)
         {
-            c->preconditions.push_back(this); // this flaw is a precondition of its `c` cause..
-            supports.push_back(c);            // .. and it also supports its `c` cause..
-            cs.push_back(c->rho);
-            [[maybe_unused]] bool dist = slv.get_sat_core().new_clause({slv.get_idl_theory().new_distance(c->effect.position, position, -1)});
+            c.get().preconditions.push_back(*this); // this flaw is a precondition of its `c` cause..
+            supports.push_back(c);                  // .. and it also supports the `c` cause..
+            cs.push_back(c.get().get_rho());
+            // we force this flaw to stay before the effects of its causes..
+            [[maybe_unused]] bool dist = s.get_sat_core().new_clause({s.idl_th.new_distance(c.get().f.position, position, -1)});
             assert(dist);
         }
+
         // we initialize the phi variable as the conjunction of the causes' rho variables..
-        phi = slv.get_sat_core().new_conj(std::move(cs));
+        phi = s.get_sat_core().new_conj(std::move(cs));
     }
 
     void flaw::expand()
     {
+        LOG("expanding flaw " << to_string(*this));
         assert(!expanded);
-        assert(slv.root_level());
+        assert(s.sat->root_level());
+
         expanded = true; // the flaw is now expanded..
 
         // we compute the resolvers..
@@ -54,57 +48,70 @@ namespace ratio::solver
         // we add causal relations between the flaw and its resolvers (i.e., if the flaw is phi exactly one of its resolvers should be in plan)..
         if (resolvers.empty())
         { // there is no way for solving this flaw: we force the phi variable at false..
-            if (!slv.get_sat_core().new_clause({!phi}))
-                throw ratio::core::unsolvable_exception();
+            if (!s.get_sat_core().new_clause({!phi}))
+                throw riddle::unsolvable_exception();
         }
         else
         { // we need to take a decision for solving this flaw..
-            std::vector<semitone::lit> r_chs;
-            r_chs.reserve(resolvers.size() + 1);
-            r_chs.push_back(!phi);
+            std::vector<semitone::lit> rs;
+            rs.reserve(resolvers.size());
+            rs.push_back(!phi);
             for (const auto &r : resolvers)
-                r_chs.push_back(r->rho);
+                rs.push_back(r.get().get_rho());
 
             // we link the phi variable to the resolvers' rho variables..
-            if (!slv.get_sat_core().new_clause(r_chs))
-                throw ratio::core::unsolvable_exception();
+            if (!s.get_sat_core().new_clause(std::move(rs)))
+                throw riddle::unsolvable_exception();
 
             if (exclusive) // we make the resolvers mutually exclusive..
                 for (size_t i = 0; i < resolvers.size(); ++i)
                     for (size_t j = i + 1; j < resolvers.size(); ++j)
-                        if (!slv.get_sat_core().new_clause({!resolvers[i]->rho, !resolvers[j]->rho}))
-                            throw ratio::core::unsolvable_exception();
+                        if (!s.get_sat_core().new_clause({!resolvers[i].get().rho, !resolvers[j].get().rho}))
+                            throw riddle::unsolvable_exception();
         }
     }
 
-    void flaw::add_resolver(std::unique_ptr<resolver> r)
+    void flaw::add_resolver(resolver_ptr r)
     {
-        // the activation of the resolver activates (and solves!) the flaw..
-        if (!slv.get_sat_core().new_clause({!r->rho, phi}))
-            throw ratio::core::unsolvable_exception();
-        resolvers.push_back(r.get());
-        slv.new_resolver(std::move(r));
+        if (!s.get_sat_core().new_clause({!r->get_rho(), phi}))
+            throw riddle::unsolvable_exception();
+        resolvers.push_back(*r);
+        s.new_resolver(std::move(r)); // we notify the solver that a new resolver has been added..
     }
 
-    ORATIOSOLVER_EXPORT json::json to_json(const flaw &rhs) noexcept
+    resolver &flaw::get_cheapest_resolver() const noexcept
     {
-        json::json j_f;
-        j_f["id"] = get_id(rhs);
-        json::array causes;
-        for (const auto &c : rhs.get_causes())
-            causes.push_back(get_id(*c));
-        j_f["causes"] = std::move(causes);
-        j_f["phi"] = to_string(rhs.get_phi());
-        j_f["state"] = rhs.get_solver().get_sat_core().value(rhs.get_phi());
-        j_f["cost"] = to_json(rhs.get_estimated_cost());
-        auto [lb, ub] = rhs.get_solver().get_idl_theory().bounds(rhs.get_position());
-        json::json j_pos;
-        if (lb > std::numeric_limits<semitone::I>::min())
-            j_pos["lb"] = lb;
-        if (ub > std::numeric_limits<semitone::I>::max())
-            j_pos["ub"] = ub;
-        j_f["pos"] = std::move(j_pos);
-        j_f["data"] = rhs.get_data();
-        return j_f;
+        assert(!resolvers.empty());
+        resolver *cheapest = &resolvers[0].get();
+        utils::rational cheapest_cost = cheapest->get_estimated_cost();
+        for (size_t i = 1; i < resolvers.size(); ++i)
+        {
+            resolver &r = resolvers[i].get();
+            utils::rational cost = resolvers[i].get().get_estimated_cost();
+            if (cost < cheapest_cost)
+            {
+                cheapest = &r;
+                cheapest_cost = cost;
+            }
+        }
+        return *cheapest;
     }
-} // namespace ratio::solver
+
+    std::string to_string(const flaw &f) noexcept
+    {
+        std::string state;
+        switch (f.get_solver().get_sat_core().value(f.get_phi()))
+        {
+        case utils::True: // the flaw is active..
+            state = "active";
+            break;
+        case utils::False: // the flaw is forbidden..
+            state = "forbidden";
+            break;
+        default: // the flaw is inactive..
+            state = "inactive";
+            break;
+        }
+        return "ϕ" + std::to_string(variable(f.get_phi())) + " (" + state + ")";
+    }
+} // namespace ratio

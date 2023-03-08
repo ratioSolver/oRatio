@@ -1,32 +1,30 @@
 #pragma once
 
-#include "causal_graph.h"
+#include "graph.h"
 #include <deque>
+#include <unordered_set>
 
-namespace ratio::solver
+namespace ratio
 {
-  class h_1 final : public causal_graph
+  class h_1 final : public graph
   {
   public:
-    h_1();
-    h_1(const h_1 &that) = delete;
-
-    semitone::rational get_estimated_cost(const resolver &r) const noexcept override;
+    h_1(solver &s);
 
   private:
-    void init(solver &s) noexcept override;
     void enqueue(flaw &f) override;
+
     void propagate_costs(flaw &f) override;
 
-    void build() override; // builds the h_1 planning graph..
-#ifdef GRAPH_PRUNING
-    void prune() override; // prunes the current h_1 planning graph..
-#endif
-    void add_layer() override; // adds a layer to the current planning graph..
+    void build() override;
 
-#ifdef DEFERRABLE_FLAWS
-    bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..
+#ifdef GRAPH_PRUNING
+    void prune() override;
 #endif
+
+    void add_layer() override;
+
+    bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..
 
   private:
     std::deque<flaw *> flaw_q;          // the flaw queue (for the graph building procedure)..
@@ -35,4 +33,4 @@ namespace ratio::solver
     std::unordered_set<flaw *> already_closed; // already closed flaws (for avoiding duplicating graph pruning constraints)..
 #endif
   };
-} // namespace ratio::solver
+} // namespace ratio

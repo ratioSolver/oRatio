@@ -4,32 +4,31 @@
 #include "resolver.h"
 #include "item.h"
 
-namespace ratio::solver
+namespace ratio
 {
   class bool_flaw final : public flaw
   {
   public:
-    bool_flaw(solver &slv, std::vector<resolver *> causes, ratio::core::bool_item &b_itm);
-    bool_flaw(const bool_flaw &orig) = delete;
-
-    ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
+    bool_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, riddle::expr &b_item);
 
   private:
     void compute_resolvers() override;
 
+    json::json get_data() const noexcept override;
+
+    riddle::expr &get_bool_item() noexcept { return b_item; }
+
     class choose_value final : public resolver
     {
     public:
-      choose_value(semitone::rational cst, bool_flaw &bl_flaw, const semitone::lit &val);
-      choose_value(const choose_value &that) = delete;
+      choose_value(bool_flaw &ef, const semitone::lit &rho);
 
-      ORATIOSOLVER_EXPORT json::json get_data() const noexcept override;
-
-    private:
       void apply() override;
+
+      json::json get_data() const noexcept override;
     };
 
   private:
-    ratio::core::bool_item &b_itm; // the bool variable whose value has to be decided..
+    riddle::expr b_item;
   };
-} // namespace ratio::solver
+} // namespace ratio

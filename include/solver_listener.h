@@ -7,7 +7,7 @@
 #include "idl_value_listener.h"
 #include <algorithm>
 
-namespace ratio::solver
+namespace ratio
 {
   class solver_listener
   {
@@ -15,7 +15,6 @@ namespace ratio::solver
 
   public:
     solver_listener(solver &s) : slv(s) { slv.listeners.push_back(this); }
-    solver_listener(const solver_listener &orig) = delete;
     virtual ~solver_listener() { slv.listeners.erase(std::find(slv.listeners.cbegin(), slv.listeners.cend(), this)); }
 
   private:
@@ -82,7 +81,7 @@ namespace ratio::solver
     solver &slv;
 
   private:
-    std::unordered_map<const flaw *, flaw_listener *> flaw_listeners;
-    std::unordered_map<const resolver *, resolver_listener *> resolver_listeners;
+    std::unordered_map<const flaw *, utils::u_ptr<flaw_listener>> flaw_listeners;
+    std::unordered_map<const resolver *, utils::u_ptr<resolver_listener>> resolver_listeners;
   };
-} // namespace ratio::solver
+} // namespace ratio
