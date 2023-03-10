@@ -48,6 +48,13 @@ namespace ratio
     std::vector<std::reference_wrapper<resolver>> &get_causes() noexcept { return causes; }
 
     /**
+     * @brief Get the resolvers that caused this flaw.
+     *
+     * @return const std::vector<std::reference_wrapper<resolver>>& The resolvers that caused this flaw.
+     */
+    const std::vector<std::reference_wrapper<resolver>> &get_causes() const noexcept { return causes; }
+
+    /**
      * @brief Get the resolvers that supported by this flaw.
      *
      * @return std::vector<std::reference_wrapper<resolver>>& The resolvers that supported by this flaw.
@@ -127,6 +134,8 @@ namespace ratio
     virtual json::json get_data() const noexcept = 0;
 
     friend std::string to_string(const flaw &f) noexcept;
+
+    friend json::json to_json(const flaw &f) noexcept;
 
   protected:
     /**

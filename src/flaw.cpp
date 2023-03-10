@@ -114,4 +114,26 @@ namespace ratio
         }
         return "ϕ" + std::to_string(variable(f.get_phi())) + " (" + state + ")";
     }
+
+    json::json to_json(const flaw &f) noexcept
+    {
+        json::json j_f;
+        j_f["id"] = get_id(f);
+        json::json causes(json::json_type::array);
+        for (const auto &c : f.get_causes())
+            causes.push_back(get_id(c.get()));
+        j_f["causes"] = std::move(causes);
+        j_f["phi"] = to_string(f.get_phi());
+        j_f["state"] = f.get_solver().get_sat_core().value(f.get_phi());
+        j_f["cost"] = to_json(f.get_estimated_cost());
+        auto [lb, ub] = f.get_solver().get_idl_theory().bounds(f.get_position());
+        json::json j_pos;
+        if (lb > std::numeric_limits<utils::I>::min())
+            j_pos["lb"] = lb;
+        if (ub > std::numeric_limits<utils::I>::max())
+            j_pos["ub"] = ub;
+        j_f["pos"] = std::move(j_pos);
+        j_f["data"] = f.get_data();
+        return j_f;
+    }
 } // namespace ratio

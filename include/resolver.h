@@ -42,9 +42,16 @@ namespace ratio
     /**
      * @brief Get the flaw this resolver solves.
      *
-     * @return const flaw& The flaw.
+     * @return flaw& The flaw.
      */
     flaw &get_flaw() noexcept { return f; }
+
+    /**
+     * @brief Get the flaw this resolver solves.
+     *
+     * @return const flaw& The flaw.
+     */
+    const flaw &get_flaw() const noexcept { return f; }
 
     /**
      * @brief Gets the rho variable of this resolver.
@@ -67,6 +74,13 @@ namespace ratio
     utils::rational get_estimated_cost() const noexcept;
 
     /**
+     * @brief Gets the preconditions of this resolver.
+     *
+     * @return const std::vector<std::reference_wrapper<flaw>>& the preconditions of this resolver.
+     */
+    const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
+
+    /**
      * Applies this resolver, introducing subgoals and/or constraints.
      *
      * @pre the solver must be at root-level.
@@ -81,6 +95,8 @@ namespace ratio
     virtual json::json get_data() const noexcept = 0;
 
     friend std::string to_string(const resolver &r) noexcept;
+
+    friend json::json to_json(const resolver &r) noexcept;
 
   private:
     flaw &f;                                                 // the flaw solved by this resolver..
