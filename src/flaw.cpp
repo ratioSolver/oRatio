@@ -126,13 +126,7 @@ namespace ratio
         j_f["phi"] = to_string(f.get_phi());
         j_f["state"] = f.get_solver().get_sat_core().value(f.get_phi());
         j_f["cost"] = to_json(f.get_estimated_cost());
-        auto [lb, ub] = f.get_solver().get_idl_theory().bounds(f.get_position());
-        json::json j_pos;
-        if (lb > std::numeric_limits<utils::I>::min())
-            j_pos["lb"] = lb;
-        if (ub > std::numeric_limits<utils::I>::max())
-            j_pos["ub"] = ub;
-        j_f["pos"] = std::move(j_pos);
+        j_f["pos"] = to_json(f.get_solver().get_idl_theory().bounds(f.get_position()));
         j_f["data"] = f.get_data();
         return j_f;
     }

@@ -394,6 +394,15 @@ namespace ratio
       j_rat["inf"] = to_json(rat.get_infinitesimal());
     return j_rat;
   }
+  inline json::json to_json(const std::pair<utils::I, utils::I> &p) noexcept
+  {
+    json::json j_p;
+    if (p.first > std::numeric_limits<utils::I>::min())
+      j_p["lb"] = p.first;
+    if (p.second > std::numeric_limits<utils::I>::max())
+      j_p["ub"] = p.second;
+    return j_p;
+  }
 
   /**
    * @brief Gets the id of the given solver.
