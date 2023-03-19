@@ -249,6 +249,10 @@ namespace ratio
     riddle::expr new_fact(riddle::predicate &pred) override;
     riddle::expr new_goal(riddle::predicate &pred) override;
 
+  private:
+    void new_atom(riddle::expr &atm) override;
+
+  public:
     ORATIOSOLVER_EXPORT bool is_constant(const riddle::expr &xpr) const override;
 
     ORATIOSOLVER_EXPORT utils::lbool bool_value(const riddle::expr &xpr) const override;

@@ -5,7 +5,6 @@
 #include "disj_flaw.h"
 #include "disjunction_flaw.h"
 #include "atom_flaw.h"
-#include "smart_type.h"
 #include "agent.h"
 #include "state_variable.h"
 #include "reusable_resource.h"
@@ -593,18 +592,28 @@ namespace ratio
         new_flaw(new disjunction_flaw(*this, get_cause(), std::move(xprs)));
     }
 
-    riddle::expr solver::new_fact(riddle::predicate &pred)
-    {
-        riddle::expr fact = new atom(pred, true, semitone::lit(sat->new_var()));
-        new_flaw(new atom_flaw(*this, get_cause(), fact));
-        return fact;
-    }
+    riddle::expr solver::new_fact(riddle::predicate &pred) { return new atom(pred, true, semitone::lit(sat->new_var())); }
+    riddle::expr solver::new_goal(riddle::predicate &pred) { return new atom(pred, false, semitone::lit(sat->new_var())); }
 
-    riddle::expr solver::new_goal(riddle::predicate &pred)
+    void solver::new_atom(riddle::expr &atm)
     {
-        riddle::expr goal = new atom(pred, false, semitone::lit(sat->new_var()));
-        new_flaw(new atom_flaw(*this, get_cause(), goal));
-        return goal;
+        new_flaw(new atom_flaw(*this, get_cause(), atm));
+
+        auto &c_atm = static_cast<atom &>(*atm);
+        // we check if we need to notify any smart types of the new goal..
+        if (!is_core(c_atm.get_type().get_scope()))
+        {
+            std::queue<riddle::complex_type *> q;
+            q.push(dynamic_cast<riddle::complex_type *>(&c_atm.get_type().get_scope()));
+            while (!q.empty())
+            {
+                if (auto st = dynamic_cast<smart_type *>(q.front()))
+                    st->new_atom(c_atm);
+                for (const auto &stp : q.front()->get_parents())
+                    q.push(&stp.get());
+                q.pop();
+            }
+        }
     }
 
     ORATIOSOLVER_EXPORT bool solver::is_constant(const riddle::expr &xpr) const
