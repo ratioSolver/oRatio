@@ -62,7 +62,6 @@ namespace ratio
 
     void set_cost(flaw &f, const utils::rational &cost) const noexcept;
 
-    std::vector<flaw_ptr> flush_pending_flaws() const noexcept;
     std::vector<std::vector<std::pair<semitone::lit, double>>> get_incs() const noexcept;
 
   protected:

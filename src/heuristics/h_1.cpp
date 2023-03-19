@@ -38,33 +38,33 @@ namespace ratio
         LOG("building the causal graph..");
         assert(s.get_sat_core().root_level());
 
-        while (std::any_of(get_flaws().cbegin(), get_flaws().cend(), [](const auto &f)
-                           { return is_positive_infinite(f->get_estimated_cost()); }))
+        do
         {
-            if (flaw_q.empty()) // we have no flaws to expand..
-                throw riddle::unsolvable_exception();
-
-            // we expand the flaw at the front of the queue..
-            auto &f = *flaw_q.front();
-            assert(!f.is_expanded());
-            if (s.get_sat_core().value(f.get_phi()) != utils::False)
+            while (std::any_of(get_flaws().cbegin(), get_flaws().cend(), [](const auto &f)
+                               { return is_positive_infinite(f->get_estimated_cost()); }))
             {
+                if (flaw_q.empty()) // we have no flaws to expand..
+                    throw riddle::unsolvable_exception();
+
+                // we expand the flaw at the front of the queue..
+                auto &f = *flaw_q.front();
+                assert(!f.is_expanded());
+                if (s.get_sat_core().value(f.get_phi()) != utils::False)
+                {
 #ifdef DEFERRABLE_FLAWS
-                if (is_deferrable(f))
-                    flaw_q.push_back(&f);
-                else
+                    if (is_deferrable(f))
+                        flaw_q.push_back(&f);
+                    else
 #endif
-                    expand_flaw(f);
+                        expand_flaw(f);
+                }
+                flaw_q.pop_front();
             }
-            flaw_q.pop_front();
-        }
 
-        // we extract the inconsistencies (and translate them into flaws)..
-        get_incs();
-
-        // we add the pending flaws to the planning graph..
-        for (auto &f : flush_pending_flaws())
-            new_flaw(std::move(f), false); // we add the flaws, without enqueuing, to the planning graph..
+            // we extract the inconsistencies (and translate them into flaws)..
+            get_incs();
+        } while (std::any_of(get_flaws().cbegin(), get_flaws().cend(), [](const auto &f)
+                             { return is_positive_infinite(f->get_estimated_cost()); }));
 
         // we perform some cleanings..
         if (!s.get_sat_core().simplify_db())
@@ -102,13 +102,13 @@ namespace ratio
         // we extract the inconsistencies (and translate them into flaws)..
         get_incs();
 
-        // we add the pending flaws to the planning graph..
-        for (auto &f : flush_pending_flaws())
-            new_flaw(std::move(f), false); // we add the flaws, without enqueuing, to the planning graph..
-
-        // we perform some cleanings..
-        if (!s.get_sat_core().simplify_db())
-            throw riddle::unsolvable_exception();
+        // we check if we can further build the causal graph..
+        if (std::any_of(get_flaws().cbegin(), get_flaws().cend(), [](const auto &f)
+                        { return is_positive_infinite(f->get_estimated_cost()); }))
+            build();
+        else // we perform some cleanings..
+            if (!s.get_sat_core().simplify_db())
+                throw riddle::unsolvable_exception();
     }
 
 #ifdef GRAPH_PRUNING

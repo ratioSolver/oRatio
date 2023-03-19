@@ -60,7 +60,5 @@ namespace ratio
 
     void graph::set_cost(flaw &f, const utils::rational &cost) const noexcept { s.set_cost(f, cost); }
 
-    std::vector<flaw_ptr> graph::flush_pending_flaws() const noexcept { return s.flush_pending_flaws(); }
-
     std::vector<std::vector<std::pair<semitone::lit, double>>> graph::get_incs() const noexcept { return s.get_incs(); }
 } // namespace ratio

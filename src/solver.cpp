@@ -1124,6 +1124,15 @@ namespace ratio
         gr->pop();        // we pop the graph..
 
         LOG(std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+
+        if (trail.empty() && !pending_flaws.empty())
+        {
+            assert(sat->root_level());
+            LOG("flushing pending flaws..");
+            // we add the pending flaws to the planning graph..
+            for (auto &f : std::move(pending_flaws))
+                new_flaw(std::move(f), false); // we add the flaws, without enqueuing, to the planning graph..
+        }
     }
 
 #ifdef BUILD_LISTENERS
