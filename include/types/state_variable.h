@@ -20,8 +20,6 @@ namespace ratio
 
     void new_atom(atom &atm) override;
 
-    void store_variables(atom &atm0, atom &atm1);
-
     class sv_constructor final : public riddle::constructor
     {
     public:
@@ -76,29 +74,11 @@ namespace ratio
         const atom &after;  // applying the resolver will order this atom after the other..
       };
 
-      // a resolver for placing atoms on a specific state-variable..
-      class place_resolver final : public resolver
-      {
-      public:
-        place_resolver(sv_flaw &flw, const semitone::lit &r, atom &plc_atm, const riddle::item &plc_itm, atom &frbd_atm);
-
-        json::json get_data() const noexcept override;
-        const riddle::item &get_place_item() const noexcept { return plc_itm; }
-
-      private:
-        void apply() override {}
-
-      private:
-        atom &plc_atm;               // applying the resolver will force this atom on the `plc_item` item..
-        const riddle::item &plc_itm; // applying the resolver will force the `plc_atm` atom on this item..
-        atom &frbd_atm;              // applying the resolver will forbid this atom on the `plc_itm` item..
-      };
-
       // a resolver for forbidding atoms on a specific state-variable..
       class forbid_resolver final : public resolver
       {
       public:
-        forbid_resolver(sv_flaw &flw, atom &atm, riddle::item &itm);
+        forbid_resolver(sv_flaw &flw, const semitone::lit &r, atom &atm, riddle::item &itm);
 
         json::json get_data() const noexcept override;
 
@@ -122,8 +102,8 @@ namespace ratio
     std::vector<atom *> atoms;                   // we store, for each atom, its atom listener..
     std::vector<sv_atom_listener_ptr> listeners; // we store, for each atom, its atom listener..
 
-    std::map<std::set<atom *>, sv_flaw *> sv_flaws;                                               // the state-variable flaws found so far..
-    std::map<atom *, std::map<atom *, semitone::lit>> leqs;                                       // all the possible ordering constraints..
-    std::map<std::set<atom *>, std::vector<std::pair<semitone::lit, const riddle::item *>>> plcs; // all the possible placement constraints..
+    std::map<std::set<atom *>, sv_flaw *> sv_flaws;                 // the state-variable flaws found so far..
+    std::map<atom *, std::map<atom *, semitone::lit>> leqs;         // all the possible ordering constraints..
+    std::map<atom *, std::map<riddle::item *, semitone::lit>> frbs; // all the possible forbidding constraints..
   };
 } // namespace ratio
