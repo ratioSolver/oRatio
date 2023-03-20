@@ -280,7 +280,7 @@ namespace ratio
         }
     }
 
-    state_variable::sv_flaw::sv_flaw(state_variable &sv, const std::set<atom *> &atms) : flaw(sv.get_solver(), smart_type::get_resolvers(atms), true), sv(sv), overlapping_atoms(atms) {}
+    state_variable::sv_flaw::sv_flaw(state_variable &sv, const std::set<atom *> &atms) : flaw(sv.get_solver(), smart_type::get_resolvers(atms)), sv(sv), overlapping_atoms(atms) {}
 
     json::json state_variable::sv_flaw::get_data() const noexcept
     {

@@ -350,7 +350,7 @@ namespace ratio
         }
     }
 
-    reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr, const std::set<atom *> &atms) : flaw(rr.get_solver(), smart_type::get_resolvers(atms), true), rr(rr), overlapping_atoms(atms) {}
+    reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr, const std::set<atom *> &atms) : flaw(rr.get_solver(), smart_type::get_resolvers(atms)), rr(rr), overlapping_atoms(atms) {}
 
     json::json reusable_resource::rr_flaw::get_data() const noexcept
     {

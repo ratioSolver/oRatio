@@ -215,7 +215,7 @@ namespace ratio
         }
     }
 
-    consumable_resource::cr_flaw::cr_flaw(consumable_resource &cr, const std::set<atom *> &atms) : flaw(cr.get_solver(), smart_type::get_resolvers(atms), true), cr(cr), overlapping_atoms(atms) {}
+    consumable_resource::cr_flaw::cr_flaw(consumable_resource &cr, const std::set<atom *> &atms) : flaw(cr.get_solver(), smart_type::get_resolvers(atms)), cr(cr), overlapping_atoms(atms) {}
 
     json::json consumable_resource::cr_flaw::get_data() const noexcept
     {
