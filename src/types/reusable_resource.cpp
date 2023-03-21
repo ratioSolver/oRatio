@@ -126,9 +126,10 @@ namespace ratio
                                 store_flaw(flw); // we store the flaw for retrieval when at root-level..
                             }
 
+                            std::vector<std::pair<semitone::lit, double>> choices;
+                            std::unordered_set<semitone::var> vars;
                             for (const auto &as : utils::combinations(std::vector<atom *>(mcs_begin, mcs_end), 2))
                             {
-                                std::vector<std::pair<semitone::lit, double>> choices;
                                 const auto a0_start = as[0]->get(RATIO_START);
                                 const auto a0_end = as[0]->get(RATIO_END);
                                 const auto a1_start = as[1]->get(RATIO_START);
@@ -136,7 +137,7 @@ namespace ratio
 
                                 if (auto a0_it = leqs.find(as[0]); a0_it != leqs.cend())
                                     if (auto a0_a1_it = a0_it->second.find(as[1]); a0_a1_it != a0_it->second.cend())
-                                        if (get_solver().get_sat_core().value(a0_a1_it->second) == utils::Undefined)
+                                        if (get_solver().get_sat_core().value(a0_a1_it->second) == utils::Undefined && vars.insert(variable(a0_a1_it->second)).second)
                                         {
 #ifdef DL_TN
                                             const auto [min, max] = get_solver().get_rdl_theory().distance(static_cast<arith_item &>(*a0_end).get_lin(), static_cast<arith_item &>(*a1_start).get_lin());
@@ -150,7 +151,7 @@ namespace ratio
 
                                 if (auto a1_it = leqs.find(as[1]); a1_it != leqs.cend())
                                     if (auto a1_a0_it = a1_it->second.find(as[0]); a1_a0_it != a1_it->second.cend())
-                                        if (get_solver().get_sat_core().value(a1_a0_it->second) == utils::Undefined)
+                                        if (get_solver().get_sat_core().value(a1_a0_it->second) == utils::Undefined && vars.insert(variable(a1_a0_it->second)).second)
                                         {
 #ifdef DL_TN
                                             const auto [min, max] = get_solver().get_rdl_theory().distance(static_cast<arith_item &>(*a1_end).get_lin(), static_cast<arith_item &>(*a0_start).get_lin());
@@ -161,31 +162,23 @@ namespace ratio
 #endif
                                             choices.emplace_back(a1_a0_it->second, commit);
                                         }
-
-                                if (auto a0_frbs = frbs.find(as[0]); a0_frbs != frbs.cend())
-                                {
-                                    auto nr_possible_frbs = std::count_if(a0_frbs->second.cbegin(), a0_frbs->second.cend(), [&](const auto &a0_rr)
-                                                                          { return get_solver().get_sat_core().value(a0_rr.second) == utils::Undefined; });
-                                    for (const auto &a0_rr : a0_frbs->second)
-                                        if (get_solver().get_sat_core().value(a0_rr.second) == utils::Undefined)
-                                            choices.emplace_back(a0_rr.second, 1l - 1l / nr_possible_frbs);
-                                }
-
-                                if (auto a1_frbs = frbs.find(as[1]); a1_frbs != frbs.cend())
-                                {
-                                    auto nr_possible_frbs = std::count_if(a1_frbs->second.cbegin(), a1_frbs->second.cend(), [&](const auto &a1_rr)
-                                                                          { return get_solver().get_sat_core().value(a1_rr.second) == utils::Undefined; });
-                                    for (const auto &a1_rr : a1_frbs->second)
-                                        if (get_solver().get_sat_core().value(a1_rr.second) == utils::Undefined)
-                                            choices.emplace_back(a1_rr.second, 1l - 1l / nr_possible_frbs);
-                                }
-                                incs.emplace_back(choices);
-
-                                // we decrease the size of the mcs..
-                                mcs_usage -= get_solver().arith_value((*mcs_begin)->get(REUSABLE_RESOURCE_AMOUNT_NAME));
-                                assert(mcs_usage <= c_capacity);
-                                ++mcs_begin;
                             }
+                            for (const auto &atm : mcs)
+                                if (auto atm_frbs = frbs.find(atm); atm_frbs != frbs.cend())
+                                {
+                                    auto nr_possible_frbs = std::count_if(atm_frbs->second.cbegin(), atm_frbs->second.cend(), [&](const auto &atm_rr)
+                                                                          { return get_solver().get_sat_core().value(atm_rr.second) == utils::Undefined; });
+                                    for (const auto &atm_rr : atm_frbs->second)
+                                        if (get_solver().get_sat_core().value(atm_rr.second) == utils::Undefined && vars.insert(variable(atm_rr.second)).second)
+                                            choices.emplace_back(atm_rr.second, 1l - 1l / nr_possible_frbs);
+                                }
+
+                            // we decrease the size of the mcs..
+                            mcs_usage -= get_solver().arith_value((*mcs_begin)->get(REUSABLE_RESOURCE_AMOUNT_NAME));
+                            assert(mcs_usage <= c_capacity);
+                            ++mcs_begin;
+
+                            incs.emplace_back(choices);
                         }
                     }
                 }
@@ -291,29 +284,24 @@ namespace ratio
 
     void reusable_resource::rr_flaw::compute_resolvers()
     {
-        const auto cs = utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2);
-        for (const auto &as : cs)
+        std::unordered_set<semitone::var> vars;
+        for (const auto &as : utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
         {
             if (const auto a0_it = rr.leqs.find(as[0]); a0_it != rr.leqs.cend())
                 if (const auto a0_a1_it = a0_it->second.find(as[1]); a0_a1_it != a0_it->second.cend())
-                    if (get_solver().get_sat_core().value(a0_a1_it->second) != utils::False)
+                    if (get_solver().get_sat_core().value(a0_a1_it->second) != utils::False && vars.insert(variable(a0_a1_it->second)).second)
                         add_resolver(new order_resolver(*this, a0_a1_it->second, *as[0], *as[1]));
 
             if (const auto a1_it = rr.leqs.find(as[1]); a1_it != rr.leqs.cend())
                 if (const auto a1_a0_it = a1_it->second.find(as[0]); a1_a0_it != a1_it->second.cend())
-                    if (get_solver().get_sat_core().value(a1_a0_it->second) != utils::False)
+                    if (get_solver().get_sat_core().value(a1_a0_it->second) != utils::False && vars.insert(variable(a1_a0_it->second)).second)
                         add_resolver(new order_resolver(*this, a1_a0_it->second, *as[1], *as[0]));
-
-            if (const auto a0_frbs = rr.frbs.find(as[0]); a0_frbs != rr.frbs.cend())
-                for (const auto &a0_rr : a0_frbs->second)
-                    if (get_solver().get_sat_core().value(a0_rr.second) != utils::False)
-                        add_resolver(new forbid_resolver(*this, a0_rr.second, *as[0], *a0_rr.first));
-
-            if (const auto a1_frbs = rr.frbs.find(as[1]); a1_frbs != rr.frbs.cend())
-                for (const auto &a1_rr : a1_frbs->second)
-                    if (get_solver().get_sat_core().value(a1_rr.second) != utils::False)
-                        add_resolver(new forbid_resolver(*this, a1_rr.second, *as[1], *a1_rr.first));
         }
+        for (auto atm : overlapping_atoms)
+            if (const auto atm_frbs = rr.frbs.find(atm); atm_frbs != rr.frbs.cend())
+                for (const auto &atm_rr : atm_frbs->second)
+                    if (get_solver().get_sat_core().value(atm_rr.second) != utils::False && vars.insert(variable(atm_rr.second)).second)
+                        add_resolver(new forbid_resolver(*this, atm_rr.second, *atm, *atm_rr.first));
     }
 
     reusable_resource::rr_flaw::order_resolver::order_resolver(rr_flaw &flw, const semitone::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::ZERO), before(before), after(after) {}

@@ -1033,7 +1033,7 @@ namespace ratio
         assert(phis.count(variable(p)) || rhos.count(variable(p)));
 
         if (const auto at_phis_p = phis.find(variable(p)); at_phis_p != phis.cend())
-            switch (sat->value(at_phis_p->first))
+            switch (sat->value(p))
             {
             case utils::True: // some flaws have been activated..
                 for (const auto &f : at_phis_p->second)
@@ -1059,7 +1059,7 @@ namespace ratio
             }
 
         if (const auto at_rhos_p = rhos.find(variable(p)); at_rhos_p != rhos.cend())
-            switch (sat->value(at_rhos_p->first))
+            switch (sat->value(p))
             {
             case utils::True: // some resolvers have been activated..
                 for (const auto &r : at_rhos_p->second)
