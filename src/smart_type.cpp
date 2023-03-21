@@ -28,5 +28,5 @@ namespace ratio
         return res;
     }
 
-    atom_listener::atom_listener(atom &atm) : sat_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_sat_core_ptr()), lra_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_lra_theory()), rdl_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_rdl_theory()), ov_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_ov_theory()), atm(atm) {}
+    atom_listener::atom_listener(atom &atm) : lra_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_lra_theory()), rdl_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_rdl_theory()), ov_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_ov_theory()), atm(atm) {}
 } // namespace ratio

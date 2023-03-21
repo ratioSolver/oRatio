@@ -51,7 +51,7 @@ namespace ratio
     solver &slv;
   };
 
-  class atom_listener : public semitone::sat_value_listener, public semitone::lra_value_listener, public semitone::rdl_value_listener, public semitone::ov_value_listener
+  class atom_listener : public semitone::lra_value_listener, public semitone::rdl_value_listener, public semitone::ov_value_listener
   {
   public:
     atom_listener(atom &atm);
