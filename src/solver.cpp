@@ -1036,11 +1036,13 @@ namespace ratio
         const auto at_rhos_p = rhos.find(variable(p));
         assert(at_phis_p != phis.cend() || at_rhos_p != rhos.cend());
 
-        if (sign(p)) // something has been activated..
-        {
-            if (at_phis_p != phis.cend())
-                for (const auto &f : at_phis_p->second) // the `f` flaw has been activated..
-                {
+        // we check the flaws..
+        if (at_phis_p != phis.cend())
+            for (const auto &f : at_phis_p->second)
+            { // we check the `f` flaw..
+                if (sign(p) == sign(f->phi))
+                { // the `f` flaw has been activated..
+                    assert(sat->value(f->phi) == utils::True);
                     assert(!active_flaws.count(f.operator->()));
                     if (!sat->root_level())
                         trail.back().new_flaws.insert(f.operator->());
@@ -1051,26 +1053,31 @@ namespace ratio
                         trail.back().solved_flaws.insert(f.operator->()); // the `f` flaw has been accidentally solved..
                     gr->activated_flaw(*f);
                 }
-            if (at_rhos_p != rhos.cend())
-                for (const auto &r : at_rhos_p->second) // the `r` resolver has been activated..
-                {
+                else
+                { // the `f` flaw has been negated..
+                    assert(sat->value(f->phi) == utils::False);
+                    assert(!active_flaws.count(f.operator->()));
+                    gr->negated_flaw(*f);
+                }
+            }
+
+        // we check the resolvers..
+        if (at_rhos_p != rhos.cend())
+            for (const auto &r : at_rhos_p->second)
+            { // we check the `r` resolver..
+                if (sign(p) == sign(r->rho))
+                { // the `r` resolver has been activated..
+                    assert(sat->value(r->rho) == utils::True);
                     if (active_flaws.erase(&r->f) && !sat->root_level()) // since the resolver has been activated, its effect flaw has been resolved (notice that we remove its effect only in case it was already active)..
                         trail.back().solved_flaws.insert(&r->f);
                     gr->activated_resolver(*r);
                 }
-        }
-        else // something has been negated..
-        {
-            if (at_phis_p != phis.cend())
-                for (const auto &f : at_phis_p->second) // the `f` flaw has been negated..
-                {
-                    assert(!active_flaws.count(f.operator->()));
-                    gr->negated_flaw(*f);
-                }
-            if (at_rhos_p != rhos.cend())
-                for (const auto &r : at_rhos_p->second) // the `r` resolver has been negated..
+                else
+                { // the `r` resolver has been negated..
+                    assert(sat->value(r->rho) == utils::False);
                     gr->negated_resolver(*r);
-        }
+                }
+            }
 
         return true;
     }
