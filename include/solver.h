@@ -325,10 +325,10 @@ namespace ratio
 
   public:
     riddle::predicate &get_impulse() const noexcept { return *imp_pred; }
-    bool is_impulse(const riddle::type &pred) const noexcept { return imp_pred->is_assignable_from(pred); }
+    bool is_impulse(const riddle::predicate &pred) const noexcept { return imp_pred->is_assignable_from(pred); }
     bool is_impulse(const atom &atm) const noexcept { return imp_pred->is_assignable_from(atm.get_type()); }
     riddle::predicate &get_interval() const noexcept { return *int_pred; }
-    bool is_interval(const riddle::type &pred) const noexcept { return int_pred->is_assignable_from(pred); }
+    bool is_interval(const riddle::predicate &pred) const noexcept { return int_pred->is_assignable_from(pred); }
     bool is_interval(const atom &atm) const noexcept { return int_pred->is_assignable_from(atm.get_type()); }
 
   private:
