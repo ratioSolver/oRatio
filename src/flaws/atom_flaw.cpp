@@ -55,17 +55,7 @@ namespace ratio
             add_resolver(new activate_goal(*this));
     }
 
-    json::json atom_flaw::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "atom_flaw";
-        json::json atm_data;
-        atm_data["id"] = get_id(*atm);
-        atm_data["type"] = atm->get_type().get_name();
-        atm_data["sigma"] = variable(static_cast<atom &>(*atm).sigma);
-        data["atom"] = atm_data;
-        return data;
-    }
+    json::json atom_flaw::get_data() const noexcept { return {{"type", "atom_flaw"}, {"atom", {{"id", get_id(*atm)}, {"type", atm->get_type().get_name()}, {"sigma", variable(static_cast<atom &>(*atm).sigma)}}}}; }
 
     atom_flaw::activate_fact::activate_fact(atom_flaw &ef) : resolver(ef, utils::rational::ZERO) {}
     atom_flaw::activate_fact::activate_fact(atom_flaw &ef, const semitone::lit &l) : resolver(ef, l, utils::rational::ZERO) {}
@@ -80,13 +70,7 @@ namespace ratio
             throw riddle::unsolvable_exception();
     }
 
-    json::json atom_flaw::activate_fact::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "activate_fact";
-        data["rho"] = variable(get_rho());
-        return data;
-    }
+    json::json atom_flaw::activate_fact::get_data() const noexcept { return {{"type", "activate_fact"}, {"rho", variable(get_rho())}}; }
 
     atom_flaw::activate_goal::activate_goal(atom_flaw &ef) : resolver(ef, utils::rational::ONE) {}
     atom_flaw::activate_goal::activate_goal(atom_flaw &ef, const semitone::lit &l) : resolver(ef, l, utils::rational::ONE) {}
@@ -104,13 +88,7 @@ namespace ratio
         static_cast<riddle::predicate &>(c_atm.get_type()).call(af.get_atom());
     }
 
-    json::json atom_flaw::activate_goal::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "activate_goal";
-        data["rho"] = variable(get_rho());
-        return data;
-    }
+    json::json atom_flaw::activate_goal::get_data() const noexcept { return {{"type", "activate_goal"}, {"rho", variable(get_rho())}}; }
 
     atom_flaw::unify_atom::unify_atom(atom_flaw &ef, riddle::expr target, const semitone::lit &unif_lit) : resolver(ef, utils::rational::ZERO), target(target), unif_lit(unif_lit) {}
 
@@ -141,12 +119,5 @@ namespace ratio
             throw riddle::unsolvable_exception();
     }
 
-    json::json atom_flaw::unify_atom::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "unify_atom";
-        data["rho"] = variable(get_rho());
-        data["target"] = get_id(*target);
-        return data;
-    }
+    json::json atom_flaw::unify_atom::get_data() const noexcept { return {{"type", "unify_atom"}, {"rho", variable(get_rho())}, {"target", get_id(*target)}}; }
 } // namespace ratio

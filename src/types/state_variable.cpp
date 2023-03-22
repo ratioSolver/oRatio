@@ -203,8 +203,7 @@ namespace ratio
 
     json::json state_variable::sv_flaw::get_data() const noexcept
     {
-        json::json data;
-        data["type"] = "sv_flaw";
+        json::json data{{"type", "sv_flaw"}};
 
         json::json atms(json::json_type::array);
         for (const auto &atm : overlapping_atoms)
@@ -238,25 +237,11 @@ namespace ratio
 
     state_variable::sv_flaw::order_resolver::order_resolver(sv_flaw &flw, const semitone::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::ZERO), before(before), after(after) {}
 
-    json::json state_variable::sv_flaw::order_resolver::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "order";
-        data["before"] = get_id(before);
-        data["after"] = get_id(after);
-        return data;
-    }
+    json::json state_variable::sv_flaw::order_resolver::get_data() const noexcept { return {{"type", "order"}, {"before", get_id(before)}, {"after", get_id(after)}}; }
 
     state_variable::sv_flaw::forbid_resolver::forbid_resolver(sv_flaw &flw, const semitone::lit &r, atom &atm, riddle::item &itm) : resolver(flw, r, utils::rational::ZERO), atm(atm), itm(itm) {}
 
-    json::json state_variable::sv_flaw::forbid_resolver::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "forbid";
-        data["forbid_atom"] = get_id(atm);
-        data["forbid_item"] = get_id(itm);
-        return data;
-    }
+    json::json state_variable::sv_flaw::forbid_resolver::get_data() const noexcept { return {{"type", "forbid"}, {"forbid_atom", get_id(atm)}, {"forbid_item", get_id(itm)}}; }
 
     json::json state_variable::extract() const noexcept
     {
@@ -281,12 +266,10 @@ namespace ratio
 
         for (const auto &[sv, atms] : sv_instances)
         {
-            json::json tl;
-            tl["id"] = get_id(*sv);
+            json::json tl{{"id", get_id(*sv)}, {"type", STATE_VARIABLE_NAME}};
 #ifdef COMPUTE_NAMES
             tl["name"] = get_solver().guess_name(*sv);
 #endif
-            tl["type"] = STATE_VARIABLE_NAME;
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
@@ -318,9 +301,7 @@ namespace ratio
             json::json j_vals(json::json_type::array);
             for (p = std::next(p); p != pulses.end(); ++p)
             {
-                json::json j_val;
-                j_val["from"] = to_json(*std::prev(p));
-                j_val["to"] = to_json(*p);
+                json::json j_val{{"from", to_json(*std::prev(p))}, {"to", to_json(*p)}};
 
                 json::json j_atms(json::json_type::array);
                 for (const auto &atm : overlapping_atoms)

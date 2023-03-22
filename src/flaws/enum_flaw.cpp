@@ -16,25 +16,18 @@ namespace ratio
         }
     }
 
-    json::json enum_flaw::get_data() const noexcept
-    {
-        json::json j;
-        j["type"] = "enum";
-        return j;
-    }
+    json::json enum_flaw::get_data() const noexcept { return {{"type", "enum"}}; }
 
     enum_flaw::enum_resolver::enum_resolver(enum_flaw &ef, const semitone::lit &rho, const utils::rational &cost, utils::enum_val &val) : resolver(ef, rho, cost), val(val) {}
 
     json::json enum_flaw::enum_resolver::get_data() const noexcept
     {
-        json::json j;
-        j["type"] = "assignment";
+        json::json j{{"type", "assignment"}, {"value", value(dynamic_cast<riddle::item &>(val))}};
 #ifdef COMPUTE_NAMES
         auto name = get_solver().guess_name(dynamic_cast<riddle::item &>(val));
         if (!name.empty())
             j["name"] = name;
 #endif
-        j["value"] = value(dynamic_cast<riddle::item &>(val));
         return j;
     }
 } // namespace ratio

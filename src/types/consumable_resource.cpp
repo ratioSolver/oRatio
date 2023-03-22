@@ -221,18 +221,11 @@ namespace ratio
 
         for (const auto &[cres, atms] : cr_instances)
         {
-            json::json tl;
-            tl["id"] = get_id(*cres);
+            const auto c_initial_amount = get_solver().arith_value(cres->get(CONSUMABLE_RESOURCE_INITIAL_AMOUNT));
+            json::json tl{{"id", get_id(*cres)}, {"type", CONSUMABLE_RESOURCE_NAME}, {"capacity", to_json(get_solver().arith_value(cres->get(CONSUMABLE_RESOURCE_CAPACITY)))}, {"initial_amount", to_json(c_initial_amount)}};
 #ifdef COMPUTE_NAMES
             tl["name"] = get_solver().guess_name(*cres);
 #endif
-            tl["type"] = CONSUMABLE_RESOURCE_NAME;
-
-            const auto c_initial_amount = get_solver().arith_value(cres->get(CONSUMABLE_RESOURCE_INITIAL_AMOUNT));
-            tl["initial_amount"] = to_json(c_initial_amount);
-
-            const auto c_capacity = get_solver().arith_value(cres->get(CONSUMABLE_RESOURCE_CAPACITY));
-            tl["capacity"] = to_json(c_capacity);
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
@@ -265,9 +258,7 @@ namespace ratio
             utils::inf_rational c_val = c_initial_amount;
             for (p = std::next(p); p != pulses.end(); ++p)
             {
-                json::json j_val;
-                j_val["from"] = to_json(*std::prev(p));
-                j_val["to"] = to_json(*p);
+                json::json j_val{{"from", to_json(*std::prev(p))}, {"to", to_json(*p)}};
 
                 json::json j_atms(json::json_type::array);
                 utils::inf_rational c_angular_coefficient; // the concurrent resource update..

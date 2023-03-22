@@ -271,8 +271,7 @@ namespace ratio
 
     json::json reusable_resource::rr_flaw::get_data() const noexcept
     {
-        json::json data;
-        data["type"] = "rr-flaw";
+        json::json data{{"type", "rr-flaw"}};
 
         json::json atms(json::json_type::array);
         for (const auto &atm : overlapping_atoms)
@@ -306,25 +305,11 @@ namespace ratio
 
     reusable_resource::rr_flaw::order_resolver::order_resolver(rr_flaw &flw, const semitone::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::ZERO), before(before), after(after) {}
 
-    json::json reusable_resource::rr_flaw::order_resolver::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "order";
-        data["before"] = get_id(before);
-        data["after"] = get_id(after);
-        return data;
-    }
+    json::json reusable_resource::rr_flaw::order_resolver::get_data() const noexcept { return {{"type", "order"}, {"before", get_id(before)}, {"after", get_id(after)}}; }
 
     reusable_resource::rr_flaw::forbid_resolver::forbid_resolver(rr_flaw &flw, const semitone::lit &r, atom &atm, riddle::item &itm) : resolver(flw, r, utils::rational::ZERO), atm(atm), itm(itm) {}
 
-    json::json reusable_resource::rr_flaw::forbid_resolver::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "forbid";
-        data["forbid_atom"] = get_id(atm);
-        data["forbid_item"] = get_id(itm);
-        return data;
-    }
+    json::json reusable_resource::rr_flaw::forbid_resolver::get_data() const noexcept { return {{"type", "forbid"}, {"forbid_atom", get_id(atm)}, {"forbid_item", get_id(itm)}}; }
 
     json::json reusable_resource::extract() const noexcept
     {

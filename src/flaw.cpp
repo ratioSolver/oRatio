@@ -117,17 +117,11 @@ namespace ratio
 
     json::json to_json(const flaw &f) noexcept
     {
-        json::json j_f;
-        j_f["id"] = get_id(f);
+        json::json j_f{{"id", get_id(f)}, {"phi", to_string(f.get_phi())}, {"state", f.get_solver().get_sat_core().value(f.get_phi())}, {"cost", to_json(f.get_estimated_cost())}, {"pos", to_json(f.get_solver().get_idl_theory().bounds(f.get_position()))}, {"data", f.get_data()}};
         json::json causes(json::json_type::array);
         for (const auto &c : f.get_causes())
             causes.push_back(get_id(c.get()));
         j_f["causes"] = std::move(causes);
-        j_f["phi"] = to_string(f.get_phi());
-        j_f["state"] = f.get_solver().get_sat_core().value(f.get_phi());
-        j_f["cost"] = to_json(f.get_estimated_cost());
-        j_f["pos"] = to_json(f.get_solver().get_idl_theory().bounds(f.get_position()));
-        j_f["data"] = f.get_data();
         return j_f;
     }
 } // namespace ratio

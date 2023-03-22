@@ -55,17 +55,11 @@ namespace ratio
 
     json::json to_json(const resolver &r) noexcept
     {
-        json::json j_r;
-        j_r["id"] = get_id(r);
+        json::json j_r{{"id", get_id(r)}, {"effect", get_id(r.get_flaw())}, {"rho", to_string(r.get_rho())}, {"state", r.get_solver().get_sat_core().value(r.get_rho())}, {"intrinsic_cost", to_json(r.get_intrinsic_cost())}, {"data", r.get_data()}};
         json::json preconditions(json::json_type::array);
         for (const auto &p : r.get_preconditions())
             preconditions.push_back(get_id(p.get()));
         j_r["preconditions"] = std::move(preconditions);
-        j_r["effect"] = get_id(r.get_flaw());
-        j_r["rho"] = to_string(r.get_rho());
-        j_r["state"] = r.get_solver().get_sat_core().value(r.get_rho());
-        j_r["intrinsic_cost"] = to_json(r.get_intrinsic_cost());
-        j_r["data"] = r.get_data();
         return j_r;
     }
 } // namespace ratio

@@ -23,22 +23,11 @@ namespace ratio
         }
     }
 
-    json::json bool_flaw::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "bool_flaw";
-        data["item"] = get_id(*b_item);
-        return data;
-    }
+    json::json bool_flaw::get_data() const noexcept { return {{"type", "bool_flaw"}, {"item", get_id(*b_item)}}; }
 
     bool_flaw::choose_value::choose_value(bool_flaw &ef, const semitone::lit &rho) : resolver(ef, rho, utils::rational(1, 2)) {}
 
     void bool_flaw::choose_value::apply() {}
 
-    json::json bool_flaw::choose_value::get_data() const noexcept
-    {
-        json::json data;
-        data["type"] = "choose_value";
-        return data;
-    }
+    json::json bool_flaw::choose_value::get_data() const noexcept { return {{"type", "choose_value"}}; }
 } // namespace ratio

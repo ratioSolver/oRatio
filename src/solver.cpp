@@ -1262,9 +1262,7 @@ namespace ratio
                     }
         if (!starting_atoms.empty())
         {
-            json::json slv_tl;
-            slv_tl["id"] = get_id(rhs);
-            slv_tl["name"] = "solver";
+            json::json slv_tl{{"id", get_id(rhs)}, {"name", "solver"}};
             json::json j_atms(json::json_type::array);
             for (const auto &p : pulses)
                 for (const auto &atm : starting_atoms.at(p))
@@ -1296,12 +1294,9 @@ namespace ratio
 
     json::json to_json(const riddle::item &rhs) noexcept
     {
-        json::json j_itm;
-        j_itm["id"] = get_id(rhs);
-        j_itm["type"] = rhs.get_type().get_full_name();
+        json::json j_itm{{"id", get_id(rhs)}, {"type", rhs.get_type().get_full_name()}};
 #ifdef COMPUTE_NAMES
-        auto &slv = static_cast<const solver &>(rhs.get_type().get_core());
-        auto name = slv.guess_name(rhs);
+        auto name = static_cast<const solver &>(rhs.get_type().get_core()).guess_name(rhs);
         if (!name.empty())
             j_itm["name"] = name;
 #endif
@@ -1323,13 +1318,7 @@ namespace ratio
     {
         json::json j_exprs;
         for (const auto &[xpr_name, xpr] : vars)
-        {
-            json::json j_var;
-            j_var["name"] = xpr_name;
-            j_var["type"] = xpr->get_type().get_full_name();
-            j_var["value"] = value(*xpr);
-            j_exprs.push_back(std::move(j_var));
-        }
+            j_exprs.push_back({{"name", xpr_name}, {"type", xpr->get_type().get_full_name()}, {"value", value(*xpr)}});
         return j_exprs;
     }
 
@@ -1339,8 +1328,7 @@ namespace ratio
         if (itm.get_type() == slv.get_bool_type())
         {
             auto val = static_cast<const bool_item &>(itm).get_lit();
-            json::json j_val;
-            j_val["lit"] = (sign(val) ? "b" : "!b") + std::to_string(variable(val));
+            json::json j_val{{"lit", (sign(val) ? "b" : "!b") + std::to_string(variable(val))}};
             switch (slv.get_sat_core().value(val))
             {
             case utils::True:
@@ -1386,8 +1374,7 @@ namespace ratio
             return static_cast<const string_item &>(itm).get_string();
         else if (auto ev = dynamic_cast<const enum_item *>(&itm))
         {
-            json::json j_val;
-            j_val["var"] = std::to_string(ev->get_var());
+            json::json j_val{{"var", std::to_string(ev->get_var())}};
             json::json vals;
             for (const auto &v : slv.get_ov_theory().value(ev->get_var()))
                 vals.push_back(get_id(dynamic_cast<riddle::item &>(*v)));

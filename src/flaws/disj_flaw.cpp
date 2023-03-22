@@ -12,19 +12,9 @@ namespace ratio
                 add_resolver(new choose_lit(*this, utils::rational(1, static_cast<utils::I>(lits.size())), l));
     }
 
-    json::json disj_flaw::get_data() const noexcept
-    {
-        json::json j;
-        j["type"] = "disj";
-        return j;
-    }
+    json::json disj_flaw::get_data() const noexcept { return {{"type", "disj"}}; }
 
     disj_flaw::choose_lit::choose_lit(disj_flaw &ef, const utils::rational &cost, const semitone::lit &l) : resolver(ef, l, cost) {}
 
-    json::json disj_flaw::choose_lit::get_data() const noexcept
-    {
-        json::json j;
-        j["lit"] = to_string(get_rho());
-        return j;
-    }
+    json::json disj_flaw::choose_lit::get_data() const noexcept { return {{"lit", to_string(get_rho())}}; }
 } // namespace ratio
