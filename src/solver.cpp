@@ -1051,7 +1051,7 @@ namespace ratio
                         trail.back().solved_flaws.insert(f.operator->()); // the `f` flaw has been accidentally solved..
                     gr->activated_flaw(*f);
                 }
-            else if (at_rhos_p != rhos.cend())
+            if (at_rhos_p != rhos.cend())
                 for (const auto &r : at_rhos_p->second) // the `r` resolver has been activated..
                 {
                     if (active_flaws.erase(&r->f) && !sat->root_level()) // since the resolver has been activated, its effect flaw has been resolved (notice that we remove its effect only in case it was already active)..
@@ -1067,7 +1067,7 @@ namespace ratio
                     assert(!active_flaws.count(f.operator->()));
                     gr->negated_flaw(*f);
                 }
-            else if (at_rhos_p != rhos.cend())
+            if (at_rhos_p != rhos.cend())
                 for (const auto &r : at_rhos_p->second) // the `r` resolver has been negated..
                     gr->negated_resolver(*r);
         }
