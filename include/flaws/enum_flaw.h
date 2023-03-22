@@ -21,9 +21,9 @@ namespace ratio
     class enum_resolver final : public resolver
     {
     public:
-      enum_resolver(enum_flaw &ef, const utils::rational &cost, utils::enum_val &val);
+      enum_resolver(enum_flaw &ef, const semitone::lit &rho, const utils::rational &cost, utils::enum_val &val);
 
-      void apply() override;
+      void apply() override {}
 
       json::json get_data() const noexcept override;
 

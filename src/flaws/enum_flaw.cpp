@@ -10,7 +10,10 @@ namespace ratio
     { // we add a resolver for each possible value of the enum..
         auto dom = get_solver().domain(&ei);
         for (auto &v : dom)
-            add_resolver(new enum_resolver(*this, utils::rational(1, static_cast<utils::I>(dom.size())), dynamic_cast<utils::enum_val &>(*v)));
+        {
+            auto &val = dynamic_cast<utils::enum_val &>(*v);
+            add_resolver(new enum_resolver(*this, get_solver().get_ov_theory().allows(ei.get_var(), val), utils::rational(1, static_cast<utils::I>(dom.size())), val));
+        }
     }
 
     json::json enum_flaw::get_data() const noexcept
@@ -20,13 +23,7 @@ namespace ratio
         return j;
     }
 
-    enum_flaw::enum_resolver::enum_resolver(enum_flaw &ef, const utils::rational &cost, utils::enum_val &val) : resolver(ef, cost), val(val) {}
-
-    void enum_flaw::enum_resolver::apply()
-    { // we add a clause to the SAT solver that enforces the enum value as a consequence of the resolver's activation..
-        if (!get_solver().get_sat_core().new_clause({!get_rho(), get_solver().get_ov_theory().allows(static_cast<const enum_flaw &>(get_flaw()).ei.get_var(), val)}))
-            throw riddle::unsolvable_exception();
-    }
+    enum_flaw::enum_resolver::enum_resolver(enum_flaw &ef, const semitone::lit &rho, const utils::rational &cost, utils::enum_val &val) : resolver(ef, rho, cost), val(val) {}
 
     json::json enum_flaw::enum_resolver::get_data() const noexcept
     {
