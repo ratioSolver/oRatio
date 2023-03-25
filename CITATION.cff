@@ -5,23 +5,23 @@ type: software
 authors:
   - given-names: Riccardo
     family-names: De Benedictis
-    email: riccardo.debenedictis@istc.cnr.it
+    email: riccardo.debenedictis@cnr.it
     affiliation: 'CNR - Italian National Research Council, ISTC'
     orcid: 'https://orcid.org/0000-0003-2344-4088'
 version: 3.0
-repository-code: 'https://github.com/pstlab/oRatio/tree/v3.0'
+repository-code: 'https://github.com/ratioSolver/oRatio'
 references:
   - type: article
     title: Lifted Heuristics for Timeline-based Planning
     authors:
       - given-names: Riccardo
         family-names: De Benedictis
-        email: riccardo.debenedictis@istc.cnr.it
+        email: riccardo.debenedictis@cnr.it
         affiliation: 'CNR - Italian National Research Council, ISTC'
         orcid: 'https://orcid.org/0000-0003-2344-4088'
       - given-names: Amedeo
         family-names: Cesta
-        email: amedeo.cesta@istc.cnr.it
+        email: amedeo.cesta@cnr.it
         orcid: 'https://orcid.org/0000-0002-0703-9122'
         affiliation: 'CNR - Italian National Research Council, ISTC'
     doi: 10.3233/FAIA200362
