@@ -94,7 +94,7 @@ namespace ratio
   }
   inline json::json flaw_state_changed_message(const flaw &f) noexcept { return {{"type", "flaw_state_changed"}, {"solver_id", get_id(f.get_solver())}, {"id", get_id(f)}, {"state", f.get_solver().get_sat_core().value(f.get_phi())}}; }
   inline json::json flaw_cost_changed_message(const flaw &f) noexcept { return {{"type", "flaw_cost_changed"}, {"solver_id", get_id(f.get_solver())}, {"id", get_id(f)}, {"cost", to_json(f.get_estimated_cost())}}; }
-  inline json::json flaw_position_changed_message(const flaw &f) noexcept { return {{"type", "flaw_position_changed"}, {"solver_id", get_id(f.get_solver())}, {"solver_id", {"id", get_id(f)}, {"pos", to_json(f.get_solver().get_idl_theory().bounds(f.get_position()))}}}; }
+  inline json::json flaw_position_changed_message(const flaw &f) noexcept { return {{"type", "flaw_position_changed"}, {"solver_id", get_id(f.get_solver())}, {"id", get_id(f)}, {"pos", to_json(f.get_solver().get_idl_theory().bounds(f.get_position()))}}; }
   inline json::json current_flaw_message(const flaw &f) noexcept { return {{"type", "current_flaw"}, {"solver_id", get_id(f.get_solver())}, {"id", get_id(f)}}; }
 
   inline json::json resolver_created_message(const resolver &r) noexcept
