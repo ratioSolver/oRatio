@@ -1243,7 +1243,7 @@ namespace ratio
         return j_core;
     }
 
-    ORATIOSOLVER_EXPORT json::json to_timelines(solver &rhs) noexcept
+    ORATIOSOLVER_EXPORT json::json to_timelines(const solver &rhs) noexcept
     {
         json::json tls(json::json_type::array);
 
@@ -1256,7 +1256,7 @@ namespace ratio
                 for (const auto &atm : pred.get().get_instances())
                     if (&atm->get_type().get_core() != &rhs && rhs.get_sat_core().value(static_cast<atom &>(*atm).get_sigma()) == utils::True)
                     {
-                        utils::inf_rational start = rhs.get_core().arith_value(rhs.is_impulse(pred.get()) ? static_cast<atom &>(*atm).get(RATIO_AT) : static_cast<atom &>(*atm).get(RATIO_START));
+                        utils::inf_rational start = rhs.arith_value(rhs.is_impulse(pred.get()) ? static_cast<atom &>(*atm).get(RATIO_AT) : static_cast<atom &>(*atm).get(RATIO_START));
                         starting_atoms[start].insert(dynamic_cast<atom *>(&*atm));
                         pulses.insert(start);
                     }

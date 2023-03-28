@@ -84,4 +84,28 @@ namespace ratio
     std::unordered_map<const flaw *, utils::u_ptr<flaw_listener>> flaw_listeners;
     std::unordered_map<const resolver *, utils::u_ptr<resolver_listener>> resolver_listeners;
   };
+
+  inline json::json flaw_created_message(const flaw &f) noexcept
+  {
+    json::json flaw_json = to_json(f);
+    flaw_json["type"] = "flaw_created";
+    flaw_json["solver_id"] = get_id(f.get_solver());
+    return flaw_json;
+  }
+  inline json::json flaw_state_changed_message(const flaw &f) noexcept { return {{"type", "flaw_state_changed"}, {"solver_id", get_id(f.get_solver())}, {"id", get_id(f)}, {"state", f.get_solver().get_sat_core().value(f.get_phi())}}; }
+  inline json::json flaw_cost_changed_message(const flaw &f) noexcept { return {{"type", "flaw_cost_changed"}, {"solver_id", get_id(f.get_solver())}, {"id", get_id(f)}, {"cost", to_json(f.get_estimated_cost())}}; }
+  inline json::json flaw_position_changed_message(const flaw &f) noexcept { return {{"type", "flaw_position_changed"}, {"solver_id", get_id(f.get_solver())}, {"solver_id", {"id", get_id(f)}, {"pos", to_json(f.get_solver().get_idl_theory().bounds(f.get_position()))}}}; }
+  inline json::json current_flaw_message(const flaw &f) noexcept { return {{"type", "current_flaw"}, {"solver_id", get_id(f.get_solver())}, {"id", get_id(f)}}; }
+
+  inline json::json resolver_created_message(const resolver &r) noexcept
+  {
+    json::json resolver_json = to_json(r);
+    resolver_json["type"] = "resolver_created";
+    resolver_json["solver_id"] = get_id(r.get_solver());
+    return resolver_json;
+  }
+  inline json::json resolver_state_changed_message(const resolver &r) noexcept { return {{"type", "resolver_state_changed"}, {"solver_id", get_id(r.get_solver())}, {"id", get_id(r)}, {"state", r.get_solver().get_sat_core().value(r.get_rho())}}; }
+  inline json::json current_resolver_message(const resolver &r) noexcept { return {{"type", "current_resolver"}, {"solver_id", get_id(r.get_solver())}, {"id", get_id(r)}}; }
+
+  inline json::json causal_link_added_message(const flaw &f, const resolver &r) noexcept { return {{"type", "causal_link_added"}, {"solver_id", get_id(f.get_solver())}, {"flaw_id", get_id(f)}, {"resolver_id", get_id(r)}}; }
 } // namespace ratio

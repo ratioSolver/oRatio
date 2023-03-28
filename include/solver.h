@@ -376,7 +376,7 @@ namespace ratio
   };
 
   ORATIOSOLVER_EXPORT json::json to_json(const solver &rhs) noexcept;
-  ORATIOSOLVER_EXPORT json::json to_timelines(solver &rhs) noexcept;
+  ORATIOSOLVER_EXPORT json::json to_timelines(const solver &rhs) noexcept;
 
   json::json to_json(const riddle::item &rhs) noexcept;
   json::json to_json(const std::map<std::string, riddle::expr> &vars) noexcept;
@@ -413,4 +413,8 @@ namespace ratio
    * @return uintptr_t the id of the given solver.
    */
   inline uintptr_t get_id(const solver &s) noexcept { return reinterpret_cast<uintptr_t>(&s); }
+
+  inline json::json started_solving_message(const solver &s) noexcept { return {{"type", "started_solving"}, {"solver_id", get_id(s)}}; }
+  inline json::json solution_found_message(const solver &s) noexcept { return {{"type", "solution_found"}, {"solver_id", get_id(s)}, {"state", to_json(s)}, {"timelines", to_timelines(s)}}; }
+  inline json::json inconsistent_problem_message(const solver &s) noexcept { return {{"type", "inconsistent_problem"}, {"solver_id", get_id(s)}}; }
 } // namespace ratio
