@@ -26,6 +26,7 @@ namespace ratio
                 if (!t_atm.reason->is_expanded() ||                                                                   // we cannot unify with an atom that is not expanded..
                     get_solver().get_idl_theory().distance(get_position(), t_atm.reason->get_position()).first > 0 || // we cannot unify with an atom that introduces a cycle..
                     get_solver().get_sat_core().value(t_atm.sigma) == utils::False ||                                 // we cannot unify with an atom that is unified with another atom..
+                    get_solver().get_sat_core().value(t_atm.reason->get_phi()) == utils::False ||                     // we cannot unify with an atom that cannot be activated..
                     !get_solver().matches(atm, i))                                                                    // we cannot unify with an atom that does not match the current atom..
                     continue;
 
