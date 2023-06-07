@@ -25,6 +25,7 @@ set_property(CACHE HEURISTIC_TYPE PROPERTY STRINGS ${HEURISTIC_TYPES})
 
 option(DEFERRABLE_FLAWS "Check for deferrable flaws" ON)
 option(GRAPH_PRUNING "Prunes the causal graph before starting the search" ON)
+option(ENUM_PRUNING "Prunes the search space by checking enum values" ON)
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
 
 set(JSON_INCLUDE_UTILS OFF CACHE BOOL "Include utils library" FORCE)
@@ -74,6 +75,11 @@ endif()
 message(STATUS "Prune graph:            ${GRAPH_PRUNING}")
 if(GRAPH_PRUNING)
     target_compile_definitions(${PROJECT_NAME} PRIVATE GRAPH_PRUNING)
+endif()
+
+message(STATUS "Prune enums:            ${ENUM_PRUNING}")
+if(ENUM_PRUNING)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ENUM_PRUNING)
 endif()
 
 message(STATUS "Check inconsistencies:  ${CHECK_INCONSISTENCIES}")

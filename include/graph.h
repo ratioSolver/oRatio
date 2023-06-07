@@ -57,7 +57,9 @@ namespace ratio
 
   protected:
     void new_flaw(flaw_ptr f, const bool &enqueue = true) const noexcept;
-    const std::unordered_set<flaw *> &get_flaws() const noexcept;
+    const std::unordered_map<semitone::var, std::vector<flaw_ptr>> &get_flaws() const noexcept;
+    const std::unordered_set<flaw *> &get_active_flaws() const noexcept;
+    const std::unordered_map<semitone::var, std::vector<resolver_ptr>> &get_resolvers() const noexcept;
     void expand_flaw(flaw &f);
 
     void set_cost(flaw &f, const utils::rational &cost) const noexcept;

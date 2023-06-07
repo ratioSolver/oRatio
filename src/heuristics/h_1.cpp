@@ -1,5 +1,6 @@
 #include "h_1.h"
 #include "solver.h"
+#include "enum_flaw.h"
 #include <cassert>
 
 namespace ratio
@@ -40,7 +41,7 @@ namespace ratio
 
         do
         {
-            while (std::any_of(get_flaws().cbegin(), get_flaws().cend(), [](const auto &f)
+            while (std::any_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
                                { return is_positive_infinite(f->get_estimated_cost()); }))
             {
                 if (flaw_q.empty()) // we have no flaws to expand..
@@ -61,9 +62,13 @@ namespace ratio
                 flaw_q.pop_front();
             }
 
+#ifdef ENUM_PRUNING
+            prune_enums();
+#endif
+
             // we extract the inconsistencies (and translate them into flaws)..
             get_incs();
-        } while (std::any_of(get_flaws().cbegin(), get_flaws().cend(), [](const auto &f)
+        } while (std::any_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
                              { return is_positive_infinite(f->get_estimated_cost()); }));
 
         // we perform some cleanings..
@@ -75,7 +80,7 @@ namespace ratio
     {
         LOG("adding a layer to the causal graph..");
         assert(s.get_sat_core().root_level());
-        assert(std::none_of(get_flaws().cbegin(), get_flaws().cend(), [](flaw *f)
+        assert(std::none_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](flaw *f)
                             { return is_positive_infinite(f->get_estimated_cost()); }));
 
         // we make a copy of the flaws queue..
@@ -97,13 +102,17 @@ namespace ratio
                     expand_flaw(f);
                 flaw_q.pop_front();
             }
+
+#ifdef ENUM_PRUNING
+            prune_enums();
+#endif
+
+            // we extract the inconsistencies (and translate them into flaws)..
+            get_incs();
         }
 
-        // we extract the inconsistencies (and translate them into flaws)..
-        get_incs();
-
         // we check if we can further build the causal graph..
-        if (std::any_of(get_flaws().cbegin(), get_flaws().cend(), [](const auto &f)
+        if (std::any_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
                         { return is_positive_infinite(f->get_estimated_cost()); }))
             build();
         else // we perform some cleanings..
@@ -116,7 +125,7 @@ namespace ratio
     {
         LOG("pruning the causal graph..");
         assert(s.get_sat_core().root_level());
-        assert(std::none_of(get_flaws().cbegin(), get_flaws().cend(), [](flaw *f)
+        assert(std::none_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](flaw *f)
                             { return is_positive_infinite(f->get_estimated_cost()); }));
 
         for (const auto &f : flaw_q)
@@ -125,6 +134,20 @@ namespace ratio
                     throw riddle::unsolvable_exception();
         if (!s.get_sat_core().propagate())
             throw riddle::unsolvable_exception();
+    }
+#endif
+
+#ifdef ENUM_PRUNING
+    void h_1::prune_enums()
+    {
+        LOG("pruning the enums..");
+        for (const auto &[phi, fs] : get_flaws())
+            if (s.get_sat_core().value(phi) != utils::False)
+                for (const auto &f : fs)
+                    if (const auto e_f = dynamic_cast<enum_flaw *>(f.operator->()))
+                        for (const auto &r : e_f->get_resolvers())
+                            if (s.get_sat_core().value(r.get().get_rho()) != utils::False)
+                                s.get_sat_core().check({r.get().get_rho()});
     }
 #endif
 

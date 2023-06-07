@@ -15,6 +15,7 @@ jobs:
         #heuristic_type: [h_max, h_add]
         #deferrable_flaws: [ON, OFF]
         #graph_pruning: [ON, OFF]
+        enum_pruning: [ON, OFF]
         #check_inconsistencies: [ON, OFF]
         #build_listeners: [ON, OFF]
 
@@ -24,6 +25,7 @@ jobs:
       #HEURISTIC_TYPE: ${{ matrix.heuristic_type }}
       #DEFERRABLE_FLAWS: ${{ matrix.deferrable_flaws }}
       #GRAPH_PRUNING: ${{ matrix.graph_pruning }}
+      ENUM_PRUNING: ${{ matrix.enum_pruning }}
       #CHECK_INCONSISTENCIES: ${{ matrix.check_inconsistencies }}
       #BUILD_LISTENERS: ${{ matrix.build_listeners }}
 
@@ -33,7 +35,7 @@ jobs:
           submodules: recursive
 
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENUM_PRUNING=${{env.ENUM_PRUNING}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}

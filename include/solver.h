@@ -307,7 +307,9 @@ namespace ratio
 
     void restore_ni() noexcept { ni = tmp_ni; }
 
+    const std::unordered_map<semitone::var, std::vector<flaw_ptr>> &get_flaws() const noexcept { return phis; }
     const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
+    const std::unordered_map<semitone::var, std::vector<resolver_ptr>> &get_resolvers() const noexcept { return rhos; }
 
     inline const std::vector<std::reference_wrapper<resolver>> get_cause()
     {

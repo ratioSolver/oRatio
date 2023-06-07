@@ -22,6 +22,10 @@ namespace ratio
     void prune() override;
 #endif
 
+#ifdef ENUM_PRUNING
+    void prune_enums();
+#endif
+
     void add_layer() override;
 
     bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..

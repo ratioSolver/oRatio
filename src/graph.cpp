@@ -56,7 +56,9 @@ namespace ratio
 
     void graph::new_flaw(flaw_ptr f, const bool &enqueue) const noexcept { s.new_flaw(std::move(f), enqueue); }
 
-    const std::unordered_set<flaw *> &graph::get_flaws() const noexcept { return s.get_active_flaws(); }
+    const std::unordered_map<semitone::var, std::vector<flaw_ptr>> &graph::get_flaws() const noexcept { return s.get_flaws(); }
+    const std::unordered_set<flaw *> &graph::get_active_flaws() const noexcept { return s.get_active_flaws(); }
+    const std::unordered_map<semitone::var, std::vector<resolver_ptr>> &graph::get_resolvers() const noexcept { return s.get_resolvers(); }
 
     void graph::set_cost(flaw &f, const utils::rational &cost) const noexcept { s.set_cost(f, cost); }
 
