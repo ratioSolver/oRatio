@@ -3,6 +3,7 @@
 #include "flaw.h"
 #include "resolver.h"
 #include <unordered_set>
+#include <unordered_map>
 
 #ifdef BUILD_LISTENERS
 #define FIRE_CURRENT_FLAW(f) fire_current_flaw(f)
