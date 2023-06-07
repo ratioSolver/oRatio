@@ -229,10 +229,10 @@ namespace ratio
                         add_resolver(new order_resolver(*this, a1_a0_it->second, *as[1], *as[0]));
         }
         for (const auto atm : overlapping_atoms)
-            if (const auto frbs = sv.frbs.find(atm); frbs != sv.frbs.cend())
-                for (const auto &sv : frbs->second)
-                    if (get_solver().get_sat_core().value(sv.second) != utils::False && vars.insert(variable(sv.second)).second)
-                        add_resolver(new forbid_resolver(*this, sv.second, *atm, *sv.first));
+            if (const auto atm_frbs = sv.frbs.find(atm); atm_frbs != sv.frbs.cend())
+                for (const auto &[atm_sv, sv_sel] : atm_frbs->second)
+                    if (get_solver().get_sat_core().value(sv_sel) != utils::False && vars.insert(variable(sv_sel)).second)
+                        add_resolver(new forbid_resolver(*this, sv_sel, *atm, *atm_sv));
     }
 
     state_variable::sv_flaw::order_resolver::order_resolver(sv_flaw &flw, const semitone::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::ZERO), before(before), after(after) {}

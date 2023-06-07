@@ -298,9 +298,9 @@ namespace ratio
         }
         for (auto atm : overlapping_atoms)
             if (const auto atm_frbs = rr.frbs.find(atm); atm_frbs != rr.frbs.cend())
-                for (const auto &atm_rr : atm_frbs->second)
-                    if (get_solver().get_sat_core().value(atm_rr.second) != utils::False && vars.insert(variable(atm_rr.second)).second)
-                        add_resolver(new forbid_resolver(*this, atm_rr.second, *atm, *atm_rr.first));
+                for (const auto &[atm_rr, rr_sel] : atm_frbs->second)
+                    if (get_solver().get_sat_core().value(rr_sel) != utils::False && vars.insert(variable(rr_sel)).second)
+                        add_resolver(new forbid_resolver(*this, rr_sel, *atm, *atm_rr));
     }
 
     reusable_resource::rr_flaw::order_resolver::order_resolver(rr_flaw &flw, const semitone::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::ZERO), before(before), after(after) {}
