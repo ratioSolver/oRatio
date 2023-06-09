@@ -66,6 +66,13 @@ namespace ratio
     virtual void prune() {}
 #endif
 
+#ifdef GRAPH_REFINING
+    /**
+     * @brief Refines the causal graph.
+     */
+    virtual void refine() {}
+#endif
+
     virtual void push() {}
     virtual void pop() {}
 

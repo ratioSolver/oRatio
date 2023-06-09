@@ -59,6 +59,9 @@ namespace ratio
       semitone::lit unif_lit;
     };
 
+  public:
+    static bool is_unification(const resolver &r) noexcept { return dynamic_cast<const unify_atom *>(&r) != nullptr; }
+
   private:
     riddle::expr atm;
   };

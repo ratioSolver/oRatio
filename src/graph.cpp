@@ -35,6 +35,10 @@ namespace ratio
 #endif
             // we take `gamma` decision..
             s.take_decision(semitone::lit(gamma));
+#ifdef GRAPH_REFINING
+            // we refine the graph..
+            refine();
+#endif
         }
     }
 

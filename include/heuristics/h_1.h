@@ -27,7 +27,8 @@ namespace ratio
 #endif
 
 #ifdef GRAPH_REFINING
-    void graph_refining();
+    void refine() override;
+    void prune_enums();
 #endif
 
     bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..

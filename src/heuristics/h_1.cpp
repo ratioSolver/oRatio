@@ -1,6 +1,7 @@
 #include "h_1.h"
 #include "solver.h"
 #include "enum_flaw.h"
+#include "atom_flaw.h"
 #include <cassert>
 
 namespace ratio
@@ -61,6 +62,14 @@ namespace ratio
                         expand_flaw(f);
                         if (auto e_f = dynamic_cast<enum_flaw *>(&f))
                             enum_flaws.insert(e_f);
+                        else if (auto a_f = dynamic_cast<atom_flaw *>(&f))
+                            for (const auto &r : a_f->get_resolvers())
+                                if (atom_flaw::is_unification(r.get()))
+                                {
+                                    auto &l = static_cast<atom_flaw &>(r.get().get_preconditions().front().get());
+                                    if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
+                                        landmarks.insert(&l);
+                                }
                     }
                 }
                 flaw_q.pop_front();
@@ -69,7 +78,7 @@ namespace ratio
             // we extract the inconsistencies (and translate them into flaws)..
             get_incs();
 #ifdef GRAPH_REFINING
-            graph_refining();
+            prune_enums();
 #endif
         } while (std::any_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
                              { return is_positive_infinite(f->get_estimated_cost()); }));
@@ -106,6 +115,14 @@ namespace ratio
                     expand_flaw(f);
                     if (auto e_f = dynamic_cast<enum_flaw *>(&f))
                         enum_flaws.insert(e_f);
+                    else if (auto a_f = dynamic_cast<atom_flaw *>(&f))
+                        for (const auto &r : a_f->get_resolvers())
+                            if (atom_flaw::is_unification(r.get()))
+                            {
+                                auto &l = static_cast<atom_flaw &>(r.get().get_preconditions().front().get());
+                                if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
+                                    landmarks.insert(&l);
+                            }
                 }
                 flaw_q.pop_front();
             }
@@ -113,7 +130,7 @@ namespace ratio
             // we extract the inconsistencies (and translate them into flaws)..
             get_incs();
 #ifdef GRAPH_REFINING
-            graph_refining();
+            prune_enums();
 #endif
         }
 
@@ -144,12 +161,20 @@ namespace ratio
 #endif
 
 #ifdef GRAPH_REFINING
-    void h_1::graph_refining()
+    void h_1::refine()
     {
-        LOG("refining the causal graph..");
+        LOG("checking landmarks..");
+        for (const auto l : landmarks)
+            if (s.get_sat_core().value(l->get_phi()) == utils::Undefined)
+                s.get_sat_core().check({!l->get_phi()});
+    }
+
+    void h_1::prune_enums()
+    {
+        LOG("checking enums..");
         for (const auto e_f : enum_flaws)
             for (const auto &r : e_f->get_resolvers())
-                if (s.get_sat_core().value(r.get().get_rho()) != utils::False)
+                if (s.get_sat_core().value(r.get().get_rho()) == utils::Undefined)
                     s.get_sat_core().check({r.get().get_rho()});
     }
 #endif
