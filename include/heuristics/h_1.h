@@ -6,6 +6,9 @@
 
 namespace ratio
 {
+  class enum_flaw;
+  class atom_flaw;
+
   class h_1 final : public graph
   {
   public:
@@ -17,16 +20,15 @@ namespace ratio
     void propagate_costs(flaw &f) override;
 
     void build() override;
+    void add_layer() override;
 
 #ifdef GRAPH_PRUNING
     void prune() override;
 #endif
 
-#ifdef ENUM_PRUNING
-    void prune_enums();
+#ifdef GRAPH_REFINING
+    void graph_refining();
 #endif
-
-    void add_layer() override;
 
     bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..
 
@@ -35,6 +37,10 @@ namespace ratio
     std::unordered_set<flaw *> visited; // the visited flaws, for graph cost propagation (and deferrable flaws check)..
 #ifdef GRAPH_PRUNING
     std::unordered_set<flaw *> already_closed; // already closed flaws (for avoiding duplicating graph pruning constraints)..
+#endif
+#ifdef GRAPH_REFINING
+    std::unordered_set<enum_flaw *> enum_flaws; // the enum flaws..
+    std::unordered_set<atom_flaw *> landmarks;  // the possible landmarks..
 #endif
   };
 } // namespace ratio

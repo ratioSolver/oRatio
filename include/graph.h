@@ -35,18 +35,36 @@ namespace ratio
 
     void check();
 
+    /**
+     * @brief Enqueues the given flaw in the graph.
+     *
+     * @param f The flaw to enqueue.
+     */
     virtual void enqueue(flaw &) {}
-    virtual void propagate_costs(flaw &) {}
-    virtual void build() {} // builds the graph..
-#ifdef GRAPH_PRUNING
-    virtual void prune()
-    {
-    } // prunes the current graph..
-#endif
 
-    virtual void add_layer()
-    {
-    } // adds a layer to the graph..
+    /**
+     * @brief Propagates the costs of the given flaw.
+     *
+     * @param f The flaw to propagate the costs of.
+     */
+    virtual void propagate_costs(flaw &) {}
+
+    /**
+     * @brief Builds the graph.
+     */
+    virtual void build() {}
+
+    /**
+     * @brief Adds a layer to the graph.
+     */
+    virtual void add_layer() {}
+
+#ifdef GRAPH_PRUNING
+    /**
+     * @brief Prunes the causal graph.
+     */
+    virtual void prune() {}
+#endif
 
     virtual void push() {}
     virtual void pop() {}

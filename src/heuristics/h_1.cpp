@@ -57,17 +57,20 @@ namespace ratio
                         flaw_q.push_back(&f);
                     else
 #endif
+                    {
                         expand_flaw(f);
+                        if (auto e_f = dynamic_cast<enum_flaw *>(&f))
+                            enum_flaws.insert(e_f);
+                    }
                 }
                 flaw_q.pop_front();
             }
 
-#ifdef ENUM_PRUNING
-            prune_enums();
-#endif
-
             // we extract the inconsistencies (and translate them into flaws)..
             get_incs();
+#ifdef GRAPH_REFINING
+            graph_refining();
+#endif
         } while (std::any_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
                              { return is_positive_infinite(f->get_estimated_cost()); }));
 
@@ -99,16 +102,19 @@ namespace ratio
                 auto &f = *flaw_q.front();
                 assert(!f.is_expanded());
                 if (s.get_sat_core().value(f.get_phi()) != utils::False)
+                {
                     expand_flaw(f);
+                    if (auto e_f = dynamic_cast<enum_flaw *>(&f))
+                        enum_flaws.insert(e_f);
+                }
                 flaw_q.pop_front();
             }
 
-#ifdef ENUM_PRUNING
-            prune_enums();
-#endif
-
             // we extract the inconsistencies (and translate them into flaws)..
             get_incs();
+#ifdef GRAPH_REFINING
+            graph_refining();
+#endif
         }
 
         // we check if we can further build the causal graph..
@@ -137,17 +143,14 @@ namespace ratio
     }
 #endif
 
-#ifdef ENUM_PRUNING
-    void h_1::prune_enums()
+#ifdef GRAPH_REFINING
+    void h_1::graph_refining()
     {
-        LOG("pruning the enums..");
-        for (const auto &[phi, fs] : get_flaws())
-            if (s.get_sat_core().value(phi) != utils::False)
-                for (const auto &f : fs)
-                    if (const auto e_f = dynamic_cast<enum_flaw *>(f.operator->()))
-                        for (const auto &r : e_f->get_resolvers())
-                            if (s.get_sat_core().value(r.get().get_rho()) != utils::False)
-                                s.get_sat_core().check({r.get().get_rho()});
+        LOG("refining the causal graph..");
+        for (const auto e_f : enum_flaws)
+            for (const auto &r : e_f->get_resolvers())
+                if (s.get_sat_core().value(r.get().get_rho()) != utils::False)
+                    s.get_sat_core().check({r.get().get_rho()});
     }
 #endif
 
