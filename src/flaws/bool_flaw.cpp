@@ -23,7 +23,7 @@ namespace ratio
         }
     }
 
-    json::json bool_flaw::get_data() const noexcept { return {{"type", "bool_flaw"}, {"item", get_id(*b_item)}}; }
+    json::json bool_flaw::get_data() const noexcept { return {{"type", "bool"}, {"item", get_id(*b_item)}}; }
 
     bool_flaw::choose_value::choose_value(bool_flaw &ef, const semitone::lit &rho) : resolver(ef, rho, utils::rational(1, 2)) {}
 

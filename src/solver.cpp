@@ -519,6 +519,8 @@ namespace ratio
                         return true;
             return false;
         }
+        else if (dynamic_cast<enum_item *>(rhs.operator->()))
+            return matches(rhs, lhs); // we are comparing a singleton with an enum..
         else if (lhs->get_type() == rhs->get_type())
         { // we are comparing two complex items..
             if (auto p = dynamic_cast<riddle::predicate *>(&lhs->get_type()))

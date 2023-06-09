@@ -56,7 +56,7 @@ namespace ratio
             add_resolver(new activate_goal(*this));
     }
 
-    json::json atom_flaw::get_data() const noexcept { return {{"type", "atom_flaw"}, {"atom", {{"id", get_id(*atm)}, {"type", atm->get_type().get_name()}, {"sigma", variable(static_cast<atom &>(*atm).sigma)}}}}; }
+    json::json atom_flaw::get_data() const noexcept { return {{"type", "atom"}, {"atom", {{"id", get_id(*atm)}, {"is_fact", static_cast<atom &>(*atm).is_fact()}, {"type", atm->get_type().get_name()}, {"sigma", variable(static_cast<atom &>(*atm).sigma)}}}}; }
 
     atom_flaw::activate_fact::activate_fact(atom_flaw &ef) : resolver(ef, utils::rational::ZERO) {}
     atom_flaw::activate_fact::activate_fact(atom_flaw &ef, const semitone::lit &l) : resolver(ef, l, utils::rational::ZERO) {}
