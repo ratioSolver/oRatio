@@ -3,7 +3,6 @@
 #include "graph.h"
 #include <deque>
 #include <unordered_set>
-#include <list>
 
 namespace ratio
 {
@@ -41,8 +40,8 @@ namespace ratio
     std::unordered_set<flaw *> already_closed; // already closed flaws (for avoiding duplicating graph pruning constraints)..
 #endif
 #ifdef GRAPH_REFINING
-    std::list<enum_flaw *> enum_flaws; // the enum flaws..
-    std::list<atom_flaw *> landmarks;  // the possible landmarks..
+    std::vector<enum_flaw *> enum_flaws; // the enum flaws..
+    std::vector<atom_flaw *> landmarks;  // the possible landmarks..
 #endif
   };
 } // namespace ratio

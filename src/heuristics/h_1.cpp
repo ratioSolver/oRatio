@@ -169,35 +169,23 @@ namespace ratio
     {
         LOG("checking landmarks..");
         // we sort the landmarks by decreasing estimated cost..
-        landmarks.sort([](const auto &l1, const auto &l2)
-                       { return l1->get_estimated_cost() > l2->get_estimated_cost(); });
-        for (auto it = landmarks.cbegin(); it != landmarks.cend();)
-            if (s.get_sat_core().value((*it)->get_phi()) == utils::Undefined)
-            {
-                if (s.get_sat_core().check({!(*it)->get_phi()}))
-                    ++it;
-                else
-                    it = landmarks.erase(it);
-            }
+        std::sort(landmarks.begin(), landmarks.end(), [](const auto &l1, const auto &l2)
+                  { return l1->get_estimated_cost() > l2->get_estimated_cost(); });
+        for (auto l : landmarks)
+            if (s.get_sat_core().value(l->get_phi()) == utils::Undefined)
+                s.get_sat_core().check({!l->get_phi()});
     }
 
     void h_1::prune_enums()
     {
         LOG("checking enums..");
         // we sort the enums by decreasing estimated cost..
-        enum_flaws.sort([](const auto &e1, const auto &e2)
-                        { return e1->get_estimated_cost() > e2->get_estimated_cost(); });
-        for (auto it = enum_flaws.cbegin(); it != enum_flaws.cend();)
-        {
-            for (const auto &r : (*it)->get_resolvers())
+        std::sort(enum_flaws.begin(), enum_flaws.end(), [](const auto &e1, const auto &e2)
+                  { return e1->get_estimated_cost() > e2->get_estimated_cost(); });
+        for (auto e_f : enum_flaws)
+            for (auto &r : e_f->get_resolvers())
                 if (s.get_sat_core().value(r.get().get_rho()) == utils::Undefined)
                     s.get_sat_core().check({r.get().get_rho()});
-            if (std::count_if((*it)->get_resolvers().cbegin(), (*it)->get_resolvers().cend(), [this](auto &r)
-                              { return s.get_sat_core().value(r.get().get_rho()) == utils::True; }) == 1)
-                it = enum_flaws.erase(it);
-            else
-                ++it;
-        }
     }
 #endif
 
