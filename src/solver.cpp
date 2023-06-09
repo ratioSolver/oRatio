@@ -1003,6 +1003,8 @@ namespace ratio
         assert(std::all_of(incs.cbegin(), incs.cend(), [](const auto &inc)
                            { return std::all_of(inc.cbegin(), inc.cend(), [](const auto &ch)
                                                 { return std::isfinite(ch.second); }); }));
+        if (!sat->propagate())
+            throw riddle::unsolvable_exception();
         return incs;
     }
 
