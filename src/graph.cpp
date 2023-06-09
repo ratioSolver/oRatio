@@ -38,6 +38,8 @@ namespace ratio
 #ifdef GRAPH_REFINING
             // we refine the graph..
             refine();
+            if (s.get_sat_core().root_level())
+                check();
 #endif
         }
     }

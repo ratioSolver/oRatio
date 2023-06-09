@@ -62,14 +62,14 @@ namespace ratio
                         expand_flaw(f);
 #ifdef GRAPH_REFINING
                         if (auto e_f = dynamic_cast<enum_flaw *>(&f))
-                            enum_flaws.insert(e_f);
+                            enum_flaws.push_back(e_f);
                         else if (auto a_f = dynamic_cast<atom_flaw *>(&f))
                             for (const auto &r : a_f->get_resolvers())
                                 if (atom_flaw::is_unification(r.get()))
                                 {
                                     auto &l = static_cast<atom_flaw &>(r.get().get_preconditions().front().get());
                                     if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
-                                        landmarks.insert(&l);
+                                        landmarks.push_back(&l);
                                 }
 #endif
                     }
@@ -117,14 +117,14 @@ namespace ratio
                     expand_flaw(f);
 #ifdef GRAPH_REFINING
                     if (auto e_f = dynamic_cast<enum_flaw *>(&f))
-                        enum_flaws.insert(e_f);
+                        enum_flaws.push_back(e_f);
                     else if (auto a_f = dynamic_cast<atom_flaw *>(&f))
                         for (const auto &r : a_f->get_resolvers())
                             if (atom_flaw::is_unification(r.get()))
                             {
                                 auto &l = static_cast<atom_flaw &>(r.get().get_preconditions().front().get());
                                 if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
-                                    landmarks.insert(&l);
+                                    landmarks.push_back(&l);
                             }
 #endif
                 }
@@ -168,6 +168,9 @@ namespace ratio
     void h_1::refine()
     {
         LOG("checking landmarks..");
+        // we sort the landmarks by decreasing estimated cost..
+        std::sort(landmarks.begin(), landmarks.end(), [](const auto &l1, const auto &l2)
+                  { return l1->get_estimated_cost() > l2->get_estimated_cost(); });
         for (const auto l : landmarks)
             if (s.get_sat_core().value(l->get_phi()) == utils::Undefined)
                 s.get_sat_core().check({!l->get_phi()});
@@ -176,6 +179,9 @@ namespace ratio
     void h_1::prune_enums()
     {
         LOG("checking enums..");
+        // we sort the enums by decreasing estimated cost..
+        std::sort(enum_flaws.begin(), enum_flaws.end(), [](const auto &e1, const auto &e2)
+                  { return e1->get_estimated_cost() > e2->get_estimated_cost(); });
         for (const auto e_f : enum_flaws)
             for (const auto &r : e_f->get_resolvers())
                 if (s.get_sat_core().value(r.get().get_rho()) == utils::Undefined)
