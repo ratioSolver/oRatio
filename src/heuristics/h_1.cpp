@@ -60,6 +60,7 @@ namespace ratio
 #endif
                     {
                         expand_flaw(f);
+#ifdef GRAPH_REFINING
                         if (auto e_f = dynamic_cast<enum_flaw *>(&f))
                             enum_flaws.insert(e_f);
                         else if (auto a_f = dynamic_cast<atom_flaw *>(&f))
@@ -70,6 +71,7 @@ namespace ratio
                                     if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
                                         landmarks.insert(&l);
                                 }
+#endif
                     }
                 }
                 flaw_q.pop_front();
@@ -113,6 +115,7 @@ namespace ratio
                 if (s.get_sat_core().value(f.get_phi()) != utils::False)
                 {
                     expand_flaw(f);
+#ifdef GRAPH_REFINING
                     if (auto e_f = dynamic_cast<enum_flaw *>(&f))
                         enum_flaws.insert(e_f);
                     else if (auto a_f = dynamic_cast<atom_flaw *>(&f))
@@ -123,6 +126,7 @@ namespace ratio
                                 if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
                                     landmarks.insert(&l);
                             }
+#endif
                 }
                 flaw_q.pop_front();
             }
