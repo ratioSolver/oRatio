@@ -69,7 +69,7 @@ namespace ratio
                                 {
                                     auto &l = static_cast<atom_flaw &>(r.get().get_preconditions().front().get());
                                     if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
-                                        landmarks.push_back(&l);
+                                        landmarks.insert(&l);
                                 }
 #endif
                     }
@@ -124,7 +124,7 @@ namespace ratio
                             {
                                 auto &l = static_cast<atom_flaw &>(r.get().get_preconditions().front().get());
                                 if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
-                                    landmarks.push_back(&l);
+                                    landmarks.insert(&l);
                             }
 #endif
                 }
@@ -169,11 +169,16 @@ namespace ratio
     {
         LOG("checking landmarks..");
         // we sort the landmarks by decreasing estimated cost..
-        std::sort(landmarks.begin(), landmarks.end(), [](const auto &l1, const auto &l2)
+        std::vector<atom_flaw *> c_landmarks(landmarks.begin(), landmarks.end());
+        std::sort(c_landmarks.begin(), c_landmarks.end(), [](const auto &l1, const auto &l2)
                   { return l1->get_estimated_cost() > l2->get_estimated_cost(); });
-        for (auto l : landmarks)
+        for (auto l : c_landmarks)
+        {
             if (s.get_sat_core().value(l->get_phi()) == utils::Undefined)
                 s.get_sat_core().check({!l->get_phi()});
+            if (s.get_sat_core().value(l->get_phi()) != utils::Undefined)
+                landmarks.erase(l);
+        }
     }
 
     void h_1::prune_enums()
