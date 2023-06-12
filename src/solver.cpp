@@ -1379,7 +1379,7 @@ namespace ratio
         else if (auto ev = dynamic_cast<const enum_item *>(&itm))
         {
             json::json j_val{{"var", std::to_string(ev->get_var())}};
-            json::json vals;
+            json::json vals(json::json_type::array);
             for (const auto &v : slv.get_ov_theory().value(ev->get_var()))
                 vals.push_back(get_id(dynamic_cast<riddle::item &>(*v)));
             j_val["vals"] = std::move(vals);
