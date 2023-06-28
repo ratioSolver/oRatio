@@ -620,22 +620,22 @@ namespace ratio
 
     ORATIOSOLVER_EXPORT bool solver::is_constant(const riddle::expr &xpr) const
     {
-        if (xpr->get_type() == get_bool_type())
+        if (xpr->get_type() == get_bool_type()) // the expression is a boolean..
             return bool_value(xpr) != utils::Undefined;
         else if (xpr->get_type() == get_int_type() || xpr->get_type() == get_real_type())
-        {
+        { // the expression is an arithmetic expression..
             auto [lb, ub] = arith_bounds(xpr);
             return lb == ub;
         }
         else if (xpr->get_type() == get_time_type())
-        {
+        { // the expression is a time expression..
             auto [lb, ub] = time_bounds(xpr);
             return lb == ub;
         }
-        else if (is_enum(xpr))
+        else if (is_enum(xpr)) // the expression is an enumeration..
             return domain(xpr).size() == 1;
-        else
-            throw std::runtime_error("not implemented yet");
+        else // the expression is a single value..
+            return true;
     }
 
     ORATIOSOLVER_EXPORT utils::lbool solver::bool_value(const riddle::expr &xpr) const { return sat->value(static_cast<bool_item &>(*xpr).get_lit()); }

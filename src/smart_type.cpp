@@ -28,5 +28,22 @@ namespace ratio
         return res;
     }
 
-    atom_listener::atom_listener(atom &atm) : lra_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_lra_theory()), rdl_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_rdl_theory()), ov_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_ov_theory()), atm(atm) {}
+    atom_listener::atom_listener(atom &atm) : lra_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_lra_theory()), rdl_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_rdl_theory()), ov_value_listener(static_cast<solver &>(atm.get_type().get_core()).get_ov_theory()), atm(atm)
+    {
+        listen_sat(variable(atm.get_sigma()));
+        for (const auto &[xpr_name, xpr] : atm.get_vars())
+            if (!static_cast<solver &>(atm.get_type().get_core()).is_constant(xpr))
+            {
+                if (xpr->get_type() == static_cast<solver &>(atm.get_type().get_core()).get_bool_type())
+                    listen_sat(variable(static_cast<const bool_item &>(*xpr).get_lit()));
+                else if (xpr->get_type() == static_cast<solver &>(atm.get_type().get_core()).get_int_type() || xpr->get_type() == static_cast<solver &>(atm.get_type().get_core()).get_real_type())
+                    for (const auto &l : static_cast<const arith_item &>(*xpr).get_lin().vars)
+                        listen_lra(l.first);
+                else if (xpr->get_type() == static_cast<solver &>(atm.get_type().get_core()).get_time_type())
+                    for (const auto &l : static_cast<const arith_item &>(*xpr).get_lin().vars)
+                        listen_rdl(l.first);
+                else if (auto *ov = dynamic_cast<const enum_item *>(&*xpr))
+                    listen_set(ov->get_var());
+            }
+    }
 } // namespace ratio

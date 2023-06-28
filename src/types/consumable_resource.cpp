@@ -152,7 +152,6 @@ namespace ratio
         if (cr.get_solver().get_sat_core().value(atm.get_sigma()) == utils::True)
         { // the atom is active..
             const auto a0_tau = atm.get(TAU_KW);
-            cr.to_check.insert(&atm);
             if (const auto a0_tau_itm = dynamic_cast<enum_item *>(a0_tau.operator->())) // the `tau` parameter is a variable..
                 for (const auto &val : cr.get_solver().get_ov_theory().value(a0_tau_itm->get_var()))
                     cr.to_check.insert(dynamic_cast<const riddle::item *>(val));
