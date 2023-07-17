@@ -1138,8 +1138,9 @@ namespace ratio
             assert(sat->root_level());
             LOG("flushing pending flaws..");
             // we add the pending flaws to the planning graph..
-            for (auto &f : std::move(pending_flaws))
+            for (auto &f : pending_flaws)
                 new_flaw(std::move(f), false); // we add the flaws, without enqueuing, to the planning graph..
+            pending_flaws.clear();
         }
     }
 
