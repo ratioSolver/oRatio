@@ -3,7 +3,7 @@
 
 namespace ratio
 {
-    disjunction_flaw::disjunction_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, std::vector<riddle::conjunction_ptr> xprs) : flaw(s, std::move(causes)), xprs(std::move(xprs)) {}
+    disjunction_flaw::disjunction_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> causes, std::vector<riddle::conjunction_ptr> xprs) : flaw(s, std::move(causes), true), xprs(std::move(xprs)) {}
 
     void disjunction_flaw::compute_resolvers()
     {
