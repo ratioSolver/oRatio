@@ -15,9 +15,10 @@ namespace ratio
     void graph::check()
     {
         assert(s.get_sat_core().root_level());
-        switch (s.get_sat_core().value(gamma))
+        auto g_val = s.get_sat_core().value(gamma);
+    check_loop:
+        if (g_val == utils::False)
         {
-        case utils::False:
             // we create a new gamma variable..
             reset_gamma();
             if (!s.get_active_flaws().empty())
@@ -28,20 +29,26 @@ namespace ratio
                 else
                     add_layer(); // we add a layer to the current graph..
             }
-            [[fallthrough]];
-        case utils::Undefined:
-#ifdef GRAPH_PRUNING
-            prune(); // we prune the graph..
-#endif
-            // we take `gamma` decision..
-            s.take_decision(semitone::lit(gamma));
-#ifdef GRAPH_REFINING
-            // we refine the graph..
-            refine();
-            if (s.get_sat_core().root_level())
-                check();
-#endif
         }
+#ifdef GRAPH_PRUNING
+        prune(); // we prune the graph..
+#endif
+        // we assume gamma..
+        if (!s.get_sat_core().assume(semitone::lit(gamma)))
+            throw riddle::unsolvable_exception();
+        // we make sure that gamma is at true..
+        if (g_val = s.get_sat_core().value(gamma); g_val != utils::True)
+            goto check_loop;
+
+#ifdef GRAPH_REFINING
+        // we refine the graph..
+        refine();
+        // we make sure that gamma is at true..
+        if (g_val = s.get_sat_core().value(gamma); g_val != utils::True)
+            goto check_loop;
+#endif
+        assert(g_val == utils::True);
+        assert(!s.get_sat_core().root_level());
     }
 
     void graph::expand_flaw(flaw &f)
