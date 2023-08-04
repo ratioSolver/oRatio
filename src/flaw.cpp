@@ -79,6 +79,12 @@ namespace ratio
         s.new_resolver(std::move(r)); // we notify the solver that a new resolver has been added..
     }
 
+    void flaw::new_causal_link(flaw &f, resolver &r)
+    {
+        assert(&r.get_flaw() == this);
+        s.new_causal_link(f, r);
+    }
+
     resolver &flaw::get_cheapest_resolver() const noexcept
     {
         assert(!resolvers.empty());

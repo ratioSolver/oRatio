@@ -143,6 +143,8 @@ namespace ratio
      */
     void add_resolver(resolver_ptr r);
 
+    void new_causal_link(flaw &f, resolver &r);
+
   private:
     solver &s;                                                     // the solver this flaw belongs to..
     std::vector<std::reference_wrapper<resolver>> causes;          // the resolvers that caused this flaw..

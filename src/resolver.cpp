@@ -16,7 +16,7 @@ namespace ratio
             return intrinsic_cost;
 
         utils::rational est_cost;
-#ifdef H_MAX
+#if defined(H_MAX) || defined(H2_MAX)
         est_cost = utils::rational::NEGATIVE_INFINITY;
         for (const auto &p : preconditions)
             if (!p.get().is_expanded())
@@ -24,7 +24,7 @@ namespace ratio
             else // we compute the max of the flaws' estimated costs..
                 est_cost = std::max(est_cost, p.get().get_estimated_cost());
 #endif
-#ifdef H_ADD
+#if defined(H_SUM) || defined(H2_SUM)
         est_cost = utils::rational::ZERO;
         for (const auto &p : preconditions)
             if (!p.get().is_expanded())

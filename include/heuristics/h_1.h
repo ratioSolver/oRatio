@@ -9,7 +9,7 @@ namespace ratio
   class enum_flaw;
   class atom_flaw;
 
-  class h_1 final : public graph
+  class h_1 : public graph
   {
   public:
     h_1(solver &s);

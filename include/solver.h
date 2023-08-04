@@ -127,7 +127,6 @@ namespace ratio
   {
     friend class flaw;
     friend class resolver;
-    friend class atom_flaw;
     friend class graph;
     friend class smart_type;
 #ifdef BUILD_LISTENERS

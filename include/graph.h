@@ -73,7 +73,9 @@ namespace ratio
     virtual void refine() {}
 #endif
 
-    virtual void push() {}
+    virtual void push()
+    {
+    }
     virtual void pop() {}
 
     virtual void activated_flaw(flaw &) {}

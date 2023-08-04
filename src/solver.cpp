@@ -9,9 +9,12 @@
 #include "state_variable.h"
 #include "reusable_resource.h"
 #include "consumable_resource.h"
-#if defined(H_MAX) || defined(H_ADD)
+#if defined(H_MAX) || defined(H_SUM)
 #include "h_1.h"
 #define HEURISTIC new h_1(*this)
+#elif defined(H2_MAX) || defined(H2_SUM)
+#include "h_2.h"
+#define HEURISTIC new h_2(*this)
 #endif
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
