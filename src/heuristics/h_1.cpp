@@ -167,6 +167,12 @@ namespace ratio
 #ifdef GRAPH_REFINING
     void h_1::refine()
     {
+        LOG("refining the causal graph..");
+        check_landmarks();
+    }
+
+    void h_1::check_landmarks()
+    {
         LOG("checking landmarks..");
         // we sort the landmarks by decreasing estimated cost..
         std::vector<atom_flaw *> c_landmarks(landmarks.begin(), landmarks.end());

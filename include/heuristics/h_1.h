@@ -28,6 +28,7 @@ namespace ratio
 
 #ifdef GRAPH_REFINING
     void refine() override;
+    void check_landmarks();
     void prune_enums();
 #endif
 
