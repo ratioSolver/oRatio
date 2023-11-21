@@ -143,6 +143,18 @@ namespace ratio
                 flaw_q.pop_front();
             }
 
+            // we visit the flaws..
+            for (auto &f : std::vector<flaw *>(get_active_flaws().begin(), get_active_flaws().end()))
+                visit(*f);
+
+            assert(s.get_sat_core().root_level());
+
+            // we add the h_2 flaws..
+            for (auto &f : h_2_flaws)
+                new_flaw(f, false);
+
+            h_2_flaws.clear();
+
             // we extract the inconsistencies (and translate them into flaws)..
             get_incs();
 #ifdef GRAPH_REFINING
@@ -212,15 +224,21 @@ namespace ratio
         visited.insert(&f);
 
         // we check whether the best resolver is actually solvable..
+
         c_res = &f.get_best_resolver();
-        s.take_decision(f.get_best_resolver().get_rho());
 
-        // we visit the subflaws..
-        for (auto &p : c_res->get_preconditions())
-            if (!visited.count(&p.get()))
-                visit(p.get());
+        if (!s.get_sat_core().assume(c_res->get_rho()))
+            throw riddle::unsolvable_exception();
 
-        if (s.get_sat_core().value(c_res->get_rho()) != utils::True)
+        if (std::none_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
+                         { return is_positive_infinite(f->get_estimated_cost()); }))
+            if (s.get_sat_core().value(c_res->get_rho()) == utils::True)
+                // we visit the subflaws..
+                for (auto &p : c_res->get_preconditions())
+                    if (!visited.count(&p.get()))
+                        visit(p.get());
+
+        if (s.get_sat_core().value(c_res->get_rho()) == utils::True)
             s.get_sat_core().pop();
 
         // we unvisit the flaw..
@@ -231,10 +249,11 @@ namespace ratio
     {
         // resolver c_res is mutex with r!
         assert(c_res != &r);
-        h_2_flaws.emplace_back(new h_2_flaw(r.get_flaw(), r, *c_res));
+        if (c_res != nullptr && s.get_sat_core().value(c_res->get_rho()) == utils::True && s.get_sat_core().value(r.get_flaw().get_phi()) == utils::True && &r.get_flaw() != &c_res->get_flaw() && mutexes.insert({&r, c_res}).second)
+            h_2_flaws.emplace_back(new h_2_flaw(r.get_flaw(), *c_res, r));
 
         // we refine the graph..
-        h_2::negated_resolver(r);
+        graph::negated_resolver(r);
     }
 
     bool h_2::is_deferrable(flaw &f)

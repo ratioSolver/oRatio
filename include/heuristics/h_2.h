@@ -3,6 +3,7 @@
 #include "graph.h"
 #include <deque>
 #include <unordered_set>
+#include <set>
 
 namespace ratio
 {
@@ -75,8 +76,9 @@ namespace ratio
     std::vector<enum_flaw *> enum_flaws;       // the enum flaws..
     std::unordered_set<atom_flaw *> landmarks; // the possible landmarks..
 
-    resolver *c_res = nullptr;     // the current resolver..
-    std::vector<flaw *> h_2_flaws; // the h_2 flaws..
+    resolver *c_res = nullptr;              // the current resolver..
+    std::vector<flaw *> h_2_flaws;          // the h_2 flaws..
+    std::set<std::set<resolver *>> mutexes; // the mutexes..
 #endif
   };
 } // namespace ratio
