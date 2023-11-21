@@ -76,12 +76,12 @@ namespace ratio
     virtual void push() {}
     virtual void pop() {}
 
+  protected:
     virtual void activated_flaw(flaw &) {}
     virtual void negated_flaw(flaw &f) { propagate_costs(f); }
     virtual void activated_resolver(resolver &) {}
     virtual void negated_resolver(resolver &r);
 
-  protected:
     void new_flaw(flaw_ptr f, const bool &enqueue = true) const noexcept;
     const std::unordered_map<semitone::var, std::vector<flaw_ptr>> &get_flaws() const noexcept;
     const std::unordered_set<flaw *> &get_active_flaws() const noexcept;

@@ -42,7 +42,6 @@ namespace ratio
                 auto u_res = new unify_atom(*this, i, eq_lit);
                 assert(get_solver().get_sat_core().value(u_res->get_rho()) != utils::False);
                 add_resolver(u_res);
-                get_solver().new_causal_link(*t_atm.reason, *u_res);
             }
 
         if (c_atm.is_fact())
@@ -101,6 +100,9 @@ namespace ratio
         assert(get_solver().get_sat_core().value(c_atm.sigma) != utils::True);  // the current atom must be unifiable..
         assert(get_solver().get_sat_core().value(t_atm.sigma) != utils::False); // the target atom must be activable..
         assert(get_solver().get_sat_core().value(get_rho()) != utils::False);   // this resolver must be activable..
+
+        // we add a causal link from the target atom's reason to this resolver..
+        new_causal_link(t_atm.get_reason());
 
         assert(t_atm.reason->is_expanded());
         for (auto &r : t_atm.reason->get_resolvers())

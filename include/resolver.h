@@ -98,6 +98,9 @@ namespace ratio
 
     friend json::json to_json(const resolver &r) noexcept;
 
+  protected:
+    void new_causal_link(flaw &f);
+
   private:
     flaw &f;                                                 // the flaw solved by this resolver..
     const semitone::lit rho;                                 // the propositional literal indicating whether the resolver is active or not..
