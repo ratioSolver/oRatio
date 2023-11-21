@@ -31,7 +31,15 @@ namespace ratio
     void refine() override;
     void prune_enums();
 
-    void visit(flaw &f);
+    void check();
+
+    /**
+     * @brief Visits the given flaw, returning whether there is an estimated solution for it.
+     *
+     * @param f The flaw to visit.
+     * @return true If there is an estimated solution for the given flaw.
+     */
+    bool visit(flaw &f);
 
     void negated_resolver(resolver &r) override;
 
@@ -76,9 +84,10 @@ namespace ratio
     std::vector<enum_flaw *> enum_flaws;       // the enum flaws..
     std::unordered_set<atom_flaw *> landmarks; // the possible landmarks..
 
-    resolver *c_res = nullptr;              // the current resolver..
-    std::vector<flaw *> h_2_flaws;          // the h_2 flaws..
-    std::set<std::set<resolver *>> mutexes; // the mutexes..
+    resolver *c_res = nullptr;                                    // the current resolver..
+    std::vector<flaw *> h_2_flaws;                                // the h_2 flaws..
+    std::unordered_set<flaw *> pending_flaws;                     // the pending flaws (to add in case adding a layer is required)..
+    std::unordered_map<resolver *, std::set<resolver *>> mutexes; // the mutexes..
 #endif
   };
 } // namespace ratio

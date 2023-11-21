@@ -77,17 +77,8 @@ namespace ratio
                 flaw_q.pop_front();
             }
 
-            // we visit the flaws..
-            for (auto &f : std::vector<flaw *>(get_active_flaws().begin(), get_active_flaws().end()))
-                visit(*f);
-
-            assert(s.get_sat_core().root_level());
-
-            // we add the h_2 flaws..
-            for (auto &f : h_2_flaws)
-                new_flaw(f, false);
-
-            h_2_flaws.clear();
+            // we check the graph for mutexes..
+            check();
 
             // we extract the inconsistencies (and translate them into flaws)..
             get_incs();
@@ -143,16 +134,11 @@ namespace ratio
                 flaw_q.pop_front();
             }
 
-            // we visit the flaws..
-            for (auto &f : std::vector<flaw *>(get_active_flaws().begin(), get_active_flaws().end()))
-                visit(*f);
+            // we check the graph for mutexes..
+            check();
 
-            assert(s.get_sat_core().root_level());
-
-            // we add the h_2 flaws..
-            for (auto &f : h_2_flaws)
-                new_flaw(f, false);
-
+            // we clear the enqueued flaws..
+            c_res = nullptr;
             h_2_flaws.clear();
 
             // we extract the inconsistencies (and translate them into flaws)..
@@ -218,39 +204,106 @@ namespace ratio
     }
 #endif
 
-    void h_2::visit(flaw &f)
+    void h_2::check()
     {
+        bool sol = false;
+        while (!sol)
+        {
+            sol = true;
+            // we visit the flaws..
+            for (auto &f : std::vector<flaw *>(get_active_flaws().begin(), get_active_flaws().end()))
+                if (!visit(*f))
+                    sol = false;
+
+            if (pending_flaws.empty())
+                break;
+            else
+            {
+                for (auto &f : pending_flaws)
+                    expand_flaw(*f);
+                pending_flaws.clear();
+            }
+        }
+
+        assert(s.get_sat_core().root_level());
+
+        // we add the h_2 flaws..
+        for (auto &f : h_2_flaws)
+            new_flaw(f, false);
+
+        // we clear the enqueued flaws..
+        c_res = nullptr;
+        h_2_flaws.clear();
+    }
+
+    bool h_2::visit(flaw &f)
+    {
+        LOG_DEBUG("visiting flaw " << to_string(f) << "..");
+        bool solvable = true;
+
         // we visit the flaw..
         visited.insert(&f);
 
-        // we check whether the best resolver is actually solvable..
+        std::vector<std::reference_wrapper<ratio::resolver>> c_resolvers(f.get_resolvers().begin(), f.get_resolvers().end());
+        std::sort(c_resolvers.begin(), c_resolvers.end(), [](const auto &r1, const auto &r2)
+                  { return r1.get().get_estimated_cost() < r2.get().get_estimated_cost(); });
+        for (auto &r : c_resolvers)
+            if (s.get_sat_core().value(r.get().get_rho()) != utils::False)
+            {
+                c_res = &r.get();
+                if (!s.get_sat_core().assume(r.get().get_rho()))
+                    throw riddle::unsolvable_exception();
 
-        c_res = &f.get_best_resolver();
+                if (std::none_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
+                                 { return is_positive_infinite(f->get_estimated_cost()); }))
+                {
+                    if (s.get_sat_core().value(r.get().get_rho()) == utils::True) // we visit the subflaws..
+                        for (auto &p : r.get().get_preconditions())
+                            if (!visited.count(&p.get()) && !visit(p.get()))
+                            {
+                                solvable = false;
+                                break;
+                            }
+                }
+                else
+                {
+                    solvable = false;
+                    for (auto &f : get_active_flaws())
+                        if (is_positive_infinite(f->get_estimated_cost()) && !f->is_expanded())
+                        {
+                            flaw_q.erase(std::find(flaw_q.begin(), flaw_q.end(), f));
+                            pending_flaws.insert(f);
+                        }
+                }
 
-        if (!s.get_sat_core().assume(c_res->get_rho()))
-            throw riddle::unsolvable_exception();
+                if (s.get_sat_core().value(r.get().get_rho()) == utils::True)
+                    s.get_sat_core().pop();
 
-        if (std::none_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
-                         { return is_positive_infinite(f->get_estimated_cost()); }))
-            if (s.get_sat_core().value(c_res->get_rho()) == utils::True)
-                // we visit the subflaws..
-                for (auto &p : c_res->get_preconditions())
-                    if (!visited.count(&p.get()))
-                        visit(p.get());
-
-        if (s.get_sat_core().value(c_res->get_rho()) == utils::True)
-            s.get_sat_core().pop();
+                if (solvable) // we have found a solution for the flaw..
+                    break;
+            }
 
         // we unvisit the flaw..
         visited.erase(&f);
+
+        return solvable;
     }
 
     void h_2::negated_resolver(resolver &r)
     {
         // resolver c_res is mutex with r!
         assert(c_res != &r);
-        if (c_res != nullptr && s.get_sat_core().value(c_res->get_rho()) == utils::True && s.get_sat_core().value(r.get_flaw().get_phi()) == utils::True && &r.get_flaw() != &c_res->get_flaw() && mutexes.insert({&r, c_res}).second)
-            h_2_flaws.emplace_back(new h_2_flaw(r.get_flaw(), *c_res, r));
+
+        if (c_res != nullptr &&                                                                                                // we are checking the graph..
+            get_solver().get_idl_theory().distance(c_res->get_flaw().get_position(), r.get_flaw().get_position()).first > 0 && // the resolvers are not in the same causal chain..
+            s.get_sat_core().value(c_res->get_rho()) == utils::True &&                                                         // the current resolver is active..
+            s.get_sat_core().value(r.get_flaw().get_phi()) == utils::True &&                                                   // the negated resolver's flaw is active..
+            (!mutexes.count(&r) || !mutexes.at(&r).count(c_res)))                                                              // the resolvers are not already mutex..
+        {
+            LOG("adding mutex between " << to_string(*c_res) << " and " << to_string(r) << "..");
+            mutexes[&r].insert(c_res);
+            mutexes[c_res].insert(&r);
+        }
 
         // we refine the graph..
         graph::negated_resolver(r);

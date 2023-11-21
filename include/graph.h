@@ -33,7 +33,7 @@ namespace ratio
   private:
     void reset_gamma();
 
-    virtual void check();
+    void check();
 
     /**
      * @brief Enqueues the given flaw in the graph.
