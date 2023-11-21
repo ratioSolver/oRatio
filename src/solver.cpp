@@ -12,6 +12,9 @@
 #if defined(H_MAX) || defined(H_ADD)
 #include "h_1.h"
 #define HEURISTIC new h_1(*this)
+#elif defined(H2_MAX) || defined(H2_ADD)
+#include "h_2.h"
+#define HEURISTIC new h_2(*this)
 #endif
 #ifdef BUILD_LISTENERS
 #include "solver_listener.h"
@@ -784,11 +787,13 @@ namespace ratio
         assert(sat->value(gr->gamma) == utils::True);
 
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
-                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return (sat->value(f->phi) != utils::False && f->get_estimated_cost() == (f->get_resolvers().empty() ? utils::rational::POSITIVE_INFINITY : f->get_best_resolver().get_estimated_cost())) || is_positive_infinite(f->get_estimated_cost()); }); }));
+                           { return std::all_of(
+                  v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
+                  { return (sat->value(f->phi) != utils::False && f->get_estimated_cost() == (f->get_resolvers().empty() ? utils::rational::POSITIVE_INFINITY : f->get_best_resolver().get_estimated_cost())) || is_positive_infinite(f->get_estimated_cost()); }); }));
         assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
-                           { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
-                                                { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != utils::False; }); }));
+                           { return std::all_of(
+                  v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
+                  { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != utils::False; }); }));
 
         FIRE_STATE_CHANGED();
     }
@@ -806,11 +811,13 @@ namespace ratio
         assert(sat->value(gr->gamma) == utils::True);
 
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
-                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return (sat->value(f->phi) != utils::False && f->get_estimated_cost() == (f->get_resolvers().empty() ? utils::rational::POSITIVE_INFINITY : f->get_best_resolver().get_estimated_cost())) || is_positive_infinite(f->get_estimated_cost()); }); }));
+                           { return std::all_of(
+                  v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
+                  { return (sat->value(f->phi) != utils::False && f->get_estimated_cost() == (f->get_resolvers().empty() ? utils::rational::POSITIVE_INFINITY : f->get_best_resolver().get_estimated_cost())) || is_positive_infinite(f->get_estimated_cost()); }); }));
         assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
-                           { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
-                                                { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != utils::False; }); }));
+                           { return std::all_of(
+                  v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
+                  { return is_positive_infinite(r->get_estimated_cost()) || sat->value(r->rho) != utils::False; }); }));
 
         FIRE_STATE_CHANGED();
     }
@@ -1003,8 +1010,9 @@ namespace ratio
             incs.insert(incs.cend(), c_incs.cbegin(), c_incs.cend());
         }
         assert(std::all_of(incs.cbegin(), incs.cend(), [](const auto &inc)
-                           { return std::all_of(inc.cbegin(), inc.cend(), [](const auto &ch)
-                                                { return std::isfinite(ch.second); }); }));
+                           { return std::all_of(
+                  inc.cbegin(), inc.cend(), [](const auto &ch)
+                  { return std::isfinite(ch.second); }); }));
         if (!sat->propagate())
             throw riddle::unsolvable_exception();
         return incs;
@@ -1092,11 +1100,13 @@ namespace ratio
         assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto f)
                            { return sat->value(f->phi) == utils::True; }));
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &v_fs)
-                           { return std::all_of(v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
-                                                { return sat->value(f->phi) != utils::False || is_positive_infinite(f->get_estimated_cost()); }); }));
+                           { return std::all_of(
+                  v_fs.second.cbegin(), v_fs.second.cend(), [this](const auto &f)
+                  { return sat->value(f->phi) != utils::False || is_positive_infinite(f->get_estimated_cost()); }); }));
         assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &v_rs)
-                           { return std::all_of(v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
-                                                { return sat->value(r->rho) != utils::False || is_positive_infinite(r->get_estimated_cost()); }); }));
+                           { return std::all_of(
+                  v_rs.second.cbegin(), v_rs.second.cend(), [this](const auto &r)
+                  { return sat->value(r->rho) != utils::False || is_positive_infinite(r->get_estimated_cost()); }); }));
         return true;
     }
 

@@ -9,7 +9,7 @@ namespace ratio
   class enum_flaw;
   class atom_flaw;
 
-  class h_1 : public graph
+  class h_1 final : public graph
   {
   public:
     h_1(solver &s);
@@ -27,25 +27,19 @@ namespace ratio
 #endif
 
 #ifdef GRAPH_REFINING
-  protected:
-    virtual void refine() override;
-
-  private:
+    void refine() override;
     void prune_enums();
 #endif
 
     bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..
 
   private:
-    std::deque<flaw *> flaw_q; // the flaw queue (for the graph building procedure)..
-  protected:
+    std::deque<flaw *> flaw_q;          // the flaw queue (for the graph building procedure)..
     std::unordered_set<flaw *> visited; // the visited flaws, for graph cost propagation (and deferrable flaws check)..
 #ifdef GRAPH_PRUNING
-  private:
     std::unordered_set<flaw *> already_closed; // already closed flaws (for avoiding duplicating graph pruning constraints)..
 #endif
 #ifdef GRAPH_REFINING
-  private:
     std::vector<enum_flaw *> enum_flaws;       // the enum flaws..
     std::unordered_set<atom_flaw *> landmarks; // the possible landmarks..
 #endif
