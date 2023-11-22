@@ -3,7 +3,6 @@
 #include "graph.h"
 #include <deque>
 #include <unordered_set>
-#include <set>
 
 namespace ratio
 {
@@ -30,6 +29,7 @@ namespace ratio
 #ifdef GRAPH_REFINING
     void refine() override;
     void prune_enums();
+#endif
 
     void check();
 
@@ -70,7 +70,6 @@ namespace ratio
       flaw &sub_f;
       resolver &mtx_r;
     };
-#endif
 
     bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..
 
@@ -83,11 +82,11 @@ namespace ratio
 #ifdef GRAPH_REFINING
     std::vector<enum_flaw *> enum_flaws;       // the enum flaws..
     std::unordered_set<atom_flaw *> landmarks; // the possible landmarks..
-
-    resolver *c_res = nullptr;                                    // the current resolver..
-    std::vector<flaw *> h_2_flaws;                                // the h_2 flaws..
-    std::unordered_set<flaw *> pending_flaws;                     // the pending flaws (to add in case adding a layer is required)..
-    std::unordered_map<resolver *, std::set<resolver *>> mutexes; // the mutexes..
 #endif
+
+    resolver *c_res = nullptr;                                              // the current resolver..
+    std::vector<flaw *> h_2_flaws;                                          // the h_2 flaws..
+    std::unordered_set<flaw *> pending_flaws;                               // the pending flaws (to add in case adding a layer is required)..
+    std::unordered_map<resolver *, std::unordered_set<resolver *>> mutexes; // the mutexes..
   };
 } // namespace ratio
