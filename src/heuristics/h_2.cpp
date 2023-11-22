@@ -45,7 +45,7 @@ namespace ratio
             while (std::any_of(get_active_flaws().cbegin(), get_active_flaws().cend(), [](const auto &f)
                                { return is_positive_infinite(f->get_estimated_cost()); }))
             {
-                if (flaw_q.empty()) // we have no flaws to expand..
+                if (flaw_q.empty()) // we have no more flaws to expand..
                     throw riddle::unsolvable_exception();
 
                 // we expand the flaw at the front of the queue..
@@ -107,7 +107,7 @@ namespace ratio
         while (std::all_of(f_q.cbegin(), f_q.cend(), [](auto f)
                            { return is_infinite(f->get_estimated_cost()); }))
         {
-            if (flaw_q.empty()) // we have no flaws to expand..
+            if (flaw_q.empty()) // we have no more flaws to expand..
                 throw riddle::unsolvable_exception();
             // we expand all the flaws in the queue..
             auto q_size = flaw_q.size();
@@ -219,9 +219,44 @@ namespace ratio
                 break;
             else
             {
+                auto f_q = flaw_q;
+                std::vector<flaw *> c_pending_flaws(pending_flaws.begin(), pending_flaws.end());
+                flaw_q.clear();
                 for (auto &f : pending_flaws)
-                    expand_flaw(*f);
+                    flaw_q.push_back(f);
                 pending_flaws.clear();
+                while (std::all_of(c_pending_flaws.cbegin(), c_pending_flaws.cend(), [](auto f)
+                                   { return is_infinite(f->get_estimated_cost()); }))
+                {
+                    if (flaw_q.empty()) // we have no more flaws to expand..
+                        throw riddle::unsolvable_exception();
+                    // we expand all the flaws in the queue..
+                    auto q_size = flaw_q.size();
+                    for (size_t i = 0; i < q_size; ++i)
+                    {
+                        auto &f = *flaw_q.front();
+                        assert(!f.is_expanded());
+                        if (s.get_sat_core().value(f.get_phi()) != utils::False)
+                        {
+                            expand_flaw(f);
+#ifdef GRAPH_REFINING
+                            if (auto e_f = dynamic_cast<enum_flaw *>(&f))
+                                enum_flaws.push_back(e_f);
+                            else if (auto a_f = dynamic_cast<atom_flaw *>(&f))
+                                for (const auto &r : a_f->get_resolvers())
+                                    if (atom_flaw::is_unification(r.get()))
+                                    {
+                                        auto &l = static_cast<atom_flaw &>(r.get().get_preconditions().front().get());
+                                        if (s.get_sat_core().value(l.get_phi()) == utils::Undefined)
+                                            landmarks.insert(&l);
+                                    }
+#endif
+                        }
+                        flaw_q.pop_front();
+                    }
+                }
+                for (auto &f : f_q)
+                    flaw_q.push_back(f);
             }
         }
 
@@ -271,7 +306,8 @@ namespace ratio
                     for (auto &f : get_active_flaws())
                         if (is_positive_infinite(f->get_estimated_cost()) && !f->is_expanded())
                         {
-                            flaw_q.erase(std::find(flaw_q.begin(), flaw_q.end(), f));
+                            if (auto f_it = std::find(flaw_q.begin(), flaw_q.end(), f); f_it != flaw_q.end())
+                                flaw_q.erase(f_it);
                             pending_flaws.insert(f);
                         }
                 }
@@ -289,16 +325,13 @@ namespace ratio
         return solvable;
     }
 
-    void h_2::negated_resolver(resolver &r)
+    void h_2::negated_resolver(resolver &r) // resolver c_res is mutex with r!
     {
-        // resolver c_res is mutex with r!
-        assert(c_res != &r);
-
-        if (c_res != nullptr &&                                                                                                // we are checking the graph..
-            get_solver().get_idl_theory().distance(c_res->get_flaw().get_position(), r.get_flaw().get_position()).first > 0 && // the resolvers are not in the same causal chain..
-            s.get_sat_core().value(c_res->get_rho()) == utils::True &&                                                         // the current resolver is active..
-            s.get_sat_core().value(r.get_flaw().get_phi()) == utils::True &&                                                   // the negated resolver's flaw is active..
-            (!mutexes.count(&r) || !mutexes.at(&r).count(c_res)))                                                              // the resolvers are not already mutex..
+        if (c_res != nullptr &&                                        // we are checking the graph..
+            c_res != &r &&                                             // the current resolver is not the negated resolver..
+            get_active_flaws().count(&r.get_flaw()) &&                 // the negated resolver's flaw is active (and not already solved)..
+            s.get_sat_core().value(c_res->get_rho()) == utils::True && // the current resolver is active..
+            (!mutexes.count(c_res) || !mutexes.at(c_res).count(&r)))   // the resolvers are not already mutex..
         {
             LOG("adding mutex between " << to_string(*c_res) << " and " << to_string(r) << "..");
             mutexes[&r].insert(c_res);
