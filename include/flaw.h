@@ -2,7 +2,7 @@
 
 #include "lit.h"
 #include "rational.h"
-#include "json.h"
+#include "json.hpp"
 #include "memory.h"
 #include <vector>
 #include <functional>
