@@ -10,8 +10,10 @@ namespace ratio
   class solver : public riddle::core
   {
   public:
-    solver(const std::string &name = "oRatio");
+    solver(const std::string &name = "oRatio", bool i = true) noexcept;
     virtual ~solver() = default;
+
+    void init() noexcept;
 
   private:
     std::string name;
