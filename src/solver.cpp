@@ -1,10 +1,11 @@
 #include "solver.hpp"
 #include "init.hpp"
+#include "sat_core.hpp"
 #include "logging.hpp"
 
 namespace ratio
 {
-    solver::solver(const std::string &name, bool i) noexcept : name(name), gr(*this)
+    solver::solver(const std::string &name, bool i) noexcept : theory(std::make_shared<semitone::sat_core>()), name(name), lra(get_sat_ptr()), idl(get_sat_ptr()), rdl(get_sat_ptr()), ov(get_sat_ptr()), gr(*this)
     {
         if (i)
             init();
