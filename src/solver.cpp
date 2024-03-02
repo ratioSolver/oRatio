@@ -15,4 +15,7 @@ namespace ratio
     {
         LOG_INFO("Initializing solver " << name);
     }
+
+    std::shared_ptr<riddle::item> solver::new_bool() noexcept { return std::make_shared<bool_item>(get_bool_type(), sat->new_var()); }
+    std::shared_ptr<riddle::item> solver::new_bool(bool value) noexcept { return std::make_shared<bool_item>(get_bool_type(), value ? semitone::TRUE_lit : semitone::FALSE_lit); }
 } // namespace ratio
