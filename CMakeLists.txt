@@ -9,7 +9,7 @@ set(JSON_INCLUDE_UTILS OFF CACHE BOOL "Enable JSON Utils" FORCE)
 add_subdirectory(extern/riddle)
 add_subdirectory(extern/semitone)
 
-add_library(oRatioLib src/solver.cpp)
+add_library(oRatioLib src/solver.cpp src/solver_item.cpp)
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
