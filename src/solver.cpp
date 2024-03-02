@@ -4,7 +4,7 @@
 
 namespace ratio
 {
-    solver::solver(const std::string &name, bool i) noexcept : name(name)
+    solver::solver(const std::string &name, bool i) noexcept : name(name), gr(*this)
     {
         if (i)
             init();

@@ -4,6 +4,7 @@
 #include "core.hpp"
 #include "sat_core.hpp"
 #include "lra_theory.hpp"
+#include "graph.hpp"
 
 namespace ratio
 {
@@ -17,5 +18,6 @@ namespace ratio
 
   private:
     std::string name;
+    graph gr;
   };
 } // namespace ratio
