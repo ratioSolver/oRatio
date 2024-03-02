@@ -13,6 +13,10 @@ add_library(oRatioLib src/solver.cpp src/solver_item.cpp)
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
+add_executable(oRatio src/main.cpp)
+target_link_libraries(oRatio PRIVATE oRatioLib)
+target_include_directories(oRatio PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
