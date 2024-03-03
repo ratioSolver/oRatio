@@ -20,6 +20,21 @@ namespace ratio
 
     std::shared_ptr<riddle::item> new_bool() noexcept override;
     std::shared_ptr<riddle::item> new_bool(bool value) noexcept override;
+    std::shared_ptr<riddle::item> new_int() noexcept override;
+    std::shared_ptr<riddle::item> new_int(INTEGER_TYPE value) noexcept override;
+    std::shared_ptr<riddle::item> new_real() noexcept override;
+    std::shared_ptr<riddle::item> new_real(const utils::rational &value) noexcept override;
+    std::shared_ptr<riddle::item> new_time() noexcept override;
+    std::shared_ptr<riddle::item> new_time(const utils::rational &value) noexcept override;
+    std::shared_ptr<riddle::item> new_string() noexcept override;
+    std::shared_ptr<riddle::item> new_string(const std::string &value) noexcept override;
+    std::shared_ptr<riddle::item> new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) override;
+
+  private:
+    bool propagate(const utils::lit &) noexcept override { return true; }
+    bool check() noexcept override { return true; }
+    void push() noexcept override {}
+    void pop() noexcept override {}
 
   private:
     std::string name;
