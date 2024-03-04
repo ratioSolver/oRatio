@@ -1,3 +1,5 @@
+#include <cassert>
+#include <algorithm>
 #include "solver.hpp"
 #include "init.hpp"
 #include "sat_core.hpp"
@@ -27,4 +29,96 @@ namespace ratio
     std::shared_ptr<riddle::item> solver::new_string() noexcept { return std::make_shared<string_item>(get_string_type()); }
     std::shared_ptr<riddle::item> solver::new_string(const std::string &value) noexcept { return std::make_shared<string_item>(get_string_type(), value); }
     std::shared_ptr<riddle::item> solver::new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) { return std::make_shared<enum_item>(tp, ov.new_var(std::move(values))); }
+
+    std::shared_ptr<riddle::item> solver::add(const std::vector<std::shared_ptr<riddle::item>> &xprs)
+    {
+        assert(xprs.size() > 1);
+        utils::lin sum;
+        for (const auto &xpr : xprs)
+        {
+            assert(is_arith(*xpr));
+            sum = sum + std::static_pointer_cast<arith_item>(xpr)->get_value();
+        }
+        auto &tp = determine_type(xprs);
+        if (&tp.get_scope().get_core().get_int_type() == &tp)
+            return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), sum);
+        else if (&tp.get_scope().get_core().get_real_type() == &tp)
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), sum);
+        assert(false);
+    }
+
+    std::shared_ptr<riddle::item> solver::sub(const std::vector<std::shared_ptr<riddle::item>> &xprs)
+    {
+        assert(xprs.size() > 1);
+        utils::lin diff = std::static_pointer_cast<arith_item>(xprs[0])->get_value();
+        for (size_t i = 1; i < xprs.size(); i++)
+        {
+            assert(is_arith(*xprs[i]));
+            diff = diff - std::static_pointer_cast<arith_item>(xprs[i])->get_value();
+        }
+        auto &tp = determine_type(xprs);
+        if (&tp.get_scope().get_core().get_int_type() == &tp)
+            return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), diff);
+        else if (&tp.get_scope().get_core().get_real_type() == &tp)
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), diff);
+        else if (&tp.get_scope().get_core().get_time_type() == &tp)
+            return std::make_shared<arith_item>(static_cast<riddle::time_type &>(tp), diff);
+        assert(false);
+    }
+
+    std::shared_ptr<riddle::item> solver::mul(const std::vector<std::shared_ptr<riddle::item>> &xprs)
+    {
+        assert(xprs.size() > 1);
+        if (auto var_it = std::find_if(xprs.begin(), xprs.end(), [this](const auto &x)
+                                       { return !is_constant(*x); });
+            var_it != xprs.end())
+        {
+            utils::lin prod = std::static_pointer_cast<arith_item>(*var_it)->get_value();
+            for (const auto &xpr : xprs)
+                if (xpr != *var_it)
+                {
+                    assert(is_arith(*xpr));
+                    assert(is_constant(*xpr) && xpr->get_type().get_scope().get_core().arithmetic_value(*xpr).get_infinitesimal() == 0);
+                    prod = prod * xpr->get_type().get_scope().get_core().arithmetic_value(*xpr).get_rational();
+                }
+            auto &tp = determine_type(xprs);
+            if (&tp.get_scope().get_core().get_int_type() == &tp)
+                return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), prod);
+            else if (&tp.get_scope().get_core().get_real_type() == &tp)
+                return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), prod);
+            assert(false);
+        }
+        else
+        {
+            assert(std::all_of(xprs.begin(), xprs.end(), [this](const auto &x)
+                               { return is_arith(*x) && is_constant(*x) && x->get_type().get_scope().get_core().arithmetic_value(*x).get_infinitesimal() == 0; }));
+            utils::rational prod = xprs[0]->get_type().get_scope().get_core().arithmetic_value(*xprs[0]).get_rational();
+            for (size_t i = 1; i < xprs.size(); i++)
+                prod = prod * xprs[i]->get_type().get_scope().get_core().arithmetic_value(*xprs[i]).get_rational();
+            auto &tp = determine_type(xprs);
+            if (&tp.get_scope().get_core().get_int_type() == &tp)
+                return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), utils::lin(prod));
+            else if (&tp.get_scope().get_core().get_real_type() == &tp)
+                return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), utils::lin(prod));
+            assert(false);
+        }
+    }
+
+    std::shared_ptr<riddle::item> solver::div(const std::vector<std::shared_ptr<riddle::item>> &xprs)
+    {
+        assert(xprs.size() > 1);
+        utils::lin quot = std::static_pointer_cast<arith_item>(xprs[0])->get_value();
+        for (size_t i = 1; i < xprs.size(); i++)
+        {
+            assert(is_arith(*xprs[i]));
+            assert(is_constant(*xprs[i]) && xprs[i]->get_type().get_scope().get_core().arithmetic_value(*xprs[i]).get_infinitesimal() == 0);
+            quot = quot / xprs[i]->get_type().get_scope().get_core().arithmetic_value(*xprs[i]).get_rational();
+        }
+        auto &tp = determine_type(xprs);
+        if (&tp.get_scope().get_core().get_int_type() == &tp)
+            return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), quot);
+        else if (&tp.get_scope().get_core().get_real_type() == &tp)
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), quot);
+        assert(false);
+    }
 } // namespace ratio

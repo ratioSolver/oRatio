@@ -30,6 +30,18 @@ namespace ratio
     std::shared_ptr<riddle::item> new_string(const std::string &value) noexcept override;
     std::shared_ptr<riddle::item> new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) override;
 
+    std::shared_ptr<riddle::item> add(const std::vector<std::shared_ptr<riddle::item>> &xprs) override;
+    std::shared_ptr<riddle::item> sub(const std::vector<std::shared_ptr<riddle::item>> &xprs) override;
+    std::shared_ptr<riddle::item> mul(const std::vector<std::shared_ptr<riddle::item>> &xprs) override;
+    std::shared_ptr<riddle::item> div(const std::vector<std::shared_ptr<riddle::item>> &xprs) override;
+    std::shared_ptr<riddle::item> minus(const std::shared_ptr<riddle::item> &xpr) override;
+
+    std::shared_ptr<riddle::item> lt(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) override;
+    std::shared_ptr<riddle::item> leq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) override;
+    std::shared_ptr<riddle::item> gt(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) override;
+    std::shared_ptr<riddle::item> geq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) override;
+    std::shared_ptr<riddle::item> eq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) override;
+
   private:
     bool propagate(const utils::lit &) noexcept override { return true; }
     bool check() noexcept override { return true; }
