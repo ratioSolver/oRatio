@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_set>
 #include "solver_item.hpp"
 #include "core.hpp"
 #include "lra_theory.hpp"
@@ -58,6 +59,31 @@ namespace ratio
 
     void assert_fact(const std::shared_ptr<riddle::item> &fact) override;
 
+    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept override;
+
+    std::shared_ptr<riddle::item> new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept override;
+
+    bool is_constant(const riddle::item &xpr) const noexcept
+    {
+      if (is_bool(xpr)) // the expression is a boolean..
+        return bool_value(xpr) != utils::Undefined;
+      else if (is_arith(xpr))
+      { // the expression is an arithmetic value..
+        auto [lb, ub] = bounds(xpr);
+        return lb == ub;
+      }
+      else if (is_enum(xpr)) // the expression is an enumeration value..
+        return ov.domain(static_cast<const enum_item &>(xpr).get_value()).size() == 1;
+      else // the expression is a single value..
+        return true;
+    }
+
+    utils::lbool bool_value(const riddle::item &expr) const noexcept override;
+    utils::inf_rational arithmetic_value(const riddle::item &expr) const noexcept override;
+    std::pair<utils::inf_rational, utils::inf_rational> bounds(const riddle::item &expr) const noexcept override;
+    bool is_enum(const riddle::item &expr) const noexcept override { return dynamic_cast<const enum_item *>(&expr) != nullptr; }
+    std::vector<std::reference_wrapper<utils::enum_val>> domain(const riddle::item &expr) const noexcept override;
+
   private:
     bool propagate(const utils::lit &) noexcept override { return true; }
     bool check() noexcept override { return true; }
@@ -65,12 +91,13 @@ namespace ratio
     void pop() noexcept override {}
 
   private:
-    std::string name;            // the name of the solver
-    semitone::lra_theory lra;    // the linear real arithmetic theory
-    semitone::idl_theory idl;    // the integer difference logic theory
-    semitone::rdl_theory rdl;    // the real difference logic theory
-    semitone::ov_theory ov;      // the object variable theory
-    graph gr;                    // the causal graph
-    std::optional<resolver> res; // the current resolver
+    std::string name;                        // the name of the solver
+    semitone::lra_theory lra;                // the linear real arithmetic theory
+    semitone::idl_theory idl;                // the integer difference logic theory
+    semitone::rdl_theory rdl;                // the real difference logic theory
+    semitone::ov_theory ov;                  // the object variable theory
+    graph gr;                                // the causal graph
+    std::optional<resolver> res;             // the current resolver
+    std::unordered_set<flaw *> active_flaws; // the currently active flaws..
   };
 } // namespace ratio

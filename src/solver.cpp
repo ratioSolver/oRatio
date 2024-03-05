@@ -165,6 +165,48 @@ namespace ratio
     {
         assert(&fact->get_type() == &get_bool_type()); // the expression must be a boolean..
         if (!sat->new_clause({res.has_value() ? !res.value().get_rho() : utils::FALSE_lit, std::static_pointer_cast<bool_item>(fact)->get_value()}))
-            throw std::runtime_error("Unsatisfiable clause");
+            throw riddle::unsolvable_exception();
+    }
+
+    void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept
+    {
+    }
+
+    std::shared_ptr<riddle::item> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept
+    {
+        return nullptr;
+    }
+
+    utils::lbool solver::bool_value(const riddle::item &expr) const noexcept
+    {
+        assert(is_bool(expr));
+        return sat->value(static_cast<const bool_item &>(expr).get_value());
+    }
+    utils::inf_rational solver::arithmetic_value(const riddle::item &expr) const noexcept
+    {
+        assert(is_arith(expr));
+        if (is_int(expr) || is_real(expr))
+            return lra.value(static_cast<const arith_item &>(expr).get_value());
+        else
+        {
+            assert(is_time(expr));
+            return rdl.bounds(static_cast<const arith_item &>(expr).get_value()).first;
+        }
+    }
+    std::pair<utils::inf_rational, utils::inf_rational> solver::bounds(const riddle::item &expr) const noexcept
+    {
+        assert(is_arith(expr));
+        if (is_int(expr) || is_real(expr))
+            return lra.bounds(static_cast<const arith_item &>(expr).get_value());
+        else
+        {
+            assert(is_time(expr));
+            return rdl.bounds(static_cast<const arith_item &>(expr).get_value());
+        }
+    }
+    std::vector<std::reference_wrapper<utils::enum_val>> solver::domain(const riddle::item &expr) const noexcept
+    {
+        assert(is_enum(expr));
+        return ov.domain(static_cast<const enum_item &>(expr).get_value());
     }
 } // namespace ratio
