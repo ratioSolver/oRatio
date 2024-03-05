@@ -160,4 +160,11 @@ namespace ratio
         return nullptr;
     }
     std::shared_ptr<riddle::item> solver::negate(const std::shared_ptr<riddle::item> &expr) { return std::make_shared<bool_item>(get_bool_type(), !std::static_pointer_cast<bool_item>(expr)->get_value()); }
+
+    void solver::assert_fact(const std::shared_ptr<riddle::item> &fact)
+    {
+        assert(&fact->get_type() == &get_bool_type()); // the expression must be a boolean..
+        if (!sat->new_clause({res.has_value() ? !res.value().get_rho() : utils::FALSE_lit, std::static_pointer_cast<bool_item>(fact)->get_value()}))
+            throw std::runtime_error("Unsatisfiable clause");
+    }
 } // namespace ratio

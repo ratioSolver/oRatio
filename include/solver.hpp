@@ -56,6 +56,8 @@ namespace ratio
     std::shared_ptr<riddle::item> exct_one(const std::vector<std::shared_ptr<riddle::item>> &exprs) override;
     std::shared_ptr<riddle::item> negate(const std::shared_ptr<riddle::item> &expr) override;
 
+    void assert_fact(const std::shared_ptr<riddle::item> &fact) override;
+
   private:
     bool propagate(const utils::lit &) noexcept override { return true; }
     bool check() noexcept override { return true; }
