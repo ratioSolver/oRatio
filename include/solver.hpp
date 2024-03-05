@@ -18,6 +18,15 @@ namespace ratio
 
     void init() noexcept;
 
+    semitone::lra_theory &get_lra_theory() noexcept { return lra; }
+    const semitone::lra_theory &get_lra_theory() const noexcept { return lra; }
+    semitone::idl_theory &get_idl_theory() noexcept { return idl; }
+    const semitone::idl_theory &get_idl_theory() const noexcept { return idl; }
+    semitone::rdl_theory &get_rdl_theory() noexcept { return rdl; }
+    const semitone::rdl_theory &get_rdl_theory() const noexcept { return rdl; }
+    semitone::ov_theory &get_ov_theory() noexcept { return ov; }
+    const semitone::ov_theory &get_ov_theory() const noexcept { return ov; }
+
     std::shared_ptr<riddle::item> new_bool() noexcept override;
     std::shared_ptr<riddle::item> new_bool(bool value) noexcept override;
     std::shared_ptr<riddle::item> new_int() noexcept override;
@@ -54,11 +63,12 @@ namespace ratio
     void pop() noexcept override {}
 
   private:
-    std::string name;
-    semitone::lra_theory lra;
-    semitone::idl_theory idl;
-    semitone::rdl_theory rdl;
-    semitone::ov_theory ov;
-    graph gr;
+    std::string name;            // the name of the solver
+    semitone::lra_theory lra;    // the linear real arithmetic theory
+    semitone::idl_theory idl;    // the integer difference logic theory
+    semitone::rdl_theory rdl;    // the real difference logic theory
+    semitone::ov_theory ov;      // the object variable theory
+    graph gr;                    // the causal graph
+    std::optional<resolver> res; // the current resolver
   };
 } // namespace ratio

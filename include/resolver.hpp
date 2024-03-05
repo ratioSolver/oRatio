@@ -1,15 +1,27 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
+#include "rational.hpp"
+#include "lit.hpp"
 
 namespace ratio
 {
   class solver;
+  class flaw;
 
   class resolver
   {
+  public:
+    resolver(flaw &f, const utils::rational &intrinsic_cost);
+    resolver(flaw &f, const utils::lit &rho, const utils::rational &intrinsic_cost);
+
   private:
-    solver &s; // the solver this flaw belongs to..
+    solver &s;                                               // the solver this flaw belongs to..
+    flaw &f;                                                 // the flaw solved by this resolver..
+    const utils::lit rho;                                    // the propositional literal indicating whether the resolver is active or not..
+    const utils::rational intrinsic_cost;                    // the intrinsic cost of the resolver..
+    std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
 
   /**
