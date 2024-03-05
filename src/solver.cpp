@@ -159,4 +159,5 @@ namespace ratio
             lits.push_back(std::static_pointer_cast<bool_item>(xpr)->get_value());
         return nullptr;
     }
+    std::shared_ptr<riddle::item> solver::negate(const std::shared_ptr<riddle::item> &expr) { return std::make_shared<bool_item>(get_bool_type(), !std::static_pointer_cast<bool_item>(expr)->get_value()); }
 } // namespace ratio
