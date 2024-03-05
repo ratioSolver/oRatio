@@ -30,6 +30,17 @@ namespace ratio
     std::shared_ptr<riddle::item> solver::new_string(const std::string &value) noexcept { return std::make_shared<string_item>(get_string_type(), value); }
     std::shared_ptr<riddle::item> solver::new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) { return std::make_shared<enum_item>(tp, ov.new_var(std::move(values))); }
 
+    std::shared_ptr<riddle::item> solver::minus(const std::shared_ptr<riddle::item> &xpr)
+    {
+        assert(is_arith(*xpr));
+        if (is_int(*xpr))
+            return std::make_shared<arith_item>(get_int_type(), -std::static_pointer_cast<arith_item>(xpr)->get_value());
+        else if (is_real(*xpr))
+            return std::make_shared<arith_item>(get_real_type(), -std::static_pointer_cast<arith_item>(xpr)->get_value());
+        assert(is_time(*xpr));
+        return std::make_shared<arith_item>(get_time_type(), -std::static_pointer_cast<arith_item>(xpr)->get_value());
+    }
+
     std::shared_ptr<riddle::item> solver::add(const std::vector<std::shared_ptr<riddle::item>> &xprs)
     {
         assert(xprs.size() > 1);
@@ -42,9 +53,8 @@ namespace ratio
         auto &tp = determine_type(xprs);
         if (&tp.get_scope().get_core().get_int_type() == &tp)
             return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), sum);
-        else if (&tp.get_scope().get_core().get_real_type() == &tp)
-            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), sum);
-        assert(false);
+        assert(&tp.get_scope().get_core().get_real_type() == &tp);
+        return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), sum);
     }
 
     std::shared_ptr<riddle::item> solver::sub(const std::vector<std::shared_ptr<riddle::item>> &xprs)
@@ -61,9 +71,8 @@ namespace ratio
             return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), diff);
         else if (&tp.get_scope().get_core().get_real_type() == &tp)
             return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), diff);
-        else if (&tp.get_scope().get_core().get_time_type() == &tp)
-            return std::make_shared<arith_item>(static_cast<riddle::time_type &>(tp), diff);
-        assert(false);
+        assert(&tp.get_scope().get_core().get_time_type() == &tp);
+        return std::make_shared<arith_item>(static_cast<riddle::time_type &>(tp), diff);
     }
 
     std::shared_ptr<riddle::item> solver::mul(const std::vector<std::shared_ptr<riddle::item>> &xprs)
@@ -84,9 +93,8 @@ namespace ratio
             auto &tp = determine_type(xprs);
             if (&tp.get_scope().get_core().get_int_type() == &tp)
                 return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), prod);
-            else if (&tp.get_scope().get_core().get_real_type() == &tp)
-                return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), prod);
-            assert(false);
+            assert(&tp.get_scope().get_core().get_real_type() == &tp);
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), prod);
         }
         else
         {
@@ -98,9 +106,8 @@ namespace ratio
             auto &tp = determine_type(xprs);
             if (&tp.get_scope().get_core().get_int_type() == &tp)
                 return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), utils::lin(prod));
-            else if (&tp.get_scope().get_core().get_real_type() == &tp)
-                return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), utils::lin(prod));
-            assert(false);
+            assert(&tp.get_scope().get_core().get_real_type() == &tp);
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), utils::lin(prod));
         }
     }
 
@@ -117,8 +124,39 @@ namespace ratio
         auto &tp = determine_type(xprs);
         if (&tp.get_scope().get_core().get_int_type() == &tp)
             return std::make_shared<arith_item>(static_cast<riddle::int_type &>(tp), quot);
-        else if (&tp.get_scope().get_core().get_real_type() == &tp)
-            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), quot);
-        assert(false);
+        assert(&tp.get_scope().get_core().get_real_type() == &tp);
+        return std::make_shared<arith_item>(static_cast<riddle::real_type &>(tp), quot);
+    }
+
+    std::shared_ptr<riddle::item> solver::lt(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) { return std::make_shared<bool_item>(get_bool_type(), lra.new_lt(std::static_pointer_cast<arith_item>(lhs)->get_value(), std::static_pointer_cast<arith_item>(rhs)->get_value())); }
+    std::shared_ptr<riddle::item> solver::leq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) { return std::make_shared<bool_item>(get_bool_type(), lra.new_leq(std::static_pointer_cast<arith_item>(lhs)->get_value(), std::static_pointer_cast<arith_item>(rhs)->get_value())); }
+    std::shared_ptr<riddle::item> solver::gt(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) { return std::make_shared<bool_item>(get_bool_type(), lra.new_lt(std::static_pointer_cast<arith_item>(rhs)->get_value(), std::static_pointer_cast<arith_item>(lhs)->get_value())); }
+    std::shared_ptr<riddle::item> solver::geq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) { return std::make_shared<bool_item>(get_bool_type(), lra.new_leq(std::static_pointer_cast<arith_item>(rhs)->get_value(), std::static_pointer_cast<arith_item>(lhs)->get_value())); }
+
+    std::shared_ptr<riddle::item> solver::eq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) { return nullptr; }
+
+    std::shared_ptr<riddle::item> solver::conj(const std::vector<std::shared_ptr<riddle::item>> &exprs)
+    {
+        std::vector<utils::lit> lits;
+        lits.reserve(exprs.size());
+        for (const auto &xpr : exprs)
+            lits.push_back(std::static_pointer_cast<bool_item>(xpr)->get_value());
+        return std::make_shared<bool_item>(get_bool_type(), sat->new_conj(std::move(lits)));
+    }
+    std::shared_ptr<riddle::item> solver::disj(const std::vector<std::shared_ptr<riddle::item>> &exprs)
+    {
+        std::vector<utils::lit> lits;
+        lits.reserve(exprs.size());
+        for (const auto &xpr : exprs)
+            lits.push_back(std::static_pointer_cast<bool_item>(xpr)->get_value());
+        return std::make_shared<bool_item>(get_bool_type(), sat->new_disj(std::move(lits)));
+    }
+    std::shared_ptr<riddle::item> solver::exct_one(const std::vector<std::shared_ptr<riddle::item>> &exprs)
+    {
+        std::vector<utils::lit> lits;
+        lits.reserve(exprs.size());
+        for (const auto &xpr : exprs)
+            lits.push_back(std::static_pointer_cast<bool_item>(xpr)->get_value());
+        return nullptr;
     }
 } // namespace ratio
