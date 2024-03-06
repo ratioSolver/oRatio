@@ -83,6 +83,8 @@ namespace ratio
     std::pair<utils::inf_rational, utils::inf_rational> bounds(const riddle::item &expr) const noexcept override;
     bool is_enum(const riddle::item &expr) const noexcept override { return dynamic_cast<const enum_item *>(&expr) != nullptr; }
     std::vector<std::reference_wrapper<utils::enum_val>> domain(const riddle::item &expr) const noexcept override;
+    bool assign(const riddle::item &expr, const utils::enum_val &val) override;
+    void forbid(const riddle::item &expr, const utils::enum_val &value) override;
 
   private:
     bool propagate(const utils::lit &) noexcept override { return true; }

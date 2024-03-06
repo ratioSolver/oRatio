@@ -209,4 +209,14 @@ namespace ratio
         assert(is_enum(expr));
         return ov.domain(static_cast<const enum_item &>(expr).get_value());
     }
+    bool solver::assign(const riddle::item &expr, const utils::enum_val &val)
+    {
+        assert(is_enum(expr));
+        return ov.assign(static_cast<const enum_item &>(expr).get_value(), val);
+    }
+    void solver::forbid(const riddle::item &expr, const utils::enum_val &value)
+    {
+        assert(is_enum(expr));
+        ov.forbid(static_cast<const enum_item &>(expr).get_value(), value);
+    }
 } // namespace ratio
