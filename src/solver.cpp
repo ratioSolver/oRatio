@@ -217,6 +217,7 @@ namespace ratio
     void solver::forbid(const riddle::item &expr, const utils::enum_val &value)
     {
         assert(is_enum(expr));
-        ov.forbid(static_cast<const enum_item &>(expr).get_value(), value);
+        if (!ov.forbid(static_cast<const enum_item &>(expr).get_value(), value))
+            throw riddle::unsolvable_exception();
     }
 } // namespace ratio

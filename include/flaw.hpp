@@ -16,8 +16,8 @@ namespace ratio
     flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
     virtual ~flaw() = default;
 
-    solver &get_solver() noexcept { return s; }
-    const solver &get_solver() const noexcept { return s; }
+    [[nodiscard]] solver &get_solver() noexcept { return s; }
+    [[nodiscard]] const solver &get_solver() const noexcept { return s; }
 
   private:
     solver &s;                                                     // the solver this flaw belongs to..

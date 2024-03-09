@@ -12,8 +12,8 @@ namespace ratio
   public:
     bool_item(riddle::bool_type &t, const utils::lit &l) : item(t), value(l) {}
 
-    utils::lit &get_value() { return value; }
-    const utils::lit &get_value() const { return value; }
+    [[nodiscard]] utils::lit &get_value() { return value; }
+    [[nodiscard]] const utils::lit &get_value() const { return value; }
 
   private:
     utils::lit value;
@@ -26,8 +26,8 @@ namespace ratio
     arith_item(riddle::real_type &t, const utils::lin &l) : item(t), value(l) {}
     arith_item(riddle::time_type &t, const utils::lin &l) : item(t), value(l) {}
 
-    utils::lin &get_value() { return value; }
-    const utils::lin &get_value() const { return value; }
+    [[nodiscard]] utils::lin &get_value() { return value; }
+    [[nodiscard]] const utils::lin &get_value() const { return value; }
 
   private:
     utils::lin value;
@@ -38,8 +38,8 @@ namespace ratio
   public:
     string_item(riddle::string_type &t, const std::string &s = "") : item(t), value(s) {}
 
-    std::string &get_value() { return value; }
-    const std::string &get_value() const { return value; }
+    [[nodiscard]] std::string &get_value() { return value; }
+    [[nodiscard]] const std::string &get_value() const { return value; }
 
   private:
     std::string value;
@@ -50,10 +50,10 @@ namespace ratio
   public:
     enum_item(riddle::type &t, VARIABLE_TYPE v) : item(t), env(t.get_scope().get_core()), value(v) {}
 
-    std::shared_ptr<riddle::item> get(const std::string &name) const noexcept override;
+    [[nodiscard]] std::shared_ptr<riddle::item> get(const std::string &name) const noexcept override;
 
-    VARIABLE_TYPE &get_value() { return value; }
-    const VARIABLE_TYPE &get_value() const { return value; }
+    [[nodiscard]] VARIABLE_TYPE &get_value() { return value; }
+    [[nodiscard]] const VARIABLE_TYPE &get_value() const { return value; }
 
   private:
     VARIABLE_TYPE value;
@@ -68,9 +68,9 @@ namespace ratio
         items.emplace(name, item);
     }
 
-    bool is_fact() const { return fact; }
-    utils::lit &get_sigma() { return sigma; }
-    const utils::lit &get_sigma() const { return sigma; }
+    [[nodiscard]] bool is_fact() const { return fact; }
+    [[nodiscard]] utils::lit &get_sigma() { return sigma; }
+    [[nodiscard]] const utils::lit &get_sigma() const { return sigma; }
 
   private:
     bool fact;

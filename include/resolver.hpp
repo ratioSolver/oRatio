@@ -17,10 +17,10 @@ namespace ratio
     resolver(flaw &f, const utils::lit &rho, const utils::rational &intrinsic_cost);
     virtual ~resolver() = default;
 
-    flaw &get_flaw() noexcept { return f; }
-    const flaw &get_flaw() const noexcept { return f; }
-    const utils::lit &get_rho() const noexcept { return rho; }
-    const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+    [[nodiscard]] flaw &get_flaw() noexcept { return f; }
+    [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
+    [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
+    [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
 
   private:
     flaw &f;                                                 // the flaw solved by this resolver..
