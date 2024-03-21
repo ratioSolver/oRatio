@@ -18,6 +18,24 @@ namespace ratio
         LOG_INFO("Initializing solver " << name);
     }
 
+    void solver::read(const std::string &script)
+    {
+        LOG_DEBUG("Reading script " << script);
+        core::read(script);
+
+        if (!sat->propagate())
+            throw riddle::unsolvable_exception();
+    }
+
+    void solver::read(const std::vector<std::string> &files)
+    {
+        LOG_DEBUG("Reading files");
+        core::read(files);
+
+        if (!sat->propagate())
+            throw riddle::unsolvable_exception();
+    }
+
     std::shared_ptr<riddle::item> solver::new_bool() noexcept { return std::make_shared<bool_item>(get_bool_type(), utils::lit(sat->new_var())); }
     std::shared_ptr<riddle::item> solver::new_bool(bool value) noexcept { return std::make_shared<bool_item>(get_bool_type(), value ? utils::TRUE_lit : utils::FALSE_lit); }
     std::shared_ptr<riddle::item> solver::new_int() noexcept { return std::make_shared<arith_item>(get_int_type(), utils::lin(lra.new_var(), utils::rational::one)); }

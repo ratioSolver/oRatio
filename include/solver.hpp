@@ -19,6 +19,9 @@ namespace ratio
 
     void init() noexcept;
 
+    void read(const std::string &script) override;
+    void read(const std::vector<std::string> &files) override;
+
     [[nodiscard]] semitone::lra_theory &get_lra_theory() noexcept { return lra; }
     [[nodiscard]] const semitone::lra_theory &get_lra_theory() const noexcept { return lra; }
     [[nodiscard]] semitone::idl_theory &get_idl_theory() noexcept { return idl; }
@@ -61,7 +64,7 @@ namespace ratio
 
     void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept override;
 
-    [[nodiscard]] std::shared_ptr<riddle::item> new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept override;
+    [[nodiscard]] std::shared_ptr<riddle::item> new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments = {}) noexcept override;
 
     [[nodiscard]] bool is_constant(const riddle::item &xpr) const noexcept
     {
