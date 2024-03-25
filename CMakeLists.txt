@@ -19,9 +19,9 @@ if(${TEMPORAL_NETWORK_TYPE_INDEX} EQUAL -1)
 endif()
 message(STATUS "Temporal network type: ${TEMPORAL_NETWORK_TYPE}")
 
-add_library(oRatioLib src/solver.cpp src/solver_item.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp)
+add_library(oRatioLib src/solver.cpp src/solver_item.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp)
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
-target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 if(${TEMPORAL_NETWORK_TYPE} STREQUAL "LRA")
     set(INIT_STRING "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end) { start >= origin; start <= end; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;" CACHE STRING "Initialization string")
