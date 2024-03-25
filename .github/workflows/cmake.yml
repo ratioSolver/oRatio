@@ -47,7 +47,7 @@ jobs:
         run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DGRAPH_REFINING=${{env.GRAPH_REFINING}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
   
       - name: Build
-        run: cmake --build ${{github.workspace}}/build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
   
       - name: Test with coverage
         if: matrix.build_type == 'Debug' && matrix.os == 'ubuntu-latest'
