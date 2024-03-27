@@ -14,13 +14,21 @@ namespace ratio
   class solver : public riddle::core, public semitone::theory
   {
   public:
-    solver(const std::string &name = "oRatio", bool i = true) noexcept;
+    solver(const std::string &name = "oRatio") noexcept;
     virtual ~solver() = default;
 
     void init() noexcept;
 
     void read(const std::string &script) override;
     void read(const std::vector<std::string> &files) override;
+
+    /**
+     * @brief Solves the current problem returning whether a solution was found.
+     *
+     * @return true If a solution was found.
+     * @return false If no solution was found.
+     */
+    bool solve();
 
     [[nodiscard]] semitone::lra_theory &get_lra_theory() noexcept { return lra; }
     [[nodiscard]] const semitone::lra_theory &get_lra_theory() const noexcept { return lra; }
@@ -66,7 +74,7 @@ namespace ratio
 
     [[nodiscard]] std::shared_ptr<riddle::item> new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments = {}) noexcept override;
 
-    [[nodiscard]] bool is_constant(const riddle::item &xpr) const noexcept
+    [[nodiscard]] bool is_constant(const riddle::item &xpr) const noexcept override
     {
       if (is_bool(xpr)) // the expression is a boolean..
         return bool_value(xpr) != utils::Undefined;

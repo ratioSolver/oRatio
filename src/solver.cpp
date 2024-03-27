@@ -9,20 +9,18 @@
 
 namespace ratio
 {
-    solver::solver(const std::string &name, bool i) noexcept : theory(std::make_shared<semitone::sat_core>()), name(name), lra(get_sat_ptr()), idl(get_sat_ptr()), rdl(get_sat_ptr()), ov(get_sat_ptr()), gr(*this)
-    {
-        if (i)
-            init();
-    }
+    solver::solver(const std::string &name) noexcept : theory(std::make_shared<semitone::sat_core>()), name(name), lra(get_sat_ptr()), idl(get_sat_ptr()), rdl(get_sat_ptr()), ov(get_sat_ptr()), gr(*this) {}
 
     void solver::init() noexcept
     {
-        LOG_INFO("Initializing solver " << name);
+        LOG_DEBUG("[" << name << "] Initializing solver");
+        // we read the init string..
+        read(INIT_STRING);
     }
 
     void solver::read(const std::string &script)
     {
-        LOG_DEBUG("Reading script " << script);
+        LOG_DEBUG("[" << name << "] Reading script: " << script);
         core::read(script);
 
         if (!sat->propagate())
@@ -31,11 +29,17 @@ namespace ratio
 
     void solver::read(const std::vector<std::string> &files)
     {
-        LOG_DEBUG("Reading files");
+        LOG_DEBUG("[" << name << "] Reading files");
         core::read(files);
 
         if (!sat->propagate())
             throw riddle::unsolvable_exception();
+    }
+
+    bool solver::solve()
+    {
+        LOG_DEBUG("[" << name << "] Solving problem");
+        return true;
     }
 
     std::shared_ptr<riddle::item> solver::new_bool() noexcept { return std::make_shared<bool_item>(get_bool_type(), utils::lit(sat->new_var())); }
@@ -153,7 +157,10 @@ namespace ratio
     std::shared_ptr<riddle::item> solver::gt(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) { return std::make_shared<bool_item>(get_bool_type(), lra.new_lt(std::static_pointer_cast<arith_item>(rhs)->get_value(), std::static_pointer_cast<arith_item>(lhs)->get_value())); }
     std::shared_ptr<riddle::item> solver::geq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) { return std::make_shared<bool_item>(get_bool_type(), lra.new_leq(std::static_pointer_cast<arith_item>(rhs)->get_value(), std::static_pointer_cast<arith_item>(lhs)->get_value())); }
 
-    std::shared_ptr<riddle::item> solver::eq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) { return nullptr; }
+    std::shared_ptr<riddle::item> solver::eq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs)
+    {
+        throw std::runtime_error("Not implemented yet");
+    }
 
     std::shared_ptr<riddle::item> solver::conj(const std::vector<std::shared_ptr<riddle::item>> &exprs)
     {
@@ -177,7 +184,7 @@ namespace ratio
         lits.reserve(exprs.size());
         for (const auto &xpr : exprs)
             lits.push_back(std::static_pointer_cast<bool_item>(xpr)->get_value());
-        return nullptr;
+        throw std::runtime_error("Not implemented yet");
     }
     std::shared_ptr<riddle::item> solver::negate(const std::shared_ptr<riddle::item> &expr) { return std::make_shared<bool_item>(get_bool_type(), !std::static_pointer_cast<bool_item>(expr)->get_value()); }
 
@@ -190,6 +197,7 @@ namespace ratio
 
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept
     {
+        throw std::runtime_error("Not implemented yet");
     }
 
     std::shared_ptr<riddle::item> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept
@@ -258,7 +266,7 @@ namespace ratio
 
     void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
     {
-        LOG_TRACE("Creating new flaw");
+        LOG_TRACE("[" << name << "] Creating new flaw");
         if (!sat->root_level())
         { // we postpone the flaw's initialization..
             pending_flaws.push_back(std::move(f));
