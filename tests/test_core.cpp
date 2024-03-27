@@ -11,7 +11,7 @@ void test_basic_core()
     auto y = s->new_real();
 
     // we create a constraint
-    auto eq = s->eq(s->add({x, y}), s->new_real(utils::rational::one));
+    auto eq = s->eq(s->add({x, y}), s->core::new_real(utils::rational::one));
 }
 
 int main(int argc, char const *argv[])

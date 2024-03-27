@@ -1,7 +1,7 @@
 #pragma once
 
 #include "flaw.hpp"
-#include "solver_item.hpp"
+#include "solver.hpp"
 
 namespace ratio
 {
