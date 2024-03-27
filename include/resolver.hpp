@@ -17,10 +17,30 @@ namespace ratio
     resolver(flaw &f, const utils::lit &rho, const utils::rational &intrinsic_cost);
     virtual ~resolver() = default;
 
-    [[nodiscard]] flaw &get_flaw() noexcept { return f; }
-    [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
+    /**
+     * @brief Get the flaw this resolver solves.
+     *
+     * @return flaw& The flaw.
+     */
+    [[nodiscard]] flaw &get_flaw() const noexcept { return f; }
+    /**
+     * @brief Gets the rho variable of this resolver.
+     *
+     * @return const semitone::lit& the rho variable of this resolver.
+     */
     [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
+    /**
+     * @brief Gets the intrinsic cost of this resolver.
+     *
+     * @return const semitone::rational& the intrinsic cost of this resolver.
+     */
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+    /**
+     * @brief Gets the estimated cost of this resolver.
+     *
+     * @return const utils::rational& the estimated cost of this resolver.
+     */
+    utils::rational get_estimated_cost() const noexcept;
 
   private:
     flaw &f;                                                 // the flaw solved by this resolver..

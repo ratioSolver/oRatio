@@ -96,13 +96,17 @@ namespace ratio
     void pop() noexcept override {}
 
   private:
-    std::string name;                        // the name of the solver
-    semitone::lra_theory lra;                // the linear real arithmetic theory
-    semitone::idl_theory idl;                // the integer difference logic theory
-    semitone::rdl_theory rdl;                // the real difference logic theory
-    semitone::ov_theory ov;                  // the object variable theory
-    graph gr;                                // the causal graph
-    std::optional<resolver> res;             // the current resolver
-    std::unordered_set<flaw *> active_flaws; // the currently active flaws..
+    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
+
+  private:
+    std::string name;                                 // the name of the solver
+    semitone::lra_theory lra;                         // the linear real arithmetic theory
+    semitone::idl_theory idl;                         // the integer difference logic theory
+    semitone::rdl_theory rdl;                         // the real difference logic theory
+    semitone::ov_theory ov;                           // the object variable theory
+    graph gr;                                         // the causal graph
+    std::optional<resolver> res;                      // the current resolver
+    std::unordered_set<flaw *> active_flaws;          // the currently active flaws..
+    std::vector<std::unique_ptr<flaw>> pending_flaws; // pending flaws, waiting for root-level to be initialized..
   };
 } // namespace ratio

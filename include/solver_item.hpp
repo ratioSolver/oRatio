@@ -7,6 +7,8 @@
 
 namespace ratio
 {
+  class atom_flaw;
+
   class bool_item : public riddle::item
   {
   public:
@@ -61,19 +63,23 @@ namespace ratio
 
   class atom : public riddle::item, public riddle::env
   {
+    friend class atom_flaw;
+
   public:
-    atom(riddle::predicate &p, bool is_fact, const utils::lit &s, std::map<std::string, std::shared_ptr<item>> &&args = {}) : item(p), env(p.get_scope().get_core()), fact(is_fact), sigma(s)
+    atom(riddle::predicate &p, atom_flaw &reason, bool is_fact, const utils::lit &s, std::map<std::string, std::shared_ptr<item>> &&args = {}) : item(p), env(p.get_scope().get_core()), reason(reason), fact(is_fact), sigma(s)
     {
       for (auto &[name, item] : args)
         items.emplace(name, item);
     }
 
+    [[nodiscard]] atom_flaw &get_reason() const { return reason; }
     [[nodiscard]] bool is_fact() const { return fact; }
     [[nodiscard]] utils::lit &get_sigma() { return sigma; }
     [[nodiscard]] const utils::lit &get_sigma() const { return sigma; }
 
   private:
-    bool fact;
-    utils::lit sigma;
+    atom_flaw &reason; // the flaw associated to this atom..
+    bool fact;         // whether the atom is a fact or a goal..
+    utils::lit sigma;  // the literal indicating whether the atom is active or not..
   };
 } // namespace ratio

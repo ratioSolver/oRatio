@@ -2,7 +2,9 @@
 #include <algorithm>
 #include "solver.hpp"
 #include "init.hpp"
+#include "smart_type.hpp"
 #include "sat_core.hpp"
+#include "atom_flaw.hpp"
 #include "logging.hpp"
 
 namespace ratio
@@ -192,7 +194,22 @@ namespace ratio
 
     std::shared_ptr<riddle::item> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept
     {
-        return nullptr;
+        LOG_TRACE("Creating new atom " << pred.get_name());
+        auto f = std::make_unique<atom_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), is_fact, pred, std::move(arguments));
+        auto atm = f->get_atom();
+        new_flaw(std::move(f));
+        // we check if we need to notify any smart types of the new goal..
+        if (!is_core(atm->get_type().get_scope()))
+        {
+            std::queue<riddle::component_type *> q;
+            q.push(static_cast<riddle::component_type *>(&atm->get_type().get_scope())); // we start from the scope of the atom..
+            while (!q.empty())
+            {
+                if (auto st = dynamic_cast<smart_type *>(q.front()))
+                    st->new_atom(*atm);
+            }
+        }
+        return atm;
     }
 
     utils::lbool solver::bool_value(const riddle::item &expr) const noexcept
@@ -237,5 +254,18 @@ namespace ratio
         assert(is_enum(expr));
         if (!ov.forbid(static_cast<const enum_item &>(expr).get_value(), value))
             throw riddle::unsolvable_exception();
+    }
+
+    void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
+    {
+        LOG_TRACE("Creating new flaw");
+        if (!sat->root_level())
+        { // we postpone the flaw's initialization..
+            pending_flaws.push_back(std::move(f));
+            return;
+        }
+
+        // we initialize the flaw..
+        f->init();
     }
 } // namespace ratio
