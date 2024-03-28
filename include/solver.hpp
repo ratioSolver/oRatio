@@ -102,7 +102,7 @@ namespace ratio
     void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
 
   private:
-    std::string name;                                 // the name of the solver
+    const std::string name;                           // the name of the solver
     semitone::lra_theory lra;                         // the linear real arithmetic theory
     semitone::idl_theory idl;                         // the integer difference logic theory
     semitone::rdl_theory rdl;                         // the real difference logic theory

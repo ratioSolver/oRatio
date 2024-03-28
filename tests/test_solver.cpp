@@ -1,4 +1,5 @@
 #include <chrono>
+#include <numeric>
 #include "solver.hpp"
 #include "logging.hpp"
 
@@ -19,11 +20,11 @@ int main(int argc, char const *argv[])
     std::string sol_name = argv[argc - 1];
 
     LOG_INFO("starting oRatio");
-    auto start = std::chrono::high_resolution_clock::now();
+    std::vector<std::chrono::nanoseconds> times;
     for (size_t i = 0; i < NUM_TESTS; ++i)
     {
         LOG_INFO("running test " + std::to_string(i + 1) + " of " + std::to_string(NUM_TESTS));
-        auto c_start = std::chrono::high_resolution_clock::now();
+        auto start = std::chrono::high_resolution_clock::now();
         auto s = std::make_shared<ratio::solver>();
         s->init();
         try
@@ -33,14 +34,14 @@ int main(int argc, char const *argv[])
             if (s->solve())
             {
                 LOG_INFO("hurray!! we have found a solution..");
-                LOG_INFO("running time: " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - c_start).count()) + " ms");
             }
             else
             {
                 LOG_INFO("the problem is unsolvable..");
-                LOG_INFO("running time: " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - c_start).count()) + " ms");
-                return 1;
             }
+            auto dur = std::chrono::high_resolution_clock::now() - start;
+            LOG_INFO("running time: " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count()) + " ms");
+            times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(dur));
         }
         catch (const std::exception &ex)
         {
@@ -48,8 +49,8 @@ int main(int argc, char const *argv[])
             return 1;
         }
     }
-    LOG_INFO("total running time: " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count()) + " ms");
-    LOG_INFO("average running time: " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() / NUM_TESTS) + " ms");
+
+    LOG_INFO("average running time: " + std::to_string(std::accumulate(times.begin(), times.end(), std::chrono::nanoseconds(0)).count() / NUM_TESTS / 1000000) + " ms");
 
     return 0;
 }

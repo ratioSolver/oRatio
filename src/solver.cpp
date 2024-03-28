@@ -152,7 +152,7 @@ namespace ratio
 
     std::shared_ptr<riddle::bool_item> solver::eq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs)
     {
-        if (lhs == rhs) // the two items are the same item..
+        if (&*lhs == &*rhs) // the two items are the same item..
             return core::new_bool(true);
         else if (is_bool(*lhs) && is_bool(*rhs))
             return std::make_shared<riddle::bool_item>(get_bool_type(), sat->new_eq(std::static_pointer_cast<riddle::bool_item>(lhs)->get_value(), std::static_pointer_cast<riddle::bool_item>(rhs)->get_value()));
