@@ -36,7 +36,7 @@ jobs:
 
       - name: Install dependencies
         if: matrix.build_type == 'Debug' && matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y lcov
+        run: sudo apt-get install -y lcov valgrind
   
       - name: Configure CMake (Debug)
         if: matrix.build_type == 'Debug'
@@ -49,12 +49,12 @@ jobs:
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
   
-      - name: Test with coverage
+      - name: Test with coverage and memory sanitizer
         if: matrix.build_type == 'Debug' && matrix.os == 'ubuntu-latest'
         working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure -T Test -T Coverage
+        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure -T Test -T Coverage -T MemCheck
 
-      - name: Test without coverage
+      - name: Test without coverage and memory sanitizer
         if: matrix.build_type == 'Release' || matrix.os != 'ubuntu-latest'
         working-directory: ${{github.workspace}}/build
         run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure -T Test
