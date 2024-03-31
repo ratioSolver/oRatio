@@ -14,5 +14,6 @@ namespace ratio
 
     void flaw::init() noexcept
     {
+        throw std::runtime_error("Not implemented yet");
     }
 } // namespace ratio

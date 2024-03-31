@@ -5,6 +5,7 @@
 #include "smart_type.hpp"
 #include "sat_core.hpp"
 #include "atom_flaw.hpp"
+#include "bool_flaw.hpp"
 #include "logging.hpp"
 
 namespace ratio
@@ -44,7 +45,12 @@ namespace ratio
         return true;
     }
 
-    std::shared_ptr<riddle::bool_item> solver::new_bool() noexcept { return std::make_shared<riddle::bool_item>(get_bool_type(), utils::lit(sat->new_var())); }
+    std::shared_ptr<riddle::bool_item> solver::new_bool() noexcept
+    {
+        auto b = std::make_shared<riddle::bool_item>(get_bool_type(), utils::lit(sat->new_var()));
+        new_flaw(std::make_unique<bool_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), b));
+        return b;
+    }
     std::shared_ptr<riddle::arith_item> solver::new_int() noexcept { return std::make_shared<riddle::arith_item>(get_int_type(), utils::lin(lra.new_var(), utils::rational::one)); }
     std::shared_ptr<riddle::arith_item> solver::new_real() noexcept { return std::make_shared<riddle::arith_item>(get_real_type(), utils::lin(lra.new_var(), utils::rational::one)); }
     std::shared_ptr<riddle::arith_item> solver::new_time() noexcept { return std::make_shared<riddle::arith_item>(get_time_type(), utils::lin(rdl.new_var(), utils::rational::one)); }
