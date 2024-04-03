@@ -33,6 +33,8 @@ namespace ratio
     solver(const std::string &name = "oRatio") noexcept;
     virtual ~solver() = default;
 
+    const std::string &get_name() const noexcept { return name; }
+
     void init() noexcept;
 
     void read(const std::string &script) override;
