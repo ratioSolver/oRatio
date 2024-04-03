@@ -43,6 +43,12 @@ namespace ratio
      * @return false If no solution was found.
      */
     bool solve();
+    /**
+     * @brief Takes a decision and propagates its consequences.
+     *
+     * @param d The decision to take.
+     */
+    void take_decision(const utils::lit &d);
 
     [[nodiscard]] semitone::lra_theory &get_lra_theory() noexcept { return lra; }
     [[nodiscard]] const semitone::lra_theory &get_lra_theory() const noexcept { return lra; }

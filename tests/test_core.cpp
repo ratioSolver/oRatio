@@ -12,6 +12,11 @@ void test_basic_core()
 
     // we create a constraint
     auto eq = s->eq(s->add({x, y}), s->core::new_real(utils::rational::one));
+
+    s->take_decision(eq->get_value());
+
+    assert(s->bool_value(*eq) == utils::True);
+    assert(s->arithmetic_value(*x) + s->arithmetic_value(*y) == utils::rational::one);
 }
 
 int main(int argc, char const *argv[])

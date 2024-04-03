@@ -44,6 +44,16 @@ namespace ratio
         return true;
     }
 
+    void solver::take_decision(const utils::lit &d)
+    {
+        assert(sat->value(d) == utils::Undefined);
+
+        LOG_DEBUG("[" << name << "] Taking decision: " << to_string(d));
+        // we take the decision..
+        if (!sat->assume(d))
+            throw riddle::unsolvable_exception();
+    }
+
     std::shared_ptr<riddle::bool_item> solver::new_bool() noexcept { return std::make_shared<riddle::bool_item>(get_bool_type(), utils::lit(sat->new_var())); }
     std::shared_ptr<riddle::arith_item> solver::new_int() noexcept { return std::make_shared<riddle::arith_item>(get_int_type(), utils::lin(lra.new_var(), utils::rational::one)); }
     std::shared_ptr<riddle::arith_item> solver::new_real() noexcept { return std::make_shared<riddle::arith_item>(get_real_type(), utils::lin(lra.new_var(), utils::rational::one)); }
@@ -269,7 +279,6 @@ namespace ratio
 
     void solver::assert_fact(const std::shared_ptr<riddle::bool_item> &fact)
     {
-        assert(&fact->get_type() == &get_bool_type()); // the expression must be a boolean..
         if (!sat->new_clause({res.has_value() ? !res.value().get_rho() : utils::FALSE_lit, fact->get_value()}))
             throw riddle::unsolvable_exception();
     }
