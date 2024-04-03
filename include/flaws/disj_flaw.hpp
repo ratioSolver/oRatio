@@ -12,6 +12,9 @@ namespace ratio
     [[nodiscard]] const std::vector<utils::lit> &get_lits() const noexcept { return lits; }
 
   private:
+    void compute_resolvers() override;
+
+  private:
     std::vector<utils::lit> lits;
   };
 } // namespace ratio

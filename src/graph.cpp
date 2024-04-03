@@ -12,5 +12,7 @@ namespace ratio
 
         if (enqueue)
             this->enqueue(*phi.back());
+        else
+            slv.expand_flaw(*phi.back());
     }
 } // namespace ratio

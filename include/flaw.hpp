@@ -104,6 +104,13 @@ namespace ratio
      * @pre the solver must be at root-level.
      */
     void init() noexcept;
+    /**
+     * Expands this flaw, invoking the compute_resolvers procedure.
+     *
+     * @pre the solver must be at root-level.
+     */
+    void expand();
+    virtual void compute_resolvers() = 0;
 
   private:
     solver &s;                                                     // the solver this flaw belongs to..

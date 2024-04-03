@@ -365,6 +365,32 @@ namespace ratio
 
         // we initialize the flaw..
         f->init();
+        LOG_TRACE("[" << name << "] Flaw initialized with φ: " << to_string(f->get_phi()));
+
+        switch (sat->value(f->get_phi()))
+        {
+        case utils::True: // we have a top-level (a landmark) flaw..
+            if (enqueue || std::none_of(f->get_resolvers().begin(), f->get_resolvers().end(), [this](const auto &r)
+                                        { return sat->value(r.get().get_rho()) == utils::True; }))
+                active_flaws.insert(f.get()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
+            break;
+        case utils::Undefined:            // we do not have a top-level (a landmark) flaw, nor an infeasible one..
+            bind(variable(f->get_phi())); // we listen for the flaw to become active..
+            break;
+        }
+
+        // we add the flaw to the graph..
+        gr.add_flaw(std::move(f), enqueue);
+    }
+
+    void solver::expand_flaw(flaw &f) noexcept
+    {
+        assert(!f.expanded);
+
+        LOG_TRACE("[" << name << "] Expanding flaw");
+        // we expand the flaw..
+        f.expand();
+        LOG_TRACE("[" << name << "] Flaw expanded");
     }
 
     std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, const std::string &name) noexcept { return enm.get(name); }

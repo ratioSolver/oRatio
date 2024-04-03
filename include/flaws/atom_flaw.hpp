@@ -15,6 +15,9 @@ namespace ratio
     [[nodiscard]] const std::shared_ptr<atom> &get_atom() const noexcept { return atm; }
 
   private:
+    void compute_resolvers() override;
+
+  private:
     std::shared_ptr<atom> atm;
   };
 } // namespace ratio

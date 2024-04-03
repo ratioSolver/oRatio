@@ -13,6 +13,9 @@ namespace ratio
     [[nodiscard]] const std::vector<std::reference_wrapper<riddle::conjunction>> &get_conjunctions() const noexcept { return xprs; }
 
   private:
+    void compute_resolvers() override;
+
+  private:
     std::vector<std::reference_wrapper<riddle::conjunction>> xprs;
   };
 } // namespace ratio

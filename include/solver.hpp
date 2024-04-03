@@ -27,6 +27,8 @@ namespace ratio
 
   class solver : public riddle::core, public semitone::theory
   {
+    friend class graph;
+
   public:
     solver(const std::string &name = "oRatio") noexcept;
     virtual ~solver() = default;
@@ -105,7 +107,19 @@ namespace ratio
     void pop() noexcept override {}
 
   private:
-    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true); // notifies the solver that a new flaw `f` has been created..
+    /**
+     * @brief Adds a new flaw to the solver.
+     *
+     * @param f The flaw to add.
+     * @param enqueue Whether to enqueue the flaw.
+     */
+    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true);
+    /**
+     * @brief Expands the given flaw in the graph.
+     *
+     * @param f The flaw to expand.
+     */
+    void expand_flaw(flaw &f) noexcept;
 
   private:
     const std::string name;                           // the name of the solver

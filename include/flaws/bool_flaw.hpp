@@ -13,6 +13,9 @@ namespace ratio
     [[nodiscard]] const std::shared_ptr<riddle::bool_item> &get_bool_item() const noexcept { return b_item; }
 
   private:
+    void compute_resolvers() override;
+
+  private:
     std::shared_ptr<riddle::bool_item> b_item;
   };
 } // namespace ratio

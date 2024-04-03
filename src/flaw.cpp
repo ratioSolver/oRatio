@@ -1,6 +1,8 @@
 #include <algorithm>
+#include <cassert>
 #include "flaw.hpp"
 #include "solver.hpp"
+#include "sat_core.hpp"
 
 namespace ratio
 {
@@ -14,6 +16,15 @@ namespace ratio
 
     void flaw::init() noexcept
     {
+        assert(!expanded);
+        assert(s.get_sat().root_level());
+        throw std::runtime_error("Not implemented yet");
+    }
+
+    void flaw::expand()
+    {
+        assert(!expanded);
+        assert(s.get_sat().root_level());
         throw std::runtime_error("Not implemented yet");
     }
 } // namespace ratio

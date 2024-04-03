@@ -11,6 +11,8 @@ namespace ratio
 {
   class graph
   {
+    friend class solver;
+
   public:
     graph(solver &slv) noexcept;
 
