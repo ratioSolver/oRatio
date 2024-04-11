@@ -111,6 +111,9 @@ namespace ratio
      * @pre the solver must be at root-level.
      */
     void expand();
+    /**
+     * Computes the resolvers for this flaw.
+     */
     virtual void compute_resolvers() = 0;
 
   private:

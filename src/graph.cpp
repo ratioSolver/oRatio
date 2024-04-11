@@ -9,10 +9,10 @@ namespace ratio
     void graph::expand_flaw(flaw &f)
     {
         assert(!f.expanded);
+        assert(sat->root_level());
 
         LOG_TRACE("[" << slv.get_name() << "] Expanding flaw");
-        // we expand the flaw..
-        f.expand();
+        f.expand(); // we expand the flaw..
 
         // we apply the flaw's resolvers..
         for (const auto &r : f.resolvers)
@@ -31,6 +31,7 @@ namespace ratio
             res = std::nullopt;
         }
 
+        // we bind the variables to the SMT theory..
         switch (sat->value(f.get_phi()))
         {
         case utils::True: // we have a top-level (a landmark) flaw..
@@ -42,5 +43,8 @@ namespace ratio
             bind(variable(f.get_phi())); // we listen for the flaw to become active..
             break;
         }
+        for (const auto &r : f.resolvers)
+            if (sat->value(r.get().get_rho()) == utils::Undefined)
+                bind(variable(r.get().get_rho())); // we listen for the resolver to become active..
     }
 } // namespace ratio
