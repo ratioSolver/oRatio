@@ -42,6 +42,13 @@ namespace ratio
      */
     utils::rational get_estimated_cost() const noexcept;
 
+    /**
+     * Applies this resolver, introducing subgoals and/or constraints.
+     *
+     * @pre the solver must be at root-level.
+     */
+    virtual void apply() = 0;
+
   private:
     flaw &f;                                                 // the flaw solved by this resolver..
     const utils::lit rho;                                    // the propositional literal indicating whether the resolver is active or not..

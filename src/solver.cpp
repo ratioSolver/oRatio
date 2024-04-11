@@ -1,9 +1,9 @@
 #include <cassert>
 #include <algorithm>
 #include "solver.hpp"
+#include "graph.hpp"
 #include "init.hpp"
 #include "smart_type.hpp"
-#include "sat_core.hpp"
 #include "atom_flaw.hpp"
 #include "bool_flaw.hpp"
 #include "logging.hpp"
@@ -12,7 +12,7 @@ namespace ratio
 {
     atom::atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>> &&args) : riddle::atom(p, is_fact, utils::lit(static_cast<solver &>(p.get_scope().get_core()).get_sat().new_var()), std::move(args)), reason(reason) {}
 
-    solver::solver(const std::string &name) noexcept : theory(std::make_shared<semitone::sat_core>()), name(name), lra(get_sat_ptr()), idl(get_sat_ptr()), rdl(get_sat_ptr()), ov(get_sat_ptr()), gr(*this) {}
+    solver::solver(const std::string &name) noexcept : name(name), sat(std::make_shared<semitone::sat_core>()), lra(sat->new_theory<semitone::lra_theory>()), idl(sat->new_theory<semitone::idl_theory>()), rdl(sat->new_theory<semitone::rdl_theory>()), ov(sat->new_theory<semitone::ov_theory>()), gr(sat->new_theory<graph>(*this)) {}
 
     void solver::init() noexcept
     {
@@ -58,7 +58,7 @@ namespace ratio
     std::shared_ptr<riddle::bool_item> solver::new_bool() noexcept
     {
         auto b = std::make_shared<riddle::bool_item>(get_bool_type(), utils::lit(sat->new_var()));
-        new_flaw(std::make_unique<bool_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), b));
+        gr.new_flaw<bool_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), b);
         return b;
     }
     std::shared_ptr<riddle::arith_item> solver::new_int() noexcept { return std::make_shared<riddle::arith_item>(get_int_type(), utils::lin(lra.new_var(), utils::rational::one)); }
@@ -285,7 +285,7 @@ namespace ratio
 
     void solver::assert_fact(const std::shared_ptr<riddle::bool_item> &fact)
     {
-        if (!sat->new_clause({res.has_value() ? !res.value().get_rho() : utils::FALSE_lit, fact->get_value()}))
+        if (!sat->new_clause({gr.get_current_resolver().has_value() ? !gr.get_current_resolver().value().get().get_rho() : utils::FALSE_lit, fact->get_value()}))
             throw riddle::unsolvable_exception();
     }
 
@@ -297,9 +297,8 @@ namespace ratio
     std::shared_ptr<riddle::atom> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept
     {
         LOG_TRACE("Creating new atom " << pred.get_name());
-        auto f = std::make_unique<atom_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), is_fact, pred, std::move(arguments));
-        auto atm = f->get_atom();
-        new_flaw(std::move(f));
+        auto &f = gr.new_flaw<atom_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), is_fact, pred, std::move(arguments));
+        auto atm = f.get_atom();
         // we check if we need to notify any smart types of the new goal..
         if (!is_core(atm->get_type().get_scope()))
         {
@@ -352,45 +351,6 @@ namespace ratio
         assert(is_enum(expr));
         if (!ov.forbid(expr.get_value(), val))
             throw riddle::unsolvable_exception();
-    }
-
-    void solver::new_flaw(std::unique_ptr<flaw> f, const bool &enqueue)
-    {
-        LOG_TRACE("[" << name << "] Creating new flaw");
-        if (!sat->root_level())
-        { // we postpone the flaw's initialization..
-            pending_flaws.push_back(std::move(f));
-            return;
-        }
-
-        // we initialize the flaw..
-        f->init();
-        LOG_TRACE("[" << name << "] Flaw initialized with φ: " << to_string(f->get_phi()));
-
-        switch (sat->value(f->get_phi()))
-        {
-        case utils::True: // we have a top-level (a landmark) flaw..
-            if (enqueue || std::none_of(f->get_resolvers().begin(), f->get_resolvers().end(), [this](const auto &r)
-                                        { return sat->value(r.get().get_rho()) == utils::True; }))
-                active_flaws.insert(f.get()); // the flaw has not yet already been solved (e.g. it has a single resolver)..
-            break;
-        case utils::Undefined:            // we do not have a top-level (a landmark) flaw, nor an infeasible one..
-            bind(variable(f->get_phi())); // we listen for the flaw to become active..
-            break;
-        }
-
-        // we add the flaw to the graph..
-        gr.add_flaw(std::move(f), enqueue);
-    }
-
-    void solver::expand_flaw(flaw &f) noexcept
-    {
-        assert(!f.expanded);
-
-        LOG_TRACE("[" << name << "] Expanding flaw");
-        // we expand the flaw..
-        f.expand();
-        LOG_TRACE("[" << name << "] Flaw expanded");
     }
 
     std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, const std::string &name) noexcept { return enm.get(name); }

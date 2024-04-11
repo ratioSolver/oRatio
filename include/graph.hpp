@@ -4,26 +4,60 @@
 #include <vector>
 #include <deque>
 #include <memory>
+#include "solver.hpp"
 #include "flaw.hpp"
 #include "resolver.hpp"
 
 namespace ratio
 {
-  class graph
+  class graph : public semitone::theory
   {
-    friend class solver;
-
   public:
     graph(solver &slv) noexcept;
 
-  protected:
     /**
-     * @brief Adds the given flaw to the graph.
+     * @brief Creates a new flaw of the given type.
      *
-     * @param f The flaw to add.
-     * @param enqueue Whether to enqueue the flaw.
+     * @tparam Tp The type of the flaw to create.
+     * @tparam Args The types of the arguments to pass to the flaw
+     * @param args The arguments to pass to the flaw
+     * @return Tp& The created flaw
      */
-    void add_flaw(std::unique_ptr<flaw> &&f, bool enqueue = true) noexcept;
+    template <typename Tp, typename... Args>
+    Tp &new_flaw(Args &&...args) noexcept
+    {
+      static_assert(std::is_base_of_v<flaw, Tp>, "Tp must be a subclass of flaw");
+      auto f = new Tp(std::forward<Args>(args)...);
+      if (slv.get_sat().root_level())
+      {
+        f->init();
+        phis[variable(f->get_phi())].push_back(std::unique_ptr<flaw>(f));
+      }
+      else
+        pending_flaws.push_back(std::unique_ptr<flaw>(f));
+      return *f;
+    }
+
+    /**
+     * @brief Creates a new resolver of the given type.
+     *
+     * @tparam Tp The type of the resolver to create.
+     * @tparam Args The types of the arguments to pass to the resolver
+     * @param args The arguments to pass to the resolver
+     * @return Tp& The created resolver
+     */
+    template <typename Tp, typename... Args>
+    Tp &new_resolver(Args &&...args) noexcept
+    {
+      static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
+      auto r = new Tp(std::forward<Args>(args)...);
+      rhos[r->get_rho()].push_back(std::unique_ptr<resolver>(r));
+      return *r;
+    }
+
+    const std::optional<std::reference_wrapper<resolver>> &get_current_resolver() const noexcept { return res; }
+
+  protected:
     /**
      * @brief Enqueues the given flaw in the graph.
      *
@@ -31,11 +65,27 @@ namespace ratio
      */
     void enqueue(flaw &f) noexcept { flaw_q.push_back(f); }
 
+    /**
+     * @brief Expands the given flaw in the graph.
+     *
+     * @param f The flaw to expand.
+     */
+    void expand_flaw(flaw &f);
+
+  private:
+    bool propagate(const utils::lit &) noexcept override { return true; }
+    bool check() noexcept override { return true; }
+    void push() noexcept override {}
+    void pop() noexcept override {}
+
   private:
     solver &slv;                                                                    // the solver this graph belongs to..
     std::unordered_map<VARIABLE_TYPE, std::vector<std::unique_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
+    std::vector<std::unique_ptr<flaw>> pending_flaws;                               // pending flaws, waiting for root-level to be initialized..
     std::unordered_map<VARIABLE_TYPE, std::vector<std::unique_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
+    std::optional<std::reference_wrapper<resolver>> res;                            // the current resolver..
     std::deque<std::reference_wrapper<flaw>> flaw_q;                                // the flaw queue (for the graph building procedure)..
+    std::unordered_set<flaw *> active_flaws;                                        // the currently active flaws..
     VARIABLE_TYPE gamma;                                                            // the variable representing the validity of this graph..
   };
 } // namespace ratio

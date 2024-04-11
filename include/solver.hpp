@@ -2,15 +2,16 @@
 
 #include <unordered_set>
 #include "core.hpp"
+#include "sat_core.hpp"
 #include "lra_theory.hpp"
 #include "idl_theory.hpp"
 #include "rdl_theory.hpp"
 #include "ov_theory.hpp"
-#include "graph.hpp"
 
 namespace ratio
 {
   class atom_flaw;
+  class graph;
 
   class atom : public riddle::atom
   {
@@ -25,10 +26,8 @@ namespace ratio
     atom_flaw &reason; // the flaw associated to this atom..
   };
 
-  class solver : public riddle::core, public semitone::theory
+  class solver : public riddle::core
   {
-    friend class graph;
-
   public:
     solver(const std::string &name = "oRatio") noexcept;
     virtual ~solver() = default;
@@ -54,6 +53,8 @@ namespace ratio
      */
     void take_decision(const utils::lit &d);
 
+    [[nodiscard]] semitone::sat_core &get_sat() noexcept { return *sat; }
+    [[nodiscard]] const semitone::sat_core &get_sat() const noexcept { return *sat; }
     [[nodiscard]] semitone::lra_theory &get_lra_theory() noexcept { return lra; }
     [[nodiscard]] const semitone::lra_theory &get_lra_theory() const noexcept { return lra; }
     [[nodiscard]] semitone::idl_theory &get_idl_theory() noexcept { return idl; }
@@ -62,6 +63,8 @@ namespace ratio
     [[nodiscard]] const semitone::rdl_theory &get_rdl_theory() const noexcept { return rdl; }
     [[nodiscard]] semitone::ov_theory &get_ov_theory() noexcept { return ov; }
     [[nodiscard]] const semitone::ov_theory &get_ov_theory() const noexcept { return ov; }
+    [[nodiscard]] graph &get_graph() noexcept { return gr; }
+    [[nodiscard]] const graph &get_graph() const noexcept { return gr; }
 
     [[nodiscard]] std::shared_ptr<riddle::bool_item> new_bool() noexcept override;
     [[nodiscard]] std::shared_ptr<riddle::arith_item> new_int() noexcept override;
@@ -103,35 +106,12 @@ namespace ratio
     [[nodiscard]] std::shared_ptr<riddle::item> get(riddle::enum_item &enm, const std::string &name) noexcept override;
 
   private:
-    bool propagate(const utils::lit &) noexcept override { return true; }
-    bool check() noexcept override { return true; }
-    void push() noexcept override {}
-    void pop() noexcept override {}
-
-  private:
-    /**
-     * @brief Adds a new flaw to the solver.
-     *
-     * @param f The flaw to add.
-     * @param enqueue Whether to enqueue the flaw.
-     */
-    void new_flaw(std::unique_ptr<flaw> f, const bool &enqueue = true);
-    /**
-     * @brief Expands the given flaw in the graph.
-     *
-     * @param f The flaw to expand.
-     */
-    void expand_flaw(flaw &f) noexcept;
-
-  private:
-    const std::string name;                           // the name of the solver
-    semitone::lra_theory lra;                         // the linear real arithmetic theory
-    semitone::idl_theory idl;                         // the integer difference logic theory
-    semitone::rdl_theory rdl;                         // the real difference logic theory
-    semitone::ov_theory ov;                           // the object variable theory
-    graph gr;                                         // the causal graph
-    std::optional<resolver> res;                      // the current resolver
-    std::unordered_set<flaw *> active_flaws;          // the currently active flaws..
-    std::vector<std::unique_ptr<flaw>> pending_flaws; // pending flaws, waiting for root-level to be initialized..
+    const std::string name;                  // the name of the solver
+    std::shared_ptr<semitone::sat_core> sat; // the SAT core
+    semitone::lra_theory &lra;               // the linear real arithmetic theory
+    semitone::idl_theory &idl;               // the integer difference logic theory
+    semitone::rdl_theory &rdl;               // the real difference logic theory
+    semitone::ov_theory &ov;                 // the object variable theory
+    graph &gr;                               // the causal graph
   };
 } // namespace ratio

@@ -6,9 +6,8 @@
 #include <algorithm>
 #endif
 #include "resolver.hpp"
-#include "solver.hpp"
 #include "flaw.hpp"
-#include "sat_core.hpp"
+#include "solver.hpp"
 
 namespace ratio
 {

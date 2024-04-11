@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <cassert>
 #include "flaw.hpp"
+#include "resolver.hpp"
 #include "solver.hpp"
-#include "sat_core.hpp"
 
 namespace ratio
 {

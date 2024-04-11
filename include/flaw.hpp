@@ -10,11 +10,12 @@
 namespace ratio
 {
   class solver;
+  class graph;
   class resolver;
 
   class flaw
   {
-    friend class solver;
+    friend class graph;
 
   public:
     flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
