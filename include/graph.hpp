@@ -55,7 +55,14 @@ namespace ratio
       return *r;
     }
 
-    const std::optional<std::reference_wrapper<resolver>> &get_current_resolver() const noexcept { return res; }
+    /**
+     * @brief Gets the current controlling literal.
+     *
+     * If there is a current resolver, the controlling literal is the rho variable of the resolver. Otherwise, it is TRUE.
+     *
+     * @return utils::lit The current controlling literal.
+     */
+    utils::lit get_ni() const noexcept { return res.has_value() ? res->get().get_rho() : utils::TRUE_lit; }
 
   protected:
     /**

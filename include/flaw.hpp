@@ -16,6 +16,7 @@ namespace ratio
   class flaw
   {
     friend class graph;
+    friend class resolver;
 
   public:
     flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
@@ -105,12 +106,6 @@ namespace ratio
      * @pre the solver must be at root-level.
      */
     void init() noexcept;
-    /**
-     * Expands this flaw, invoking the compute_resolvers procedure.
-     *
-     * @pre the solver must be at root-level.
-     */
-    void expand();
     /**
      * Computes the resolvers for this flaw.
      */

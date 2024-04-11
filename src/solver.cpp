@@ -285,7 +285,7 @@ namespace ratio
 
     void solver::assert_fact(const std::shared_ptr<riddle::bool_item> &fact)
     {
-        if (!sat->new_clause({gr.get_current_resolver().has_value() ? !gr.get_current_resolver().value().get().get_rho() : utils::FALSE_lit, fact->get_value()}))
+        if (!sat->new_clause({!gr.get_ni(), fact->get_value()}))
             throw riddle::unsolvable_exception();
     }
 

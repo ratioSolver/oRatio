@@ -12,23 +12,49 @@ namespace ratio
         assert(sat->root_level());
 
         LOG_TRACE("[" << slv.get_name() << "] Expanding flaw");
-        f.expand(); // we expand the flaw..
+        f.compute_resolvers(); // we compute the flaw's resolvers..
+        f.expanded = true;     // we mark the flaw as expanded..
 
-        // we apply the flaw's resolvers..
-        for (const auto &r : f.resolvers)
-        {
-            LOG_TRACE("[" << slv.get_name() << "] Applying resolver");
-            res = r;
-            try
+        if (f.resolvers.empty())
+        { // there is no way for solving this flaw: we force the phi variable at false..
+            if (!sat->new_clause({!f.get_phi()}))
+                throw riddle::unsolvable_exception();
+        }
+        else
+        { // we add causal relations between the flaw and its resolvers (i.e., if the flaw is phi exactly one of its resolvers should be in plan)..
+            std::vector<utils::lit> rs;
+            rs.reserve(f.resolvers.size() + 1);
+            rs.push_back(!f.phi);
+            for (const auto &r : f.resolvers)
+                rs.push_back(r.get().get_rho());
+            // activating the flaw results in one of its resolvers being activated..
+            if (!sat->new_clause(std::move(rs)))
+                throw riddle::unsolvable_exception();
+            if (f.exclusive) // if the flaw is exclusive, we add mutual exclusion between its resolvers..
+                for (size_t i = 0; i < f.resolvers.size(); ++i)
+                    for (size_t j = i + 1; j < f.resolvers.size(); ++j)
+                        if (!sat->new_clause({!f.resolvers[i].get().get_rho(), !f.resolvers[j].get().get_rho()}))
+                            throw riddle::unsolvable_exception();
+
+            // we apply the flaw's resolvers..
+            for (const auto &r : f.resolvers)
             {
-                r.get().apply();
-            }
-            catch (const std::exception &e)
-            { // the resolver is inapplicable..
-                if (!sat->new_clause({!r.get().get_rho()}))
+                LOG_TRACE("[" << slv.get_name() << "] Applying resolver");
+                res = r;
+                // activating the resolver results in the flaw being solved..
+                if (!sat->new_clause({!r.get().get_rho(), f.get_phi()}))
                     throw riddle::unsolvable_exception();
+                try
+                { // we apply the resolver..
+                    r.get().apply();
+                }
+                catch (const std::exception &e)
+                { // the resolver is inapplicable..
+                    if (!sat->new_clause({!r.get().get_rho()}))
+                        throw riddle::unsolvable_exception();
+                }
+                res = std::nullopt;
             }
-            res = std::nullopt;
         }
 
         // we bind the variables to the SMT theory..
