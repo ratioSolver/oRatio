@@ -1,7 +1,6 @@
 #include <cassert>
 #include "enum_flaw.hpp"
 #include "solver.hpp"
-#include "sat_core.hpp"
 
 namespace ratio
 {

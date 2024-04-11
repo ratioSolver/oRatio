@@ -296,9 +296,8 @@ namespace ratio
 
     std::shared_ptr<riddle::atom> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept
     {
-        LOG_TRACE("Creating new atom " << pred.get_name());
-        auto &f = gr.new_flaw<atom_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), is_fact, pred, std::move(arguments));
-        auto atm = f.get_atom();
+        LOG_TRACE("Creating new " << pred.get_name() << " atom");
+        auto atm = gr.new_flaw<atom_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), is_fact, pred, std::move(arguments)).get_atom();
         // we check if we need to notify any smart types of the new goal..
         if (!is_core(atm->get_type().get_scope()))
         {
@@ -308,6 +307,9 @@ namespace ratio
             {
                 if (auto st = dynamic_cast<smart_type *>(q.front()))
                     st->new_atom(*atm);
+                for (const auto &p : q.front()->get_parents())
+                    q.push(&p.get());
+                q.pop();
             }
         }
         return atm;
