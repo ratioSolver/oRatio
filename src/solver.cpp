@@ -12,7 +12,7 @@ namespace ratio
 {
     atom::atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>> &&args) : riddle::atom(p, is_fact, utils::lit(static_cast<solver &>(p.get_scope().get_core()).get_sat().new_var()), std::move(args)), reason(reason) {}
 
-    solver::solver(const std::string &name) noexcept : name(name), sat(std::make_shared<semitone::sat_core>()), lra(sat->new_theory<semitone::lra_theory>()), idl(sat->new_theory<semitone::idl_theory>()), rdl(sat->new_theory<semitone::rdl_theory>()), ov(sat->new_theory<semitone::ov_theory>()), gr(sat->new_theory<graph>(*this)) {}
+    solver::solver(const std::string &name) noexcept : name(name), sat(), lra(sat.new_theory<semitone::lra_theory>()), idl(sat.new_theory<semitone::idl_theory>()), rdl(sat.new_theory<semitone::rdl_theory>()), ov(sat.new_theory<semitone::ov_theory>()), gr(sat.new_theory<graph>(*this)) {}
 
     void solver::init() noexcept
     {
@@ -26,7 +26,7 @@ namespace ratio
         LOG_DEBUG("[" << name << "] Reading script: " << script);
         core::read(script);
 
-        if (!sat->propagate())
+        if (!sat.propagate())
             throw riddle::unsolvable_exception();
     }
 
@@ -35,7 +35,7 @@ namespace ratio
         LOG_DEBUG("[" << name << "] Reading files");
         core::read(files);
 
-        if (!sat->propagate())
+        if (!sat.propagate())
             throw riddle::unsolvable_exception();
     }
 
@@ -47,17 +47,17 @@ namespace ratio
 
     void solver::take_decision(const utils::lit &d)
     {
-        assert(sat->value(d) == utils::Undefined);
+        assert(sat.value(d) == utils::Undefined);
 
         LOG_DEBUG("[" << name << "] Taking decision: " << to_string(d));
         // we take the decision..
-        if (!sat->assume(d))
+        if (!sat.assume(d))
             throw riddle::unsolvable_exception();
     }
 
     std::shared_ptr<riddle::bool_item> solver::new_bool() noexcept
     {
-        auto b = std::make_shared<riddle::bool_item>(get_bool_type(), utils::lit(sat->new_var()));
+        auto b = std::make_shared<riddle::bool_item>(get_bool_type(), utils::lit(sat.new_var()));
         gr.new_flaw<bool_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), b);
         return b;
     }
@@ -171,7 +171,7 @@ namespace ratio
         if (&*lhs == &*rhs) // the two items are the same item..
             return core::new_bool(true);
         else if (is_bool(*lhs) && is_bool(*rhs))
-            return std::make_shared<riddle::bool_item>(get_bool_type(), sat->new_eq(std::static_pointer_cast<riddle::bool_item>(lhs)->get_value(), std::static_pointer_cast<riddle::bool_item>(rhs)->get_value()));
+            return std::make_shared<riddle::bool_item>(get_bool_type(), sat.new_eq(std::static_pointer_cast<riddle::bool_item>(lhs)->get_value(), std::static_pointer_cast<riddle::bool_item>(rhs)->get_value()));
         else if (is_arith(*lhs) && is_arith(*rhs))
         {
             if ((is_int(*lhs) || is_real(*lhs)) && (is_int(*rhs) || is_real(*rhs)))
@@ -250,7 +250,7 @@ namespace ratio
             case 1:
                 return std::make_shared<riddle::bool_item>(get_bool_type(), eqs[0]);
             default:
-                return std::make_shared<riddle::bool_item>(get_bool_type(), sat->new_conj(std::move(eqs)));
+                return std::make_shared<riddle::bool_item>(get_bool_type(), sat.new_conj(std::move(eqs)));
             }
         }
         else // the two items are different..
@@ -263,7 +263,7 @@ namespace ratio
         lits.reserve(exprs.size());
         for (const auto &xpr : exprs)
             lits.push_back(xpr->get_value());
-        return std::make_shared<riddle::bool_item>(get_bool_type(), sat->new_conj(std::move(lits)));
+        return std::make_shared<riddle::bool_item>(get_bool_type(), sat.new_conj(std::move(lits)));
     }
     std::shared_ptr<riddle::bool_item> solver::disj(const std::vector<std::shared_ptr<riddle::bool_item>> &exprs)
     {
@@ -271,7 +271,7 @@ namespace ratio
         lits.reserve(exprs.size());
         for (const auto &xpr : exprs)
             lits.push_back(xpr->get_value());
-        return std::make_shared<riddle::bool_item>(get_bool_type(), sat->new_disj(std::move(lits)));
+        return std::make_shared<riddle::bool_item>(get_bool_type(), sat.new_disj(std::move(lits)));
     }
     std::shared_ptr<riddle::bool_item> solver::exct_one(const std::vector<std::shared_ptr<riddle::bool_item>> &exprs)
     {
@@ -285,7 +285,7 @@ namespace ratio
 
     void solver::assert_fact(const std::shared_ptr<riddle::bool_item> &fact)
     {
-        if (!sat->new_clause({!gr.get_ni(), fact->get_value()}))
+        if (!sat.new_clause({!gr.get_ni(), fact->get_value()}))
             throw riddle::unsolvable_exception();
     }
 
@@ -315,7 +315,7 @@ namespace ratio
         return atm;
     }
 
-    utils::lbool solver::bool_value(const riddle::bool_item &expr) const noexcept { return sat->value(expr.get_value()); }
+    utils::lbool solver::bool_value(const riddle::bool_item &expr) const noexcept { return sat.value(expr.get_value()); }
     utils::inf_rational solver::arithmetic_value(const riddle::arith_item &expr) const noexcept
     {
         assert(is_arith(expr));

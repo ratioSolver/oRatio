@@ -53,8 +53,8 @@ namespace ratio
      */
     void take_decision(const utils::lit &d);
 
-    [[nodiscard]] semitone::sat_core &get_sat() noexcept { return *sat; }
-    [[nodiscard]] const semitone::sat_core &get_sat() const noexcept { return *sat; }
+    [[nodiscard]] semitone::sat_core &get_sat() noexcept { return sat; }
+    [[nodiscard]] const semitone::sat_core &get_sat() const noexcept { return sat; }
     [[nodiscard]] semitone::lra_theory &get_lra_theory() noexcept { return lra; }
     [[nodiscard]] const semitone::lra_theory &get_lra_theory() const noexcept { return lra; }
     [[nodiscard]] semitone::idl_theory &get_idl_theory() noexcept { return idl; }
@@ -106,12 +106,12 @@ namespace ratio
     [[nodiscard]] std::shared_ptr<riddle::item> get(riddle::enum_item &enm, const std::string &name) noexcept override;
 
   private:
-    const std::string name;                  // the name of the solver
-    std::shared_ptr<semitone::sat_core> sat; // the SAT core
-    semitone::lra_theory &lra;               // the linear real arithmetic theory
-    semitone::idl_theory &idl;               // the integer difference logic theory
-    semitone::rdl_theory &rdl;               // the real difference logic theory
-    semitone::ov_theory &ov;                 // the object variable theory
-    graph &gr;                               // the causal graph
+    const std::string name;    // the name of the solver
+    semitone::sat_core sat;    // the SAT core
+    semitone::lra_theory &lra; // the linear real arithmetic theory
+    semitone::idl_theory &idl; // the integer difference logic theory
+    semitone::rdl_theory &rdl; // the real difference logic theory
+    semitone::ov_theory &ov;   // the object variable theory
+    graph &gr;                 // the causal graph
   };
 } // namespace ratio
