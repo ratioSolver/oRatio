@@ -9,7 +9,7 @@ namespace ratio
     void graph::expand_flaw(flaw &f)
     {
         assert(!f.expanded);
-        assert(sat->root_level());
+        assert(get_sat().root_level());
 
         LOG_TRACE("[" << slv.get_name() << "] Expanding flaw");
         f.compute_resolvers(); // we compute the flaw's resolvers..
@@ -17,7 +17,7 @@ namespace ratio
 
         if (f.resolvers.empty())
         { // there is no way for solving this flaw: we force the phi variable at false..
-            if (!sat->new_clause({!f.get_phi()}))
+            if (!get_sat().new_clause({!f.get_phi()}))
                 throw riddle::unsolvable_exception();
         }
         else
@@ -28,12 +28,12 @@ namespace ratio
             for (const auto &r : f.resolvers)
                 rs.push_back(r.get().get_rho());
             // activating the flaw results in one of its resolvers being activated..
-            if (!sat->new_clause(std::move(rs)))
+            if (!get_sat().new_clause(std::move(rs)))
                 throw riddle::unsolvable_exception();
             if (f.exclusive) // if the flaw is exclusive, we add mutual exclusion between its resolvers..
                 for (size_t i = 0; i < f.resolvers.size(); ++i)
                     for (size_t j = i + 1; j < f.resolvers.size(); ++j)
-                        if (!sat->new_clause({!f.resolvers[i].get().get_rho(), !f.resolvers[j].get().get_rho()}))
+                        if (!get_sat().new_clause({!f.resolvers[i].get().get_rho(), !f.resolvers[j].get().get_rho()}))
                             throw riddle::unsolvable_exception();
 
             // we apply the flaw's resolvers..
@@ -42,7 +42,7 @@ namespace ratio
                 LOG_TRACE("[" << slv.get_name() << "] Applying resolver");
                 res = r;
                 // activating the resolver results in the flaw being solved..
-                if (!sat->new_clause({!r.get().get_rho(), f.get_phi()}))
+                if (!get_sat().new_clause({!r.get().get_rho(), f.get_phi()}))
                     throw riddle::unsolvable_exception();
                 try
                 { // we apply the resolver..
@@ -50,7 +50,7 @@ namespace ratio
                 }
                 catch (const std::exception &e)
                 { // the resolver is inapplicable..
-                    if (!sat->new_clause({!r.get().get_rho()}))
+                    if (!get_sat().new_clause({!r.get().get_rho()}))
                         throw riddle::unsolvable_exception();
                 }
                 res = std::nullopt;
@@ -58,11 +58,11 @@ namespace ratio
         }
 
         // we bind the variables to the SMT theory..
-        switch (sat->value(f.get_phi()))
+        switch (get_sat().value(f.get_phi()))
         {
         case utils::True: // we have a top-level (a landmark) flaw..
             if (std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [this](const auto &r)
-                             { return sat->value(r.get().get_rho()) == utils::True; }))
+                             { return get_sat().value(r.get().get_rho()) == utils::True; }))
                 active_flaws.insert(&f); // the flaw has not yet already been solved (e.g. it has a single resolver)..
             break;
         case utils::Undefined:           // we do not have a top-level (a landmark) flaw, nor an infeasible one..
@@ -70,7 +70,7 @@ namespace ratio
             break;
         }
         for (const auto &r : f.resolvers)
-            if (sat->value(r.get().get_rho()) == utils::Undefined)
+            if (get_sat().value(r.get().get_rho()) == utils::Undefined)
                 bind(variable(r.get().get_rho())); // we listen for the resolver to become active..
     }
 } // namespace ratio
