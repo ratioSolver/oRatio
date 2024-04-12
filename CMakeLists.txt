@@ -28,7 +28,7 @@ if(${HEURISTIC_TYPE_INDEX} EQUAL -1)
 endif()
 message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 
-add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp)
+add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/exact_one_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp)
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 

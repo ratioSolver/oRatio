@@ -6,6 +6,9 @@
 #include "smart_type.hpp"
 #include "atom_flaw.hpp"
 #include "bool_flaw.hpp"
+#include "disj_flaw.hpp"
+#include "exact_one_flaw.hpp"
+#include "disjunction_flaw.hpp"
 #include "logging.hpp"
 
 namespace ratio
@@ -19,6 +22,9 @@ namespace ratio
         LOG_DEBUG("[" << name << "] Initializing solver");
         // we read the init string..
         read(INIT_STRING);
+
+        if (!sat.propagate())
+            throw riddle::unsolvable_exception();
     }
 
     void solver::read(const std::string &script)
@@ -271,7 +277,7 @@ namespace ratio
         lits.reserve(exprs.size());
         for (const auto &xpr : exprs)
             lits.push_back(xpr->get_value());
-        return std::make_shared<riddle::bool_item>(get_bool_type(), sat.new_disj(std::move(lits)));
+        return std::make_shared<riddle::bool_item>(get_bool_type(), gr.new_flaw<disj_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), std::move(lits)).get_phi());
     }
     std::shared_ptr<riddle::bool_item> solver::exct_one(const std::vector<std::shared_ptr<riddle::bool_item>> &exprs)
     {
@@ -279,7 +285,7 @@ namespace ratio
         lits.reserve(exprs.size());
         for (const auto &xpr : exprs)
             lits.push_back(xpr->get_value());
-        throw std::runtime_error("Not implemented yet");
+        return std::make_shared<riddle::bool_item>(get_bool_type(), gr.new_flaw<exact_one_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), std::move(lits)).get_phi());
     }
     std::shared_ptr<riddle::bool_item> solver::negate(const std::shared_ptr<riddle::bool_item> &expr) { return std::make_shared<riddle::bool_item>(get_bool_type(), !expr->get_value()); }
 
@@ -289,10 +295,7 @@ namespace ratio
             throw riddle::unsolvable_exception();
     }
 
-    void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept
-    {
-        throw std::runtime_error("Not implemented yet");
-    }
+    void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept { gr.new_flaw<disjunction_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), std::move(disjuncts)); }
 
     std::shared_ptr<riddle::atom> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept
     {
