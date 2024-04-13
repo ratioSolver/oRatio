@@ -10,4 +10,25 @@ namespace ratio
     {
         throw std::runtime_error("Not implemented yet");
     }
+
+    atom_flaw::activate_fact::activate_fact(atom_flaw &af) : resolver(af, utils::rational::zero) {}
+
+    void atom_flaw::activate_fact::apply()
+    {
+        throw std::runtime_error("Not implemented yet");
+    }
+
+    atom_flaw::activate_goal::activate_goal(atom_flaw &af) : resolver(af, utils::rational::zero) {}
+
+    void atom_flaw::activate_goal::apply()
+    {
+        throw std::runtime_error("Not implemented yet");
+    }
+
+    atom_flaw::unify_atom::unify_atom(atom_flaw &af, std::shared_ptr<atom> target, const utils::lit &unify_lit) : resolver(af, utils::rational::zero), target(target), unify_lit(unify_lit) {}
+
+    void atom_flaw::unify_atom::apply()
+    {
+        throw std::runtime_error("Not implemented yet");
+    }
 } // namespace ratio

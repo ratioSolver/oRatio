@@ -6,6 +6,18 @@ namespace ratio
 {
     graph::graph(solver &slv) noexcept : slv(slv) {}
 
+    void graph::new_causal_link(flaw &f, resolver &r)
+    {
+        r.preconditions.push_back(f);
+        f.supports.push_back(r);
+        // activating the resolver requires the activation of the flaw..
+        if (!slv.get_sat().new_clause({!r.get_rho(), f.get_phi()}))
+            throw riddle::unsolvable_exception();
+        // we introduce an ordering constraint..
+        if (!slv.get_sat().new_clause({!r.get_rho(), slv.get_idl_theory().new_distance(r.get_flaw().position, f.position, 0)}))
+            throw riddle::unsolvable_exception();
+    }
+
     void graph::expand_flaw(flaw &f)
     {
         assert(!f.expanded);

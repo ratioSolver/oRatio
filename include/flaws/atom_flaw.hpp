@@ -1,6 +1,7 @@
 #pragma once
 
 #include "flaw.hpp"
+#include "resolver.hpp"
 #include "type.hpp"
 
 namespace ratio
@@ -16,6 +17,34 @@ namespace ratio
 
   private:
     void compute_resolvers() override;
+
+    class activate_fact final : public resolver
+    {
+    public:
+      activate_fact(atom_flaw &af);
+
+      void apply() override;
+    };
+
+    class activate_goal final : public resolver
+    {
+    public:
+      activate_goal(atom_flaw &af);
+
+      void apply() override;
+    };
+
+    class unify_atom final : public resolver
+    {
+    public:
+      unify_atom(atom_flaw &af, std::shared_ptr<atom> target, const utils::lit &unify_lit);
+
+      void apply() override;
+
+    private:
+      std::shared_ptr<atom> target;
+      utils::lit unify_lit;
+    };
 
   private:
     std::shared_ptr<atom> atm;

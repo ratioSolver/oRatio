@@ -57,6 +57,8 @@ namespace ratio
       return *r;
     }
 
+    void new_causal_link(flaw &f, resolver &r);
+
     /**
      * @brief Gets the current controlling literal.
      *
