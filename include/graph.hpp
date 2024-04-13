@@ -29,11 +29,12 @@ namespace ratio
       static_assert(std::is_base_of_v<flaw, Tp>, "Tp must be a subclass of flaw");
       auto f = new Tp(std::forward<Args>(args)...);
       if (slv.get_sat().root_level())
-      {
+      { // if we are at root-level, we initialize the flaw and add it to the flaw queue for future expansion..
         f->init();
         phis[variable(f->get_phi())].push_back(std::unique_ptr<flaw>(f));
+        flaw_q.push_back(*f); // we add the flaw to the flaw queue..
       }
-      else
+      else // we add the flaw to the pending flaws..
         pending_flaws.push_back(std::unique_ptr<flaw>(f));
       return *f;
     }
