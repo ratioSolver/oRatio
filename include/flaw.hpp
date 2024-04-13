@@ -107,7 +107,7 @@ namespace ratio
      */
     void init() noexcept;
     /**
-     * \brief Computes the resolvers for the flaw.
+     * @brief Computes the resolvers for the flaw.
      *
      * This function is a pure virtual function that must be implemented by derived classes.
      * It is responsible for computing the resolvers for the flaw.

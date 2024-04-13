@@ -5,7 +5,7 @@
 
 namespace ratio
 {
-  class bool_flaw : public flaw
+  class bool_flaw final : public flaw
   {
   public:
     bool_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::shared_ptr<riddle::bool_item> b_item) noexcept;

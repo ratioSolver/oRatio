@@ -52,7 +52,8 @@ namespace ratio
     {
       static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
       auto r = new Tp(std::forward<Args>(args)...);
-      rhos[r->get_rho()].push_back(std::unique_ptr<resolver>(r));
+      rhos[variable(r->get_rho())].push_back(std::unique_ptr<resolver>(r));
+      r->get_flaw().resolvers.push_back(*r);
       return *r;
     }
 

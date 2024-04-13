@@ -1,10 +1,11 @@
 #pragma once
 
 #include "flaw.hpp"
+#include "resolver.hpp"
 
 namespace ratio
 {
-  class disj_flaw : public flaw
+  class disj_flaw final : public flaw
   {
   public:
     disj_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&lits, bool exclusive = false) noexcept;
@@ -13,6 +14,14 @@ namespace ratio
 
   private:
     void compute_resolvers() override;
+
+    class choose_lit final : public resolver
+    {
+    public:
+      choose_lit(disj_flaw &ef, const utils::rational &cost, const utils::lit &l);
+
+      void apply() override {}
+    };
 
   private:
     std::vector<utils::lit> lits;

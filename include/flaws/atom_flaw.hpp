@@ -7,7 +7,7 @@ namespace ratio
 {
   class atom;
 
-  class atom_flaw : public flaw
+  class atom_flaw final : public flaw
   {
   public:
     atom_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept;
