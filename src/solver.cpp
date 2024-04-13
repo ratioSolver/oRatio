@@ -7,7 +7,6 @@
 #include "atom_flaw.hpp"
 #include "bool_flaw.hpp"
 #include "disj_flaw.hpp"
-#include "exact_one_flaw.hpp"
 #include "disjunction_flaw.hpp"
 #include "logging.hpp"
 
@@ -17,7 +16,7 @@ namespace ratio
 
     solver::solver(const std::string &name) noexcept : name(name), sat(), lra(sat.new_theory<semitone::lra_theory>()), idl(sat.new_theory<semitone::idl_theory>()), rdl(sat.new_theory<semitone::rdl_theory>()), ov(sat.new_theory<semitone::ov_theory>()), gr(sat.new_theory<graph>(*this)) {}
 
-    void solver::init() noexcept
+    void solver::init()
     {
         LOG_DEBUG("[" << name << "] Initializing solver");
         // we read the init string..
@@ -285,7 +284,7 @@ namespace ratio
         lits.reserve(exprs.size());
         for (const auto &xpr : exprs)
             lits.push_back(xpr->get_value());
-        return std::make_shared<riddle::bool_item>(get_bool_type(), gr.new_flaw<exact_one_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), std::move(lits)).get_phi());
+        return std::make_shared<riddle::bool_item>(get_bool_type(), gr.new_flaw<disj_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), std::move(lits), true).get_phi());
     }
     std::shared_ptr<riddle::bool_item> solver::negate(const std::shared_ptr<riddle::bool_item> &expr) { return std::make_shared<riddle::bool_item>(get_bool_type(), !expr->get_value()); }
 

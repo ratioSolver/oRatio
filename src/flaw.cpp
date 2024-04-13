@@ -6,7 +6,7 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : s(s), causes(causes), exclusive(exclusive), position(s.get_idl_theory().new_var()) {}
+    flaw::flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive) noexcept : s(s), causes(causes), exclusive(exclusive), position(s.get_idl_theory().new_var()) {}
 
     resolver &flaw::get_cheapest_resolver() const noexcept
     {
@@ -18,6 +18,25 @@ namespace ratio
     {
         assert(!expanded);
         assert(s.get_sat().root_level());
-        throw std::runtime_error("Not implemented yet");
+
+        // this flaw's position must be greater than 0..
+        [[maybe_unused]] bool add_distance = s.get_sat().new_clause({s.get_idl_theory().new_distance(position, 0, 0)});
+        assert(add_distance);
+
+        // we consider the causes of this flaw..
+        std::vector<utils::lit> cs;
+        cs.reserve(causes.size());
+        for (auto &c : causes)
+        {
+            c.get().preconditions.push_back(*this); // this flaw is a precondition of its `c` cause..
+            supports.push_back(c);                  // .. and it also supports the `c` cause..
+            cs.push_back(c.get().get_rho());
+            // we force this flaw to stay before the effects of its causes..
+            [[maybe_unused]] bool dist = s.get_sat().new_clause({s.get_idl_theory().new_distance(c.get().get_flaw().position, position, -1)});
+            assert(dist);
+        }
+
+        // we initialize the phi variable of this flaw as the conjunction of the flaw's causes' rho variables..
+        phi = s.get_sat().new_conj(std::move(cs));
     }
 } // namespace ratio

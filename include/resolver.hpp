@@ -12,6 +12,8 @@ namespace ratio
 
   class resolver
   {
+    friend class flaw;
+
   public:
     resolver(flaw &f, const utils::rational &intrinsic_cost);
     resolver(flaw &f, const utils::lit &rho, const utils::rational &intrinsic_cost);

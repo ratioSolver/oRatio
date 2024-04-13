@@ -19,7 +19,7 @@ namespace ratio
     friend class resolver;
 
   public:
-    flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
+    flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive = false) noexcept;
     virtual ~flaw() = default;
 
     /**
@@ -107,7 +107,10 @@ namespace ratio
      */
     void init() noexcept;
     /**
-     * Computes the resolvers for this flaw.
+     * \brief Computes the resolvers for the flaw.
+     *
+     * This function is a pure virtual function that must be implemented by derived classes.
+     * It is responsible for computing the resolvers for the flaw.
      */
     virtual void compute_resolvers() = 0;
 

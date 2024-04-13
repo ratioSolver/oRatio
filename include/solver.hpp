@@ -34,7 +34,7 @@ namespace ratio
 
     const std::string &get_name() const noexcept { return name; }
 
-    void init() noexcept;
+    void init();
 
     void read(const std::string &script) override;
     void read(const std::vector<std::string> &files) override;
