@@ -63,7 +63,8 @@ namespace ratio
     std::shared_ptr<riddle::bool_item> solver::new_bool() noexcept
     {
         auto b = std::make_shared<riddle::bool_item>(get_bool_type(), utils::lit(sat.new_var()));
-        gr.new_flaw<bool_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), b);
+        if (sat.value(b->get_value()) == utils::Undefined)
+            gr.new_flaw<bool_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), b->get_value());
         return b;
     }
     std::shared_ptr<riddle::arith_item> solver::new_int() noexcept { return std::make_shared<riddle::arith_item>(get_int_type(), utils::lin(lra.new_var(), utils::rational::one)); }

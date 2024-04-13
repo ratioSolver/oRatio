@@ -1,16 +1,28 @@
 #include <cassert>
 #include "bool_flaw.hpp"
 #include "solver.hpp"
+#include "graph.hpp"
 
 namespace ratio
 {
-    bool_flaw::bool_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::shared_ptr<riddle::bool_item> b_item) noexcept : flaw(s, std::move(causes)), b_item(b_item)
-    {
-        assert(b_item.get());
-    }
+    bool_flaw::bool_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, const utils::lit &l) noexcept : flaw(s, std::move(causes)), l(l) {}
 
     void bool_flaw::compute_resolvers()
     {
-        throw std::runtime_error("Not implemented yet");
+        switch (get_solver().get_sat().value(l))
+        {
+        case utils::True: // we add only the positive resolver (which is already active)
+            get_solver().get_graph().new_resolver<choose_value>(*this, utils::rational::zero, l);
+            break;
+        case utils::False: // we add only the negative resolver (which is already active)
+            get_solver().get_graph().new_resolver<choose_value>(*this, utils::rational::zero, !l);
+            break;
+        case utils::Undefined:
+            get_solver().get_graph().new_resolver<choose_value>(*this, utils::rational::zero, l);
+            get_solver().get_graph().new_resolver<choose_value>(*this, utils::rational::zero, !l);
+            break;
+        }
     }
+
+    bool_flaw::choose_value::choose_value(bool_flaw &bf, const utils::rational &cost, const utils::lit &l) : resolver(bf, l, cost) {}
 } // namespace ratio
