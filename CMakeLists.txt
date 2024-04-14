@@ -28,6 +28,8 @@ if(${HEURISTIC_TYPE_INDEX} EQUAL -1)
 endif()
 message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 
+option(ENABLE_VISUALIZATION "Enable visualization features" OFF)
+
 add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp)
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
@@ -49,6 +51,11 @@ elseif(${HEURISTIC_TYPE} STREQUAL "h2_max")
     target_compile_definitions(oRatioLib PRIVATE H2_MAX)
 elseif(${HEURISTIC_TYPE} STREQUAL "h2_add")
     target_compile_definitions(oRatioLib PRIVATE H2_ADD)
+endif()
+
+message(STATUS "Enable oRatio visualization features: ${ENABLE_VISUALIZATION}")
+if(ENABLE_VISUALIZATION)
+    target_compile_definitions(oRatioLib PRIVATE ENABLE_VISUALIZATION)
 endif()
 
 add_executable(oRatio src/main.cpp)

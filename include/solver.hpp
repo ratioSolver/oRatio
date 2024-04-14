@@ -8,6 +8,10 @@
 #include "rdl_theory.hpp"
 #include "ov_theory.hpp"
 
+#ifdef ENABLE_VISUALIZATION
+#include "json.hpp"
+#endif
+
 namespace ratio
 {
   class atom_flaw;
@@ -114,4 +118,52 @@ namespace ratio
     semitone::ov_theory &ov;   // the object variable theory
     graph &gr;                 // the causal graph
   };
+
+#ifdef ENABLE_VISUALIZATION
+  json::json to_json(const solver &rhs) noexcept;
+  json::json to_timelines(const solver &rhs) noexcept;
+
+  /**
+   * @brief Get the JSON representation of the given item.
+   *
+   * @param rhs the item to get the JSON representation of.
+   * @return json::json the JSON representation of the given item.
+   */
+  json::json to_json(const riddle::item &rhs) noexcept;
+
+  /**
+   * @brief Get the JSON representation of the value of the given item.
+   *
+   * @param itm the item to get the JSON representation of.
+   * @return json::json the JSON representation of the value of the given item.
+   */
+  json::json value(const riddle::item &itm) noexcept;
+
+  /**
+   * @brief Get the JSON representation of the given rational.
+   *
+   * @param rat the rational to get the JSON representation of.
+   * @return json::json the JSON representation of the given rational.
+   */
+  inline json::json to_json(const utils::rational &rat) noexcept
+  {
+    json::json j_rat;
+    j_rat["num"] = rat.numerator();
+    j_rat["den"] = rat.denominator();
+    return j_rat;
+  }
+  /**
+   * @brief Get the JSON representation of the given infinitesimal rational.
+   *
+   * @param rat the infinitesimal rational to get the JSON representation of.
+   * @return json::json the JSON representation of the given infinitesimal rational.
+   */
+  inline json::json to_json(const utils::inf_rational &rat) noexcept
+  {
+    json::json j_rat = to_json(rat.get_rational());
+    if (rat.get_infinitesimal() != utils::rational::zero)
+      j_rat["inf"] = to_json(rat.get_infinitesimal());
+    return j_rat;
+  }
+#endif
 } // namespace ratio

@@ -359,4 +359,102 @@ namespace ratio
     }
 
     std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, const std::string &name) noexcept { return enm.get(name); }
+
+#ifdef ENABLE_VISUALIZATION
+    json::json to_json(const riddle::item &itm) noexcept
+    {
+        json::json j_itm{{"id", get_id(itm)}, {"name", itm.get_type().get_scope().get_core().guess_name(itm)}};
+        // we add the full name of the type of the item..
+        std::string tp_name = itm.get_type().get_name();
+        const auto *t = &itm.get_type();
+        while (const auto *et = dynamic_cast<const riddle::type *>(&t->get_scope()))
+        {
+            tp_name.insert(0, et->get_name() + ".");
+            t = et;
+        }
+        j_itm["type"] = tp_name;
+
+        if (auto ci = dynamic_cast<const riddle::component *>(&itm))
+        {
+            json::json j_itms;
+            for (const auto &[i_name, i] : ci->get_items())
+                j_itms[i_name] = value(*i);
+            if (j_itms.size())
+                j_itm["exprs"] = std::move(j_itms);
+        }
+
+        if (auto a = dynamic_cast<const riddle::atom *>(&itm))
+        {
+            json::json j_itms;
+            json::json j_sigma{{"sigma", variable(a->get_sigma())}};
+            switch (static_cast<solver &>(a->get_type().get_scope().get_core()).get_sat().value(a->get_sigma()))
+            {
+            case utils::True:
+                j_sigma["val"] = "Active";
+                break;
+            case utils::False:
+                j_sigma["val"] = "Unified";
+                break;
+            default:
+                j_sigma["val"] = "Inactive";
+                break;
+            }
+            j_itm["sigma"] = std::move(j_sigma);
+            for (const auto &[i_name, i] : a->get_items())
+                j_itms[i_name] = value(*i);
+            if (j_itms.size())
+                j_itm["exprs"] = std::move(j_itms);
+        }
+
+        return j_itm;
+    }
+
+    json::json value(const riddle::item &itm) noexcept
+    {
+        if (is_bool(itm))
+        {
+            auto &b_itm = static_cast<const riddle::bool_item &>(itm);
+            json::json j_val{{"lit", (sign(b_itm.get_value()) ? "b" : "!b") + std::to_string(variable(b_itm.get_value()))}};
+            switch (itm.get_type().get_scope().get_core().bool_value(b_itm))
+            {
+            case utils::True:
+                j_val["val"] = "True";
+                break;
+            case utils::False:
+                j_val["val"] = "False";
+                break;
+            default:
+                j_val["val"] = "Undefined";
+                break;
+            }
+            return j_val;
+        }
+        else if (is_arith(itm))
+        {
+            auto &a_itm = static_cast<const riddle::arith_item &>(itm);
+            json::json j_val = to_json(itm.get_type().get_scope().get_core().arithmetic_value(a_itm));
+            j_val["lin"] = to_string(a_itm.get_value());
+            auto [lb, ub] = itm.get_type().get_scope().get_core().bounds(a_itm);
+            if (!is_negative_infinite(lb))
+                j_val["lb"] = to_json(lb);
+            if (!is_positive_infinite(ub))
+                j_val["ub"] = to_json(ub);
+            return j_val;
+        }
+        else if (is_string(itm))
+            return static_cast<const riddle::string_item &>(itm).get_value();
+        else if (is_enum(itm))
+        {
+            auto &e_itm = static_cast<const riddle::enum_item &>(itm);
+            json::json j_val{{"var", std::to_string(e_itm.get_value())}};
+            json::json vals(json::json_type::array);
+            for (auto &val : itm.get_type().get_scope().get_core().domain(e_itm))
+                vals.push_back(get_id(dynamic_cast<riddle::item &>(val.get())));
+            j_val["vals"] = std::move(vals);
+            return j_val;
+        }
+        else
+            return get_id(itm);
+    }
+#endif
 } // namespace ratio

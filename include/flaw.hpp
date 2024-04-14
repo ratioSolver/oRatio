@@ -127,10 +127,10 @@ namespace ratio
   };
 
   /**
-   * @brief Gets the id of the given flaw.
+   * @brief Gets the unique identifier of the given flaw.
    *
-   * @param f the flaw to get the id of.
-   * @return uintptr_t the id of the given flaw.
+   * @param f the flaw to get the unique identifier of.
+   * @return uintptr_t the unique identifier of the given flaw.
    */
   inline uintptr_t get_id(const flaw &f) noexcept { return reinterpret_cast<uintptr_t>(&f); }
 } // namespace ratio

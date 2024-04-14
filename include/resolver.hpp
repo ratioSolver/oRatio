@@ -61,10 +61,10 @@ namespace ratio
   };
 
   /**
-   * @brief Gets the id of the given resolver.
+   * @brief Gets the unique identifier of the given resolver.
    *
-   * @param r the resolver to get the id of.
-   * @return uintptr_t the id of the given resolver.
+   * @param r the resolver to get the unique identifier of.
+   * @return uintptr_t the unique identifier of the given resolver.
    */
   inline uintptr_t get_id(const resolver &r) noexcept { return reinterpret_cast<uintptr_t>(&r); }
 } // namespace ratio
