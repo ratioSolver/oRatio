@@ -5,6 +5,10 @@
 #include "rational.hpp"
 #include "lit.hpp"
 
+#ifdef ENABLE_VISUALIZATION
+#include "json.hpp"
+#endif
+
 namespace ratio
 {
   class solver;
@@ -44,7 +48,13 @@ namespace ratio
      *
      * @return const utils::rational& the estimated cost of this resolver.
      */
-    utils::rational get_estimated_cost() const noexcept;
+    [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
+    /**
+     * @brief Get the preconditions of this resolver.
+     *
+     * @return std::vector<std::reference_wrapper<flaw>>& The preconditions of this resolver.
+     */
+    [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
 
     /**
      * Applies this resolver, introducing subgoals and/or constraints.
@@ -53,12 +63,27 @@ namespace ratio
      */
     virtual void apply() = 0;
 
+#ifdef ENABLE_VISUALIZATION
+    /**
+     * @brief Get a JSON representation of the data of the resolver.
+     *
+     * @return json::json the data of the resolver.
+     */
+    virtual json::json get_data() const noexcept = 0;
+
+    friend json::json to_json(const resolver &f) noexcept;
+#endif
+
   private:
     flaw &f;                                                 // the flaw solved by this resolver..
     const utils::lit rho;                                    // the propositional literal indicating whether the resolver is active or not..
     const utils::rational intrinsic_cost;                    // the intrinsic cost of the resolver..
     std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
+
+#ifdef ENABLE_VISUALIZATION
+  json::json to_json(const resolver &r) noexcept;
+#endif
 
   /**
    * @brief Gets the unique identifier of the given resolver.

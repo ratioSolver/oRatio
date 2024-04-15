@@ -21,6 +21,10 @@ namespace ratio
       choose_value(bool_flaw &bf, const utils::rational &cost, const utils::lit &l);
 
       void apply() override {}
+
+#ifdef ENABLE_VISUALIZATION
+      json::json get_data() const noexcept override;
+#endif
     };
 
 #ifdef ENABLE_VISUALIZATION

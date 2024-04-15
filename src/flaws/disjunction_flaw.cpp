@@ -22,5 +22,7 @@ namespace ratio
 
 #ifdef ENABLE_VISUALIZATION
     json::json disjunction_flaw::get_data() const noexcept { return {{"type", "disjunction"}}; }
+
+    json::json disjunction_flaw::choose_conjunction::get_data() const noexcept { return {{"type", "choose_conjunction"}}; }
 #endif
 } // namespace ratio

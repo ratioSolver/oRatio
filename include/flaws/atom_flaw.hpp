@@ -24,6 +24,10 @@ namespace ratio
       activate_fact(atom_flaw &af);
 
       void apply() override;
+
+#ifdef ENABLE_VISUALIZATION
+      json::json get_data() const noexcept override;
+#endif
     };
 
     class activate_goal final : public resolver
@@ -32,6 +36,10 @@ namespace ratio
       activate_goal(atom_flaw &af);
 
       void apply() override;
+
+#ifdef ENABLE_VISUALIZATION
+      json::json get_data() const noexcept override;
+#endif
     };
 
     class unify_atom final : public resolver
@@ -40,6 +48,10 @@ namespace ratio
       unify_atom(atom_flaw &af, std::shared_ptr<atom> target, const utils::lit &unify_lit);
 
       void apply() override;
+
+#ifdef ENABLE_VISUALIZATION
+      json::json get_data() const noexcept override;
+#endif
 
     private:
       std::shared_ptr<atom> target;

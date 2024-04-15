@@ -2,6 +2,7 @@
 
 #include "flaw.hpp"
 #include "item.hpp"
+#include "resolver.hpp"
 
 namespace ratio
 {
@@ -14,6 +15,21 @@ namespace ratio
 
   private:
     void compute_resolvers() override;
+
+    class choose_value final : public resolver
+    {
+    public:
+      choose_value(enum_flaw &bf, const utils::lit &rho, const utils::rational &cost, const utils::enum_val &val);
+
+      void apply() override {}
+
+#ifdef ENABLE_VISUALIZATION
+      json::json get_data() const noexcept override;
+#endif
+
+    private:
+      const utils::enum_val &val;
+    };
 
 #ifdef ENABLE_VISUALIZATION
     json::json get_data() const noexcept override;

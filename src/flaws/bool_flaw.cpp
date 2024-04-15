@@ -28,5 +28,7 @@ namespace ratio
 
 #ifdef ENABLE_VISUALIZATION
     json::json bool_flaw::get_data() const noexcept { return {{"type", "bool_flaw"}, {"lit", to_string(l)}}; }
+
+    json::json bool_flaw::choose_value::get_data() const noexcept { return {{"type", "choose_value"}}; }
 #endif
 } // namespace ratio

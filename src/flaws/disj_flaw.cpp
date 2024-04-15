@@ -18,5 +18,7 @@ namespace ratio
 
 #ifdef ENABLE_VISUALIZATION
     json::json disj_flaw::get_data() const noexcept { return {{"type", "disj"}}; }
+
+    json::json disj_flaw::choose_lit::get_data() const noexcept { return {{"type", "choose_lit"}}; }
 #endif
 } // namespace ratio
