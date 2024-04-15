@@ -37,6 +37,7 @@ namespace ratio
 #endif
     }
 
+#ifdef ENABLE_VISUALIZATION
     json::json to_json(const resolver &r) noexcept
     {
         json::json j_r{{"id", get_id(r)}, {"flaw", get_id(r.get_flaw())}, {"rho", to_string(r.get_rho())}, {"intrinsic_cost", to_json(r.get_intrinsic_cost())}, {"data", r.get_data()}};
@@ -58,4 +59,5 @@ namespace ratio
         j_r["preconditions"] = std::move(preconditions);
         return j_r;
     }
+#endif
 } // namespace ratio
