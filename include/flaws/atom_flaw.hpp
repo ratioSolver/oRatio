@@ -46,6 +46,10 @@ namespace ratio
       utils::lit unify_lit;
     };
 
+#ifdef ENABLE_VISUALIZATION
+    json::json get_data() const noexcept override;
+#endif
+
   private:
     std::shared_ptr<atom> atm;
   };

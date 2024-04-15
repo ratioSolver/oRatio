@@ -25,4 +25,8 @@ namespace ratio
     }
 
     bool_flaw::choose_value::choose_value(bool_flaw &bf, const utils::rational &cost, const utils::lit &l) : resolver(bf, l, cost) {}
+
+#ifdef ENABLE_VISUALIZATION
+    json::json bool_flaw::get_data() const noexcept { return {{"type", "bool_flaw"}, {"lit", to_string(l)}}; }
+#endif
 } // namespace ratio

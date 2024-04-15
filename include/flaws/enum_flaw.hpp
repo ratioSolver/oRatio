@@ -15,6 +15,10 @@ namespace ratio
   private:
     void compute_resolvers() override;
 
+#ifdef ENABLE_VISUALIZATION
+    json::json get_data() const noexcept override;
+#endif
+
   private:
     std::shared_ptr<riddle::enum_item> itm;
   };

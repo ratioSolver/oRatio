@@ -19,4 +19,8 @@ namespace ratio
     disjunction_flaw::choose_conjunction::choose_conjunction(disjunction_flaw &df, riddle::conjunction &conj, const utils::rational &cost) : resolver(df, cost), conj(conj) {}
 
     void disjunction_flaw::choose_conjunction::apply() { conj.execute(); }
+
+#ifdef ENABLE_VISUALIZATION
+    json::json disjunction_flaw::get_data() const noexcept { return {{"type", "disjunction"}}; }
+#endif
 } // namespace ratio

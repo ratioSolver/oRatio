@@ -31,4 +31,8 @@ namespace ratio
     {
         throw std::runtime_error("Not implemented yet");
     }
+
+#ifdef ENABLE_VISUALIZATION
+    json::json atom_flaw::get_data() const noexcept { return {{"type", "atom_flaw"}, {"atom", {{"id", get_id(*atm)}, {"is_fact", atm->is_fact()}, {"type", atm->get_type().get_name()}, {"sigma", variable(atm->get_sigma())}}}}; }
+#endif
 } // namespace ratio

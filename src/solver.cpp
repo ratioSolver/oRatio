@@ -385,21 +385,21 @@ namespace ratio
 
         if (auto a = dynamic_cast<const riddle::atom *>(&itm))
         {
-            json::json j_itms;
-            json::json j_sigma{{"sigma", variable(a->get_sigma())}};
+            j_itm["sigma"] = variable(a->get_sigma());
             switch (static_cast<solver &>(a->get_type().get_scope().get_core()).get_sat().value(a->get_sigma()))
             {
             case utils::True:
-                j_sigma["val"] = "Active";
+                j_itm["status"] = "Active";
                 break;
             case utils::False:
-                j_sigma["val"] = "Unified";
+                j_itm["status"] = "Unified";
                 break;
             default:
-                j_sigma["val"] = "Inactive";
+                j_itm["status"] = "Inactive";
                 break;
             }
-            j_itm["sigma"] = std::move(j_sigma);
+            j_itm["is_fact"] = a->is_fact();
+            json::json j_itms;
             for (const auto &[i_name, i] : a->get_items())
                 j_itms[i_name] = value(*i);
             if (j_itms.size())

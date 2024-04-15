@@ -27,6 +27,10 @@ namespace ratio
       riddle::conjunction &conj;
     };
 
+#ifdef ENABLE_VISUALIZATION
+    json::json get_data() const noexcept override;
+#endif
+
   private:
     std::vector<std::unique_ptr<riddle::conjunction>> conjs;
   };

@@ -39,4 +39,28 @@ namespace ratio
         // we initialize the phi variable of this flaw as the conjunction of the flaw's causes' rho variables..
         phi = s.get_sat().new_conj(std::move(cs));
     }
+
+#ifdef ENABLE_VISUALIZATION
+    json::json to_json(const flaw &f) noexcept
+    {
+        json::json j_flaw{{"id", get_id(f)}, {"phi", to_string(f.get_phi())}, {"cost", to_json(f.get_estimated_cost())}, {"pos", std::to_string(f.get_solver().get_idl_theory().bounds(f.get_position()).first)}, {"data", f.get_data()}};
+        switch (f.get_solver().get_sat().value(f.get_phi()))
+        {
+        case utils::True:
+            j_flaw["status"] = "active";
+            break;
+        case utils::False:
+            j_flaw["status"] = "forbidden";
+            break;
+        case utils::Undefined:
+            j_flaw["status"] = "inactive";
+            break;
+        }
+        json::json causes(json::json_type::array);
+        for (const auto &c : f.get_causes())
+            causes.push_back(get_id(c.get()));
+        j_flaw["causes"] = std::move(causes);
+        return j_flaw;
+    }
+#endif
 } // namespace ratio

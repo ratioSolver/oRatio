@@ -15,4 +15,8 @@ namespace ratio
     }
 
     disj_flaw::choose_lit::choose_lit(disj_flaw &ef, const utils::rational &cost, const utils::lit &l) : resolver(ef, l, cost) {}
+
+#ifdef ENABLE_VISUALIZATION
+    json::json disj_flaw::get_data() const noexcept { return {{"type", "disj"}}; }
+#endif
 } // namespace ratio

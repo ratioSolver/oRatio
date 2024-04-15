@@ -7,6 +7,10 @@
 #include "lit.hpp"
 #include "rational.hpp"
 
+#ifdef ENABLE_VISUALIZATION
+#include "json.hpp"
+#endif
+
 namespace ratio
 {
   class solver;
@@ -114,6 +118,17 @@ namespace ratio
      */
     virtual void compute_resolvers() = 0;
 
+#ifdef ENABLE_VISUALIZATION
+    /**
+     * @brief Get a JSON representation of the data of the flaw.
+     *
+     * @return json::json the data of the flaw.
+     */
+    virtual json::json get_data() const noexcept = 0;
+
+    friend json::json to_json(const flaw &f) noexcept;
+#endif
+
   private:
     solver &s;                                                     // the solver this flaw belongs to..
     std::vector<std::reference_wrapper<resolver>> causes;          // the resolvers that caused this flaw..
@@ -125,6 +140,10 @@ namespace ratio
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
   };
+
+#ifdef ENABLE_VISUALIZATION
+  json::json to_json(const flaw &f) noexcept;
+#endif
 
   /**
    * @brief Gets the unique identifier of the given flaw.

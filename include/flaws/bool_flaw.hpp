@@ -23,6 +23,10 @@ namespace ratio
       void apply() override {}
     };
 
+#ifdef ENABLE_VISUALIZATION
+    json::json get_data() const noexcept override;
+#endif
+
   private:
     utils::lit l;
   };

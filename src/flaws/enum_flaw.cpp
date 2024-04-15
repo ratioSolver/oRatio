@@ -13,4 +13,8 @@ namespace ratio
     {
         throw std::runtime_error("Not implemented yet");
     }
+
+#ifdef ENABLE_VISUALIZATION
+    json::json enum_flaw::get_data() const noexcept { return {{"type", "enum"}}; }
+#endif
 } // namespace ratio
