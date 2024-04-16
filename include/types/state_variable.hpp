@@ -4,10 +4,10 @@
 
 namespace ratio
 {
-  class agent final : public smart_type, public timeline
+  class state_variable final : public smart_type, public timeline
   {
   public:
-    agent(solver &slv);
+    state_variable(solver &slv);
 
   private:
     std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() const noexcept override { return {}; }

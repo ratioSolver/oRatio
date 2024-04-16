@@ -1,9 +1,10 @@
+#include <cassert>
 #include "agent.hpp"
 #include "solver.hpp"
 
 namespace ratio
 {
-    agent::agent(solver &slv) : smart_type(slv, "agent") {}
+    agent::agent(solver &slv) : smart_type(slv, "Agent") {}
 
     void agent::new_atom(std::shared_ptr<ratio::atom> &atm) noexcept
     {
@@ -11,7 +12,10 @@ namespace ratio
         {
             set_ni(atm->get_sigma());
             if (is_impulse(*atm))
-                atm->get_core().get_predicate("Impulse")->get();
+                get_solver().get_predicate("Impulse")->get().call(atm);
+            else
+                get_solver().get_predicate("Interval")->get().call(atm);
+            restore_ni();
         }
         atoms.push_back(*atm);
     }

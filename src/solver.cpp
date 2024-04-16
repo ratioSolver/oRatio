@@ -7,6 +7,10 @@
 #include "bool_flaw.hpp"
 #include "disj_flaw.hpp"
 #include "disjunction_flaw.hpp"
+#include "agent.hpp"
+#include "state_variable.hpp"
+#include "reusable_resource.hpp"
+#include "consumable_resource.hpp"
 #include "logging.hpp"
 
 namespace ratio
@@ -20,6 +24,11 @@ namespace ratio
         LOG_DEBUG("[" << name << "] Initializing solver");
         // we read the init string..
         read(INIT_STRING);
+
+        add_type(std::make_unique<agent>(*this));
+        add_type(std::make_unique<state_variable>(*this));
+        add_type(std::make_unique<reusable_resource>(*this));
+        add_type(std::make_unique<consumable_resource>(*this));
 
         if (!sat.propagate())
             throw riddle::unsolvable_exception();
