@@ -119,6 +119,21 @@ namespace ratio
     graph &gr;                 // the causal graph
   };
 
+  /**
+   * Checks if the given atom is of type "Impulse".
+   *
+   * @param atm The atom to check.
+   * @return True if the atom is of type "Impulse", false otherwise.
+   */
+  inline bool is_impulse(const atom &atm) noexcept { return atm.get_core().get_predicate("Impulse")->get().is_assignable_from(atm.get_type()); }
+  /**
+   * Checks if the given atom is of type "Interval".
+   *
+   * @param atm The atom to check.
+   * @return True if the atom is of type "Interval", false otherwise.
+   */
+  inline bool is_interval(const atom &atm) noexcept { return atm.get_core().get_predicate("Interval")->get().is_assignable_from(atm.get_type()); }
+
 #ifdef ENABLE_VISUALIZATION
   json::json to_json(const solver &rhs) noexcept;
   json::json to_timelines(const solver &rhs) noexcept;

@@ -6,6 +6,10 @@
 #include "rdl_value_listener.hpp"
 #include "ov_value_listener.hpp"
 
+#ifdef ENABLE_VISUALIZATION
+#include "json.hpp"
+#endif
+
 namespace ratio
 {
   class solver;
@@ -21,12 +25,12 @@ namespace ratio
 
   public:
     /**
-     * @brief Constructs a smart_type object with the specified parent scope and name.
+     * @brief Constructs a smart_type object with the specified solver and name.
      *
-     * @param parent The parent scope of the smart_type.
+     * @param slv The solver object to associate with the smart_type.
      * @param name The name of the smart_type.
      */
-    smart_type(scope &parent, const std::string &name);
+    smart_type(solver &slv, const std::string &name);
 
     /**
      * @brief Default destructor for the smart_type class.
@@ -40,20 +44,24 @@ namespace ratio
      */
     solver &get_solver() const { return slv; }
 
+  protected:
+    void set_ni(const utils::lit &v) noexcept; // temporally sets the graph's `ni` literal..
+    void restore_ni() noexcept;                // restores the graph's `ni` literal..
+
   private:
     /**
      * @brief Returns all the decisions to take for solving the current inconsistencies with their choices' estimated costs.
      *
      * @return A vector of decisions, each represented by a vector of pairs containing the literals representing the choice and its estimated cost.
      */
-    virtual std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() = 0;
+    virtual std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() const noexcept = 0;
 
     /**
      * @brief Notifies the smart_type that a new atom has been created.
      *
      * @param atm The new atom that has been created.
      */
-    virtual void new_atom(atom &atm) = 0;
+    virtual void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept = 0;
 
   private:
     solver &slv;
@@ -81,5 +89,33 @@ namespace ratio
 
   private:
     riddle::atom &atm; // The atom object to listen to
+  };
+
+  /**
+   * @brief Represents a timeline.
+   *
+   * The timeline class provides an interface for working with timelines.
+   * It is an abstract base class that can be inherited to create specific timeline implementations.
+   */
+  class timeline
+  {
+  public:
+    /**
+     * @brief Destructor for the timeline class.
+     *
+     * The destructor is declared as virtual to ensure that derived classes can be properly destroyed.
+     */
+    virtual ~timeline() = default;
+
+#ifdef ENABLE_VISUALIZATION
+    /**
+     * @brief Extracts the timeline data as JSON.
+     *
+     * This function extracts the timeline data and returns it as a JSON object.
+     *
+     * @return The timeline data as a JSON object.
+     */
+    virtual json::json extract() const noexcept = 0;
+#endif
   };
 } // namespace ratio

@@ -1,9 +1,12 @@
 #include "smart_type.hpp"
-#include "solver.hpp"
+#include "graph.hpp"
 
 namespace ratio
 {
-    smart_type::smart_type(scope &parent, const std::string &name) : riddle::component_type(parent, name), slv(dynamic_cast<solver &>(parent.get_core())) {}
+    smart_type::smart_type(solver &slv, const std::string &name) : riddle::component_type(slv, name), slv(slv) {}
+
+    void smart_type::set_ni(const utils::lit &v) noexcept { slv.get_graph().set_ni(v); }
+    void smart_type::restore_ni() noexcept { slv.get_graph().restore_ni(); }
 
     atom_listener::~atom_listener()
     {

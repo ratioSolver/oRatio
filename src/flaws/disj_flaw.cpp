@@ -1,6 +1,5 @@
 #include <cassert>
 #include "disj_flaw.hpp"
-#include "solver.hpp"
 #include "graph.hpp"
 
 namespace ratio

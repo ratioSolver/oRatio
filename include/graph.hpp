@@ -10,8 +10,11 @@
 
 namespace ratio
 {
+  class smart_type;
   class graph : public semitone::theory
   {
+    friend class smart_type;
+
   public:
     graph(solver &slv) noexcept;
 
@@ -64,9 +67,9 @@ namespace ratio
      *
      * If there is a current resolver, the controlling literal is the rho variable of the resolver. Otherwise, it is TRUE.
      *
-     * @return utils::lit The current controlling literal.
+     * @return const utils::lit& The current controlling literal.
      */
-    utils::lit get_ni() const noexcept { return res.has_value() ? res->get().get_rho() : utils::TRUE_lit; }
+    const utils::lit &get_ni() const noexcept { return ni; }
 
   protected:
     /**
@@ -83,6 +86,14 @@ namespace ratio
      */
     void expand_flaw(flaw &f);
 
+    void set_ni(const utils::lit &v) noexcept
+    {
+      tmp_ni = ni;
+      ni = v;
+    }
+
+    void restore_ni() noexcept { ni = tmp_ni; }
+
   private:
     bool propagate(const utils::lit &) noexcept override { return true; }
     bool check() noexcept override { return true; }
@@ -95,6 +106,8 @@ namespace ratio
     std::vector<std::unique_ptr<flaw>> pending_flaws;                               // pending flaws, waiting for root-level to be initialized..
     std::unordered_map<VARIABLE_TYPE, std::vector<std::unique_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
     std::optional<std::reference_wrapper<resolver>> res;                            // the current resolver..
+    utils::lit tmp_ni;                                                              // the temporary controlling literal, used for restoring the controlling literal..
+    utils::lit ni{utils::TRUE_lit};                                                 // the current controlling literal..
     std::deque<std::reference_wrapper<flaw>> flaw_q;                                // the flaw queue (for the graph building procedure)..
     std::unordered_set<flaw *> active_flaws;                                        // the currently active flaws..
     VARIABLE_TYPE gamma;                                                            // the variable representing the validity of this graph..

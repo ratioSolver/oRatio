@@ -1,6 +1,5 @@
 #include <cassert>
 #include "enum_flaw.hpp"
-#include "solver.hpp"
 #include "graph.hpp"
 
 namespace ratio

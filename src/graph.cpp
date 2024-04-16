@@ -8,6 +8,7 @@ namespace ratio
 
     void graph::new_causal_link(flaw &f, resolver &r)
     {
+        LOG_TRACE("[" << slv.get_name() << "] Creating causal link between flaw " << f.get_phi() << " and resolver " << r.get_rho());
         r.preconditions.push_back(f);
         f.supports.push_back(r);
         // activating the resolver requires the activation of the flaw..
@@ -23,7 +24,7 @@ namespace ratio
         assert(!f.expanded);
         assert(get_sat().root_level());
 
-        LOG_TRACE("[" << slv.get_name() << "] Expanding flaw");
+        LOG_TRACE("[" << slv.get_name() << "] Expanding flaw " << f.get_phi());
         f.compute_resolvers(); // we compute the flaw's resolvers..
         f.expanded = true;     // we mark the flaw as expanded..
 
@@ -63,8 +64,10 @@ namespace ratio
         // we apply the flaw's resolvers..
         for (const auto &r : f.resolvers)
         {
-            LOG_TRACE("[" << slv.get_name() << "] Applying resolver");
-            res = r;
+            LOG_TRACE("[" << slv.get_name() << "] Applying resolver " << r.get_rho());
+            res = r;                   // we write down the resolver so that new flaws know their cause..
+            set_ni(r.get().get_rho()); // we temporally set the resolver's rho as the controlling literal..
+
             // activating the resolver results in the flaw being solved..
             if (!get_sat().new_clause({!r.get().get_rho(), f.get_phi()}))
                 throw riddle::unsolvable_exception();
@@ -77,7 +80,8 @@ namespace ratio
                 if (!get_sat().new_clause({!r.get().get_rho()}))
                     throw riddle::unsolvable_exception();
             }
-            res = std::nullopt;
+            restore_ni();       // we restore the controlling literal..
+            res = std::nullopt; // we reset the resolver..
         }
 
         // we bind the variables to the SMT theory..

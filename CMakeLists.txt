@@ -6,6 +6,7 @@ include(CTest)
 enable_testing()
 
 set(JSON_INCLUDE_UTILS OFF CACHE BOOL "Enable JSON Utils" FORCE)
+set(BUILD_LISTENERS ON CACHE BOOL "Builds the listeners" FORCE)
 
 add_subdirectory(extern/riddle)
 add_subdirectory(extern/semitone)
@@ -30,9 +31,9 @@ message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 
 option(ENABLE_VISUALIZATION "Enable visualization features" OFF)
 
-add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp)
+add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp src/types/agent.cpp)
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
-target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/types> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 if(${TEMPORAL_NETWORK_TYPE} STREQUAL "LRA")
     set(INIT_STRING "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end) { start >= origin; start <= end; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;" CACHE STRING "Initialization string")

@@ -1,6 +1,5 @@
 #include <cassert>
 #include <algorithm>
-#include "solver.hpp"
 #include "graph.hpp"
 #include "init.hpp"
 #include "smart_type.hpp"
@@ -309,7 +308,7 @@ namespace ratio
             while (!q.empty())
             {
                 if (auto st = dynamic_cast<smart_type *>(q.front()))
-                    st->new_atom(*atm);
+                    st->new_atom(atm);
                 for (const auto &p : q.front()->get_parents())
                     q.push(&p.get());
                 q.pop();
