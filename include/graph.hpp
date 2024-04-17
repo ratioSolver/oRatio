@@ -60,6 +60,16 @@ namespace ratio
       return *r;
     }
 
+    /**
+     * @brief Creates a new causal link between a flaw and a resolver.
+     *
+     * This function establishes a causal link between the given flaw and resolver.
+     * A causal link represents a dependency relationship between a flaw and a resolver,
+     * indicating that the flaw must be active for the resolver to be applicable.
+     *
+     * @param f The flaw to establish a causal link with.
+     * @param r The resolver to establish a causal link with.
+     */
     void new_causal_link(flaw &f, resolver &r);
 
     /**
@@ -70,6 +80,20 @@ namespace ratio
      * @return const utils::lit& The current controlling literal.
      */
     const utils::lit &get_ni() const noexcept { return ni; }
+
+    /**
+     * @brief Builds the graph.
+     *
+     * This function is responsible for building the graph.
+     */
+    void build();
+
+    /**
+     * @brief Adds a new layer to the graph.
+     *
+     * This function is responsible for adding a new layer to the graph.
+     */
+    void add_layer();
 
   protected:
     /**

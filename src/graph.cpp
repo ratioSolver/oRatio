@@ -19,6 +19,34 @@ namespace ratio
             throw riddle::unsolvable_exception();
     }
 
+    void graph::build()
+    {
+        LOG_DEBUG("[" << slv.get_name() << "] Building the graph");
+        assert(get_sat().root_level());
+
+        do
+        {
+            while (std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f)
+                               { return is_positive_infinite(f->get_estimated_cost()); }))
+            {
+                if (flaw_q.empty())
+                    throw riddle::unsolvable_exception();
+                // we get the flaw to expand from the flaw queue..
+                auto &f = flaw_q.front().get();
+                if (get_sat().value(f.phi) != utils::False)
+                    expand_flaw(f); // we expand the flaw..
+                flaw_q.pop_front(); // we remove the flaw from the flaw queue..
+            }
+        } while (std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f)
+                             { return is_positive_infinite(f->get_estimated_cost()); }));
+    }
+
+    void graph::add_layer()
+    {
+        LOG_DEBUG("[" << slv.get_name() << "] Adding a new layer");
+        assert(get_sat().root_level());
+    }
+
     void graph::expand_flaw(flaw &f)
     {
         assert(!f.expanded);

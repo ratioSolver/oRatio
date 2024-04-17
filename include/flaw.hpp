@@ -17,6 +17,12 @@ namespace ratio
   class graph;
   class resolver;
 
+  /**
+   * @class flaw
+   * @brief Represents a flaw in a solver.
+   *
+   * The `flaw` class represents a flaw in a solver. A flaw is a problem or inconsistency that needs to be resolved by applying resolvers. It keeps track of the resolvers that caused the flaw, the resolvers that support the flaw, the estimated cost of the flaw, and other relevant information.
+   */
   class flaw
   {
     friend class graph;

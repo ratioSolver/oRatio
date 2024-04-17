@@ -15,6 +15,14 @@ namespace ratio
   class graph;
   class flaw;
 
+  /**
+   * @class resolver
+   * @brief Represents a resolver for solving a flaw in a graph.
+   *
+   * The `resolver` class provides functionality to solve a specific flaw in a graph by introducing subgoals and/or constraints.
+   * It contains information about the flaw it solves, the rho variable, the intrinsic cost, and the preconditions.
+   * Derived classes must implement the `apply()` function to apply the resolver.
+   */
   class resolver
   {
     friend class graph;
