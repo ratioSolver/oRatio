@@ -87,7 +87,7 @@ namespace ratio
      */
     virtual ~atom_listener();
 
-  private:
+  protected:
     riddle::atom &atm; // The atom object to listen to
   };
 
