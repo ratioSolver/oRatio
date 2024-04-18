@@ -10,7 +10,7 @@ namespace ratio
     agent(solver &slv);
 
   private:
-    std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() const noexcept override { return {}; }
+    std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() noexcept override { return {}; }
 
     void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept override;
 

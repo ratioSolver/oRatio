@@ -1,10 +1,89 @@
+#include <unordered_set>
 #include <cassert>
 #include "state_variable.hpp"
-#include "solver.hpp"
+#include "graph.hpp"
+#include "combinations.hpp"
 
 namespace ratio
 {
     state_variable::state_variable(solver &slv) : smart_type(slv, "StateVariable") {}
+
+    std::vector<std::vector<std::pair<utils::lit, double>>> state_variable::get_current_incs() noexcept
+    {
+        std::vector<std::vector<std::pair<utils::lit, double>>> incs; // the inconsistencies..
+        // we assign the atoms to the state-variables that need to be checked..
+        std::unordered_map<const riddle::component *, std::vector<atom *>> sv_instances;
+        for (const auto &atm : atoms)
+            if (get_solver().get_sat().value(atm.get().get_sigma()) == utils::True)
+            { // the atom is active..
+                const auto tau = atm.get().get("tau");
+                if (is_enum(*tau))
+                { // the `tau` parameter is a variable..
+                    for (const auto &c_sv : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
+                        if (to_check.find(static_cast<const riddle::item *>(&c_sv.get())) != to_check.end())
+                            sv_instances[static_cast<const riddle::component *>(&c_sv.get())].push_back(&atm.get());
+                }
+                else if (to_check.find(tau.get()) != to_check.end()) // the `tau` parameter is a constant..
+                    sv_instances[static_cast<const riddle::component *>(tau.get())].push_back(&atm.get());
+            }
+
+        // we detect inconsistencies for each of the state-variable instances..
+        for ([[maybe_unused]] const auto &[sv, atms] : sv_instances)
+        {
+            // for each pulse, the atoms starting at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
+            // for each pulse, the atoms ending at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> ending_atoms;
+            // all the pulses of the timeline, sorted..
+            std::set<utils::inf_rational> pulses;
+
+            for (const auto &atm : atms)
+            {
+                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("start")));
+                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("end")));
+                starting_atoms[start].insert(atm);
+                ending_atoms[end].insert(atm);
+                pulses.insert(start);
+                pulses.insert(end);
+            }
+
+            // we scroll through the timeline looking for inconsistencies..
+            bool has_conflict = false;
+            std::set<atom *> overlapping_atoms;
+            for (const auto &p : pulses)
+            {
+                // we check if there are atoms that start at `p`, and if there are, we add them to the set of overlapping atoms..
+                if (const auto at_start_p = starting_atoms.find(p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                // we check if there are atoms that end at `p`, and if there are, we remove them from the set of overlapping atoms..
+                if (const auto at_end_p = ending_atoms.find(p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+
+                // if there are more than one atom in the set of overlapping atoms, we have an inconsistency..
+                if (overlapping_atoms.size() > 1)
+                {
+                    has_conflict = true;
+                    // we compute the possible resolvers..
+                    std::vector<std::pair<utils::lit, double>> choices;
+                    std::unordered_set<VARIABLE_TYPE> vars;
+                    // state-variable Minimal Conflict Sets (MCSs) are made of two atoms..
+                    for (const auto &as : utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
+                    {
+                        std::set<atom *> mcs(as.cbegin(), as.cend()); // the MCS..
+                        // we check if the MCS has already been found..
+                        if (sv_flaws.find(mcs) == sv_flaws.cend())
+                        {
+                            // we add the MCS to the set of found flaws..
+                            sv_flaws.insert(mcs);
+                            get_solver().get_graph().new_flaw<sv_flaw>(*this, mcs);
+                        }
+                    }
+                }
+            }
+        }
+        return incs;
+    }
 
     void state_variable::new_atom(std::shared_ptr<ratio::atom> &atm) noexcept
     {
@@ -53,6 +132,13 @@ namespace ratio
         listener->something_changed();
         listeners.push_back(std::move(listener));
     }
+
+    state_variable::sv_flaw::sv_flaw(state_variable &sv, const std::set<atom *> &mcs) : flaw(sv.get_solver(), smart_type::get_resolvers(mcs)), sv(sv), mcs(mcs) {}
+    void state_variable::sv_flaw::compute_resolvers() {}
+
+    state_variable::sv_flaw::order_resolver::order_resolver(sv_flaw &flw, const utils::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::zero), before(before), after(after) {}
+
+    state_variable::sv_flaw::forbid_resolver::forbid_resolver(sv_flaw &flw, const utils::lit &r, atom &atm, riddle::component &itm) : resolver(flw, r, utils::rational::zero), atm(atm), itm(itm) {}
 
     state_variable::sv_atom_listener::sv_atom_listener(state_variable &sv, atom &a) : atom_listener(a), sv(sv) {}
     void state_variable::sv_atom_listener::something_changed()

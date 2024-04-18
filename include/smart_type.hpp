@@ -14,6 +14,7 @@ namespace ratio
 {
   class solver;
   class atom;
+  class resolver;
 
   /**
    * @brief The smart_type class represents a type of component that can be used in the solver.
@@ -48,13 +49,21 @@ namespace ratio
     void set_ni(const utils::lit &v) noexcept; // temporally sets the graph's `ni` literal..
     void restore_ni() noexcept;                // restores the graph's `ni` literal..
 
+    /**
+     * Retrieves the vector of resolvers which has given rise to the given atoms.
+     *
+     * @param atms The set of atoms to get the resolvers for.
+     * @return A vector of resolvers.
+     */
+    static std::vector<std::reference_wrapper<resolver>> get_resolvers(const std::set<atom *> &atms) noexcept;
+
   private:
     /**
      * @brief Returns all the decisions to take for solving the current inconsistencies with their choices' estimated costs.
      *
      * @return A vector of decisions, each represented by a vector of pairs containing the literals representing the choice and its estimated cost.
      */
-    virtual std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() const noexcept = 0;
+    virtual std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() noexcept = 0;
 
     /**
      * @brief Notifies the smart_type that a new atom has been created.

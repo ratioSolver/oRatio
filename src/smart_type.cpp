@@ -1,5 +1,6 @@
 #include "smart_type.hpp"
 #include "graph.hpp"
+#include "atom_flaw.hpp"
 
 namespace ratio
 {
@@ -7,6 +8,19 @@ namespace ratio
 
     void smart_type::set_ni(const utils::lit &v) noexcept { slv.get_graph().set_ni(v); }
     void smart_type::restore_ni() noexcept { slv.get_graph().restore_ni(); }
+
+    std::vector<std::reference_wrapper<resolver>> smart_type::get_resolvers(const std::set<atom *> &atms) noexcept
+    {
+        std::vector<std::reference_wrapper<resolver>> resolvers;
+        for (const auto &atm : atms)
+            for (const auto &res : atm->get_reason().get_resolvers())
+                if (auto *r = dynamic_cast<atom_flaw::activate_fact *>(&res.get()))
+                    resolvers.push_back(*r);
+                else if (auto *r = dynamic_cast<atom_flaw::activate_goal *>(&res.get()))
+                    resolvers.push_back(*r);
+
+        return resolvers;
+    }
 
     atom_listener::~atom_listener()
     {
