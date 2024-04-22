@@ -36,7 +36,9 @@ jobs:
 
       - name: Install dependencies
         if: matrix.build_type == 'Debug' && matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install -y lcov valgrind
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov valgrind
   
       - name: Configure CMake (Debug)
         if: matrix.build_type == 'Debug'
