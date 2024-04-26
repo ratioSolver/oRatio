@@ -8,7 +8,7 @@ namespace ratio
 
     void graph::new_causal_link(flaw &f, resolver &r)
     {
-        LOG_TRACE("[" << slv.get_name() << "] Creating causal link between flaw " << f.get_phi() << " and resolver " << r.get_rho());
+        LOG_TRACE("[" << slv.get_name() << "] Creating causal link between flaw " << to_string(f.get_phi()) << " and resolver " << to_string(r.get_rho()));
         r.preconditions.push_back(f);
         f.supports.push_back(r);
         // activating the resolver requires the activation of the flaw..
@@ -52,7 +52,7 @@ namespace ratio
         assert(!f.expanded);
         assert(get_sat().root_level());
 
-        LOG_TRACE("[" << slv.get_name() << "] Expanding flaw " << f.get_phi());
+        LOG_TRACE("[" << slv.get_name() << "] Expanding flaw " << to_string(f.get_phi()));
         f.compute_resolvers(); // we compute the flaw's resolvers..
         f.expanded = true;     // we mark the flaw as expanded..
 
@@ -92,7 +92,7 @@ namespace ratio
         // we apply the flaw's resolvers..
         for (const auto &r : f.resolvers)
         {
-            LOG_TRACE("[" << slv.get_name() << "] Applying resolver " << r.get_rho());
+            LOG_TRACE("[" << slv.get_name() << "] Applying resolver " << to_string(r.get().get_rho()));
             res = r;                   // we write down the resolver so that new flaws know their cause..
             set_ni(r.get().get_rho()); // we temporally set the resolver's rho as the controlling literal..
 
