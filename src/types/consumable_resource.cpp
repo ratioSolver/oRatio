@@ -54,6 +54,10 @@ namespace ratio
         listeners.push_back(std::move(listener));
     }
 
+#ifdef ENABLE_VISUALIZATION
+    json::json consumable_resource::extract() const noexcept {}
+#endif
+
     consumable_resource::cr_atom_listener::cr_atom_listener(consumable_resource &cr, atom &a) : atom_listener(a), cr(cr) {}
     void consumable_resource::cr_atom_listener::something_changed()
     {

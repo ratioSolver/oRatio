@@ -19,4 +19,8 @@ namespace ratio
         }
         atoms.push_back(*atm);
     }
+
+#ifdef ENABLE_VISUALIZATION
+    json::json agent::extract() const noexcept {}
+#endif
 } // namespace ratio

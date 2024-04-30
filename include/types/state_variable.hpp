@@ -59,6 +59,10 @@ namespace ratio
          */
         order_resolver(sv_flaw &flw, const utils::lit &r, const atom &before, const atom &after);
 
+#ifdef ENABLE_VISUALIZATION
+        json::json get_data() const noexcept override;
+#endif
+
       private:
         void apply() override {}
 
@@ -86,6 +90,10 @@ namespace ratio
          */
         forbid_resolver(sv_flaw &flw, const utils::lit &r, atom &atm, riddle::component &itm);
 
+#ifdef ENABLE_VISUALIZATION
+        json::json get_data() const noexcept override;
+#endif
+
       private:
         void apply() override {}
 
@@ -93,6 +101,10 @@ namespace ratio
         atom &atm;              // applying the resolver will forbid this atom on the `itm` state variable..
         riddle::component &itm; // applying the resolver will forbid the `atm` atom on this state variable..
       };
+
+#ifdef ENABLE_VISUALIZATION
+      json::json get_data() const noexcept override;
+#endif
 
     private:
       state_variable &sv;
