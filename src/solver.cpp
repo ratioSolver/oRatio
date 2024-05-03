@@ -369,6 +369,116 @@ namespace ratio
     std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, const std::string &name) noexcept { return enm.get(name); }
 
 #ifdef ENABLE_VISUALIZATION
+    json::json to_json(const solver &rhs) noexcept
+    {
+        std::set<riddle::item *> all_items; // we keep track of all the items..
+        std::set<atom *> all_atoms;         // we keep track of all the atoms..
+        std::queue<riddle::component_type *> q;
+        for (const auto &tp : rhs.get_types())
+            if (auto ct = dynamic_cast<riddle::component_type *>(&tp.get()))
+                q.push(ct);
+            else if (auto et = dynamic_cast<riddle::enum_type *>(&tp.get()))
+                for (const auto &val : et->get_values())
+                    all_items.insert(static_cast<riddle::item *>(val.get()));
+        while (!q.empty())
+        {
+            for (const auto &i : q.front()->get_instances())
+                all_items.insert(i.get());
+            for (const auto &p : q.front()->get_predicates())
+                for (const auto &atm : p.get().get_atoms())
+                    all_atoms.insert(static_cast<atom *>(atm.get()));
+            for (const auto &tp : q.front()->get_types())
+                if (auto ct = dynamic_cast<riddle::component_type *>(&tp.get()))
+                    q.push(ct);
+                else if (auto et = dynamic_cast<riddle::enum_type *>(&tp.get()))
+                    for (const auto &val : et->get_values())
+                        all_items.insert(static_cast<riddle::item *>(val.get()));
+            q.pop();
+        }
+
+        for (const auto &pred : rhs.get_predicates())
+            for (const auto &atm : pred.get().get_atoms())
+                all_atoms.insert(static_cast<atom *>(atm.get()));
+
+        json::json j_solver{{"name", rhs.get_name()}};
+        if (all_items.size())
+        {
+            json::json j_items(json::json_type::array);
+            for (const auto &itm : all_items)
+                j_items.push_back(to_json(*itm));
+            j_solver["items"] = std::move(j_items);
+        }
+        if (all_atoms.size())
+        {
+            json::json j_atoms(json::json_type::array);
+            for (const auto &atm : all_atoms)
+                j_atoms.push_back(to_json(*atm));
+            j_solver["atoms"] = std::move(j_atoms);
+        }
+        if (!rhs.get_items().empty())
+        {
+            json::json j_itms;
+            for (const auto &[i_name, i] : rhs.get_items())
+                j_itms[i_name] = value(*i);
+            j_solver["exprs"] = std::move(j_itms);
+        }
+        return j_solver;
+    }
+
+    json::json to_timelines(const solver &rhs) noexcept
+    {
+        json::json j_timelines;
+
+        // for each pulse, the root atoms starting at that pulse..
+        std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
+        // all the pulses of the solver timeline..
+        std::set<utils::inf_rational> pulses;
+        for (const auto &pred : rhs.get_predicates())
+            for (const auto &atm : pred.get().get_atoms())
+                if (is_impulse(static_cast<atom &>(*atm)))
+                {
+                    utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get("at")));
+                    starting_atoms[start].insert(static_cast<atom *>(&*atm));
+                    pulses.insert(start);
+                }
+                else if (is_interval(static_cast<atom &>(*atm)))
+                {
+                    utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get("start")));
+                    starting_atoms[start].insert(static_cast<atom *>(&*atm));
+                    pulses.insert(start);
+                }
+        if (!starting_atoms.empty())
+        { // we have some root atoms in the solver timeline..
+            json::json slv_tl{{"id", get_id(rhs)}, {"name", rhs.get_name()}};
+            json::json j_atms(json::json_type::array);
+            for (const auto &p : pulses)
+                for (const auto &atm : starting_atoms.at(p))
+                    j_atms.push_back(to_json(*atm));
+            slv_tl["values"] = std::move(j_atms);
+            j_timelines.push_back(std::move(slv_tl));
+        }
+
+        std::queue<riddle::component_type *> q;
+        for (const auto &tp : rhs.get_types())
+            if (auto ct = dynamic_cast<riddle::component_type *>(&tp.get()))
+                q.push(ct);
+        while (!q.empty())
+        {
+            if (auto tl_tp = dynamic_cast<timeline *>(q.front())) // we have a timeline type..
+            {                                                     // we extract the timeline..
+                json::json j_tls = tl_tp->extract();
+                for (size_t i = 0; i < j_tls.size(); ++i)
+                    j_timelines.push_back(std::move(j_tls[i]));
+            }
+            for (const auto &tp : q.front()->get_types())
+                if (auto ct = dynamic_cast<riddle::component_type *>(&tp.get()))
+                    q.push(ct);
+            q.pop();
+        }
+
+        return j_timelines;
+    }
+
     json::json to_json(const riddle::item &itm) noexcept
     {
         json::json j_itm{{"id", get_id(itm)}, {"name", itm.get_type().get_scope().get_core().guess_name(itm)}};

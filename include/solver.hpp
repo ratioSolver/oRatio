@@ -135,7 +135,19 @@ namespace ratio
   inline bool is_interval(const atom &atm) noexcept { return atm.get_core().get_predicate("Interval")->get().is_assignable_from(atm.get_type()); }
 
 #ifdef ENABLE_VISUALIZATION
+  /**
+   * @brief Get the JSON representation of the given solver.
+   *
+   * @param rhs the solver to get the JSON representation of.
+   * @return json::json the JSON representation of the given solver.
+   */
   json::json to_json(const solver &rhs) noexcept;
+  /**
+   * @brief Get the JSON representation of the timelines of the given solver.
+   *
+   * @param rhs the solver to get the timelines of.
+   * @return json::json the JSON representation of the timelines of the given solver.
+   */
   json::json to_timelines(const solver &rhs) noexcept;
 
   /**
@@ -181,4 +193,12 @@ namespace ratio
     return j_rat;
   }
 #endif
+
+  /**
+   * @brief Gets the unique identifier of the given solver.
+   *
+   * @param s the solver to get the unique identifier of.
+   * @return uintptr_t the unique identifier of the given solver.
+   */
+  inline uintptr_t get_id(const solver &s) noexcept { return reinterpret_cast<uintptr_t>(&s); }
 } // namespace ratio
