@@ -12,16 +12,26 @@
 #include "json.hpp"
 #include "flaw.hpp"
 #include "resolver.hpp"
+#include "sat_value_listener.hpp"
+#include "idl_value_listener.hpp"
 #endif
 
 namespace ratio
 {
   class atom_flaw;
   class graph;
+#ifdef ENABLE_VISUALIZATION
+  class flaw_listener;
+  class resolver_listener;
+#endif
 
   class atom : public riddle::atom
   {
     friend class atom_flaw;
+#ifdef ENABLE_VISUALIZATION
+    friend class flaw_listener;
+    friend class resolver_listener;
+#endif
 
   public:
     atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>> &&args = {});
@@ -108,6 +118,58 @@ namespace ratio
     [[nodiscard]] bool assign(const riddle::enum_item &expr, utils::enum_val &val) override;
     void forbid(const riddle::enum_item &expr, utils::enum_val &val) override;
 
+#ifdef ENABLE_VISUALIZATION
+  private:
+    class flaw_listener final : public semitone::sat_value_listener, public semitone::idl_value_listener
+    {
+    public:
+      flaw_listener(const flaw &f) noexcept : f(f) {}
+
+    private:
+      void on_sat_value_changed(VARIABLE_TYPE) override { f.get_solver().flaw_state_changed(f); }
+      void on_idl_value_changed(VARIABLE_TYPE) override { f.get_solver().flaw_position_changed(f); }
+
+    private:
+      const flaw &f;
+    };
+
+    void new_flaw(const flaw &f)
+    {
+      flaw_listeners.emplace(&f, std::make_unique<flaw_listener>(f));
+      flaw_created(f);
+    }
+
+    virtual void flaw_created(const flaw &) {}
+    virtual void flaw_state_changed(const flaw &) {}
+    virtual void flaw_cost_changed(const flaw &) {}
+    virtual void flaw_position_changed(const flaw &) {}
+    virtual void current_flaw(const flaw &) {}
+
+    class resolver_listener final : public semitone::sat_value_listener
+    {
+    public:
+      resolver_listener(const resolver &r) noexcept : r(r) {}
+
+    private:
+      void on_sat_value_changed(VARIABLE_TYPE) override { r.get_flaw().get_solver().resolver_state_changed(r); }
+
+    private:
+      const resolver &r;
+    };
+
+    void new_resolver(const resolver &r)
+    {
+      resolver_listeners.emplace(&r, std::make_unique<resolver_listener>(r));
+      resolver_created(r);
+    }
+
+    virtual void resolver_created(const resolver &) {}
+    virtual void resolver_state_changed(const resolver &) {}
+    virtual void current_resolver(const resolver &) {}
+
+    virtual void causal_link_added(const flaw &, const resolver &) {}
+#endif
+
   private:
     [[nodiscard]] std::shared_ptr<riddle::item> get(riddle::enum_item &enm, const std::string &name) noexcept override;
 
@@ -119,6 +181,10 @@ namespace ratio
     semitone::rdl_theory &rdl; // the real difference logic theory
     semitone::ov_theory &ov;   // the object variable theory
     graph &gr;                 // the causal graph
+#ifdef ENABLE_VISUALIZATION
+    std::unordered_map<const flaw *, std::unique_ptr<flaw_listener>> flaw_listeners;
+    std::unordered_map<const resolver *, std::unique_ptr<resolver_listener>> resolver_listeners;
+#endif
   };
 
   /**
