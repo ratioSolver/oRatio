@@ -10,6 +10,8 @@
 
 #ifdef ENABLE_VISUALIZATION
 #include "json.hpp"
+#include "flaw.hpp"
+#include "resolver.hpp"
 #endif
 
 namespace ratio

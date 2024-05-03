@@ -9,6 +9,7 @@
 
 #ifdef ENABLE_VISUALIZATION
 #include "json.hpp"
+#include "bool.hpp"
 #endif
 
 namespace ratio
@@ -149,6 +150,8 @@ namespace ratio
 
 #ifdef ENABLE_VISUALIZATION
   json::json to_json(const flaw &f) noexcept;
+
+  std::string to_state(const flaw &f) noexcept;
 #endif
 
   /**
