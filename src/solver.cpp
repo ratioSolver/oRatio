@@ -45,7 +45,7 @@ namespace ratio
 
     void solver::read(const std::vector<std::string> &files)
     {
-        LOG_DEBUG("[" << name << "] Reading files");
+        LOG_DEBUG("[" << name << "] Reading problem files");
         core::read(files);
 
         if (!sat.propagate())
