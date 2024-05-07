@@ -134,7 +134,79 @@ namespace ratio
     }
 
 #ifdef ENABLE_VISUALIZATION
-    json::json state_variable::extract() const noexcept {}
+    json::json state_variable::extract() const noexcept
+    {
+        json::json tls(json::json_type::array);
+        // we partition atoms for each state-variable they might insist on..
+        std::unordered_map<riddle::component *, std::vector<atom *>> sv_instances;
+        for (const auto &sv : get_instances())
+            sv_instances.emplace(static_cast<riddle::component *>(sv.get()), std::vector<atom *>());
+        for (const auto &atm : atoms)
+            if (get_solver().get_sat().value(atm.get().get_sigma()) == utils::True)
+            { // the atom is active..
+                const auto tau = atm.get().get("tau");
+                if (is_enum(*tau)) // the `tau` parameter is a variable..
+                    for (const auto &c_sv : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
+                        sv_instances.at(static_cast<riddle::component *>(&c_sv.get())).push_back(&atm.get());
+                else // the `tau` parameter is a constant..
+                    sv_instances.at(static_cast<riddle::component *>(tau.get())).push_back(&atm.get());
+            }
+
+        for (const auto &[sv, atms] : sv_instances)
+        {
+            json::json tl{{"id", get_id(*sv)}, {"type", "StateVariable"}, {"name", get_solver().guess_name(*sv)}};
+
+            // for each pulse, the atoms starting at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
+            // for each pulse, the atoms ending at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> ending_atoms;
+            // all the pulses of the timeline..
+            std::set<utils::inf_rational> pulses;
+
+            for (const auto &atm : atms)
+            {
+                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("start")));
+                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("end")));
+                starting_atoms[start].insert(atm);
+                ending_atoms[end].insert(atm);
+                pulses.insert(start);
+                pulses.insert(end);
+            }
+            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get("origin"))));
+            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get("horizon"))));
+
+            std::set<atom *> overlapping_atoms;
+            std::set<utils::inf_rational>::iterator p = pulses.begin();
+            if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+            if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                for (const auto &a : at_end_p->second)
+                    overlapping_atoms.erase(a);
+
+            json::json j_vals(json::json_type::array);
+            for (p = std::next(p); p != pulses.end(); ++p)
+            {
+                json::json j_val{{"from", to_json(*std::prev(p))}, {"to", to_json(*p)}};
+
+                json::json j_atms(json::json_type::array);
+                for (const auto &atm : overlapping_atoms)
+                    j_atms.push_back(get_id(*atm));
+                j_val["atoms"] = std::move(j_atms);
+                j_vals.push_back(std::move(j_val));
+
+                if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+            }
+            tl["values"] = std::move(j_vals);
+
+            tls.push_back(std::move(tl));
+        }
+
+        return tls;
+    }
 #endif
 
     state_variable::sv_flaw::sv_flaw(state_variable &sv, const std::set<atom *> &mcs) : flaw(sv.get_solver(), smart_type::get_resolvers(mcs)), sv(sv), mcs(mcs) {}

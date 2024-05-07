@@ -539,10 +539,11 @@ namespace ratio
 
     json::json value(const riddle::item &itm) noexcept
     {
+        json::json j_val{{"type", itm.get_type().get_name()}}; // we add the type of the item..
         if (is_bool(itm))
         {
             auto &b_itm = static_cast<const riddle::bool_item &>(itm);
-            json::json j_val{{"lit", (sign(b_itm.get_value()) ? "b" : "!b") + std::to_string(variable(b_itm.get_value()))}};
+            j_val["lit"] = (sign(b_itm.get_value()) ? "b" : "!b") + std::to_string(variable(b_itm.get_value()));
             switch (itm.get_type().get_scope().get_core().bool_value(b_itm))
             {
             case utils::True:
@@ -560,7 +561,7 @@ namespace ratio
         else if (is_arith(itm))
         {
             auto &a_itm = static_cast<const riddle::arith_item &>(itm);
-            json::json j_val = to_json(itm.get_type().get_scope().get_core().arithmetic_value(a_itm));
+            j_val["val"] = to_json(itm.get_type().get_scope().get_core().arithmetic_value(a_itm));
             j_val["lin"] = to_string(a_itm.get_value());
             auto [lb, ub] = itm.get_type().get_scope().get_core().bounds(a_itm);
             if (!is_negative_infinite(lb))
@@ -570,7 +571,10 @@ namespace ratio
             return j_val;
         }
         else if (is_string(itm))
-            return static_cast<const riddle::string_item &>(itm).get_value();
+        {
+            j_val["val"] = static_cast<const riddle::string_item &>(itm).get_value();
+            return j_val;
+        }
         else if (is_enum(itm))
         {
             auto &e_itm = static_cast<const riddle::enum_item &>(itm);
@@ -582,7 +586,10 @@ namespace ratio
             return j_val;
         }
         else
-            return get_id(itm);
+        {
+            j_val["val"] = get_id(itm);
+            return j_val;
+        }
     }
 #endif
 } // namespace ratio

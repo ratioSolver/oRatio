@@ -159,7 +159,89 @@ namespace ratio
     }
 
 #ifdef ENABLE_VISUALIZATION
-    json::json reusable_resource::extract() const noexcept {}
+    json::json reusable_resource::extract() const noexcept
+    {
+        json::json tls(json::json_type::array);
+        // we partition atoms for each reusable-resource they might insist on..
+        std::unordered_map<riddle::component *, std::vector<atom *>> rr_instances;
+        for (const auto &rr : get_instances())
+            rr_instances.emplace(static_cast<riddle::component *>(rr.get()), std::vector<atom *>());
+        for (const auto &atm : atoms)
+            if (get_solver().get_sat().value(atm.get().get_sigma()) == utils::True)
+            { // the atom is active..
+                const auto tau = atm.get().get("tau");
+                if (is_enum(*tau)) // the `tau` parameter is a variable..
+                    for (const auto &c_rr : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
+                        rr_instances.at(static_cast<riddle::component *>(&c_rr.get())).push_back(&atm.get());
+                else // the `tau` parameter is a constant..
+                    rr_instances.at(static_cast<riddle::component *>(tau.get())).push_back(&atm.get());
+            }
+
+        for (const auto &[rr, atms] : rr_instances)
+        {
+            json::json tl{{"id", get_id(*rr)}, {"type", "ReusableResource"}, {"name", get_solver().guess_name(*rr)}};
+
+            const auto c_capacity = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(rr->get("capacity")));
+            tl["capacity"] = to_json(c_capacity);
+
+            // for each pulse, the atoms starting at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
+            // for each pulse, the atoms ending at that pulse..
+            std::map<utils::inf_rational, std::set<atom *>> ending_atoms;
+            // all the pulses of the timeline..
+            std::set<utils::inf_rational> pulses;
+
+            for (const auto &atm : atms)
+            {
+                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("start")));
+                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("end")));
+                starting_atoms[start].insert(atm);
+                ending_atoms[end].insert(atm);
+                pulses.insert(start);
+                pulses.insert(end);
+            }
+            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get("origin"))));
+            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get("horizon"))));
+
+            std::set<atom *> overlapping_atoms;
+            std::set<utils::inf_rational>::iterator p = pulses.begin();
+            if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+            if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                for (const auto &a : at_end_p->second)
+                    overlapping_atoms.erase(a);
+
+            json::json j_vals(json::json_type::array);
+            for (p = std::next(p); p != pulses.end(); ++p)
+            {
+                json::json j_val;
+                j_val["from"] = to_json(*std::prev(p));
+                j_val["to"] = to_json(*p);
+
+                json::json j_atms(json::json_type::array);
+                utils::inf_rational c_usage; // the concurrent resource usage..
+                for (const auto &atm : overlapping_atoms)
+                {
+                    c_usage += get_solver().arithmetic_value(static_cast<riddle::arith_item &>(*atm->get("amount")));
+                    j_atms.push_back(get_id(*atm));
+                }
+                j_val["atoms"] = std::move(j_atms);
+                j_val["usage"] = to_json(c_usage);
+                j_vals.push_back(std::move(j_val));
+
+                if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+            }
+            tl["values"] = std::move(j_vals);
+
+            tls.push_back(std::move(tl));
+        }
+
+        return tls;
+    }
 #endif
 
     reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr, const std::set<atom *> &mcs) : flaw(rr.get_solver(), smart_type::get_resolvers(mcs)), rr(rr), mcs(mcs) {}
