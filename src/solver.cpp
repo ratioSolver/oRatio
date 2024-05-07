@@ -13,6 +13,12 @@
 #include "consumable_resource.hpp"
 #include "logging.hpp"
 
+#ifdef ENABLE_VISUALIZATION
+#define STATE_CHANGED() state_changed()
+#else
+#define STATE_CHANGED()
+#endif
+
 namespace ratio
 {
     atom::atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>> &&args) : riddle::atom(p, is_fact, utils::lit(static_cast<solver &>(p.get_scope().get_core()).get_sat().new_var()), std::move(args)), reason(reason) {}
@@ -23,7 +29,7 @@ namespace ratio
     {
         LOG_DEBUG("[" << name << "] Initializing solver");
         // we read the init string..
-        read(INIT_STRING);
+        core::read(INIT_STRING);
 
         add_type(std::make_unique<agent>(*this));
         add_type(std::make_unique<state_variable>(*this));
@@ -32,6 +38,7 @@ namespace ratio
 
         if (!sat.propagate())
             throw riddle::unsolvable_exception();
+        STATE_CHANGED();
     }
 
     void solver::read(const std::string &script)
@@ -41,6 +48,7 @@ namespace ratio
 
         if (!sat.propagate())
             throw riddle::unsolvable_exception();
+        STATE_CHANGED();
     }
 
     void solver::read(const std::vector<std::string> &files)
@@ -50,6 +58,7 @@ namespace ratio
 
         if (!sat.propagate())
             throw riddle::unsolvable_exception();
+        STATE_CHANGED();
     }
 
     bool solver::solve()
@@ -66,6 +75,7 @@ namespace ratio
         // we take the decision..
         if (!sat.assume(d))
             throw riddle::unsolvable_exception();
+        STATE_CHANGED();
     }
 
     std::shared_ptr<riddle::bool_item> solver::new_bool() noexcept
