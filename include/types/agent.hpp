@@ -23,6 +23,6 @@ namespace ratio
   };
 
 #ifdef ENABLE_VISUALIZATION
-  const json::json agent_timeline_schema{{"agent_timeline", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"Agent"}}}}, {"name", {{"type", "string"}}}, {"values", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"id", "type", "name"}}}}};
+  const json::json agent_timeline_schema{{"agent_timeline", {{"type", "object"}, {"description", "Schema representing an agent timeline"}, {"properties", {{"id", {{"type", "integer"}, {"description", "The ID of the agent"}}}, {"type", {{"type", "string"}, {"enum", {"Agent"}}}}, {"name", {{"type", "string"}, {"description", "The name of the agent"}}}, {"values", {{"type", "array"}, {"items", {{"type", "integer"}}}, {"description", "Array of item IDs"}}}}}, {"required", {"id", "type", "name"}}}}};
 #endif
 } // namespace ratio
