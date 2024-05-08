@@ -333,6 +333,17 @@ namespace ratio
       j_rat["inf"] = to_json(rat.get_infinitesimal());
     return j_rat;
   }
+
+  const json::json rational_schema{{"rational", {{"type", "object"}, {{"required", json::to_array({"num", "den"})}}, {"properties", {{{"num", {{"type", "integer"}}}, {"den", {{"type", "integer"}}}}}}}}};
+  const json::json inf_rational_schema{{"inf_rational", {{"type", "object"}, {{"required", json::to_array({"num, den"})}}, {"properties", {{{"num", {{"type", "integer"}}}, {"den", {{"type", "integer"}}}, {"inf", {{"$ref", "#/components/schemas/rational"}}}}}}}}};
+  const json::json value_schema{{"value", {{"oneOf", json::to_array({{"$ref", "#/components/schemas/bool_value"}, {"$ref", "#/components/schemas/int_value"}, {"$ref", "#/components/schemas/real_value"}, {"$ref", "#/components/schemas/time_value"}, {"$ref", "#/components/schemas/string_value"}, {"$ref", "#/components/schemas/enum_value"}, {"$ref", "#/components/schemas/object_value"}})}, {"discriminator", {{"propertyName", "type"}, {"mapping", {{"bool", "#/components/schemas/bool_value"}, {"int", "#/components/schemas/int_value"}, {"real", "#/components/schemas/real_value"}, {"time", "#/components/schemas/time_value"}, {"string", "#/components/schemas/string_value"}, {"enum", "#/components/schemas/enum_value"}, {"object", "#/components/schemas/object_value"}}}}}}}};
+  const json::json bool_value_schema{{"bool_value", {{"type", "object"}, {{"properties", {{"type", {{"type", "string"}, {"enum", {"bool"}}}}, {"lit", {{"type", "string"}}}, {"val", {{"type", "string"}, {"enum", {"True", "False", "Undefined"}}}}}}, {"required", {"type", "lit", "val"}}}}}};
+  const json::json int_value_schema{{"int_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"int"}}}}, {"lin", {{"type", "string"}}}, {"val", {{"$ref", "#/components/schemas/inf_rational"}}}, {"lb", {{"$ref", "#/components/schemas/inf_rational"}}}, {"ub", {{"$ref", "#/components/schemas/inf_rational"}}}}}, {"required", {"type", "lin", "val"}}}}};
+  const json::json real_value_schema{{"real_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"real"}}}}, {"lin", {{"type", "string"}}}, {"val", {{"$ref", "#/components/schemas/inf_rational"}}}, {"lb", {{"$ref", "#/components/schemas/inf_rational"}}}, {"ub", {{"$ref", "#/components/schemas/inf_rational"}}}}}, {"required", {"type", "lin", "val"}}}}};
+  const json::json time_value_schema{{"time_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"time"}}}}, {"lin", {{"type", "string"}}}, {"val", {{"$ref", "#/components/schemas/inf_rational"}}}, {"lb", {{"$ref", "#/components/schemas/inf_rational"}}}, {"ub", {{"$ref", "#/components/schemas/inf_rational"}}}}}, {"required", {"type", "lin", "val"}}}}};
+  const json::json string_value_schema{{"string_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"string"}}}}, {"val", {{"type", "string"}}}}}, {"required", json::to_array({"type", "val"})}}}};
+  const json::json enum_value_schema{{"enum_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"enum"}}}}, {"var", {{"type", "string"}}}, {"vals", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"type", "var", "vals"}}}}};
+  const json::json object_value_schema{{"object_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"object"}}}}, {"val", {{"type", "integer"}}}}}, {"required", json::to_array({"type", "val"})}}}};
 #endif
 
   /**

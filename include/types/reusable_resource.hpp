@@ -134,4 +134,9 @@ namespace ratio
     std::map<atom *, std::map<atom *, utils::lit>> leqs;            // all the possible ordering constraints..
     std::map<atom *, std::map<utils::enum_val *, utils::lit>> frbs; // all the possible forbidding constraints..
   };
+
+#ifdef ENABLE_VISUALIZATION
+  const json::json reusable_resource_value_schema{{"reusable_resource_value", {{"type", "object"}, {"properties", {{"from", {{"$ref", "#/components/schemas/rational"}}}, {"to", {{"$ref", "#/components/schemas/rational"}}}, {"usage", {{"$ref", "#/components/schemas/rational"}}}, {"atoms", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"from", "to", "usage"}}}}};
+  const json::json reusable_resource_schema{{"reusable_resource", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"ReusableResource"}}}}, {"name", {{"type", "string"}}}, {"capacity", {{"$ref", "#/components/schemas/rational"}}}, {"values", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/reusable_resource_value"}}}}}}}, {"required", {"id", "type", "name", "capacity"}}}}};
+#endif
 } // namespace ratio

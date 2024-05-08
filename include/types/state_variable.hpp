@@ -134,4 +134,9 @@ namespace ratio
     std::map<atom *, std::map<atom *, utils::lit>> leqs;            // all the possible ordering constraints..
     std::map<atom *, std::map<utils::enum_val *, utils::lit>> frbs; // all the possible forbidding constraints..
   };
+
+#ifdef ENABLE_VISUALIZATION
+  const json::json state_variable_value_schema{{"state_variable_value", {{"type", "object"}, {"properties", {{"from", {{"$ref", "#/components/schemas/rational"}}}, {"to", {{"$ref", "#/components/schemas/rational"}}}, {"atoms", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"from", "to", "atoms"}}}}};
+  const json::json state_variable_schema{{"state_variable", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"StateVariable"}}}}, {"name", {{"type", "string"}}}, {"values", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/state_variable_value"}}}}}}}, {"required", {"id", "type", "name"}}}}};
+#endif
 } // namespace ratio
