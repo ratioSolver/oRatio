@@ -136,7 +136,7 @@ namespace ratio
   };
 
 #ifdef ENABLE_VISUALIZATION
-  const json::json state_variable_value_schema{{"state_variable_value", {{"type", "object"}, {"properties", {{"from", {{"$ref", "#/components/schemas/rational"}}}, {"to", {{"$ref", "#/components/schemas/rational"}}}, {"atoms", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"from", "to", "atoms"}}}}};
-  const json::json state_variable_schema{{"state_variable", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"StateVariable"}}}}, {"name", {{"type", "string"}}}, {"values", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/state_variable_value"}}}}}}}, {"required", {"id", "type", "name"}}}}};
+  const json::json state_variable_timeline_value_schema{{"state_variable_timeline_value", {{"type", "object"}, {"properties", {{"from", {{"$ref", "#/components/schemas/rational"}}}, {"to", {{"$ref", "#/components/schemas/rational"}}}, {"atoms", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"from", "to", "atoms"}}}}};
+  const json::json state_variable_timeline_schema{{"state_variable_timeline", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"StateVariable"}}}}, {"name", {{"type", "string"}}}, {"values", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/state_variable_timeline_value"}}}}}}}, {"required", {"id", "type", "name"}}}}};
 #endif
 } // namespace ratio

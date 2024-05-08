@@ -344,6 +344,9 @@ namespace ratio
   const json::json string_value_schema{{"string_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"string"}}}}, {"val", {{"type", "string"}}}}}, {"required", json::to_array({"type", "val"})}}}};
   const json::json enum_value_schema{{"enum_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"enum"}}}}, {"var", {{"type", "string"}}}, {"vals", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"type", "var", "vals"}}}}};
   const json::json object_value_schema{{"object_value", {{"type", "object"}, {"properties", {{"type", {{"type", "string"}, {"enum", {"object"}}}}, {"val", {{"type", "integer"}}}}}, {"required", json::to_array({"type", "val"})}}}};
+  const json::json item_schema{{"item", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}}}, {"name", {{"type", "string"}}}, {"exprs", {{"type", "object"}, {"additionalProperties", {{"$ref", "#/components/schemas/value"}}}}}}}, {"required", {"id", "type", "name"}}}}};
+  const json::json atom_schema{{"atom", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"is_fact", {{"type", "boolean"}}}, {"sigma", {{"type", "integer"}}}, {"type", {{"type", "string"}}}, {"status", {{"type", "string"}, {"enum", {"Active", "Inactive", "Unified"}}}}, {"name", {{"type", "string"}}}, {"exprs", {{"type", "object"}, {"additionalProperties", {{"$ref", "#/components/schemas/value"}}}}}}}, {"required", {"id", "type", "name"}}}}};
+  const json::json solver_timeline_schema{{"solver_timeline", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"Solver"}}}}, {"name", {{"type", "string"}}}, {"values", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"id", "type", "name"}}}}};
 #endif
 
   /**

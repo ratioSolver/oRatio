@@ -459,11 +459,11 @@ namespace ratio
                 }
         if (!starting_atoms.empty())
         { // we have some root atoms in the solver timeline..
-            json::json slv_tl{{"id", get_id(rhs)}, {"name", rhs.get_name()}};
+            json::json slv_tl{{"id", get_id(rhs)}, {"type", "Solver"}, {"name", rhs.get_name()}};
             json::json j_atms(json::json_type::array);
             for (const auto &p : pulses)
                 for (const auto &atm : starting_atoms.at(p))
-                    j_atms.push_back(to_json(*atm));
+                    j_atms.push_back(get_id(*atm));
             slv_tl["values"] = std::move(j_atms);
             j_timelines.push_back(std::move(slv_tl));
         }
