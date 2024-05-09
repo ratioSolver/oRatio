@@ -94,6 +94,8 @@ namespace ratio
   json::json to_json(const resolver &r) noexcept;
 
   std::string to_state(const resolver &r) noexcept;
+
+  const json::json resolver_schema = {{"resolver", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}, {"flaw", {{"type", "integer"}, {"description", "The flaw this resolver solves."}}}, {"preconditions", {{"type", "array"}, {"description", "The preconditions that must be satisfied for this resolver to be applied."}, {"items", {{"type", "integer"}}}}}, {"rho", {{"type", "string"}}}, {"intrinsic_cost", {{"$ref", "#/components/schemas/rational"}}}, {"pos", {{"type", "integer"}}}, {"data", {{"type", "object"}}}}}, {"required", {"id", "state", "flaw", "rho", "pos", "preconditions", "intrinsic_cost"}}}}};
 #endif
 
   /**

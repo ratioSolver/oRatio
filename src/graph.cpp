@@ -93,7 +93,7 @@ namespace ratio
         for (const auto &r : f.resolvers)
         {
             LOG_TRACE("[" << slv.get_name() << "] Applying resolver " << to_string(r.get().get_rho()));
-            res = r;                   // we write down the resolver so that new flaws know their cause..
+            c_res = r;                 // we write down the resolver so that new flaws know their cause..
             set_ni(r.get().get_rho()); // we temporally set the resolver's rho as the controlling literal..
 
             // activating the resolver results in the flaw being solved..
@@ -108,8 +108,8 @@ namespace ratio
                 if (!get_sat().new_clause({!r.get().get_rho()}))
                     throw riddle::unsolvable_exception();
             }
-            restore_ni();       // we restore the controlling literal..
-            res = std::nullopt; // we reset the resolver..
+            restore_ni();         // we restore the controlling literal..
+            c_res = std::nullopt; // we reset the resolver..
         }
 
         // we bind the variables to the SMT theory..
@@ -128,4 +128,24 @@ namespace ratio
             if (get_sat().value(r.get().get_rho()) == utils::Undefined)
                 bind(variable(r.get().get_rho())); // we listen for the resolver to become active..
     }
+
+#ifdef ENABLE_VISUALIZATION
+    json::json to_json(const graph &rhs) noexcept
+    {
+        json::json j;
+        json::json flaws(json::json_type::array);
+        for (const auto &f : rhs.get_flaws())
+            flaws.push_back(to_json(f.get()));
+        j["flaws"] = std::move(flaws);
+        if (rhs.get_current_flaw())
+            j["current_flaw"] = to_json(rhs.get_current_flaw().value().get());
+        json::json resolvers(json::json_type::array);
+        for (const auto &r : rhs.get_resolvers())
+            resolvers.push_back(to_json(r.get()));
+        j["resolvers"] = std::move(resolvers);
+        if (rhs.get_current_resolver())
+            j["current_resolver"] = to_json(rhs.get_current_resolver().value().get());
+        return j;
+    }
+#endif
 } // namespace ratio

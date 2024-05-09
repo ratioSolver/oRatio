@@ -43,6 +43,29 @@ namespace ratio
     }
 
     /**
+     * Returns a vector of flaws in the graph.
+     *
+     * @return A vector of reference wrappers to the flaws.
+     */
+    std::vector<std::reference_wrapper<flaw>> get_flaws() const noexcept
+    {
+      std::vector<std::reference_wrapper<flaw>> res;
+      for (auto &f : phis)
+        for (auto &f_ : f.second)
+          res.push_back(*f_);
+      return res;
+    }
+
+    /**
+     * @brief Get the current flaw.
+     *
+     * This function returns an optional reference to the current flaw.
+     *
+     * @return An optional reference to the current flaw.
+     */
+    const std::optional<std::reference_wrapper<flaw>> &get_current_flaw() const noexcept { return c_flaw; }
+
+    /**
      * @brief Creates a new resolver of the given type.
      *
      * @tparam Tp The type of the resolver to create.
@@ -59,6 +82,29 @@ namespace ratio
       r->get_flaw().resolvers.push_back(*r);
       return *r;
     }
+
+    /**
+     * Returns a vector of resolvers in the graph.
+     *
+     * @return A vector of reference wrappers to the resolvers.
+     */
+    std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept
+    {
+      std::vector<std::reference_wrapper<resolver>> res;
+      for (auto &r : rhos)
+        for (auto &r_ : r.second)
+          res.push_back(*r_);
+      return res;
+    }
+
+    /**
+     * @brief Get the current resolver.
+     *
+     * This function returns an optional reference to the current resolver.
+     *
+     * @return An optional reference to the current resolver.
+     */
+    const std::optional<std::reference_wrapper<resolver>> &get_current_resolver() const noexcept { return c_res; }
 
     /**
      * @brief Creates a new causal link between a flaw and a resolver.
@@ -110,12 +156,25 @@ namespace ratio
      */
     void expand_flaw(flaw &f);
 
+    /**
+     * @brief Sets the value of `ni`.
+     *
+     * This function sets the value of `ni` to the specified `v`.
+     *
+     * @param v The new value for `ni`.
+     */
     void set_ni(const utils::lit &v) noexcept
     {
       tmp_ni = ni;
       ni = v;
     }
 
+    /**
+     * @brief Restores the value of `ni` to its original value.
+     *
+     * This function restores the value of the `ni` variable to its original value
+     * before any modifications were made.
+     */
     void restore_ni() noexcept { ni = tmp_ni; }
 
   private:
@@ -129,11 +188,18 @@ namespace ratio
     std::unordered_map<VARIABLE_TYPE, std::vector<std::unique_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
     std::vector<std::unique_ptr<flaw>> pending_flaws;                               // pending flaws, waiting for root-level to be initialized..
     std::unordered_map<VARIABLE_TYPE, std::vector<std::unique_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
-    std::optional<std::reference_wrapper<resolver>> res;                            // the current resolver..
+    std::optional<std::reference_wrapper<flaw>> c_flaw;                             // the current flaw..
+    std::optional<std::reference_wrapper<resolver>> c_res;                          // the current resolver..
     utils::lit tmp_ni;                                                              // the temporary controlling literal, used for restoring the controlling literal..
     utils::lit ni{utils::TRUE_lit};                                                 // the current controlling literal..
     std::deque<std::reference_wrapper<flaw>> flaw_q;                                // the flaw queue (for the graph building procedure)..
     std::unordered_set<flaw *> active_flaws;                                        // the currently active flaws..
     VARIABLE_TYPE gamma;                                                            // the variable representing the validity of this graph..
   };
+
+#ifdef ENABLE_VISUALIZATION
+  json::json to_json(const graph &rhs) noexcept;
+
+  const json::json solver_graph_schema{{"solver_graph", {{"type", "object"}, {"properties", {{"flaws", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/flaw"}}}}}, {"current_flaw", {{"type", "integer"}}}, {"resolvers", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/resolver"}}}}}, {"current_resolver", {{"type", "integer"}}}}}, {"required", std::vector<json::json>{"flaws", "resolvers"}}}}};
+#endif
 } // namespace ratio
