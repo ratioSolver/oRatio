@@ -200,6 +200,13 @@ namespace ratio
 #ifdef ENABLE_VISUALIZATION
   json::json to_json(const graph &rhs) noexcept;
 
+  inline json::json graph_message(const graph &g) noexcept
+  {
+    json::json j = to_json(g);
+    j["type"] = "graph";
+    return j;
+  }
+
   const json::json solver_graph_schema{{"solver_graph", {{"type", "object"}, {"properties", {{"flaws", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/flaw"}}}}}, {"current_flaw", {{"type", "integer"}}}, {"resolvers", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/resolver"}}}}}, {"current_resolver", {{"type", "integer"}}}}}, {"required", std::vector<json::json>{"flaws", "resolvers"}}}}};
 #endif
 } // namespace ratio

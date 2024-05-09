@@ -437,7 +437,7 @@ namespace ratio
 
     json::json to_timelines(const solver &rhs) noexcept
     {
-        json::json j_timelines;
+        json::json j_timelines(json::json_type::array);
 
         // for each pulse, the root atoms starting at that pulse..
         std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
