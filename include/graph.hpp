@@ -207,6 +207,95 @@ namespace ratio
     return j;
   }
 
-  const json::json solver_graph_schema{{"solver_graph", {{"type", "object"}, {"properties", {{"flaws", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/flaw"}}}}}, {"current_flaw", {{"type", "integer"}}}, {"resolvers", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/resolver"}}}}}, {"current_resolver", {{"type", "integer"}}}}}, {"required", std::vector<json::json>{"flaws", "resolvers"}}}}};
+  const json::json solver_graph_schema{
+      {"solver_graph",
+       {{"type", "object"},
+        {"properties",
+         {{"flaws",
+           {{"type", "array"},
+            {"items", {{"$ref", "#/components/schemas/flaw"}}}}},
+          {"current_flaw", {{"type", "integer"}}},
+          {"resolvers",
+           {{"type", "array"},
+            {"items", {{"$ref", "#/components/schemas/resolver"}}}}},
+          {"current_resolver", {{"type", "integer"}}}}},
+        {"required", std::vector<json::json>{"flaws", "resolvers"}}}}};
+
+  const json::json flaw_created_message{
+      {"flaw_created_message",
+       {"payload",
+        {{"$ref", "#/components/schemas/flaw"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"flaw_created"}}}},
+           {"solver_id", {{"type", "integer"}}}}}}}}};
+
+  const json::json flaw_state_changed_message{
+      {"flaw_state_changed_message",
+       {"payload",
+        {{"type", "object"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"flaw_state_changed"}}}},
+           {"flaw_id", {{"type", "integer"}}},
+           {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}}}}}}};
+
+  const json::json flaw_cost_changed_message{
+      {"flaw_cost_changed_message",
+       {"payload",
+        {{"type", "object"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"flaw_cost_changed"}}}},
+           {"flaw_id", {{"type", "integer"}}},
+           {"cost", {{"$ref", "#/components/schemas/rational"}}}}}}}}};
+
+  const json::json flaw_position_changed_message{
+      {"flaw_position_changed_message",
+       {"payload",
+        {{"type", "object"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"flaw_position_changed"}}}},
+           {"flaw_id", {{"type", "integer"}}},
+           {"position", {{"type", "integer"}}}}}}}}};
+
+  const json::json current_flaw_message{
+      {"current_flaw_message",
+       {"payload",
+        {{"type", "object"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"current_flaw"}}}},
+           {"flaw_id", {{"type", "integer"}}}}}}}}};
+
+  const json::json resolver_created_message{
+      {"resolver_created_message",
+       {"payload",
+        {{"$ref", "#/components/schemas/resolver"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"resolver_created"}}}},
+           {"solver_id", {{"type", "integer"}}}}}}}}};
+
+  const json::json resolver_state_changed_message{
+      {"resolver_state_changed_message",
+       {"payload",
+        {{"type", "object"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"resolver_state_changed"}}}},
+           {"resolver_id", {{"type", "integer"}}},
+           {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}}}}}}};
+
+  const json::json current_resolver_message{
+      {"current_resolver_message",
+       {"payload",
+        {{"type", "object"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"current_resolver"}}}},
+           {"resolver_id", {{"type", "integer"}}}}}}}}};
+
+  const json::json causal_link_added_message{
+      {"causal_link_added_message",
+       {"payload",
+        {{"type", "object"},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"causal_link_added"}}}},
+           {"flaw_id", {{"type", "integer"}}},
+           {"resolver_id", {{"type", "integer"}}}}}}}}};
 #endif
 } // namespace ratio

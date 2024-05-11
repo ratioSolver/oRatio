@@ -355,8 +355,7 @@ namespace ratio
                                                 {"$ref", "#/components/schemas/time_value"},
                                                 {"$ref", "#/components/schemas/string_value"},
                                                 {"$ref", "#/components/schemas/enum_value"},
-                                                {"$ref", "#/components/schemas/object_value"}}},
-                                  {"discriminator", {{"propertyName", "type"}, {"mapping", {{"bool", "#/components/schemas/bool_value"}, {"int", "#/components/schemas/int_value"}, {"real", "#/components/schemas/real_value"}, {"time", "#/components/schemas/time_value"}, {"string", "#/components/schemas/string_value"}, {"enum", "#/components/schemas/enum_value"}, {"object", "#/components/schemas/object_value"}}}}}}}};
+                                                {"$ref", "#/components/schemas/object_value"}}}}}};
   const json::json bool_value_schema{{"bool_value",
                                       {{"type", "object"},
                                        {"properties",
