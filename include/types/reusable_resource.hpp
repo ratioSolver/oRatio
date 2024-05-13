@@ -1,6 +1,7 @@
 #pragma once
 
 #include "smart_type.hpp"
+#include "timeline.hpp"
 #include "flaw.hpp"
 #include "resolver.hpp"
 

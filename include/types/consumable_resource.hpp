@@ -1,6 +1,7 @@
 #pragma once
 
 #include "smart_type.hpp"
+#include "timeline.hpp"
 
 namespace ratio
 {

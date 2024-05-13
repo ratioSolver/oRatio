@@ -200,7 +200,7 @@ namespace ratio
 #ifdef ENABLE_VISUALIZATION
   json::json to_json(const graph &rhs) noexcept;
 
-  inline json::json graph_message(const graph &g) noexcept
+  inline json::json make_graph_message(const graph &g) noexcept
   {
     json::json j = to_json(g);
     j["type"] = "graph";
@@ -224,10 +224,11 @@ namespace ratio
   const json::json flaw_created_message{
       {"flaw_created_message",
        {"payload",
-        {{"$ref", "#/components/schemas/flaw"},
+        {{"allOf",
+          std::vector<json::json>{{"$ref", "#/components/schemas/flaw"}}},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"flaw_created"}}}},
-           {"solver_id", {{"type", "integer"}}}}}}}}};
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}}}}}}}};
 
   const json::json flaw_state_changed_message{
       {"flaw_state_changed_message",
@@ -267,10 +268,11 @@ namespace ratio
   const json::json resolver_created_message{
       {"resolver_created_message",
        {"payload",
-        {{"$ref", "#/components/schemas/resolver"},
+        {{"allOf",
+          std::vector<json::json>{{"$ref", "#/components/schemas/resolver"}}},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"resolver_created"}}}},
-           {"solver_id", {{"type", "integer"}}}}}}}}};
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}}}}}}}};
 
   const json::json resolver_state_changed_message{
       {"resolver_state_changed_message",
@@ -297,5 +299,13 @@ namespace ratio
           {{"type", {{"type", "string"}, {"enum", {"causal_link_added"}}}},
            {"flaw_id", {{"type", "integer"}}},
            {"resolver_id", {{"type", "integer"}}}}}}}}};
+
+  const json::json graph_message{
+      {"graph_message",
+       {"payload",
+        {{"allOf", std::vector<json::json>{{"$ref", "#/components/schemas/solver_graph"}}},
+         {"properties",
+          {{"type", {{"type", "string"}, {"enum", {"graph"}}}},
+           {"id", {{"type", "integer"}, {"description", "The ID of the solver"}}}}}}}}};
 #endif
 } // namespace ratio
