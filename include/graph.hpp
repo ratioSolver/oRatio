@@ -98,6 +98,31 @@ namespace ratio
     }
 
     /**
+     * Checks if the graph has any active flaws.
+     *
+     * @return true if there are active flaws, false otherwise.
+     */
+    bool has_active_flaws() const noexcept { return !active_flaws.empty(); }
+
+    /**
+     * @brief Checks if the graph has any flaws with infinite cost.
+     *
+     * If the graph has flaws with infinite cost, it is impossible to resolve them.
+     *
+     * @return true if the graph has flaws with infinite cost, false otherwise.
+     */
+    bool has_infinite_cost_active_flaws() const noexcept;
+
+    /**
+     * @brief Returns the most expensive flaw.
+     *
+     * This function returns a reference to the most expensive flaw in the graph. The most expensive flaw is the best candidate to be resolved next.
+     *
+     * @return A reference to the most expensive flaw.
+     */
+    flaw &get_most_expensive_flaw() const noexcept;
+
+    /**
      * @brief Get the current resolver.
      *
      * This function returns an optional reference to the current resolver.
@@ -140,6 +165,32 @@ namespace ratio
      * This function is responsible for adding a new layer to the graph.
      */
     void add_layer();
+
+    /**
+     * @brief Solves inconsistencies in the system.
+     *
+     * This function is responsible for resolving any inconsistencies that may exist in the system.
+     */
+    void solve_inconsistencies();
+
+    /**
+     * @brief Get the current inconsistencies of the solver.
+     *
+     * This function returns the current inconsistencies of the solver.
+     * The inconsistencies are represented as a vector of vectors of pairs of literals and doubles.
+     * Each vector of pairs represents a possible decision which can be taken to resolve the inconsistency.
+     * The pairs represent the literals and the costs of the literals.
+     *
+     * @return std::vector<std::vector<std::pair<utils::lit, double>>> The current inconsistencies of the solver.
+     */
+    [[nodiscard]] std::vector<std::vector<std::pair<utils::lit, double>>> get_incs() const noexcept;
+
+    /**
+     * @brief Resets the smart types.
+     *
+     * This function resets the smart types used by the solver.
+     */
+    void reset_smart_types() noexcept;
 
   protected:
     /**
@@ -194,6 +245,7 @@ namespace ratio
     utils::lit ni{utils::TRUE_lit};                                                 // the current controlling literal..
     std::deque<std::reference_wrapper<flaw>> flaw_q;                                // the flaw queue (for the graph building procedure)..
     std::unordered_set<flaw *> active_flaws;                                        // the currently active flaws..
+    std::vector<smart_type *> smart_types;                                          // the smart-types..
     VARIABLE_TYPE gamma;                                                            // the variable representing the validity of this graph..
   };
 

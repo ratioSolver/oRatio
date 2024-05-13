@@ -20,6 +20,7 @@ namespace ratio
 {
   class atom_flaw;
   class graph;
+  class smart_type;
 #ifdef ENABLE_VISUALIZATION
   class flaw_listener;
   class resolver_listener;
@@ -68,6 +69,14 @@ namespace ratio
      * @param d The decision to take.
      */
     void take_decision(const utils::lit &d);
+
+    /**
+     * @brief Advances to the next step in the solver.
+     *
+     * This function is responsible for moving the solver to the next step in the computation.
+     * It performs any necessary calculations or updates to the solver's internal state.
+     */
+    void next();
 
     [[nodiscard]] semitone::sat_core &get_sat() noexcept { return sat; }
     [[nodiscard]] const semitone::sat_core &get_sat() const noexcept { return sat; }

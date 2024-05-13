@@ -29,6 +29,7 @@ if(${HEURISTIC_TYPE_INDEX} EQUAL -1)
 endif()
 message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 
+option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
 option(ENABLE_VISUALIZATION "Enable visualization features" OFF)
 
 add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp src/types/agent.cpp src/types/state_variable.cpp src/types/consumable_resource.cpp src/types/reusable_resource.cpp)
@@ -52,6 +53,11 @@ elseif(${HEURISTIC_TYPE} STREQUAL "h2_max")
     target_compile_definitions(oRatioLib PRIVATE H2_MAX)
 elseif(${HEURISTIC_TYPE} STREQUAL "h2_add")
     target_compile_definitions(oRatioLib PRIVATE H2_ADD)
+endif()
+
+message(STATUS "Check inconsistencies at each step: ${CHECK_INCONSISTENCIES}")
+if(CHECK_INCONSISTENCIES)
+    target_compile_definitions(oRatioLib PRIVATE CHECK_INCONSISTENCIES)
 endif()
 
 message(STATUS "Enable oRatio visualization features: ${ENABLE_VISUALIZATION}")

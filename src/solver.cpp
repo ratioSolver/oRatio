@@ -15,8 +15,12 @@
 
 #ifdef ENABLE_VISUALIZATION
 #define STATE_CHANGED() state_changed()
+#define CURRENT_FLAW(f) current_flaw(f)
+#define CURRENT_RESOLVER(r) current_resolver(r)
 #else
 #define STATE_CHANGED()
+#define CURRENT_FLAW(f)
+#define CURRENT_RESOLVER(r)
 #endif
 
 namespace ratio
@@ -46,8 +50,10 @@ namespace ratio
         LOG_DEBUG("[" << name << "] Reading script: " << script);
         core::read(script);
 
-        if (!sat.propagate())
+        if (!sat.propagate()) // we propagate the constraints..
             throw riddle::unsolvable_exception();
+        gr.reset_smart_types(); // we reset the smart types..
+
         STATE_CHANGED();
     }
 
@@ -56,14 +62,58 @@ namespace ratio
         LOG_DEBUG("[" << name << "] Reading problem files");
         core::read(files);
 
-        if (!sat.propagate())
+        if (!sat.propagate()) // we propagate the constraints..
             throw riddle::unsolvable_exception();
+        gr.reset_smart_types(); // we reset the smart types..
+
         STATE_CHANGED();
     }
 
     bool solver::solve()
     {
         LOG_DEBUG("[" << name << "] Solving problem");
+        gr.build();
+#ifdef CHECK_INCONSISTENCIES
+        // we solve all the current inconsistencies..
+        solve_inconsistencies();
+
+        while (gr.has_active_flaws())
+        {
+            while (gr.has_infinite_cost_active_flaws())
+                next(); // we move to the next state..
+
+            auto &f = gr.get_most_expensive_flaw(); // we get the most expensive flaw..
+            CURRENT_FLAW(f);
+            auto &r = f.get_best_resolver(); // we get the best resolver for the flaw..
+            CURRENT_RESOLVER(r);
+
+            // we take the decision by activating the best resolver..
+            take_decision(r.get_rho());
+
+            // we solve all the current inconsistencies..
+            solve_inconsistencies();
+        }
+#else
+        do
+        {
+            while (gr.has_active_flaws())
+            {
+                while (gr.has_infinite_cost_active_flaws())
+                    next(); // we move to the next state..
+
+                auto &f = gr.get_most_expensive_flaw(); // we get the most expensive flaw..
+                CURRENT_FLAW(f);
+                auto &r = f.get_best_resolver(); // we get the best resolver for the flaw..
+                CURRENT_RESOLVER(r);
+
+                // we take the decision by activating the best resolver..
+                take_decision(r.get_rho());
+            }
+            // we solve all the current inconsistencies..
+            gr.solve_inconsistencies();
+        } while (gr.has_active_flaws());
+#endif
+        LOG_DEBUG("[" << name << "] Problem solved");
         return true;
     }
 
@@ -75,6 +125,18 @@ namespace ratio
         // we take the decision..
         if (!sat.assume(d))
             throw riddle::unsolvable_exception();
+        STATE_CHANGED();
+    }
+
+    void solver::next()
+    {
+        LOG_DEBUG("[" << name << "] Next..");
+        if (!sat.next())
+            throw riddle::unsolvable_exception();
+
+        if (sat.root_level())
+            gr.build(); // we make sure the graph is built..
+
         STATE_CHANGED();
     }
 

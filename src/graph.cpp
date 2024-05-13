@@ -1,4 +1,5 @@
 #include "graph.hpp"
+#include "smart_type.hpp"
 #include "logging.hpp"
 #include <cassert>
 
@@ -17,6 +18,19 @@ namespace ratio
         // we introduce an ordering constraint..
         if (!slv.get_sat().new_clause({!r.get_rho(), slv.get_idl_theory().new_distance(r.get_flaw().position, f.position, 0)}))
             throw riddle::unsolvable_exception();
+    }
+
+    bool graph::has_infinite_cost_active_flaws() const noexcept
+    {
+        return std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f)
+                           { return is_infinite(f->get_estimated_cost()); });
+    }
+
+    flaw &graph::get_most_expensive_flaw() const noexcept
+    {
+        assert(!active_flaws.empty());
+        return **std::max_element(active_flaws.cbegin(), active_flaws.cend(), [](const auto &lhs, const auto &rhs)
+                                  { return lhs->get_estimated_cost() < rhs->get_estimated_cost(); });
     }
 
     void graph::build()
@@ -45,6 +59,103 @@ namespace ratio
     {
         LOG_DEBUG("[" << slv.get_name() << "] Adding a new layer");
         assert(get_sat().root_level());
+    }
+
+    void graph::solve_inconsistencies()
+    {
+        LOG_DEBUG("[" << slv.get_name() << "] Solving inconsistencies");
+
+        auto incs = get_incs(); // all the current inconsistencies..
+        LOG_DEBUG("[" << slv.get_name() << "] Found " << incs.size() << " inconsistencies");
+
+        // we solve the inconsistencies..
+        while (!incs.empty())
+        {
+            if (const auto &uns_inc = std::find_if(incs.cbegin(), incs.cend(), [](const auto &v)
+                                                   { return v.empty(); });
+                uns_inc != incs.cend())
+            { // we have an unsolvable inconsistency..
+                LOG_DEBUG("[" << slv.get_name() << "] Unsatisfiable inconsistency");
+                slv.next(); // we move to the next state..
+            }
+            else if (const auto &inc = std::find_if(incs.cbegin(), incs.cend(), [](const auto &v)
+                                                    { return v.size() == 1; });
+                     inc != incs.cend())
+            { // we have a trivial inconsistency..
+                LOG_DEBUG("[" << slv.get_name() << "] Trivial inconsistency");
+                assert(get_sat().value(inc->front().first) == utils::Undefined);
+                // we can learn something from it..
+                std::vector<utils::lit> learnt;
+                learnt.push_back(inc->front().first);
+                for (const auto &l : get_sat().get_decisions())
+                    learnt.push_back(!l);
+                record(std::move(learnt));
+                if (!get_sat().propagate())
+                    throw riddle::unsolvable_exception();
+            }
+            else
+            { // we have a non-trivial inconsistency, so we have to take a decision..
+                std::vector<std::pair<utils::lit, double>> bst_inc;
+                double k_inv = std::numeric_limits<double>::infinity();
+                for (const auto &inc : incs)
+                {
+                    double bst_commit = std::numeric_limits<double>::infinity();
+                    for ([[maybe_unused]] const auto &[choice, commit] : inc)
+                        if (commit < bst_commit)
+                            bst_commit = commit;
+                    double c_k_inv = 0;
+                    for ([[maybe_unused]] const auto &[choice, commit] : inc)
+                        c_k_inv += 1l / (1l + (commit - bst_commit));
+                    if (c_k_inv < k_inv)
+                    {
+                        k_inv = c_k_inv;
+                        bst_inc = inc;
+                    }
+                }
+
+                // we select the best choice (i.e. the least committing one) from those available for the best flaw..
+                slv.take_decision(std::min_element(bst_inc.cbegin(), bst_inc.cend(), [](const auto &ch0, const auto &ch1)
+                                                   { return ch0.second < ch1.second; })
+                                      ->first);
+            }
+
+            incs = get_incs(); // we get the new inconsistencies..
+            LOG_DEBUG("[" << slv.get_name() << "] Found " << incs.size() << " inconsistencies");
+        }
+
+        LOG_DEBUG("[" << slv.get_name() << "] Inconsistencies solved");
+    }
+
+    std::vector<std::vector<std::pair<utils::lit, double>>> graph::get_incs() const noexcept
+    {
+        std::vector<std::vector<std::pair<utils::lit, double>>> incs;
+        for (const auto &st : smart_types)
+        {
+            auto st_incs = st->get_current_incs();
+            incs.insert(incs.end(), st_incs.begin(), st_incs.end());
+        }
+        return incs;
+    }
+
+    void graph::reset_smart_types() noexcept
+    {
+        // we reset the smart types..
+        smart_types.clear();
+        // we seek for the existing smart types..
+        std::queue<riddle::component_type *> q;
+        for (const auto &t : slv.get_types())
+            if (auto ct = dynamic_cast<riddle::component_type *>(&t.get()))
+                q.push(ct);
+        while (!q.empty())
+        {
+            auto ct = q.front();
+            q.pop();
+            if (const auto st = dynamic_cast<smart_type *>(ct); st)
+                smart_types.emplace_back(st);
+            for (const auto &t : ct->get_types())
+                if (auto c_ct = dynamic_cast<riddle::component_type *>(&t.get()))
+                    q.push(c_ct);
+        }
     }
 
     void graph::expand_flaw(flaw &f)

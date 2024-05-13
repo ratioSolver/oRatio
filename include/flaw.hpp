@@ -153,7 +153,18 @@ namespace ratio
 
   std::string to_state(const flaw &f) noexcept;
 
-  const json::json flaw_schema = {{"flaw", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"causes", {{"type", "array"}, {"description", "The resolvers that caused this flaw."}, {"items", {{"type", "integer"}}}}}, {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}, {"phi", {{"type", "string"}}}, {"cost", {{"$ref", "#/components/schemas/rational"}}}, {"pos", {{"type", "integer"}}}, {"data", {{"type", "object"}}}}}, {"required", {"id", "causes", "state", "pos", "phi", "cost"}}}}};
+  const json::json flaw_schema{
+      {"flaw",
+       {{"type", "object"},
+        {"properties",
+         {{"id", {{"type", "integer"}}},
+          {"causes", {{"type", "array"}, {"description", "The resolvers that caused this flaw."}, {"items", {{"type", "integer"}}}}},
+          {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}},
+          {"phi", {{"type", "string"}}},
+          {"cost", {{"$ref", "#/components/schemas/rational"}}},
+          {"pos", {{"type", "integer"}}},
+          {"data", {{"type", "object"}}}}},
+        {"required", {"id", "causes", "state", "pos", "phi", "cost"}}}}};
 #endif
 
   /**

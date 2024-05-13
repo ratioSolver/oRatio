@@ -56,7 +56,7 @@ namespace ratio
             return "active";
         case utils::False:
             return "forbidden";
-        case utils::Undefined:
+        default:
             return "inactive";
         }
     }

@@ -13,6 +13,7 @@
 namespace ratio
 {
   class solver;
+  class graph;
   class atom;
   class resolver;
 
@@ -23,6 +24,7 @@ namespace ratio
   class smart_type : public riddle::component_type
   {
     friend class solver;
+    friend class graph;
 
   public:
     /**
