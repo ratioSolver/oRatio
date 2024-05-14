@@ -1,6 +1,7 @@
 # oRatio
 
 ![Build Status](https://github.com/ratioSolver/oRatio/actions/workflows/cmake.yml/badge.svg)
+[![codecov](https://codecov.io/gh/ratioSolver/oRatio/branch/master/graph/badge.svg)](https://codecov.io/gh/ratioSolver/oRatio)
 
 > Dum loquimur, fugerit invida aetas: carpe diem, quam minimum credula postero. (Orazio, Odi, I, 11, 7-8)
 
