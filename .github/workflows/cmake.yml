@@ -16,7 +16,7 @@ jobs:
         #deferrable_flaws: [ON, OFF]
         #graph_pruning: [ON, OFF]
         graph_refining: [ON, OFF]
-        #check_inconsistencies: [ON, OFF]
+        check_inconsistencies: [ON, OFF]
         #build_listeners: [ON, OFF]
 
     env:
@@ -26,7 +26,7 @@ jobs:
       #DEFERRABLE_FLAWS: ${{ matrix.deferrable_flaws }}
       #GRAPH_PRUNING: ${{ matrix.graph_pruning }}
       GRAPH_REFINING: ${{ matrix.graph_refining }}
-      #CHECK_INCONSISTENCIES: ${{ matrix.check_inconsistencies }}
+      CHECK_INCONSISTENCIES: ${{ matrix.check_inconsistencies }}
       #BUILD_LISTENERS: ${{ matrix.build_listeners }}
 
     steps:
@@ -42,11 +42,11 @@ jobs:
   
       - name: Configure CMake (Debug)
         if: matrix.build_type == 'Debug'
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -DGRAPH_REFINING=${{env.GRAPH_REFINING}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -DGRAPH_REFINING=${{env.GRAPH_REFINING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
   
       - name: Configure CMake
         if: matrix.build_type == 'Release'
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DGRAPH_REFINING=${{env.GRAPH_REFINING}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DGRAPH_REFINING=${{env.GRAPH_REFINING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
   
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}

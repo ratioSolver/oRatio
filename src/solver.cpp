@@ -52,7 +52,7 @@ namespace ratio
 
         if (!sat.propagate()) // we propagate the constraints..
             throw riddle::unsolvable_exception();
-        gr.reset_smart_types(); // we reset the smart types..
+        reset_smart_types(); // we reset the smart types..
 
         STATE_CHANGED();
     }
@@ -64,7 +64,7 @@ namespace ratio
 
         if (!sat.propagate()) // we propagate the constraints..
             throw riddle::unsolvable_exception();
-        gr.reset_smart_types(); // we reset the smart types..
+        reset_smart_types(); // we reset the smart types..
 
         STATE_CHANGED();
     }
@@ -110,7 +110,7 @@ namespace ratio
                 take_decision(r.get_rho());
             }
             // we solve all the current inconsistencies..
-            gr.solve_inconsistencies();
+            solve_inconsistencies();
         } while (gr.has_active_flaws());
 #endif
         LOG_DEBUG("[" << name << "] Problem solved");
@@ -436,6 +436,108 @@ namespace ratio
         assert(is_enum(expr));
         if (!ov.forbid(expr.get_value(), val))
             throw riddle::unsolvable_exception();
+    }
+
+    void solver::solve_inconsistencies()
+    {
+        LOG_DEBUG("[" << get_name() << "] Solving inconsistencies");
+
+        auto incs = get_incs(); // all the current inconsistencies..
+        LOG_DEBUG("[" << get_name() << "] Found " << incs.size() << " inconsistencies");
+
+        // we solve the inconsistencies..
+        while (!incs.empty())
+        {
+            if (const auto &uns_inc = std::find_if(incs.cbegin(), incs.cend(), [](const auto &v)
+                                                   { return v.empty(); });
+                uns_inc != incs.cend())
+            { // we have an unsolvable inconsistency..
+                LOG_DEBUG("[" << get_name() << "] Unsatisfiable inconsistency");
+                next(); // we move to the next state..
+            }
+            else
+            { // we check if we have a trivial inconsistencies..
+                std::vector<utils::lit> trivial;
+                for (const auto &inc : incs)
+                    if (inc.size() == 1)
+                        trivial.push_back(inc.front().first);
+                if (!trivial.empty()) // we have trivial inconsistencies. We can learn something from them..
+                    for (const auto &l : trivial)
+                    {
+                        LOG_DEBUG("[" << get_name() << "] Trivial inconsistency: " << to_string(l));
+                        assert(get_sat().value(l) == utils::Undefined);
+                        std::vector<utils::lit> learnt;
+                        learnt.push_back(l);
+                        for (const auto &l : get_sat().get_decisions())
+                            learnt.push_back(!l);
+                        gr.record(std::move(learnt));
+                        if (!get_sat().propagate())
+                            throw riddle::unsolvable_exception();
+                    }
+                else
+                { // we have a non-trivial inconsistencies, so we have to take a decision..
+                    std::vector<std::pair<utils::lit, double>> bst_inc;
+                    double k_inv = std::numeric_limits<double>::infinity();
+                    for (const auto &inc : incs)
+                    {
+                        double bst_commit = std::numeric_limits<double>::infinity();
+                        for ([[maybe_unused]] const auto &[choice, commit] : inc)
+                            if (commit < bst_commit)
+                                bst_commit = commit;
+                        double c_k_inv = 0;
+                        for ([[maybe_unused]] const auto &[choice, commit] : inc)
+                            c_k_inv += 1l / (1l + (commit - bst_commit));
+                        if (c_k_inv < k_inv)
+                        {
+                            k_inv = c_k_inv;
+                            bst_inc = inc;
+                        }
+                    }
+
+                    // we select the best choice (i.e. the least committing one) from those available for the best flaw..
+                    take_decision(std::min_element(bst_inc.cbegin(), bst_inc.cend(), [](const auto &ch0, const auto &ch1)
+                                                   { return ch0.second < ch1.second; })
+                                      ->first);
+                }
+            }
+
+            incs = get_incs(); // we get the new inconsistencies..
+            LOG_DEBUG("[" << get_name() << "] Found " << incs.size() << " inconsistencies");
+        }
+
+        LOG_DEBUG("[" << get_name() << "] Inconsistencies solved");
+    }
+
+    std::vector<std::vector<std::pair<utils::lit, double>>> solver::get_incs() const noexcept
+    {
+        std::vector<std::vector<std::pair<utils::lit, double>>> incs;
+        for (const auto &st : smart_types)
+        {
+            auto st_incs = st->get_current_incs();
+            incs.insert(incs.end(), st_incs.begin(), st_incs.end());
+        }
+        return incs;
+    }
+
+    void solver::reset_smart_types() noexcept
+    {
+        // we reset the smart types..
+        smart_types.clear();
+        // we seek for the existing smart types..
+        std::queue<riddle::component_type *> q;
+        for (const auto &t : get_types())
+            if (auto ct = dynamic_cast<riddle::component_type *>(&t.get()))
+                q.push(ct);
+        while (!q.empty())
+        {
+            auto ct = q.front();
+            q.pop();
+            if (const auto st = dynamic_cast<smart_type *>(ct); st)
+                smart_types.emplace_back(st);
+            for (const auto &t : ct->get_types())
+                if (auto c_ct = dynamic_cast<riddle::component_type *>(&t.get()))
+                    q.push(c_ct);
+        }
     }
 
     std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, const std::string &name) noexcept { return enm.get(name); }

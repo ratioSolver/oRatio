@@ -127,6 +127,33 @@ namespace ratio
     [[nodiscard]] bool assign(const riddle::enum_item &expr, utils::enum_val &val) override;
     void forbid(const riddle::enum_item &expr, utils::enum_val &val) override;
 
+  private:
+    /**
+     * @brief Solves inconsistencies in the system.
+     *
+     * This function is responsible for resolving any inconsistencies that may exist in the system.
+     */
+    void solve_inconsistencies();
+
+    /**
+     * @brief Get the current inconsistencies of the solver.
+     *
+     * This function returns the current inconsistencies of the solver.
+     * The inconsistencies are represented as a vector of vectors of pairs of literals and doubles.
+     * Each vector of pairs represents a possible decision which can be taken to resolve the inconsistency.
+     * The pairs represent the literals and the costs of the literals.
+     *
+     * @return std::vector<std::vector<std::pair<utils::lit, double>>> The current inconsistencies of the solver.
+     */
+    [[nodiscard]] std::vector<std::vector<std::pair<utils::lit, double>>> get_incs() const noexcept;
+
+    /**
+     * @brief Resets the smart types.
+     *
+     * This function resets the smart types used by the solver.
+     */
+    void reset_smart_types() noexcept;
+
 #ifdef ENABLE_VISUALIZATION
     /**
      * @brief This function is called when the state of the solver changes.
@@ -256,13 +283,15 @@ namespace ratio
     [[nodiscard]] std::shared_ptr<riddle::item> get(riddle::enum_item &enm, const std::string &name) noexcept override;
 
   private:
-    const std::string name;    // the name of the solver
-    semitone::sat_core sat;    // the SAT core
-    semitone::lra_theory &lra; // the linear real arithmetic theory
-    semitone::idl_theory &idl; // the integer difference logic theory
-    semitone::rdl_theory &rdl; // the real difference logic theory
-    semitone::ov_theory &ov;   // the object variable theory
-    graph &gr;                 // the causal graph
+    const std::string name;                // the name of the solver
+    semitone::sat_core sat;                // the SAT core
+    semitone::lra_theory &lra;             // the linear real arithmetic theory
+    semitone::idl_theory &idl;             // the integer difference logic theory
+    semitone::rdl_theory &rdl;             // the real difference logic theory
+    semitone::ov_theory &ov;               // the object variable theory
+    graph &gr;                             // the causal graph
+    std::vector<smart_type *> smart_types; // the smart-types
+
 #ifdef ENABLE_VISUALIZATION
     std::unordered_map<const flaw *, std::unique_ptr<flaw_listener>> flaw_listeners;
     std::unordered_map<const resolver *, std::unique_ptr<resolver_listener>> resolver_listeners;
