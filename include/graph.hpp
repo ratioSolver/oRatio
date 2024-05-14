@@ -12,6 +12,13 @@ namespace ratio
 {
   class smart_type;
 
+  /**
+   * @brief Defines the causal graph for representing flaws and resolvers.
+   *
+   * The graph class is responsible for managing the flaws and resolvers in the system.
+   * It provides functions to create new flaws and resolvers, establish causal links between them,
+   * and retrieve information about the flaws and resolvers in the graph.
+   */
   class graph : public semitone::theory
   {
     friend class smart_type;
@@ -227,10 +234,152 @@ namespace ratio
 #ifdef ENABLE_VISUALIZATION
   json::json to_json(const graph &rhs) noexcept;
 
+  /**
+   * \brief Creates a JSON message representing a graph.
+   *
+   * This function takes a graph object and converts it into a JSON message.
+   * The resulting JSON message includes the graph data as well as a type field
+   * indicating that it represents a graph.
+   *
+   * \param g The graph object to be converted.
+   * \return A JSON message representing the graph.
+   */
   inline json::json make_graph_message(const graph &g) noexcept
   {
     json::json j = to_json(g);
     j["type"] = "graph";
+    return j;
+  }
+
+  /**
+   * Creates a JSON message indicating the creation of a new flaw.
+   *
+   * @param f The flaw object.
+   * @return A JSON object representing the flaw creation message.
+   */
+  inline json::json make_flaw_created_message(const flaw &f) noexcept
+  {
+    json::json j = to_json(f);
+    j["type"] = "flaw_created";
+    j["solver_id"] = get_id(f.get_solver());
+    return j;
+  }
+
+  /**
+   * @brief Creates a JSON message indicating a change in flaw state.
+   *
+   * @param f The flaw for which the state change message is being created.
+   * @return A JSON object representing the flaw state change message.
+   */
+  inline json::json make_flaw_state_changed_message(const flaw &f) noexcept
+  {
+    json::json j;
+    j["type"] = "flaw_state_changed";
+    j["flaw_id"] = get_id(f);
+    j["state"] = to_state(f);
+    return j;
+  }
+
+  /**
+   * @brief Creates a JSON message indicating a change in flaw cost.
+   *
+   * @param f The flaw for which the cost change message is being created.
+   * @return A JSON object representing the flaw cost change message.
+   */
+  inline json::json make_flaw_cost_changed_message(const flaw &f) noexcept
+  {
+    json::json j;
+    j["type"] = "flaw_cost_changed";
+    j["flaw_id"] = get_id(f);
+    j["cost"] = to_json(f.get_estimated_cost());
+    return j;
+  }
+
+  /**
+   * @brief Creates a JSON message indicating a change in flaw position.
+   *
+   * @param f The flaw for which the position change message is being created.
+   * @return A JSON object representing the flaw position change message.
+   */
+  inline json::json make_flaw_position_changed_message(const flaw &f) noexcept
+  {
+    json::json j;
+    j["type"] = "flaw_position_changed";
+    j["flaw_id"] = get_id(f);
+    j["position"] = f.get_solver().get_idl_theory().bounds(f.get_position()).first;
+    return j;
+  }
+
+  /**
+   * @brief Creates a JSON message indicating the current flaw.
+   *
+   * @param f The current flaw.
+   * @return A JSON object representing the current flaw message.
+   */
+  inline json::json make_current_flaw_message(const flaw &f) noexcept
+  {
+    json::json j;
+    j["type"] = "current_flaw";
+    j["flaw_id"] = get_id(f);
+    return j;
+  }
+
+  /**
+   * @brief Creates a JSON message indicating the creation of a new resolver.
+   *
+   * @param r The resolver object.
+   * @return A JSON object representing the resolver creation message.
+   */
+  inline json::json make_resolver_created_message(const resolver &r) noexcept
+  {
+    json::json j = to_json(r);
+    j["type"] = "resolver_created";
+    j["solver_id"] = get_id(r.get_flaw().get_solver());
+    return j;
+  }
+
+  /**
+   * @brief Creates a JSON message indicating a change in resolver state.
+   *
+   * @param r The resolver for which the state change message is being created.
+   * @return A JSON object representing the resolver state change message.
+   */
+  inline json::json make_resolver_state_changed_message(const resolver &r) noexcept
+  {
+    json::json j;
+    j["type"] = "resolver_state_changed";
+    j["resolver_id"] = get_id(r);
+    j["state"] = to_state(r);
+    return j;
+  }
+
+  /**
+   * @brief Creates a JSON message indicating the current resolver.
+   *
+   * @param r The current resolver.
+   * @return A JSON object representing the current resolver message.
+   */
+  inline json::json make_current_resolver_message(const resolver &r) noexcept
+  {
+    json::json j;
+    j["type"] = "current_resolver";
+    j["resolver_id"] = get_id(r);
+    return j;
+  }
+
+  /**
+   * @brief Creates a JSON message indicating the addition of a causal link between a flaw and a resolver.
+   *
+   * @param f The flaw for which the causal link was added.
+   * @param r The resolver for which the causal link was added.
+   * @return A JSON object representing the causal link added message.
+   */
+  inline json::json make_causal_link_added_message(const flaw &f, const resolver &r) noexcept
+  {
+    json::json j;
+    j["type"] = "causal_link_added";
+    j["flaw_id"] = get_id(f);
+    j["resolver_id"] = get_id(r);
     return j;
   }
 
