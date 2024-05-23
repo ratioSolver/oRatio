@@ -8,6 +8,16 @@
 #include "flaw.hpp"
 #include "resolver.hpp"
 
+#ifdef ENABLE_VISUALIZATION
+#define NEW_FLAW(f) slv.new_flaw(f)
+#define FLAW_COST_CHANGED(f) slv.flaw_cost_changed(f)
+#define NEW_RESOLVER(r) slv.new_resolver(r)
+#else
+#define NEW_FLAW(f)
+#define FLAW_COST_CHANGED(f)
+#define NEW_RESOLVER(r)
+#endif
+
 namespace ratio
 {
   class smart_type;
@@ -43,8 +53,21 @@ namespace ratio
       if (slv.get_sat().root_level())
       { // if we are at root-level, we initialize the flaw and add it to the flaw queue for future expansion..
         f->init();
-        phis[variable(f->get_phi())].push_back(std::unique_ptr<flaw>(f));
+        NEW_FLAW(*f);
+        phis[variable(f->phi)].push_back(std::unique_ptr<flaw>(f));
         flaw_q.push_back(*f); // we add the flaw to the flaw queue..
+
+        switch (get_sat().value(f->phi))
+        {
+        case utils::True: // we have a top-level (a landmark) flaw..
+          if (std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
+                           { return get_sat().value(r.get().rho) == utils::True; })) // the flaw has not yet already been solved (e.g. it has a single resolver)..
+            active_flaws.insert(f);
+          break;
+        case utils::Undefined:    // we do not have a top-level (a landmark) flaw, nor an infeasible one..
+          bind(variable(f->phi)); // we listen for the flaw to become active..
+          break;
+        }
       }
       else // we add the flaw to the pending flaws..
         pending_flaws.push_back(std::unique_ptr<flaw>(f));
@@ -87,8 +110,12 @@ namespace ratio
     {
       static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
       auto r = new Tp(std::forward<Args>(args)...);
+      NEW_RESOLVER(*r);
       rhos[variable(r->get_rho())].push_back(std::unique_ptr<resolver>(r));
       r->get_flaw().resolvers.push_back(*r);
+
+      if (get_sat().value(r->rho) == utils::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
+        bind(variable(r->rho));                        // we listen for the resolver to become inactive..
       return *r;
     }
 
@@ -175,6 +202,16 @@ namespace ratio
      */
     void add_layer();
 
+    /**
+     * @brief Computes the cost of the given flaw.
+     *
+     * The cost of a flaw is the cost of the best resolver that can solve it.
+     * If the cost of the flaw changes, the function stores the old cost for backtracking and propagates the cost to the graph.
+     *
+     * @param f The flaw for which the cost is to be computed.
+     */
+    void compute_flaw_cost(flaw &f) noexcept;
+
   protected:
     /**
      * @brief Enqueues the given flaw in the graph.
@@ -227,6 +264,7 @@ namespace ratio
     utils::lit tmp_ni;                                                              // the temporary controlling literal, used for restoring the controlling literal..
     utils::lit ni{utils::TRUE_lit};                                                 // the current controlling literal..
     std::deque<std::reference_wrapper<flaw>> flaw_q;                                // the flaw queue (for the graph building procedure)..
+    std::unordered_set<flaw *> visited;                                             // the visited flaws, for graph cost propagation (and deferrable flaws check)..
     std::unordered_set<flaw *> active_flaws;                                        // the currently active flaws..
     VARIABLE_TYPE gamma;                                                            // the variable representing the validity of this graph..
   };
@@ -275,7 +313,8 @@ namespace ratio
   {
     json::json j;
     j["type"] = "flaw_state_changed";
-    j["flaw_id"] = get_id(f);
+    j["solver_id"] = get_id(f.get_solver());
+    j["id"] = get_id(f);
     j["state"] = to_state(f);
     return j;
   }
@@ -290,7 +329,8 @@ namespace ratio
   {
     json::json j;
     j["type"] = "flaw_cost_changed";
-    j["flaw_id"] = get_id(f);
+    j["solver_id"] = get_id(f.get_solver());
+    j["id"] = get_id(f);
     j["cost"] = to_json(f.get_estimated_cost());
     return j;
   }
@@ -305,7 +345,8 @@ namespace ratio
   {
     json::json j;
     j["type"] = "flaw_position_changed";
-    j["flaw_id"] = get_id(f);
+    j["solver_id"] = get_id(f.get_solver());
+    j["id"] = get_id(f);
     j["position"] = f.get_solver().get_idl_theory().bounds(f.get_position()).first;
     return j;
   }
@@ -320,7 +361,8 @@ namespace ratio
   {
     json::json j;
     j["type"] = "current_flaw";
-    j["flaw_id"] = get_id(f);
+    j["solver_id"] = get_id(f.get_solver());
+    j["id"] = get_id(f);
     return j;
   }
 
@@ -348,7 +390,8 @@ namespace ratio
   {
     json::json j;
     j["type"] = "resolver_state_changed";
-    j["resolver_id"] = get_id(r);
+    j["solver_id"] = get_id(r.get_flaw().get_solver());
+    j["id"] = get_id(r);
     j["state"] = to_state(r);
     return j;
   }
@@ -363,7 +406,8 @@ namespace ratio
   {
     json::json j;
     j["type"] = "current_resolver";
-    j["resolver_id"] = get_id(r);
+    j["solver_id"] = get_id(r.get_flaw().get_solver());
+    j["id"] = get_id(r);
     return j;
   }
 
@@ -378,6 +422,7 @@ namespace ratio
   {
     json::json j;
     j["type"] = "causal_link_added";
+    j["solver_id"] = get_id(f.get_solver());
     j["flaw_id"] = get_id(f);
     j["resolver_id"] = get_id(r);
     return j;
@@ -412,7 +457,8 @@ namespace ratio
         {{"type", "object"},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"flaw_state_changed"}}}},
-           {"flaw_id", {{"type", "integer"}}},
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
+           {"id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
            {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}}}}}}};
 
   const json::json flaw_cost_changed_message{
@@ -421,7 +467,8 @@ namespace ratio
         {{"type", "object"},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"flaw_cost_changed"}}}},
-           {"flaw_id", {{"type", "integer"}}},
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
+           {"id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
            {"cost", {{"$ref", "#/components/schemas/rational"}}}}}}}}};
 
   const json::json flaw_position_changed_message{
@@ -430,7 +477,8 @@ namespace ratio
         {{"type", "object"},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"flaw_position_changed"}}}},
-           {"flaw_id", {{"type", "integer"}}},
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
+           {"id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
            {"position", {{"type", "integer"}}}}}}}}};
 
   const json::json current_flaw_message{
@@ -439,7 +487,8 @@ namespace ratio
         {{"type", "object"},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"current_flaw"}}}},
-           {"flaw_id", {{"type", "integer"}}}}}}}}};
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
+           {"id", {{"type", "integer"}, {"description", "The ID of the flaw"}}}}}}}}};
 
   const json::json resolver_created_message{
       {"resolver_created_message",
@@ -456,7 +505,8 @@ namespace ratio
         {{"type", "object"},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"resolver_state_changed"}}}},
-           {"resolver_id", {{"type", "integer"}}},
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
+           {"id", {{"type", "integer"}, {"description", "The ID of the resolver"}}},
            {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}}}}}}};
 
   const json::json current_resolver_message{
@@ -465,7 +515,8 @@ namespace ratio
         {{"type", "object"},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"current_resolver"}}}},
-           {"resolver_id", {{"type", "integer"}}}}}}}}};
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
+           {"id", {{"type", "integer"}, {"description", "The ID of the resolver"}}}}}}}}};
 
   const json::json causal_link_added_message{
       {"causal_link_added_message",
@@ -473,8 +524,9 @@ namespace ratio
         {{"type", "object"},
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"causal_link_added"}}}},
-           {"flaw_id", {{"type", "integer"}}},
-           {"resolver_id", {{"type", "integer"}}}}}}}}};
+           {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
+           {"flaw_id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
+           {"resolver_id", {{"type", "integer"}, {"description", "The ID of the resolver"}}}}}}}}};
 
   const json::json graph_message{
       {"graph_message",

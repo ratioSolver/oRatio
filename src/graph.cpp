@@ -39,8 +39,7 @@ namespace ratio
 
         do
         {
-            while (std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f)
-                               { return is_positive_infinite(f->get_estimated_cost()); }))
+            while (has_infinite_cost_active_flaws())
             {
                 if (flaw_q.empty())
                     throw riddle::unsolvable_exception();
@@ -50,14 +49,40 @@ namespace ratio
                     expand_flaw(f); // we expand the flaw..
                 flaw_q.pop_front(); // we remove the flaw from the flaw queue..
             }
-        } while (std::any_of(active_flaws.cbegin(), active_flaws.cend(), [](const auto &f)
-                             { return is_positive_infinite(f->get_estimated_cost()); }));
+        } while (has_infinite_cost_active_flaws());
     }
 
     void graph::add_layer()
     {
         LOG_DEBUG("[" << slv.get_name() << "] Adding a new layer");
         assert(get_sat().root_level());
+    }
+
+    void graph::compute_flaw_cost(flaw &f) noexcept
+    {
+        // the current flaw's cost..
+        auto c_cost = get_sat().value(f.get_phi()) == utils::False ? utils::rational::positive_infinite : f.get_best_resolver().get_estimated_cost();
+
+        if (f.get_estimated_cost() == c_cost)
+            return;                                 // the flaw's cost has not changed..
+        else if (visited.find(&f) != visited.end()) // we are in a cycle..
+        {
+            if (f.get_estimated_cost() == utils::rational::positive_infinite)
+                return; // nothing to propagate..
+            else
+                c_cost = utils::rational::positive_infinite;
+        }
+
+        if (!slv.trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
+            slv.trail.back().old_f_costs.emplace(&f, f.get_estimated_cost());
+        f.est_cost = c_cost;  // we update the flaw's cost..
+        FLAW_COST_CHANGED(f); // we notify the flaw's cost has changed..
+
+        visited.insert(&f); // we mark the flaw as visited..
+        for (const auto &r : f.supports)
+            if (get_sat().value(r.get().get_rho()) == utils::False)
+                compute_flaw_cost(r.get().get_flaw()); // we propagate the cost change to the resolvers..
+        visited.erase(&f);                             // we unmark the flaw..
     }
 
     void graph::expand_flaw(flaw &f)
@@ -125,21 +150,9 @@ namespace ratio
             c_res = std::nullopt; // we reset the resolver..
         }
 
-        // we bind the variables to the SMT theory..
-        switch (get_sat().value(f.get_phi()))
-        {
-        case utils::True: // we have a top-level (a landmark) flaw..
-            if (std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [this](const auto &r)
-                             { return get_sat().value(r.get().get_rho()) == utils::True; }))
-                active_flaws.insert(&f); // the flaw has not yet already been solved (e.g. it has a single resolver)..
-            break;
-        case utils::Undefined:           // we do not have a top-level (a landmark) flaw, nor an infeasible one..
-            bind(variable(f.get_phi())); // we listen for the flaw to become active..
-            break;
-        }
-        for (const auto &r : f.resolvers)
-            if (get_sat().value(r.get().get_rho()) == utils::Undefined)
-                bind(variable(r.get().get_rho())); // we listen for the resolver to become active..
+        // we compute the flaw's cost..
+        compute_flaw_cost(f);
+        assert(visited.empty());
     }
 
 #ifdef ENABLE_VISUALIZATION

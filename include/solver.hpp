@@ -45,6 +45,8 @@ namespace ratio
 
   class solver : public riddle::core
   {
+    friend class graph;
+
   public:
     solver(const std::string &name = "oRatio") noexcept;
     virtual ~solver() = default;
@@ -291,6 +293,19 @@ namespace ratio
     semitone::ov_theory &ov;               // the object variable theory
     graph &gr;                             // the causal graph
     std::vector<smart_type *> smart_types; // the smart-types
+
+    /**
+     * @brief Represents a layer in the solver.
+     *
+     * A layer contains information about the old estimated costs of flaws, the newly activated flaws, and the solved flaws.
+     */
+    struct layer
+    {
+      std::unordered_map<flaw *, utils::rational> old_f_costs; // the old estimated flaws` costs..
+      std::unordered_set<flaw *> new_flaws;                    // the just activated flaws..
+      std::unordered_set<flaw *> solved_flaws;                 // the just solved flaws..
+    };
+    std::vector<layer> trail; // the list of taken decisions, with the associated changes made, in chronological order..
 
 #ifdef ENABLE_VISUALIZATION
     std::unordered_map<const flaw *, std::unique_ptr<flaw_listener>> flaw_listeners;

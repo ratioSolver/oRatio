@@ -27,7 +27,6 @@ namespace ratio
   class flaw
   {
     friend class graph;
-    friend class resolver;
 
   public:
     flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive = false) noexcept;
