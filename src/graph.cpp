@@ -150,6 +150,9 @@ namespace ratio
             c_res = std::nullopt; // we reset the resolver..
         }
 
+        if (!get_sat().propagate())
+            throw riddle::unsolvable_exception();
+
         // we compute the flaw's cost..
         compute_flaw_cost(f);
         assert(visited.empty());
