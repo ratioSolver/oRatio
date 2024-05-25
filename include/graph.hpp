@@ -267,6 +267,19 @@ namespace ratio
     std::unordered_set<flaw *> visited;                                             // the visited flaws, for graph cost propagation (and deferrable flaws check)..
     std::unordered_set<flaw *> active_flaws;                                        // the currently active flaws..
     VARIABLE_TYPE gamma;                                                            // the variable representing the validity of this graph..
+
+    /**
+     * @brief Represents a layer in the solver.
+     *
+     * A layer contains information about the old estimated costs of flaws, the newly activated flaws, and the solved flaws.
+     */
+    struct layer
+    {
+      std::unordered_map<flaw *, utils::rational> old_f_costs; // the old estimated flaws` costs..
+      std::unordered_set<flaw *> new_flaws;                    // the just activated flaws..
+      std::unordered_set<flaw *> solved_flaws;                 // the just solved flaws..
+    };
+    std::vector<layer> trail; // the list of taken decisions, with the associated changes made, in chronological order..
   };
 
 #ifdef ENABLE_VISUALIZATION

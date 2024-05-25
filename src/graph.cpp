@@ -73,8 +73,8 @@ namespace ratio
                 c_cost = utils::rational::positive_infinite;
         }
 
-        if (!slv.trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
-            slv.trail.back().old_f_costs.emplace(&f, f.get_estimated_cost());
+        if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
+            trail.back().old_f_costs.emplace(&f, f.get_estimated_cost());
         f.est_cost = c_cost;  // we update the flaw's cost..
         FLAW_COST_CHANGED(f); // we notify the flaw's cost has changed..
 
