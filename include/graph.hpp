@@ -541,12 +541,12 @@ namespace ratio
            {"flaw_id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
            {"resolver_id", {{"type", "integer"}, {"description", "The ID of the resolver"}}}}}}}}};
 
-  const json::json graph_message{
+  const json::json solver_graph_message{
       {"graph_message",
        {"payload",
         {{"allOf", std::vector<json::json>{{"$ref", "#/components/schemas/solver_graph"}}},
          {"properties",
-          {{"type", {{"type", "string"}, {"enum", {"graph"}}}},
+          {{"type", {{"type", "string"}, {"enum", {"solver_graph"}}}},
            {"id", {{"type", "integer"}, {"description", "The ID of the solver"}}}}}}}}};
 #endif
 } // namespace ratio
