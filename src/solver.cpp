@@ -755,7 +755,7 @@ namespace ratio
         }
         else
         {
-            j_val["type"] = "object";
+            j_val["type"] = "item";
             j_val["val"] = get_id(itm);
             return j_val;
         }

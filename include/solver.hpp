@@ -395,7 +395,7 @@ namespace ratio
                                                 {"$ref", "#/components/schemas/time_value"},
                                                 {"$ref", "#/components/schemas/string_value"},
                                                 {"$ref", "#/components/schemas/enum_value"},
-                                                {"$ref", "#/components/schemas/object_value"}}}}}};
+                                                {"$ref", "#/components/schemas/item_value"}}}}}};
   const json::json bool_value_schema{{"bool_value",
                                       {{"type", "object"},
                                        {"properties",
@@ -443,12 +443,12 @@ namespace ratio
                                          {"var", {{"type", "string"}}},
                                          {"vals", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}},
                                        {"required", {"type", "var", "vals"}}}}};
-  const json::json object_value_schema{{"object_value",
-                                        {{"type", "object"},
-                                         {"properties",
-                                          {{"type", {{"type", "string"}, {"enum", {"object"}}}},
-                                           {"val", {{"type", "integer"}}}}},
-                                         {"required", std::vector<json::json>{"type", "val"}}}}};
+  const json::json item_value_schema{{"item_value",
+                                      {{"type", "object"},
+                                       {"properties",
+                                        {{"type", {{"type", "string"}, {"enum", {"item"}}}},
+                                         {"val", {{"type", "integer"}}}}},
+                                       {"required", std::vector<json::json>{"type", "val"}}}}};
   const json::json item_schema{{"item",
                                 {{"type", "object"},
                                  {"properties",
