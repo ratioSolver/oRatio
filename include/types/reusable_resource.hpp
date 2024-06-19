@@ -137,7 +137,7 @@ namespace ratio
   };
 
 #ifdef ENABLE_VISUALIZATION
-  const json::json reusable_resource_timeline_value_schema{{"reusable_resource_timeline_value", {{"type", "object"}, {"properties", {{"from", {{"$ref", "#/components/schemas/rational"}}}, {"to", {{"$ref", "#/components/schemas/rational"}}}, {"usage", {{"$ref", "#/components/schemas/rational"}}}, {"atoms", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"from", "to", "usage"}}}}};
-  const json::json reusable_resource_timeline_schema{{"reusable_resource_timeline", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"ReusableResource"}}}}, {"name", {{"type", "string"}}}, {"capacity", {{"$ref", "#/components/schemas/rational"}}}, {"values", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/reusable_resource_timeline_value"}}}}}}}, {"required", {"id", "type", "name", "capacity"}}}}};
+  const json::json reusable_resource_timeline_value_schema{{"reusable_resource_timeline_value", {{"type", "object"}, {"properties", {{"from", {{"$ref", "#/components/schemas/inf_rational"}}}, {"to", {{"$ref", "#/components/schemas/inf_rational"}}}, {"usage", {{"$ref", "#/components/schemas/inf_rational"}}}, {"atoms", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"from", "to", "usage"}}}}};
+  const json::json reusable_resource_timeline_schema{{"reusable_resource_timeline", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"ReusableResource"}}}}, {"name", {{"type", "string"}}}, {"capacity", {{"$ref", "#/components/schemas/inf_rational"}}}, {"values", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/reusable_resource_timeline_value"}}}}}}}, {"required", {"id", "type", "name", "capacity"}}}}};
 #endif
 } // namespace ratio
