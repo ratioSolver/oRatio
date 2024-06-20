@@ -9,13 +9,19 @@
 #include "resolver.hpp"
 
 #ifdef ENABLE_VISUALIZATION
-#define NEW_FLAW(f) slv.new_flaw(f)
+#define NEW_FLAW(f) slv.flaw_created(f)
+#define FLAW_STATE_CHANGED(f) slv.flaw_state_changed(f)
 #define FLAW_COST_CHANGED(f) slv.flaw_cost_changed(f)
-#define NEW_RESOLVER(r) slv.new_resolver(r)
+#define FLAW_POSITION_CHANGED(f) slv.flaw_position_changed(f)
+#define NEW_RESOLVER(r) slv.resolver_created(r)
+#define RESOLVER_STATE_CHANGED(r) slv.resolver_state_changed(r)
 #else
 #define NEW_FLAW(f)
+#define FLAW_STATE_CHANGED(f)
 #define FLAW_COST_CHANGED(f)
+#define FLAW_POSITION_CHANGED(f)
 #define NEW_RESOLVER(r)
+#define RESOLVER_STATE_CHANGED(r)
 #endif
 
 namespace ratio
@@ -57,17 +63,10 @@ namespace ratio
         phis[variable(f->phi)].push_back(std::unique_ptr<flaw>(f));
         flaw_q.push_back(*f); // we add the flaw to the flaw queue..
 
-        switch (get_sat().value(f->phi))
-        {
-        case utils::True: // we have a top-level (a landmark) flaw..
-          if (std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [this](const auto &r)
-                           { return get_sat().value(r.get().rho) == utils::True; })) // the flaw has not yet already been solved (e.g. it has a single resolver)..
-            active_flaws.insert(f);
-          break;
-        case utils::Undefined:    // we do not have a top-level (a landmark) flaw, nor an infeasible one..
+        if (get_sat().value(f->phi) == utils::True)
+          active_flaws.insert(f); // the flaw is already active..
+        else
           bind(variable(f->phi)); // we listen for the flaw to become active..
-          break;
-        }
       }
       else // we add the flaw to the pending flaws..
         pending_flaws.push_back(std::unique_ptr<flaw>(f));
@@ -114,8 +113,15 @@ namespace ratio
       rhos[variable(r->get_rho())].push_back(std::unique_ptr<resolver>(r));
       r->get_flaw().resolvers.push_back(*r);
 
-      if (get_sat().value(r->rho) == utils::Undefined) // we do not have a top-level (a landmark) resolver, nor an infeasible one..
-        bind(variable(r->rho));                        // we listen for the resolver to become inactive..
+      switch (get_sat().value(r->rho))
+      {
+      case utils::True: // we have a top-level (a landmark) resolver..
+        active_flaws.erase(&r->get_flaw());
+        break;
+      case utils::Undefined:    // we do not have a top-level (a landmark) resolver, nor an infeasible one..
+        bind(variable(r->rho)); // we listen for the resolver to become active..
+        break;
+      }
       return *r;
     }
 

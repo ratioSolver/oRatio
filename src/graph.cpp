@@ -75,8 +75,9 @@ namespace ratio
 
         if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
             trail.back().old_f_costs.emplace(&f, f.get_estimated_cost());
-        f.est_cost = c_cost;  // we update the flaw's cost..
-        FLAW_COST_CHANGED(f); // we notify the flaw's cost has changed..
+        f.est_cost = c_cost;      // we update the flaw's cost..
+        FLAW_COST_CHANGED(f);     // we notify the flaw's cost has changed..
+        FLAW_POSITION_CHANGED(f); // we notify the flaw's position has changed..
 
         visited.insert(&f); // we mark the flaw as visited..
         for (const auto &r : f.supports)
@@ -153,6 +154,10 @@ namespace ratio
         if (!get_sat().propagate())
             throw riddle::unsolvable_exception();
 
+        if (get_sat().value(f.phi) == utils::True && std::none_of(f.resolvers.cbegin(), f.resolvers.cend(), [this](const auto &r)
+                                                                  { return get_sat().value(r.get().rho) == utils::True; }))
+            active_flaws.insert(&f); // the flaw is active and no resolver is active..
+
         // we compute the flaw's cost..
         compute_flaw_cost(f);
         assert(visited.empty());
@@ -165,6 +170,8 @@ namespace ratio
 
         if (auto phi_it = phis.find(variable(p)); phi_it != phis.end()) // some flaws' state has changed..
             for (const auto &f : phi_it->second)
+            {
+                FLAW_STATE_CHANGED(*f); // we notify the flaw's state has changed..
                 if (sign(p) == sign(f->get_phi()))
                 { // the flaw is activated..
                     assert(get_sat().value(f->phi) == utils::True);
@@ -183,9 +190,12 @@ namespace ratio
                     assert(!active_flaws.count(&*f));
                     compute_flaw_cost(*f); // we compute the flaw's cost (i.e., infinite) and propagate it through the graph..
                 }
+            }
 
         if (auto rho_it = rhos.find(variable(p)); rho_it != rhos.end()) // some resolvers' state has changed..
             for (const auto &r : rho_it->second)
+            {
+                RESOLVER_STATE_CHANGED(*r); // we notify the resolver's state has changed..
                 if (sign(p) == sign(r->get_rho()))
                 { // the resolver is activated..
                     assert(get_sat().value(r->rho) == utils::True);
@@ -194,6 +204,7 @@ namespace ratio
                 }
                 else // the resolver is negated..
                     assert(get_sat().value(r->rho) == utils::False);
+            }
 
         return true;
     }

@@ -165,33 +165,6 @@ namespace ratio
      * @note This is a virtual function and can be overridden by derived classes.
      */
     virtual void state_changed() {}
-
-  private:
-    class flaw_listener final : public semitone::sat_value_listener, public semitone::idl_value_listener
-    {
-    public:
-      flaw_listener(const flaw &f) noexcept : f(f)
-      {
-        f.get_solver().get_sat().add_listener(*this);
-        listen_sat(variable(f.get_phi()));
-        f.get_solver().get_idl_theory().add_listener(*this);
-        listen_idl(f.get_position());
-      }
-
-    private:
-      void on_sat_value_changed(VARIABLE_TYPE) override { f.get_solver().flaw_state_changed(f); }
-      void on_idl_value_changed(VARIABLE_TYPE) override { f.get_solver().flaw_position_changed(f); }
-
-    private:
-      const flaw &f;
-    };
-
-    void new_flaw(const flaw &f)
-    {
-      flaw_listeners.emplace(&f, std::make_unique<flaw_listener>(f));
-      flaw_created(f);
-    }
-
     /**
      * @brief Notifies when a flaw has been created.
      *
@@ -232,24 +205,6 @@ namespace ratio
      * @param flaw The current flaw.
      */
     virtual void current_flaw(const flaw &) {}
-
-    class resolver_listener final : public semitone::sat_value_listener
-    {
-    public:
-      resolver_listener(const resolver &r) noexcept : r(r) {}
-
-    private:
-      void on_sat_value_changed(VARIABLE_TYPE) override { r.get_flaw().get_solver().resolver_state_changed(r); }
-
-    private:
-      const resolver &r;
-    };
-
-    void new_resolver(const resolver &r)
-    {
-      resolver_listeners.emplace(&r, std::make_unique<resolver_listener>(r));
-      resolver_created(r);
-    }
 
     /**
      * @brief Notifies when a resolver has been created.
@@ -299,11 +254,6 @@ namespace ratio
     semitone::ov_theory &ov;               // the object variable theory
     graph &gr;                             // the causal graph
     std::vector<smart_type *> smart_types; // the smart-types
-
-#ifdef ENABLE_VISUALIZATION
-    std::unordered_map<const flaw *, std::unique_ptr<flaw_listener>> flaw_listeners;
-    std::unordered_map<const resolver *, std::unique_ptr<resolver_listener>> resolver_listeners;
-#endif
   };
 
   /**
