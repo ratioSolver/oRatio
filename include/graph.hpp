@@ -249,7 +249,7 @@ namespace ratio
     void restore_ni() noexcept { ni = tmp_ni; }
 
   private:
-    bool propagate(const utils::lit &) noexcept override { return true; }
+    bool propagate(const utils::lit &p) noexcept override;
     bool check() noexcept override { return true; }
     void push() noexcept override {}
     void pop() noexcept override {}

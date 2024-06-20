@@ -158,6 +158,46 @@ namespace ratio
         assert(visited.empty());
     }
 
+    bool graph::propagate(const utils::lit &p) noexcept
+    {
+        assert(cnfl.empty());
+        assert(phis.count(variable(p)) || rhos.count(variable(p)));
+
+        if (auto phi_it = phis.find(variable(p)); phi_it != phis.end()) // some flaws' state has changed..
+            for (const auto &f : phi_it->second)
+                if (sign(p) == sign(f->get_phi()))
+                { // the flaw is activated..
+                    assert(get_sat().value(f->phi) == utils::True);
+                    assert(!active_flaws.count(&*f));
+                    if (!get_sat().root_level()) // we add the flaw to the new flaws..
+                        trail.back().new_flaws.emplace(&*f);
+                    if (std::none_of(f->resolvers.cbegin(), f->resolvers.cend(), [this](const auto &r)
+                                     { return get_sat().value(r.get().get_rho()) == utils::True; })) // the flaw is active..
+                        active_flaws.emplace(&*f);
+                    else if (!get_sat().root_level()) // the flaw has been (accidentally) solved..
+                        trail.back().solved_flaws.emplace(&*f);
+                }
+                else
+                { // the flaw is negated..
+                    assert(get_sat().value(f->phi) == utils::False);
+                    assert(!active_flaws.count(&*f));
+                    compute_flaw_cost(*f); // we compute the flaw's cost (i.e., infinite) and propagate it through the graph..
+                }
+
+        if (auto rho_it = rhos.find(variable(p)); rho_it != rhos.end()) // some resolvers' state has changed..
+            for (const auto &r : rho_it->second)
+                if (sign(p) == sign(r->get_rho()))
+                { // the resolver is activated..
+                    assert(get_sat().value(r->rho) == utils::True);
+                    if (active_flaws.erase(&r->get_flaw()) && !get_sat().root_level()) // the flaw has been solved..
+                        trail.back().solved_flaws.emplace(&r->get_flaw());
+                }
+                else // the resolver is negated..
+                    assert(get_sat().value(r->rho) == utils::False);
+
+        return true;
+    }
+
 #ifdef ENABLE_VISUALIZATION
     json::json to_json(const graph &rhs) noexcept
     {
