@@ -170,7 +170,13 @@ namespace ratio
     class flaw_listener final : public semitone::sat_value_listener, public semitone::idl_value_listener
     {
     public:
-      flaw_listener(const flaw &f) noexcept : f(f) {}
+      flaw_listener(const flaw &f) noexcept : f(f)
+      {
+        f.get_solver().get_sat().add_listener(*this);
+        listen_sat(variable(f.get_phi()));
+        f.get_solver().get_idl_theory().add_listener(*this);
+        listen_idl(f.get_position());
+      }
 
     private:
       void on_sat_value_changed(VARIABLE_TYPE) override { f.get_solver().flaw_state_changed(f); }
