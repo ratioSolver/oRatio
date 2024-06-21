@@ -44,6 +44,15 @@ namespace ratio
     graph(solver &slv) noexcept;
 
     /**
+     * @brief Returns a reference to the solver object.
+     *
+     * This function returns a reference to the solver object associated with the graph.
+     *
+     * @return A reference to the solver object.
+     */
+    [[nodiscard]] solver &get_solver() const noexcept { return slv; }
+
+    /**
      * @brief Creates a new flaw of the given type.
      *
      * @tparam Tp The type of the flaw to create.
@@ -292,19 +301,20 @@ namespace ratio
   json::json to_json(const graph &rhs) noexcept;
 
   /**
-   * \brief Creates a JSON message representing a graph.
+   * @brief Creates a JSON message representing a causal graph.
    *
    * This function takes a graph object and converts it into a JSON message.
    * The resulting JSON message includes the graph data as well as a type field
    * indicating that it represents a graph.
    *
-   * \param g The graph object to be converted.
-   * \return A JSON message representing the graph.
+   * @param g The graph object to be converted.
+   * @return A JSON message representing the graph.
    */
-  inline json::json make_graph_message(const graph &g) noexcept
+  inline json::json make_solver_graph_message(const graph &g) noexcept
   {
     json::json j = to_json(g);
-    j["type"] = "graph";
+    j["type"] = "solver_graph";
+    j["id"] = get_id(g.get_solver());
     return j;
   }
 
@@ -460,7 +470,6 @@ namespace ratio
             {"items", {{"$ref", "#/components/schemas/resolver"}}}}},
           {"current_resolver", {{"type", "integer"}}}}},
         {"required", std::vector<json::json>{"flaws", "resolvers"}}}}};
-
   const json::json flaw_created_message{
       {"flaw_created_message",
        {"payload",
@@ -469,7 +478,6 @@ namespace ratio
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"flaw_created"}}}},
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}}}}}}}};
-
   const json::json flaw_state_changed_message{
       {"flaw_state_changed_message",
        {"payload",
@@ -479,7 +487,6 @@ namespace ratio
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
            {"id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
            {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}}}}}}};
-
   const json::json flaw_cost_changed_message{
       {"flaw_cost_changed_message",
        {"payload",
@@ -489,7 +496,6 @@ namespace ratio
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
            {"id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
            {"cost", {{"$ref", "#/components/schemas/rational"}}}}}}}}};
-
   const json::json flaw_position_changed_message{
       {"flaw_position_changed_message",
        {"payload",
@@ -499,7 +505,6 @@ namespace ratio
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
            {"id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
            {"position", {{"type", "integer"}}}}}}}}};
-
   const json::json current_flaw_message{
       {"current_flaw_message",
        {"payload",
@@ -508,7 +513,6 @@ namespace ratio
           {{"type", {{"type", "string"}, {"enum", {"current_flaw"}}}},
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
            {"id", {{"type", "integer"}, {"description", "The ID of the flaw"}}}}}}}}};
-
   const json::json resolver_created_message{
       {"resolver_created_message",
        {"payload",
@@ -517,7 +521,6 @@ namespace ratio
          {"properties",
           {{"type", {{"type", "string"}, {"enum", {"resolver_created"}}}},
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}}}}}}}};
-
   const json::json resolver_state_changed_message{
       {"resolver_state_changed_message",
        {"payload",
@@ -527,7 +530,6 @@ namespace ratio
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
            {"id", {{"type", "integer"}, {"description", "The ID of the resolver"}}},
            {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}}}}}}};
-
   const json::json current_resolver_message{
       {"current_resolver_message",
        {"payload",
@@ -536,7 +538,6 @@ namespace ratio
           {{"type", {{"type", "string"}, {"enum", {"current_resolver"}}}},
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
            {"id", {{"type", "integer"}, {"description", "The ID of the resolver"}}}}}}}}};
-
   const json::json causal_link_added_message{
       {"causal_link_added_message",
        {"payload",
@@ -546,7 +547,6 @@ namespace ratio
            {"solver_id", {{"type", "integer"}, {"description", "The ID of the solver"}}},
            {"flaw_id", {{"type", "integer"}, {"description", "The ID of the flaw"}}},
            {"resolver_id", {{"type", "integer"}, {"description", "The ID of the resolver"}}}}}}}}};
-
   const json::json solver_graph_message{
       {"graph_message",
        {"payload",
