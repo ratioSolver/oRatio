@@ -150,7 +150,7 @@ namespace ratio
     std::shared_ptr<riddle::arith_item> solver::new_int() noexcept { return std::make_shared<riddle::arith_item>(get_int_type(), utils::lin(lra.new_var(), utils::rational::one)); }
     std::shared_ptr<riddle::arith_item> solver::new_real() noexcept { return std::make_shared<riddle::arith_item>(get_real_type(), utils::lin(lra.new_var(), utils::rational::one)); }
     std::shared_ptr<riddle::arith_item> solver::new_time() noexcept { return std::make_shared<riddle::arith_item>(get_time_type(), utils::lin(rdl.new_var(), utils::rational::one)); }
-    std::shared_ptr<riddle::enum_item> solver::new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) { return std::make_shared<riddle::enum_item>(tp, ov.new_var(std::move(values))); }
+    std::shared_ptr<riddle::enum_item> solver::new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) { return std::make_shared<riddle::enum_item>(tp, ov.new_var(std::move(values), false)); }
 
     std::shared_ptr<riddle::arith_item> solver::minus(const std::shared_ptr<riddle::arith_item> &xpr)
     {
