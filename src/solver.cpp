@@ -349,8 +349,8 @@ namespace ratio
             return true;
         else if (is_bool(*lhs) && is_bool(*rhs)) // we are comparing two boolean items..
         {
-            auto l = value(*std::static_pointer_cast<riddle::bool_item>(lhs));
-            auto r = value(*std::static_pointer_cast<riddle::bool_item>(rhs));
+            auto l = bool_value(*std::static_pointer_cast<riddle::bool_item>(lhs));
+            auto r = bool_value(*std::static_pointer_cast<riddle::bool_item>(rhs));
             return l == r || l == utils::Undefined || r == utils::Undefined;
         }
         else if (is_arith(*lhs) && is_arith(*rhs)) // we are comparing two arithmetic items..
@@ -399,7 +399,7 @@ namespace ratio
                 }
             }
             else
-                throw std::logic_error("Invalid comparison");
+                return false; // invalid comparison..
             return true;
         }
         else // the two items are different..
