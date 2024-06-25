@@ -111,6 +111,8 @@ namespace ratio
     [[nodiscard]] std::shared_ptr<riddle::bool_item> geq(const std::shared_ptr<riddle::arith_item> &lhs, const std::shared_ptr<riddle::arith_item> &rhs) override;
     [[nodiscard]] std::shared_ptr<riddle::bool_item> eq(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) override;
 
+    [[nodiscard]] bool matches(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) const noexcept override;
+
     [[nodiscard]] std::shared_ptr<riddle::bool_item> conj(const std::vector<std::shared_ptr<riddle::bool_item>> &exprs) override;
     [[nodiscard]] std::shared_ptr<riddle::bool_item> disj(const std::vector<std::shared_ptr<riddle::bool_item>> &exprs) override;
     [[nodiscard]] std::shared_ptr<riddle::bool_item> exct_one(const std::vector<std::shared_ptr<riddle::bool_item>> &exprs) override;

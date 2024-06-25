@@ -25,6 +25,7 @@ namespace ratio
     {
     public:
       activate_fact(atom_flaw &af);
+      activate_fact(atom_flaw &af, const utils::lit &rho);
 
       void apply() override;
 
@@ -37,6 +38,7 @@ namespace ratio
     {
     public:
       activate_goal(atom_flaw &af);
+      activate_goal(atom_flaw &af, const utils::lit &rho);
 
       void apply() override;
 
