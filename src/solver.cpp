@@ -420,7 +420,8 @@ namespace ratio
         lits.reserve(exprs.size());
         for (const auto &xpr : exprs)
             lits.push_back(xpr->get_value());
-        return std::make_shared<riddle::bool_item>(get_bool_type(), gr.new_flaw<disj_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), std::move(lits)).get_phi());
+        auto causes = gr.get_current_resolver() ? std::vector<std::reference_wrapper<resolver>>{gr.get_current_resolver().value().get()} : std::vector<std::reference_wrapper<resolver>>();
+        return std::make_shared<riddle::bool_item>(get_bool_type(), gr.new_flaw<disj_flaw>(*this, std::move(causes), std::move(lits)).get_phi());
     }
     std::shared_ptr<riddle::bool_item> solver::exct_one(const std::vector<std::shared_ptr<riddle::bool_item>> &exprs)
     {
@@ -428,7 +429,8 @@ namespace ratio
         lits.reserve(exprs.size());
         for (const auto &xpr : exprs)
             lits.push_back(xpr->get_value());
-        return std::make_shared<riddle::bool_item>(get_bool_type(), gr.new_flaw<disj_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), std::move(lits), true).get_phi());
+        auto causes = gr.get_current_resolver() ? std::vector<std::reference_wrapper<resolver>>{gr.get_current_resolver().value().get()} : std::vector<std::reference_wrapper<resolver>>();
+        return std::make_shared<riddle::bool_item>(get_bool_type(), gr.new_flaw<disj_flaw>(*this, std::move(causes), std::move(lits), true).get_phi());
     }
     std::shared_ptr<riddle::bool_item> solver::negate(const std::shared_ptr<riddle::bool_item> &expr) { return std::make_shared<riddle::bool_item>(get_bool_type(), !expr->get_value()); }
 
@@ -438,12 +440,17 @@ namespace ratio
             throw riddle::unsolvable_exception();
     }
 
-    void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept { gr.new_flaw<disjunction_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), std::move(disjuncts)); }
+    void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept
+    {
+        auto causes = gr.get_current_resolver() ? std::vector<std::reference_wrapper<resolver>>{gr.get_current_resolver().value().get()} : std::vector<std::reference_wrapper<resolver>>();
+        gr.new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
+    }
 
     std::shared_ptr<riddle::atom> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept
     {
         LOG_TRACE("Creating new " << pred.get_name() << " atom");
-        auto atm = gr.new_flaw<atom_flaw>(*this, std::vector<std::reference_wrapper<resolver>>(), is_fact, pred, std::move(arguments)).get_atom();
+        auto causes = gr.get_current_resolver() ? std::vector<std::reference_wrapper<resolver>>{gr.get_current_resolver().value().get()} : std::vector<std::reference_wrapper<resolver>>();
+        auto atm = gr.new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(arguments)).get_atom();
         // we check if we need to notify any smart types of the new goal..
         if (!is_core(atm->get_type().get_scope()))
         {

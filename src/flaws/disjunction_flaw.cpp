@@ -4,7 +4,7 @@
 
 namespace ratio
 {
-    disjunction_flaw::disjunction_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&conjs) noexcept : flaw(s, std::move(causes)), conjs(std::move(conjs)) { assert(!conjs.empty()); }
+    disjunction_flaw::disjunction_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&conjs) noexcept : flaw(s, std::move(causes)), conjs(std::move(conjs)) { assert(!this->conjs.empty()); }
 
     void disjunction_flaw::compute_resolvers()
     {
