@@ -265,9 +265,9 @@ namespace ratio
 
   private:
     bool propagate(const utils::lit &p) noexcept override;
-    bool check() noexcept override { return true; }
-    void push() noexcept override {}
-    void pop() noexcept override {}
+    bool check() noexcept override;
+    void push() noexcept override;
+    void pop() noexcept override;
 
   private:
     solver &slv;                                                                    // the solver this graph belongs to..

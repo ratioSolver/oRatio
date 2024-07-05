@@ -81,7 +81,7 @@ namespace ratio
 
         visited.insert(&f); // we mark the flaw as visited..
         for (const auto &r : f.supports)
-            if (get_sat().value(r.get().get_rho()) == utils::False)
+            if (get_sat().value(r.get().get_rho()) != utils::False)
                 compute_flaw_cost(r.get().get_flaw()); // we propagate the cost change to the resolvers..
         visited.erase(&f);                             // we unmark the flaw..
     }
@@ -207,6 +207,66 @@ namespace ratio
             }
 
         return true;
+    }
+
+    bool graph::check() noexcept
+    {                         // we check the graph for consistency..
+        assert(cnfl.empty()); // the conflict set should be empty..
+        assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
+                           { return get_sat().value(f->get_phi()) == utils::True; })); // all active flaws should be active..
+        assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &p)
+                           { return std::all_of(p.second.cbegin(), p.second.cend(), [this](const auto &f)
+                                                { return get_sat().value(f->get_phi()) != utils::False || is_positive_infinite(f->get_estimated_cost()); }); })); // all inactive flaws should have infinite cost..
+        assert(std::all_of(rhos.cbegin(), rhos.cend(), [this](const auto &p)
+                           { return std::all_of(p.second.cbegin(), p.second.cend(), [this](const auto &r)
+                                                { return get_sat().value(r->get_rho()) != utils::False || is_positive_infinite(r->get_estimated_cost()); }); })); // all inactive resolvers should have infinite cost..
+        return true;
+    }
+    void graph::push() noexcept
+    {
+        LOG_TRACE("[" << slv.get_name() << "] Pushing a new trail");
+        LOG_DEBUG("[" << slv.get_name() << "] " << std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+        trail.push_back({}); // we push a new trail..
+        assert(check());
+    }
+    void graph::pop() noexcept
+    {
+        LOG_TRACE("[" << slv.get_name() << "] Popping the current trail");
+        assert(cnfl.empty());
+        assert(!trail.empty());
+        auto &t = trail.back();
+        // we restore the previous state of the graph..
+        for (const auto &f : t.new_flaws)
+            active_flaws.erase(f); // we remove the new flaws..
+        for (const auto &f : t.solved_flaws)
+            active_flaws.insert(f); // we add the solved flaws..
+        for (const auto &[f, c] : t.old_f_costs)
+        {
+            f->est_cost = c; // we restore the flaws' costs..
+            FLAW_COST_CHANGED(*f);
+        }
+        trail.pop_back();
+        LOG_DEBUG("[" << slv.get_name() << "] " << std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+        assert(check());
+
+        if (trail.empty())
+        {
+            LOG_DEBUG("[" << slv.get_name() << "] Flushing " << std::to_string(pending_flaws.size()) << " pending flaws");
+            for (auto &f : pending_flaws)
+            {
+                auto &c_f = *f;
+                c_f.init();
+                NEW_FLAW(c_f);
+                phis[variable(c_f.get_phi())].push_back(std::move(f));
+                flaw_q.push_back(c_f); // we add the flaw to the flaw queue..
+
+                if (get_sat().value(c_f.phi) == utils::True)
+                    active_flaws.insert(&c_f); // the flaw is already active..
+                else
+                    bind(variable(c_f.phi)); // we listen for the flaw to become active..
+            }
+            pending_flaws.clear();
+        }
     }
 
 #ifdef ENABLE_VISUALIZATION
