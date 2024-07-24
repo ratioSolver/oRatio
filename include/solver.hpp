@@ -402,7 +402,7 @@ namespace ratio
                                          {"vals", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}},
                                        {"required", {"type", "var", "vals"}}}}};
   const json::json item_value_schema{{"item_value",
-                                      {{"type", "item"},
+                                      {{"type", "object"},
                                        {"properties",
                                         {{"type", {{"type", "string"}, {"enum", {"item"}}}},
                                          {"val", {{"type", "integer"}}}}},
