@@ -1,6 +1,9 @@
 #include <cassert>
 #include "consumable_resource.hpp"
 #include "solver.hpp"
+#ifdef ENABLE_API
+#include "solver_api.hpp"
+#endif
 
 namespace ratio
 {
@@ -54,7 +57,7 @@ namespace ratio
         listeners.push_back(std::move(listener));
     }
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json consumable_resource::extract() const noexcept
     {
         json::json tls(json::json_type::array);

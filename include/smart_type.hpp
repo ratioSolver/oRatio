@@ -6,10 +6,6 @@
 #include "rdl_value_listener.hpp"
 #include "ov_value_listener.hpp"
 
-#ifdef ENABLE_VISUALIZATION
-#include "json.hpp"
-#endif
-
 namespace ratio
 {
   class solver;

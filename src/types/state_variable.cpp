@@ -3,6 +3,9 @@
 #include "state_variable.hpp"
 #include "graph.hpp"
 #include "combinations.hpp"
+#ifdef ENABLE_API
+#include "solver_api.hpp"
+#endif
 
 namespace ratio
 {
@@ -133,7 +136,7 @@ namespace ratio
         listeners.push_back(std::move(listener));
     }
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json state_variable::extract() const noexcept
     {
         json::json tls(json::json_type::array);
@@ -212,19 +215,19 @@ namespace ratio
     state_variable::sv_flaw::sv_flaw(state_variable &sv, const std::set<atom *> &mcs) : flaw(sv.get_solver(), smart_type::get_resolvers(mcs)), sv(sv), mcs(mcs) {}
     void state_variable::sv_flaw::compute_resolvers() {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json state_variable::sv_flaw::get_data() const noexcept {}
 #endif
 
     state_variable::sv_flaw::order_resolver::order_resolver(sv_flaw &flw, const utils::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::zero), before(before), after(after) {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json state_variable::sv_flaw::order_resolver::get_data() const noexcept {}
 #endif
 
     state_variable::sv_flaw::forbid_resolver::forbid_resolver(sv_flaw &flw, const utils::lit &r, atom &atm, riddle::component &itm) : resolver(flw, r, utils::rational::zero), atm(atm), itm(itm) {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json state_variable::sv_flaw::forbid_resolver::get_data() const noexcept {}
 #endif
 

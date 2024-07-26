@@ -96,7 +96,7 @@ namespace ratio
             throw riddle::unsolvable_exception();
     }
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json atom_flaw::get_data() const noexcept { return {{"type", "atom_flaw"}, {"atom", {{"id", get_id(*atm)}, {"is_fact", atm->is_fact()}, {"type", atm->get_type().get_name()}, {"sigma", variable(atm->get_sigma())}}}}; }
 
     json::json atom_flaw::activate_fact::get_data() const noexcept { return {{"type", "activate_fact"}}; }

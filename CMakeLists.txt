@@ -30,9 +30,16 @@ endif()
 message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
-option(ENABLE_VISUALIZATION "Enable visualization features" OFF)
+option(ENABLE_API "oRatio API" OFF)
 
-add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp src/types/agent.cpp src/types/state_variable.cpp src/types/consumable_resource.cpp src/types/reusable_resource.cpp)
+set(ORATIO_SOURCES src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp src/types/agent.cpp src/types/state_variable.cpp src/types/consumable_resource.cpp src/types/reusable_resource.cpp)
+
+message(STATUS "oRatio API: ${ENABLE_API}")
+if(ENABLE_API)
+    list(APPEND ORATIO_SOURCES src/solver_api.cpp)
+endif()
+
+add_library(oRatioLib ${ORATIO_SOURCES})
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/types> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
@@ -60,9 +67,8 @@ if(CHECK_INCONSISTENCIES)
     target_compile_definitions(oRatioLib PRIVATE CHECK_INCONSISTENCIES)
 endif()
 
-message(STATUS "Enable oRatio visualization features: ${ENABLE_VISUALIZATION}")
-if(ENABLE_VISUALIZATION)
-    target_compile_definitions(oRatioLib PRIVATE ENABLE_VISUALIZATION)
+if(ENABLE_API)
+    target_compile_definitions(oRatioLib PRIVATE ENABLE_API)
 endif()
 
 add_executable(oRatio src/main.cpp)

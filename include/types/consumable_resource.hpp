@@ -18,7 +18,7 @@ namespace ratio
 
     void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept override;
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json extract() const noexcept override;
 #endif
 
@@ -44,9 +44,4 @@ namespace ratio
     std::map<atom *, std::map<atom *, utils::lit>> leqs;            // all the possible ordering constraints..
     std::map<atom *, std::map<utils::enum_val *, utils::lit>> frbs; // all the possible forbidding constraints..
   };
-
-#ifdef ENABLE_VISUALIZATION
-  const json::json consumable_resource_timeline_value_schema{{"consumable_resource_timeline_value", {{"type", "object"}, {"properties", {{"from", {{"$ref", "#/components/schemas/inf_rational"}}}, {"to", {{"$ref", "#/components/schemas/inf_rational"}}}, {"start", {{"$ref", "#/components/schemas/inf_rational"}}}, {"end", {{"$ref", "#/components/schemas/inf_rational"}}}, {"atoms", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"from", "to", "start", "end"}}}}};
-  const json::json consumable_resource_timeline_schema{{"consumable_resource_timeline", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"ConsumableResource"}}}}, {"name", {{"type", "string"}}}, {"capacity", {{"$ref", "#/components/schemas/inf_rational"}}}, {"initial_amount", {{"$ref", "#/components/schemas/inf_rational"}}}, {"values", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/consumable_resource_timeline_value"}}}}}}}, {"required", {"id", "type", "name", "capacity", "initial_amount"}}}}};
-#endif
 } // namespace ratio

@@ -22,12 +22,12 @@ namespace ratio
 
       void apply() override {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
       json::json get_data() const noexcept override;
 #endif
     };
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json get_data() const noexcept override;
 #endif
 

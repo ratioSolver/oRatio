@@ -19,7 +19,7 @@ namespace ratio
 
     void disjunction_flaw::choose_conjunction::apply() { conj.execute(); }
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json disjunction_flaw::get_data() const noexcept { return {{"type", "disjunction"}}; }
 
     json::json disjunction_flaw::choose_conjunction::get_data() const noexcept { return {{"type", "choose_conjunction"}}; }

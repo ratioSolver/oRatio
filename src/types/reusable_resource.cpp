@@ -2,6 +2,9 @@
 #include "reusable_resource.hpp"
 #include "graph.hpp"
 #include "combinations.hpp"
+#ifdef ENABLE_API
+#include "solver_api.hpp"
+#endif
 
 namespace ratio
 {
@@ -158,7 +161,7 @@ namespace ratio
         listeners.push_back(std::move(listener));
     }
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json reusable_resource::extract() const noexcept
     {
         json::json tls(json::json_type::array);
@@ -247,19 +250,19 @@ namespace ratio
     reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr, const std::set<atom *> &mcs) : flaw(rr.get_solver(), smart_type::get_resolvers(mcs)), rr(rr), mcs(mcs) {}
     void reusable_resource::rr_flaw::compute_resolvers() {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json reusable_resource::rr_flaw::get_data() const noexcept {}
 #endif
 
     reusable_resource::rr_flaw::order_resolver::order_resolver(rr_flaw &flw, const utils::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::zero), before(before), after(after) {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json reusable_resource::rr_flaw::order_resolver::get_data() const noexcept {}
 #endif
 
     reusable_resource::rr_flaw::forbid_resolver::forbid_resolver(rr_flaw &flw, const utils::lit &r, atom &atm, riddle::component &itm) : resolver(flw, r, utils::rational::zero), atm(atm), itm(itm) {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json reusable_resource::rr_flaw::forbid_resolver::get_data() const noexcept {}
 #endif
 

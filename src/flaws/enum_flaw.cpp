@@ -1,6 +1,9 @@
 #include <cassert>
 #include "enum_flaw.hpp"
 #include "graph.hpp"
+#ifdef ENABLE_API
+#include "solver_api.hpp"
+#endif
 
 namespace ratio
 {
@@ -21,7 +24,7 @@ namespace ratio
 
     enum_flaw::choose_value::choose_value(enum_flaw &bf, const utils::lit &rho, const utils::rational &cost, const utils::enum_val &val) : resolver(bf, rho, cost), val(val) {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json enum_flaw::get_data() const noexcept { return {{"type", "enum"}}; }
 
     json::json enum_flaw::choose_value::get_data() const noexcept

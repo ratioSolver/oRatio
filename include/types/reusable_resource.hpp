@@ -20,7 +20,7 @@ namespace ratio
 
     void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept override;
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json extract() const noexcept override;
 #endif
 
@@ -60,7 +60,7 @@ namespace ratio
          */
         order_resolver(rr_flaw &flw, const utils::lit &r, const atom &before, const atom &after);
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
         json::json get_data() const noexcept override;
 #endif
 
@@ -91,7 +91,7 @@ namespace ratio
          */
         forbid_resolver(rr_flaw &flw, const utils::lit &r, atom &atm, riddle::component &itm);
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
         json::json get_data() const noexcept override;
 #endif
 
@@ -103,7 +103,7 @@ namespace ratio
         riddle::component &itm; // applying the resolver will forbid the `atm` atom on this reusable resource..
       };
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
       json::json get_data() const noexcept override;
 #endif
 
@@ -135,9 +135,4 @@ namespace ratio
     std::map<atom *, std::map<atom *, utils::lit>> leqs;            // all the possible ordering constraints..
     std::map<atom *, std::map<utils::enum_val *, utils::lit>> frbs; // all the possible forbidding constraints..
   };
-
-#ifdef ENABLE_VISUALIZATION
-  const json::json reusable_resource_timeline_value_schema{{"reusable_resource_timeline_value", {{"type", "object"}, {"properties", {{"from", {{"$ref", "#/components/schemas/inf_rational"}}}, {"to", {{"$ref", "#/components/schemas/inf_rational"}}}, {"usage", {{"$ref", "#/components/schemas/inf_rational"}}}, {"atoms", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}}, {"required", {"from", "to", "usage"}}}}};
-  const json::json reusable_resource_timeline_schema{{"reusable_resource_timeline", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"type", {{"type", "string"}, {"enum", {"ReusableResource"}}}}, {"name", {{"type", "string"}}}, {"capacity", {{"$ref", "#/components/schemas/inf_rational"}}}, {"values", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/reusable_resource_timeline_value"}}}}}}}, {"required", {"id", "type", "name", "capacity"}}}}};
-#endif
 } // namespace ratio

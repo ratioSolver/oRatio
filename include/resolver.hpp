@@ -5,9 +5,8 @@
 #include "rational.hpp"
 #include "lit.hpp"
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
 #include "json.hpp"
-#include "bool.hpp"
 #endif
 
 namespace ratio
@@ -72,7 +71,7 @@ namespace ratio
      */
     virtual void apply() = 0;
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     /**
      * @brief Get a JSON representation of the data of the resolver.
      *
@@ -89,14 +88,6 @@ namespace ratio
     const utils::rational intrinsic_cost;                    // the intrinsic cost of the resolver..
     std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
-
-#ifdef ENABLE_VISUALIZATION
-  json::json to_json(const resolver &r) noexcept;
-
-  std::string to_state(const resolver &r) noexcept;
-
-  const json::json resolver_schema = {{"resolver", {{"type", "object"}, {"properties", {{"id", {{"type", "integer"}}}, {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}}, {"flaw", {{"type", "integer"}, {"description", "The flaw this resolver solves."}}}, {"preconditions", {{"type", "array"}, {"description", "The preconditions that must be satisfied for this resolver to be applied."}, {"items", {{"type", "integer"}}}}}, {"rho", {{"type", "string"}}}, {"intrinsic_cost", {{"$ref", "#/components/schemas/rational"}}}, {"pos", {{"type", "integer"}}}, {"data", {{"type", "object"}}}}}, {"required", {"id", "state", "flaw", "rho", "pos", "preconditions", "intrinsic_cost"}}}}};
-#endif
 
   /**
    * @brief Gets the unique identifier of the given resolver.

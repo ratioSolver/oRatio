@@ -32,29 +32,4 @@ namespace ratio
                                     .get_estimated_cost();
 #endif
     }
-
-#ifdef ENABLE_VISUALIZATION
-    json::json to_json(const resolver &r) noexcept
-    {
-        json::json j_r{{"id", get_id(r)}, {"state", to_state(r)}, {"flaw", get_id(r.get_flaw())}, {"rho", to_string(r.get_rho())}, {"intrinsic_cost", to_json(r.get_intrinsic_cost())}, {"data", r.get_data()}};
-        json::json preconditions(json::json_type::array);
-        for (const auto &p : r.get_preconditions())
-            preconditions.push_back(get_id(p.get()));
-        j_r["preconditions"] = std::move(preconditions);
-        return j_r;
-    }
-
-    std::string to_state(const resolver &r) noexcept
-    {
-        switch (r.get_flaw().get_solver().get_sat().value(r.get_rho()))
-        {
-        case utils::True:
-            return "active";
-        case utils::False:
-            return "forbidden";
-        default:
-            return "inactive";
-        }
-    }
-#endif
 } // namespace ratio

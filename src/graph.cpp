@@ -268,24 +268,4 @@ namespace ratio
             pending_flaws.clear();
         }
     }
-
-#ifdef ENABLE_VISUALIZATION
-    json::json to_json(const graph &rhs) noexcept
-    {
-        json::json j;
-        json::json flaws(json::json_type::array);
-        for (const auto &f : rhs.get_flaws())
-            flaws.push_back(to_json(f.get()));
-        j["flaws"] = std::move(flaws);
-        if (rhs.get_current_flaw())
-            j["current_flaw"] = to_json(rhs.get_current_flaw().value().get());
-        json::json resolvers(json::json_type::array);
-        for (const auto &r : rhs.get_resolvers())
-            resolvers.push_back(to_json(r.get()));
-        j["resolvers"] = std::move(resolvers);
-        if (rhs.get_current_resolver())
-            j["current_resolver"] = to_json(rhs.get_current_resolver().value().get());
-        return j;
-    }
-#endif
 } // namespace ratio

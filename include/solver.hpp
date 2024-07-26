@@ -8,31 +8,19 @@
 #include "rdl_theory.hpp"
 #include "ov_theory.hpp"
 
-#ifdef ENABLE_VISUALIZATION
-#include "json.hpp"
-#include "flaw.hpp"
-#include "resolver.hpp"
-#include "sat_value_listener.hpp"
-#include "idl_value_listener.hpp"
-#endif
-
 namespace ratio
 {
   class atom_flaw;
   class graph;
   class smart_type;
-#ifdef ENABLE_VISUALIZATION
-  class flaw_listener;
-  class resolver_listener;
+#ifdef ENABLE_API
+  class flaw;
+  class resolver;
 #endif
 
   class atom : public riddle::atom
   {
     friend class atom_flaw;
-#ifdef ENABLE_VISUALIZATION
-    friend class flaw_listener;
-    friend class resolver_listener;
-#endif
 
   public:
     atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>> &&args = {});
@@ -158,7 +146,7 @@ namespace ratio
      */
     void reset_smart_types() noexcept;
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     /**
      * @brief This function is called when the state of the solver changes.
      *
@@ -272,177 +260,6 @@ namespace ratio
    * @return True if the atom is of type "Interval", false otherwise.
    */
   inline bool is_interval(const atom &atm) noexcept { return atm.get_core().get_predicate("Interval")->get().is_assignable_from(atm.get_type()); }
-
-#ifdef ENABLE_VISUALIZATION
-  /**
-   * @brief Get the JSON representation of the given solver.
-   *
-   * @param rhs the solver to get the JSON representation of.
-   * @return json::json the JSON representation of the given solver.
-   */
-  json::json to_json(const solver &rhs) noexcept;
-  /**
-   * @brief Get the JSON representation of the timelines of the given solver.
-   *
-   * @param rhs the solver to get the timelines of.
-   * @return json::json the JSON representation of the timelines of the given solver.
-   */
-  json::json to_timelines(const solver &rhs) noexcept;
-
-  /**
-   * @brief Get the JSON representation of the given item.
-   *
-   * @param rhs the item to get the JSON representation of.
-   * @return json::json the JSON representation of the given item.
-   */
-  json::json to_json(const riddle::item &rhs) noexcept;
-
-  /**
-   * @brief Get the JSON representation of the value of the given item.
-   *
-   * @param itm the item to get the JSON representation of.
-   * @return json::json the JSON representation of the value of the given item.
-   */
-  json::json value(const riddle::item &itm) noexcept;
-
-  /**
-   * @brief Get the JSON representation of the given rational.
-   *
-   * @param rat the rational to get the JSON representation of.
-   * @return json::json the JSON representation of the given rational.
-   */
-  inline json::json to_json(const utils::rational &rat) noexcept
-  {
-    json::json j_rat;
-    j_rat["num"] = rat.numerator();
-    j_rat["den"] = rat.denominator();
-    return j_rat;
-  }
-  /**
-   * @brief Get the JSON representation of the given infinitesimal rational.
-   *
-   * @param rat the infinitesimal rational to get the JSON representation of.
-   * @return json::json the JSON representation of the given infinitesimal rational.
-   */
-  inline json::json to_json(const utils::inf_rational &rat) noexcept
-  {
-    json::json j_rat = to_json(rat.get_rational());
-    if (rat.get_infinitesimal() != utils::rational::zero)
-      j_rat["inf"] = to_json(rat.get_infinitesimal());
-    return j_rat;
-  }
-
-  const json::json rational_schema{{"rational",
-                                    {{"type", "object"},
-                                     {"properties",
-                                      {{"num", {{"type", "integer"}}},
-                                       {"den", {{"type", "integer"}}}}},
-                                     {{"required", std::vector<json::json>{"num", "den"}}}}}};
-  const json::json inf_rational_schema{{"inf_rational",
-                                        {{"type", "object"},
-                                         {"properties",
-                                          {{"num", {{"type", "integer"}}},
-                                           {"den", {{"type", "integer"}}},
-                                           {"inf", {{"$ref", "#/components/schemas/rational"}}}}},
-                                         {{"required", std::vector<json::json>{"num", "den"}}}}}};
-  const json::json value_schema{{"value",
-                                 {{"oneOf", std::vector<json::json>{
-                                                {"$ref", "#/components/schemas/bool_value"},
-                                                {"$ref", "#/components/schemas/int_value"},
-                                                {"$ref", "#/components/schemas/real_value"},
-                                                {"$ref", "#/components/schemas/time_value"},
-                                                {"$ref", "#/components/schemas/string_value"},
-                                                {"$ref", "#/components/schemas/enum_value"},
-                                                {"$ref", "#/components/schemas/item_value"}}}}}};
-  const json::json bool_value_schema{{"bool_value",
-                                      {{"type", "object"},
-                                       {"properties",
-                                        {{"type", {{"type", "string"}, {"enum", {"bool"}}}},
-                                         {"lit", {{"type", "string"}}},
-                                         {"val", {{"type", "string"}, {"enum", {"True", "False", "Undefined"}}}}}},
-                                       {"required", {"type", "lit", "val"}}}}};
-  const json::json int_value_schema{{"int_value",
-                                     {{"type", "object"},
-                                      {"properties",
-                                       {{"type", {{"type", "string"}, {"enum", {"int"}}}},
-                                        {"lin", {{"type", "string"}}},
-                                        {"val", {{"$ref", "#/components/schemas/inf_rational"}}},
-                                        {"lb", {{"$ref", "#/components/schemas/inf_rational"}}},
-                                        {"ub", {{"$ref", "#/components/schemas/inf_rational"}}}}},
-                                      {"required", {"type", "lin", "val"}}}}};
-  const json::json real_value_schema{{"real_value",
-                                      {{"type", "object"},
-                                       {"properties",
-                                        {{"type", {{"type", "string"}, {"enum", {"real"}}}},
-                                         {"lin", {{"type", "string"}}},
-                                         {"val", {{"$ref", "#/components/schemas/inf_rational"}}},
-                                         {"lb", {{"$ref", "#/components/schemas/inf_rational"}}},
-                                         {"ub", {{"$ref", "#/components/schemas/inf_rational"}}}}},
-                                       {"required", {"type", "lin", "val"}}}}};
-  const json::json time_value_schema{{"time_value",
-                                      {{"type", "object"},
-                                       {"properties",
-                                        {{"type", {{"type", "string"}, {"enum", {"time"}}}},
-                                         {"lin", {{"type", "string"}}},
-                                         {"val", {{"$ref", "#/components/schemas/inf_rational"}}},
-                                         {"lb", {{"$ref", "#/components/schemas/inf_rational"}}},
-                                         {"ub", {{"$ref", "#/components/schemas/inf_rational"}}}}},
-                                       {"required", {"type", "lin", "val"}}}}};
-  const json::json string_value_schema{{"string_value",
-                                        {{"type", "object"},
-                                         {"properties",
-                                          {{"type", {{"type", "string"}, {"enum", {"string"}}}},
-                                           {"val", {{"type", "string"}}}}},
-                                         {"required", std::vector<json::json>{"type", "val"}}}}};
-  const json::json enum_value_schema{{"enum_value",
-                                      {{"type", "object"},
-                                       {"properties",
-                                        {{"type", {{"type", "string"}, {"enum", {"enum"}}}},
-                                         {"var", {{"type", "string"}}},
-                                         {"vals", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}},
-                                       {"required", {"type", "var", "vals"}}}}};
-  const json::json item_value_schema{{"item_value",
-                                      {{"type", "object"},
-                                       {"properties",
-                                        {{"type", {{"type", "string"}, {"enum", {"item"}}}},
-                                         {"val", {{"type", "integer"}}}}},
-                                       {"required", std::vector<json::json>{"type", "val"}}}}};
-  const json::json item_schema{{"item",
-                                {{"type", "object"},
-                                 {"properties",
-                                  {{"id", {{"type", "integer"}}},
-                                   {"type", {{"type", "string"}}},
-                                   {"name", {{"type", "string"}}},
-                                   {"exprs", {{"type", "object"}, {"additionalProperties", {{"$ref", "#/components/schemas/value"}}}}}}},
-                                 {"required", {"id", "type", "name"}}}}};
-  const json::json atom_schema{{"atom",
-                                {{"type", "object"},
-                                 {"properties",
-                                  {{"id", {{"type", "integer"}}},
-                                   {"is_fact", {{"type", "boolean"}}},
-                                   {"sigma", {{"type", "integer"}}},
-                                   {"type", {{"type", "string"}}},
-                                   {"status", {{"type", "string"}, {"enum", {"Active", "Inactive", "Unified"}}}},
-                                   {"name", {{"type", "string"}}},
-                                   {"exprs", {{"type", "object"}, {"additionalProperties", {{"$ref", "#/components/schemas/value"}}}}}}},
-                                 {"required", {"id", "is_fact", "sigma", "type", "name", "status"}}}}};
-  const json::json solver_state_schema{{"solver_state",
-                                        {{"type", "object"},
-                                         {"properties",
-                                          {{"name", {{"type", "string"}}},
-                                           {"items", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/item"}}}}},
-                                           {"atoms", {{"type", "array"}, {"items", {{"$ref", "#/components/schemas/atom"}}}}},
-                                           {"exprs", {{"type", "object"}, {"additionalProperties", {{"$ref", "#/components/schemas/value"}}}}}}},
-                                         {"required", {"name"}}}}};
-  const json::json solver_timeline_schema{{"solver_timeline",
-                                           {{"type", "object"},
-                                            {"properties",
-                                             {{"id", {{"type", "integer"}}},
-                                              {"type", {{"type", "string"}, {"enum", {"Solver"}}}},
-                                              {"name", {{"type", "string"}}},
-                                              {"values", {{"type", "array"}, {"items", {{"type", "integer"}}}}}}},
-                                            {"required", {"id", "type", "name"}}}}};
-#endif
 
   /**
    * @brief Gets the unique identifier of the given solver.

@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
 #include "json.hpp"
 #endif
 
@@ -22,7 +22,7 @@ namespace ratio
          */
         virtual ~timeline() = default;
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
         /**
          * @brief Extracts the timeline data as JSON.
          *
@@ -33,14 +33,4 @@ namespace ratio
         virtual json::json extract() const noexcept = 0;
 #endif
     };
-
-#ifdef ENABLE_VISUALIZATION
-    const json::json timeline_schema{{"timeline",
-                                      {{"oneOf", std::vector<json::json>{
-                                                     {"$ref", "#/components/schemas/solver_timeline"},
-                                                     {"$ref", "#/components/schemas/agent_timeline"},
-                                                     {"$ref", "#/components/schemas/state_variable_timeline"},
-                                                     {"$ref", "#/components/schemas/reusable_resource_timeline"},
-                                                     {"$ref", "#/components/schemas/consumable_resource_timeline"}}}}}};
-#endif
 } // namespace ratio

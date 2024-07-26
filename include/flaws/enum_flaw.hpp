@@ -23,7 +23,7 @@ namespace ratio
 
       void apply() override {}
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
       json::json get_data() const noexcept override;
 #endif
 
@@ -31,7 +31,7 @@ namespace ratio
       const utils::enum_val &val;
     };
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json get_data() const noexcept override;
 #endif
 

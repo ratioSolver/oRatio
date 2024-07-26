@@ -20,7 +20,7 @@ namespace ratio
         atoms.push_back(*atm);
     }
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     json::json agent::extract() const noexcept
     {
         json::json tls(json::json_type::array);

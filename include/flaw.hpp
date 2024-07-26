@@ -7,9 +7,8 @@
 #include "lit.hpp"
 #include "rational.hpp"
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
 #include "json.hpp"
-#include "bool.hpp"
 #endif
 
 namespace ratio
@@ -124,7 +123,7 @@ namespace ratio
      */
     virtual void compute_resolvers() = 0;
 
-#ifdef ENABLE_VISUALIZATION
+#ifdef ENABLE_API
     /**
      * @brief Get a JSON representation of the data of the flaw.
      *
@@ -146,25 +145,6 @@ namespace ratio
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
   };
-
-#ifdef ENABLE_VISUALIZATION
-  json::json to_json(const flaw &f) noexcept;
-
-  std::string to_state(const flaw &f) noexcept;
-
-  const json::json flaw_schema{
-      {"flaw",
-       {{"type", "object"},
-        {"properties",
-         {{"id", {{"type", "integer"}}},
-          {"causes", {{"type", "array"}, {"description", "The resolvers that caused this flaw."}, {"items", {{"type", "integer"}}}}},
-          {"state", {{"type", "string"}, {"enum", {"active", "forbidden", "inactive"}}}},
-          {"phi", {{"type", "string"}}},
-          {"cost", {{"$ref", "#/components/schemas/rational"}}},
-          {"pos", {{"type", "integer"}}},
-          {"data", {{"type", "object"}}}}},
-        {"required", {"id", "causes", "state", "pos", "phi", "cost"}}}}};
-#endif
 
   /**
    * @brief Gets the unique identifier of the given flaw.
