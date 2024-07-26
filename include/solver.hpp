@@ -13,7 +13,7 @@ namespace ratio
   class atom_flaw;
   class graph;
   class smart_type;
-#ifdef ENABLE_API
+#ifdef BUILD_LISTENERS
   class flaw;
   class resolver;
 #endif
@@ -146,7 +146,7 @@ namespace ratio
      */
     void reset_smart_types() noexcept;
 
-#ifdef ENABLE_API
+#ifdef BUILD_LISTENERS
     /**
      * @brief This function is called when the state of the solver changes.
      *

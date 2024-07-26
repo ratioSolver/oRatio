@@ -6,7 +6,7 @@ include(CTest)
 enable_testing()
 
 set(JSON_INCLUDE_UTILS OFF CACHE BOOL "Enable JSON Utils" FORCE)
-set(BUILD_LISTENERS ON CACHE BOOL "Builds the listeners" FORCE)
+set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
 
 add_subdirectory(extern/riddle)
 add_subdirectory(extern/semitone)
@@ -32,14 +32,7 @@ message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
 option(ENABLE_API "oRatio API" OFF)
 
-set(ORATIO_SOURCES src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp src/types/agent.cpp src/types/state_variable.cpp src/types/consumable_resource.cpp src/types/reusable_resource.cpp)
-
-message(STATUS "oRatio API: ${ENABLE_API}")
-if(ENABLE_API)
-    list(APPEND ORATIO_SOURCES src/solver_api.cpp)
-endif()
-
-add_library(oRatioLib ${ORATIO_SOURCES})
+add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp src/types/agent.cpp src/types/state_variable.cpp src/types/consumable_resource.cpp src/types/reusable_resource.cpp $<$<BOOL:${ENABLE_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/solver_api.cpp>)
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/types> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
@@ -67,6 +60,12 @@ if(CHECK_INCONSISTENCIES)
     target_compile_definitions(oRatioLib PRIVATE CHECK_INCONSISTENCIES)
 endif()
 
+message(STATUS "Build oRatio listeners: ${BUILD_LISTENERS}")
+if(BUILD_LISTENERS)
+    target_compile_definitions(oRatioLib PUBLIC BUILD_LISTENERS)
+endif()
+
+message(STATUS "oRatio API: ${ENABLE_API}")
 if(ENABLE_API)
     target_compile_definitions(oRatioLib PRIVATE ENABLE_API)
 endif()
