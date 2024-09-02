@@ -16,6 +16,8 @@ namespace ratio
     state_variable(solver &slv);
 
   private:
+    void new_predicate(riddle::predicate &pred) override;
+
     std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() noexcept override;
 
     void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept override;

@@ -37,7 +37,7 @@ target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/types> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 if(${TEMPORAL_NETWORK_TYPE} STREQUAL "LRA")
-    set(INIT_STRING "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end) { start >= origin; start <= end; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;" CACHE STRING "Initialization string")
+    set(INIT_STRING "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end, real duration) { start >= origin; duration == end - start; duration >= 0.0; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;" CACHE STRING "Initialization string")
     target_compile_definitions(oRatioLib PRIVATE LRA_TN)
 elseif(${TEMPORAL_NETWORK_TYPE} STREQUAL "DL")
     set(INIT_STRING "predicate Impulse(time at) { at >= origin; at <= horizon; } predicate Interval(time start, time end) { start >= origin; start <= end; end <= horizon; } time origin, horizon; origin >= 0.0; origin <= horizon;" CACHE STRING "Initialization string")

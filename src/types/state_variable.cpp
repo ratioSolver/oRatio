@@ -11,6 +11,8 @@ namespace ratio
 {
     state_variable::state_variable(solver &slv) : smart_type(slv, "StateVariable") {}
 
+    void state_variable::new_predicate(riddle::predicate &pred) { add_parent(pred, get_predicate("Interval")->get()); }
+
     std::vector<std::vector<std::pair<utils::lit, double>>> state_variable::get_current_incs() noexcept
     {
         std::vector<std::vector<std::pair<utils::lit, double>>> incs; // the inconsistencies..
