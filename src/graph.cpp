@@ -17,6 +17,7 @@ namespace ratio
         // we introduce an ordering constraint..
         if (!slv.get_sat().new_clause({!r.get_rho(), slv.get_idl_theory().new_distance(r.get_flaw().position, f.position, 0)}))
             throw riddle::unsolvable_exception();
+        NEW_CAUSAL_LINK(f, r);
     }
 
     bool graph::has_infinite_cost_active_flaws() const noexcept

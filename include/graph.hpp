@@ -15,6 +15,7 @@
 #define FLAW_POSITION_CHANGED(f) slv.flaw_position_changed(f)
 #define NEW_RESOLVER(r) slv.resolver_created(r)
 #define RESOLVER_STATE_CHANGED(r) slv.resolver_state_changed(r)
+#define NEW_CAUSAL_LINK(f, r) slv.causal_link_added(f, r)
 #else
 #define NEW_FLAW(f)
 #define FLAW_STATE_CHANGED(f)
@@ -22,6 +23,7 @@
 #define FLAW_POSITION_CHANGED(f)
 #define NEW_RESOLVER(r)
 #define RESOLVER_STATE_CHANGED(r)
+#define NEW_CAUSAL_LINK(f, r)
 #endif
 
 namespace ratio

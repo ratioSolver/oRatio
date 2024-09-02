@@ -19,9 +19,9 @@ namespace ratio
             {
                 if (a == atm)
                     continue; // the current atom cannot unify with itself..
-                if (!atm->get_reason().is_expanded())
+                if (!static_cast<atom &>(*a).get_reason().is_expanded())
                     continue; // the atom is not expanded yet, so we cannot unify it
-                if (get_solver().get_idl_theory().distance(get_position(), static_cast<ratio::atom &>(*a).get_reason().get_position()).first > 0)
+                if (get_solver().get_idl_theory().distance(get_position(), static_cast<atom &>(*a).get_reason().get_position()).first > 0)
                     continue; // the unification would introduce a causal loop
                 if (get_solver().get_sat().value(a->get_sigma()) == utils::False)
                     continue; // the atom is unified with another atom
@@ -77,7 +77,7 @@ namespace ratio
         assert(get_flaw().get_solver().get_sat().value(get_rho()) != utils::False);                                                   // this resolver must be activable..
 
         // we add a causal link from the target atom's reason to this resolver..
-        get_flaw().get_solver().get_graph().new_causal_link(get_flaw(), *this);
+        get_flaw().get_solver().get_graph().new_causal_link(target->get_reason(), *this);
 
         for (const auto &res : get_flaw().get_resolvers())
             if (dynamic_cast<activate_fact *>(&res.get()) || dynamic_cast<activate_goal *>(&res.get()))
