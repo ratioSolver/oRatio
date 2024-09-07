@@ -7,6 +7,8 @@
 
 namespace ratio
 {
+  constexpr std::string_view STATE_VARIABLE_TYPE_NAME = "StateVariable";
+
   class state_variable final : public smart_type, public timeline
   {
     class sv_atom_listener;

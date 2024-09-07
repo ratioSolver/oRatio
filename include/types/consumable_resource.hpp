@@ -5,6 +5,13 @@
 
 namespace ratio
 {
+  constexpr std::string_view CONSUMABLE_RESOURCE_TYPE_NAME = "ConsumableResource";
+  constexpr std::string_view CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME = "initial_amount";
+  constexpr std::string_view CONSUMABLE_RESOURCE_CAPACITY_NAME = "capacity";
+  constexpr std::string_view CONSUMABLE_RESOURCE_PRODUCTION_PREDICATE_NAME = "Produce";
+  constexpr std::string_view CONSUMABLE_RESOURCE_CONSUMPTION_PREDICATE_NAME = "Consume";
+  constexpr std::string_view CONSUMABLE_RESOURCE_AMOUNT_NAME = "amount";
+
   class consumable_resource final : public smart_type, public timeline
   {
     class cr_atom_listener;

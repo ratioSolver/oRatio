@@ -4,7 +4,7 @@
 
 namespace ratio
 {
-    agent::agent(solver &slv) : smart_type(slv, "Agent") {}
+    agent::agent(solver &slv) : smart_type(slv, AGENT_TYPE_NAME) {}
 
     void agent::new_atom(std::shared_ptr<ratio::atom> &atm) noexcept
     {
@@ -12,9 +12,9 @@ namespace ratio
         {
             set_ni(atm->get_sigma());
             if (is_impulse(*atm))
-                get_solver().get_predicate("Impulse")->get().call(atm);
+                get_solver().get_predicate(IMPULSE_PREDICATE_NAME)->get().call(atm);
             else
-                get_solver().get_predicate("Interval")->get().call(atm);
+                get_solver().get_predicate(INTERVAL_PREDICATE_NAME)->get().call(atm);
             restore_ni();
         }
         atoms.push_back(*atm);
@@ -31,7 +31,7 @@ namespace ratio
         for (const auto &atm : atoms)
             if (get_solver().get_sat().value(atm.get().get_sigma()) == utils::True)
             { // the atom is active..
-                const auto tau = atm.get().get("tau");
+                const auto tau = atm.get().get(riddle::TAU_NAME);
                 if (is_enum(*tau)) // the `tau` parameter is a variable..
                     for (const auto &c_agnt : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
                         agnt_instances.at(static_cast<const riddle::component *>(&c_agnt.get())).push_back(&atm.get());
@@ -41,7 +41,7 @@ namespace ratio
 
         for (const auto &[agnt, atms] : agnt_instances)
         {
-            json::json tl{{"id", get_id(*agnt)}, {"type", "Agent"}, {"name", get_solver().guess_name(*agnt)}};
+            json::json tl{{"id", get_id(*agnt)}, {"type", AGENT_TYPE_NAME}, {"name", get_solver().guess_name(*agnt)}};
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
@@ -50,7 +50,7 @@ namespace ratio
 
             for (const auto &atm : atms)
             {
-                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(is_impulse(*atm) ? atm->get("at") : atm->get("start")));
+                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(is_impulse(*atm) ? atm->get(AT_NAME) : atm->get(START_NAME)));
                 starting_atoms[start].insert(atm);
                 pulses.insert(start);
             }

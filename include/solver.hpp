@@ -18,12 +18,20 @@ namespace ratio
   class resolver;
 #endif
 
+  constexpr std::string_view IMPULSE_PREDICATE_NAME = "Impulse";
+  constexpr std::string_view INTERVAL_PREDICATE_NAME = "Interval";
+  constexpr std::string_view AT_NAME = "at";
+  constexpr std::string_view START_NAME = "start";
+  constexpr std::string_view END_NAME = "end";
+  constexpr std::string_view ORIGIN_NAME = "origin";
+  constexpr std::string_view HORIZON_NAME = "horizon";
+
   class atom : public riddle::atom
   {
     friend class atom_flaw;
 
   public:
-    atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>> &&args = {});
+    atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>, std::less<>> &&args = {});
 
     [[nodiscard]] atom_flaw &get_reason() const { return reason; }
 
@@ -36,7 +44,7 @@ namespace ratio
     friend class graph;
 
   public:
-    solver(const std::string &name = "oRatio") noexcept;
+    solver(std::string_view name = "oRatio") noexcept;
     virtual ~solver() = default;
 
     const std::string &get_name() const noexcept { return name; }
@@ -110,7 +118,7 @@ namespace ratio
 
     void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept override;
 
-    [[nodiscard]] std::shared_ptr<riddle::atom> new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments = {}) noexcept override;
+    [[nodiscard]] std::shared_ptr<riddle::atom> new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&arguments = {}) noexcept override;
 
     [[nodiscard]] utils::lbool bool_value(const riddle::bool_item &expr) const noexcept override;
     [[nodiscard]] utils::inf_rational arithmetic_value(const riddle::arith_item &expr) const noexcept override;
@@ -233,7 +241,7 @@ namespace ratio
 #endif
 
   private:
-    [[nodiscard]] std::shared_ptr<riddle::item> get(riddle::enum_item &enm, const std::string &name) noexcept override;
+    [[nodiscard]] std::shared_ptr<riddle::item> get(riddle::enum_item &enm, std::string_view name) noexcept override;
 
   private:
     const std::string name;                // the name of the solver
@@ -252,14 +260,14 @@ namespace ratio
    * @param atm The atom to check.
    * @return True if the atom is of type "Impulse", false otherwise.
    */
-  inline bool is_impulse(const atom &atm) noexcept { return atm.get_core().get_predicate("Impulse")->get().is_assignable_from(atm.get_type()); }
+  inline bool is_impulse(const atom &atm) noexcept { return atm.get_core().get_predicate(IMPULSE_PREDICATE_NAME)->get().is_assignable_from(atm.get_type()); }
   /**
    * Checks if the given atom is of type "Interval".
    *
    * @param atm The atom to check.
    * @return True if the atom is of type "Interval", false otherwise.
    */
-  inline bool is_interval(const atom &atm) noexcept { return atm.get_core().get_predicate("Interval")->get().is_assignable_from(atm.get_type()); }
+  inline bool is_interval(const atom &atm) noexcept { return atm.get_core().get_predicate(INTERVAL_PREDICATE_NAME)->get().is_assignable_from(atm.get_type()); }
 
   /**
    * @brief Gets the unique identifier of the given solver.

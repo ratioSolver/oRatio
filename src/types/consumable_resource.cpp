@@ -7,7 +7,7 @@
 
 namespace ratio
 {
-    consumable_resource::consumable_resource(solver &slv) : smart_type(slv, "ConsumableResource") {}
+    consumable_resource::consumable_resource(solver &slv) : smart_type(slv, CONSUMABLE_RESOURCE_TYPE_NAME) {}
 
     void consumable_resource::new_atom(std::shared_ptr<ratio::atom> &atm) noexcept
     {
@@ -15,18 +15,18 @@ namespace ratio
         {
             assert(is_interval(*atm));
             set_ni(atm->get_sigma());
-            get_solver().get_predicate("Interval")->get().call(atm);
+            get_solver().get_predicate(INTERVAL_PREDICATE_NAME)->get().call(atm);
             restore_ni();
         }
 
         // we store the variables for on-line flaw resolution..
         // the ordering constraints between the atoms are stored in the leqs map..
-        const auto start = atm->get("start");
-        const auto end = atm->get("end");
+        const auto start = atm->get(START_NAME);
+        const auto end = atm->get(END_NAME);
         for (const auto &c_atm : atoms)
         {
-            const auto c_start = c_atm.get().get("start");
-            const auto c_end = c_atm.get().get("end");
+            const auto c_start = c_atm.get().get(START_NAME);
+            const auto c_end = c_atm.get().get(END_NAME);
 #ifdef DL_TN
             auto before = get_solver().get_rdl_theory().new_leq(std::static_pointer_cast<riddle::arith_item>(end)->get_value(), std::static_pointer_cast<riddle::arith_item>(c_start)->get_value());
             auto after = get_solver().get_rdl_theory().new_leq(std::static_pointer_cast<riddle::arith_item>(c_end)->get_value(), std::static_pointer_cast<riddle::arith_item>(start)->get_value());
@@ -42,7 +42,7 @@ namespace ratio
                 leqs[&c_atm.get()][atm.get()] = after;
         }
 
-        const auto tau = atm->get("tau");
+        const auto tau = atm->get(riddle::TAU_NAME);
         if (is_enum(*tau))
             for (const auto &cr : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
             {
@@ -68,7 +68,7 @@ namespace ratio
         for (const auto &atm : atoms)
             if (get_solver().get_sat().value(atm.get().get_sigma()) == utils::True)
             { // the atom is active..
-                const auto tau = atm.get().get("tau");
+                const auto tau = atm.get().get(riddle::TAU_NAME);
                 if (is_enum(*tau)) // the `tau` parameter is a variable..
                     for (const auto &c_cr : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
                         cr_instances.at(static_cast<riddle::component *>(&c_cr.get())).push_back(&atm.get());
@@ -78,8 +78,8 @@ namespace ratio
 
         for (const auto &[cres, atms] : cr_instances)
         {
-            const auto c_initial_amount = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(cres->get("initial_amount")));
-            json::json tl{{"id", get_id(*cres)}, {"type", "ConsumableResource"}, {"name", get_solver().guess_name(*cres)}, {"capacity", to_json(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(cres->get("capacity"))))}, {"initial_amount", to_json(c_initial_amount)}};
+            const auto c_initial_amount = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(cres->get(CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME)));
+            json::json tl{{"id", get_id(*cres)}, {"type", CONSUMABLE_RESOURCE_TYPE_NAME}, {"name", get_solver().guess_name(*cres)}, {CONSUMABLE_RESOURCE_CAPACITY_NAME, to_json(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(cres->get(CONSUMABLE_RESOURCE_CAPACITY_NAME))))}, {CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME, to_json(c_initial_amount)}};
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
@@ -90,15 +90,15 @@ namespace ratio
 
             for (const auto &atm : atms)
             {
-                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("start")));
-                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("end")));
+                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(START_NAME)));
+                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(END_NAME)));
                 starting_atoms[start].insert(atm);
                 ending_atoms[end].insert(atm);
                 pulses.insert(start);
                 pulses.insert(end);
             }
-            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get("origin"))));
-            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get("horizon"))));
+            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get(ORIGIN_NAME))));
+            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get(HORIZON_NAME))));
 
             std::set<atom *> overlapping_atoms;
             std::set<utils::inf_rational>::iterator p = pulses.begin();
@@ -118,16 +118,16 @@ namespace ratio
                 utils::inf_rational c_angular_coefficient; // the concurrent resource update..
                 for (const auto &atm : overlapping_atoms)
                 {
-                    auto amount = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("amount")));
-                    auto c_coeff = get_predicate("Produce").value().get().is_assignable_from(atm->get_type()) ? amount : -amount;
-                    c_coeff /= (get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("end"))) - get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("start")))).get_rational();
+                    auto amount = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(CONSUMABLE_RESOURCE_AMOUNT_NAME)));
+                    auto c_coeff = get_predicate(CONSUMABLE_RESOURCE_PRODUCTION_PREDICATE_NAME).value().get().is_assignable_from(atm->get_type()) ? amount : -amount;
+                    c_coeff /= (get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(END_NAME))) - get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(START_NAME)))).get_rational();
                     c_angular_coefficient += c_coeff;
                     j_atms.push_back(get_id(*atm));
                 }
                 j_val["atoms"] = std::move(j_atms);
-                j_val["start"] = to_json(c_val);
+                j_val[START_NAME] = to_json(c_val);
                 c_val += (c_angular_coefficient * (*p - *std::prev(p)).get_rational());
-                j_val["end"] = to_json(c_val);
+                j_val[END_NAME] = to_json(c_val);
 
                 j_vals.push_back(std::move(j_val));
 
@@ -151,7 +151,7 @@ namespace ratio
     {
         if (cr.get_solver().get_sat().value(atm.get_sigma()) == utils::True)
         { // the atom is active
-            const auto tau = atm.get("tau");
+            const auto tau = atm.get(riddle::TAU_NAME);
             if (is_enum(*tau))
                 for (const auto &c_cr : cr.get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
                     cr.to_check.insert(static_cast<const riddle::item *>(&c_cr.get()));

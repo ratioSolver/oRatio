@@ -5,6 +5,8 @@
 
 namespace ratio
 {
+  constexpr std::string_view AGENT_TYPE_NAME = "Agent";
+
   class agent final : public smart_type, public timeline
   {
   public:

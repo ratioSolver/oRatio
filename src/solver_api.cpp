@@ -90,13 +90,13 @@ namespace ratio
             for (const auto &atm : pred.get().get_atoms())
                 if (is_impulse(static_cast<atom &>(*atm)))
                 {
-                    utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get("at")));
+                    utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get(AT_NAME)));
                     starting_atoms[start].insert(static_cast<atom *>(&*atm));
                     pulses.insert(start);
                 }
                 else if (is_interval(static_cast<atom &>(*atm)))
                 {
-                    utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get("start")));
+                    utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get(START_NAME)));
                     starting_atoms[start].insert(static_cast<atom *>(&*atm));
                     pulses.insert(start);
                 }

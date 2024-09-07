@@ -25,9 +25,9 @@
 
 namespace ratio
 {
-    atom::atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>> &&args) : riddle::atom(p, is_fact, utils::lit(static_cast<solver &>(p.get_scope().get_core()).get_sat().new_var()), std::move(args)), reason(reason) {}
+    atom::atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>, std::less<>> &&args) : riddle::atom(p, is_fact, utils::lit(static_cast<solver &>(p.get_scope().get_core()).get_sat().new_var()), std::move(args)), reason(reason) {}
 
-    solver::solver(const std::string &name) noexcept : name(name), sat(), lra(sat.new_theory<semitone::lra_theory>()), idl(sat.new_theory<semitone::idl_theory>()), rdl(sat.new_theory<semitone::rdl_theory>()), ov(sat.new_theory<semitone::ov_theory>()), gr(sat.new_theory<graph>(*this)) {}
+    solver::solver(std::string_view name) noexcept : name(name), sat(), lra(sat.new_theory<semitone::lra_theory>()), idl(sat.new_theory<semitone::idl_theory>()), rdl(sat.new_theory<semitone::rdl_theory>()), ov(sat.new_theory<semitone::ov_theory>()), gr(sat.new_theory<graph>(*this)) {}
 
     void solver::init()
     {
@@ -446,7 +446,7 @@ namespace ratio
         gr.new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
     }
 
-    std::shared_ptr<riddle::atom> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept
+    std::shared_ptr<riddle::atom> solver::new_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&arguments) noexcept
     {
         LOG_TRACE("Creating new " << pred.get_name() << " atom");
         auto causes = gr.get_current_resolver() ? std::vector<std::reference_wrapper<resolver>>{gr.get_current_resolver().value().get()} : std::vector<std::reference_wrapper<resolver>>();
@@ -610,5 +610,5 @@ namespace ratio
         }
     }
 
-    std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, const std::string &name) noexcept { return enm.get(name); }
+    std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, std::string_view name) noexcept { return enm.get(name); }
 } // namespace ratio

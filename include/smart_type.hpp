@@ -29,7 +29,7 @@ namespace ratio
      * @param slv The solver object to associate with the smart_type.
      * @param name The name of the smart_type.
      */
-    smart_type(solver &slv, const std::string &name);
+    smart_type(solver &slv, std::string_view name);
 
     /**
      * @brief Default destructor for the smart_type class.

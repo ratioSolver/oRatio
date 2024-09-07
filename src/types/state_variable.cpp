@@ -9,9 +9,9 @@
 
 namespace ratio
 {
-    state_variable::state_variable(solver &slv) : smart_type(slv, "StateVariable") {}
+    state_variable::state_variable(solver &slv) : smart_type(slv, STATE_VARIABLE_TYPE_NAME) {}
 
-    void state_variable::new_predicate(riddle::predicate &pred) { add_parent(pred, get_predicate("Interval")->get()); }
+    void state_variable::new_predicate(riddle::predicate &pred) { add_parent(pred, get_predicate(INTERVAL_PREDICATE_NAME)->get()); }
 
     std::vector<std::vector<std::pair<utils::lit, double>>> state_variable::get_current_incs() noexcept
     {
@@ -21,7 +21,7 @@ namespace ratio
         for (const auto &atm : atoms)
             if (get_solver().get_sat().value(atm.get().get_sigma()) == utils::True)
             { // the atom is active..
-                const auto tau = atm.get().get("tau");
+                const auto tau = atm.get().get(riddle::TAU_NAME);
                 if (is_enum(*tau))
                 { // the `tau` parameter is a variable..
                     for (const auto &c_sv : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
@@ -44,8 +44,8 @@ namespace ratio
 
             for (const auto &atm : atms)
             {
-                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("start")));
-                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("end")));
+                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(START_NAME)));
+                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(END_NAME)));
                 starting_atoms[start].insert(atm);
                 ending_atoms[end].insert(atm);
                 pulses.insert(start);
@@ -96,18 +96,18 @@ namespace ratio
         {
             assert(is_interval(*atm));
             set_ni(atm->get_sigma());
-            get_solver().get_predicate("Interval")->get().call(atm);
+            get_solver().get_predicate(INTERVAL_PREDICATE_NAME)->get().call(atm);
             restore_ni();
         }
 
         // we store the variables for on-line flaw resolution..
         // the ordering constraints between the atoms are stored in the leqs map..
-        const auto start = atm->get("start");
-        const auto end = atm->get("end");
+        const auto start = atm->get(START_NAME);
+        const auto end = atm->get(END_NAME);
         for (const auto &c_atm : atoms)
         {
-            const auto c_start = c_atm.get().get("start");
-            const auto c_end = c_atm.get().get("end");
+            const auto c_start = c_atm.get().get(START_NAME);
+            const auto c_end = c_atm.get().get(END_NAME);
 #ifdef DL_TN
             auto before = get_solver().get_rdl_theory().new_leq(std::static_pointer_cast<riddle::arith_item>(end)->get_value(), std::static_pointer_cast<riddle::arith_item>(c_start)->get_value());
             auto after = get_solver().get_rdl_theory().new_leq(std::static_pointer_cast<riddle::arith_item>(c_end)->get_value(), std::static_pointer_cast<riddle::arith_item>(start)->get_value());
@@ -123,7 +123,7 @@ namespace ratio
                 leqs[&c_atm.get()][atm.get()] = after;
         }
 
-        const auto tau = atm->get("tau");
+        const auto tau = atm->get(riddle::TAU_NAME);
         if (is_enum(*tau))
             for (const auto &sv : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
             {
@@ -149,7 +149,7 @@ namespace ratio
         for (const auto &atm : atoms)
             if (get_solver().get_sat().value(atm.get().get_sigma()) == utils::True)
             { // the atom is active..
-                const auto tau = atm.get().get("tau");
+                const auto tau = atm.get().get(riddle::TAU_NAME);
                 if (is_enum(*tau)) // the `tau` parameter is a variable..
                     for (const auto &c_sv : get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
                         sv_instances.at(static_cast<riddle::component *>(&c_sv.get())).push_back(&atm.get());
@@ -159,7 +159,7 @@ namespace ratio
 
         for (const auto &[sv, atms] : sv_instances)
         {
-            json::json tl{{"id", get_id(*sv)}, {"type", "StateVariable"}, {"name", get_solver().guess_name(*sv)}};
+            json::json tl{{"id", get_id(*sv)}, {"type", STATE_VARIABLE_TYPE_NAME}, {"name", get_solver().guess_name(*sv)}};
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
@@ -170,15 +170,15 @@ namespace ratio
 
             for (const auto &atm : atms)
             {
-                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("start")));
-                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get("end")));
+                const auto start = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(START_NAME)));
+                const auto end = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(END_NAME)));
                 starting_atoms[start].insert(atm);
                 ending_atoms[end].insert(atm);
                 pulses.insert(start);
                 pulses.insert(end);
             }
-            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get("origin"))));
-            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get("horizon"))));
+            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get(ORIGIN_NAME))));
+            pulses.insert(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(get_core().get(HORIZON_NAME))));
 
             std::set<atom *> overlapping_atoms;
             std::set<utils::inf_rational>::iterator p = pulses.begin();
@@ -238,7 +238,7 @@ namespace ratio
     {
         if (sv.get_solver().get_sat().value(atm.get_sigma()) == utils::True)
         { // the atom is active
-            const auto tau = atm.get("tau");
+            const auto tau = atm.get(riddle::TAU_NAME);
             if (is_enum(*tau))
                 for (const auto &c_sv : sv.get_solver().domain(static_cast<const riddle::enum_item &>(*tau)))
                     sv.to_check.insert(static_cast<const riddle::item *>(&c_sv.get()));

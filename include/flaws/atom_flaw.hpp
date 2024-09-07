@@ -14,7 +14,7 @@ namespace ratio
     friend class smart_type;
 
   public:
-    atom_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>> &&arguments) noexcept;
+    atom_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&arguments) noexcept;
 
     [[nodiscard]] const std::shared_ptr<atom> &get_atom() const noexcept { return atm; }
 

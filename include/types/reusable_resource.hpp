@@ -7,6 +7,11 @@
 
 namespace ratio
 {
+  constexpr std::string_view REUSABLE_RESOURCE_TYPE_NAME = "ReusableResource";
+  constexpr std::string_view REUSABLE_RESOURCE_CAPACITY_NAME = "capacity";
+  constexpr std::string_view REUSABLE_RESOURCE_PREDICATE_NAME = "Use";
+  constexpr std::string_view REUSABLE_RESOURCE_AMOUNT_NAME = "amount";
+
   class reusable_resource final : public smart_type, public timeline
   {
     class rr_atom_listener;
