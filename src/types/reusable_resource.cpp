@@ -281,19 +281,29 @@ namespace ratio
     void reusable_resource::rr_flaw::compute_resolvers() {}
 
 #ifdef ENABLE_API
-    json::json reusable_resource::rr_flaw::get_data() const noexcept {}
+    json::json reusable_resource::rr_flaw::get_data() const noexcept
+    {
+        json::json data{{"type", "rr-flaw"}};
+
+        json::json atms(json::json_type::array);
+        for (const auto &atm : mcs)
+            atms.push_back(get_id(*atm));
+        data["atoms"] = atms;
+
+        return data;
+    }
 #endif
 
     reusable_resource::rr_flaw::order_resolver::order_resolver(rr_flaw &flw, const utils::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::zero), before(before), after(after) {}
 
 #ifdef ENABLE_API
-    json::json reusable_resource::rr_flaw::order_resolver::get_data() const noexcept {}
+    json::json reusable_resource::rr_flaw::order_resolver::get_data() const noexcept { return {{"type", "order"}, {"before", get_id(before)}, {"after", get_id(after)}}; }
 #endif
 
     reusable_resource::rr_flaw::forbid_resolver::forbid_resolver(rr_flaw &flw, const utils::lit &r, atom &atm, riddle::component &itm) : resolver(flw, r, utils::rational::zero), atm(atm), itm(itm) {}
 
 #ifdef ENABLE_API
-    json::json reusable_resource::rr_flaw::forbid_resolver::get_data() const noexcept {}
+    json::json reusable_resource::rr_flaw::forbid_resolver::get_data() const noexcept { return {{"type", "forbid"}, {"forbid_atom", get_id(atm)}, {"forbid_item", get_id(itm)}}; }
 #endif
 
     reusable_resource::rr_atom_listener::rr_atom_listener(reusable_resource &rr, atom &a) : atom_listener(a), rr(rr) {}
