@@ -237,13 +237,13 @@ namespace ratio
         assert(!trail.empty());
         auto &t = trail.back();
         // we restore the previous state of the graph..
+        for (const auto &f : t.solved_flaws)
+            active_flaws.insert(f); // we restore the solved flaws..
         for (const auto &f : t.new_flaws)
             active_flaws.erase(f); // we remove the new flaws..
-        for (const auto &f : t.solved_flaws)
-            active_flaws.insert(f); // we add the solved flaws..
         for (const auto &[f, c] : t.old_f_costs)
-        {
-            f->est_cost = c; // we restore the flaws' costs..
+        { // we restore the flaws' costs..
+            f->est_cost = c;
             FLAW_COST_CHANGED(*f);
         }
         trail.pop_back();
