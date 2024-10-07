@@ -7,7 +7,56 @@
 
 namespace ratio
 {
-    consumable_resource::consumable_resource(solver &slv) : smart_type(slv, CONSUMABLE_RESOURCE_TYPE_NAME) {}
+    consumable_resource::consumable_resource(solver &slv) : smart_type(slv, CONSUMABLE_RESOURCE_TYPE_NAME)
+    {
+        // we add the `initial_amount` field to the consumable-resource type..
+        add_field(std::make_unique<riddle::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME));
+        // we add the `capacity` field to the consumable-resource type..
+        add_field(std::make_unique<riddle::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_CAPACITY_NAME));
+
+        // we create the constructor's arguments..
+        std::vector<std::unique_ptr<riddle::field>> args;
+        args.push_back(std::make_unique<riddle::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME));
+        args.push_back(std::make_unique<riddle::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_CAPACITY_NAME));
+        // we create the constructor's initializations..
+        std::vector<riddle::init_element> inits;
+        std::vector<std::unique_ptr<riddle::expression>> initial_amount_args;
+        initial_amount_args.push_back(std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)));
+        inits.emplace_back(riddle::id_token(CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME, 0, 0, 0, 0), std::move(initial_amount_args));
+        std::vector<std::unique_ptr<riddle::expression>> capacity_args;
+        capacity_args.push_back(std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)));
+        inits.emplace_back(riddle::id_token(CONSUMABLE_RESOURCE_CAPACITY_NAME, 0, 0, 0, 0), std::move(capacity_args));
+        // we create the constructor's body..
+        std::vector<std::unique_ptr<riddle::statement>> body;
+        body.push_back(std::make_unique<riddle::expression_statement>(std::make_unique<riddle::geq_expression>(std::make_unique<riddle::id_expression>(std::vector<riddle::id_token>{riddle::id_token(CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME, 0, 0, 0, 0)}), std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)))));
+        body.push_back(std::make_unique<riddle::expression_statement>(std::make_unique<riddle::geq_expression>(std::make_unique<riddle::id_expression>(std::vector<riddle::id_token>{riddle::id_token(CONSUMABLE_RESOURCE_CAPACITY_NAME, 0, 0, 0, 0)}), std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)))));
+        // we add the constructor to the consumable-resource type..
+        add_constructor(std::make_unique<riddle::constructor>(*this, std::move(args), std::move(inits), std::move(body)));
+
+        // we create the `Produce` predicate's arguments..
+        std::vector<std::unique_ptr<riddle::field>> produce_args;
+        produce_args.push_back(std::make_unique<riddle::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_AMOUNT_NAME));
+        // we create the `Produce` predicate's body..
+        std::vector<std::unique_ptr<riddle::statement>> produce_body;
+        produce_body.push_back(std::make_unique<riddle::expression_statement>(std::make_unique<riddle::geq_expression>(std::make_unique<riddle::id_expression>(std::vector<riddle::id_token>{riddle::id_token(CONSUMABLE_RESOURCE_AMOUNT_NAME, 0, 0, 0, 0)}), std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)))));
+        // we create the `Produce` predicate..
+        auto produce_pred = std::make_unique<riddle::predicate>(*this, CONSUMABLE_RESOURCE_PRODUCTION_PREDICATE_NAME, std::move(produce_args), std::move(produce_body));
+        add_parent(*produce_pred, get_solver().get_predicate(INTERVAL_PREDICATE_NAME)->get());
+        // we add the `Produce` predicate to the consumable-resource type..
+        add_predicate(std::move(produce_pred));
+
+        // we create the `Consume` predicate's arguments..
+        std::vector<std::unique_ptr<riddle::field>> consume_args;
+        consume_args.push_back(std::make_unique<riddle::field>(slv.get_real_type(), CONSUMABLE_RESOURCE_AMOUNT_NAME));
+        // we create the `Consume` predicate's body..
+        std::vector<std::unique_ptr<riddle::statement>> consume_body;
+        consume_body.push_back(std::make_unique<riddle::expression_statement>(std::make_unique<riddle::geq_expression>(std::make_unique<riddle::id_expression>(std::vector<riddle::id_token>{riddle::id_token(CONSUMABLE_RESOURCE_AMOUNT_NAME, 0, 0, 0, 0)}), std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)))));
+        // we create the `Consume` predicate..
+        auto consume_pred = std::make_unique<riddle::predicate>(*this, CONSUMABLE_RESOURCE_CONSUMPTION_PREDICATE_NAME, std::move(consume_args), std::move(consume_body));
+        add_parent(*consume_pred, get_solver().get_predicate(INTERVAL_PREDICATE_NAME)->get());
+        // we add the `Consume` predicate to the consumable-resource type..
+        add_predicate(std::move(consume_pred));
+    }
 
     void consumable_resource::new_atom(std::shared_ptr<ratio::atom> &atm) noexcept
     {

@@ -9,7 +9,7 @@
 
 namespace ratio
 {
-    state_variable::state_variable(solver &slv) : smart_type(slv, STATE_VARIABLE_TYPE_NAME) {}
+    state_variable::state_variable(solver &slv) : smart_type(slv, STATE_VARIABLE_TYPE_NAME) { add_constructor(std::make_unique<riddle::constructor>(*this, std::vector<std::unique_ptr<riddle::field>>{}, std::vector<riddle::init_element>{}, std::vector<std::unique_ptr<riddle::statement>>{})); }
 
     void state_variable::new_predicate(riddle::predicate &pred) { add_parent(pred, get_predicate(INTERVAL_PREDICATE_NAME)->get()); }
 

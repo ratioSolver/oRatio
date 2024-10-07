@@ -8,7 +8,37 @@
 
 namespace ratio
 {
-    reusable_resource::reusable_resource(solver &slv) : smart_type(slv, REUSABLE_RESOURCE_TYPE_NAME) {}
+    reusable_resource::reusable_resource(solver &slv) : smart_type(slv, REUSABLE_RESOURCE_TYPE_NAME)
+    {
+        // we add the `capacity` field to the reusable-resource type..
+        add_field(std::make_unique<riddle::field>(slv.get_real_type(), REUSABLE_RESOURCE_CAPACITY_NAME));
+
+        // we create the constructor's arguments..
+        std::vector<std::unique_ptr<riddle::field>> args;
+        args.push_back(std::make_unique<riddle::field>(slv.get_real_type(), REUSABLE_RESOURCE_CAPACITY_NAME));
+        // we create the constructor's initializations..
+        std::vector<riddle::init_element> inits;
+        std::vector<std::unique_ptr<riddle::expression>> capacity_args;
+        capacity_args.push_back(std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)));
+        inits.emplace_back(riddle::id_token(REUSABLE_RESOURCE_CAPACITY_NAME, 0, 0, 0, 0), std::move(capacity_args));
+        // we create the constructor's body..
+        std::vector<std::unique_ptr<riddle::statement>> body;
+        body.push_back(std::make_unique<riddle::expression_statement>(std::make_unique<riddle::geq_expression>(std::make_unique<riddle::id_expression>(std::vector<riddle::id_token>{riddle::id_token(REUSABLE_RESOURCE_CAPACITY_NAME, 0, 0, 0, 0)}), std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)))));
+        // we add the constructor to the reusable-resource type..
+        add_constructor(std::make_unique<riddle::constructor>(*this, std::move(args), std::move(inits), std::move(body)));
+
+        // we create the `Use` predicate's arguments..
+        std::vector<std::unique_ptr<riddle::field>> use_args;
+        use_args.push_back(std::make_unique<riddle::field>(slv.get_real_type(), REUSABLE_RESOURCE_AMOUNT_NAME));
+        // we create the `Use` predicate's body..
+        std::vector<std::unique_ptr<riddle::statement>> use_body;
+        use_body.push_back(std::make_unique<riddle::expression_statement>(std::make_unique<riddle::geq_expression>(std::make_unique<riddle::id_expression>(std::vector<riddle::id_token>{riddle::id_token(REUSABLE_RESOURCE_AMOUNT_NAME, 0, 0, 0, 0)}), std::make_unique<riddle::real_expression>(riddle::real_token(utils::rational::zero, 0, 0, 0, 0)))));
+        // we create the `Use` predicate..
+        auto use_pred = std::make_unique<riddle::predicate>(*this, REUSABLE_RESOURCE_PREDICATE_NAME, std::move(use_args), std::move(use_body));
+        add_parent(*use_pred, get_solver().get_predicate(INTERVAL_PREDICATE_NAME)->get());
+        // we add the `Use` predicate to the reusable-resource type..
+        add_predicate(std::move(use_pred));
+    }
 
     std::vector<std::vector<std::pair<utils::lit, double>>> reusable_resource::get_current_incs() noexcept
     {

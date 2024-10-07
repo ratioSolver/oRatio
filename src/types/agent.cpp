@@ -4,7 +4,7 @@
 
 namespace ratio
 {
-    agent::agent(solver &slv) : smart_type(slv, AGENT_TYPE_NAME) {}
+    agent::agent(solver &slv) : smart_type(slv, AGENT_TYPE_NAME) { add_constructor(std::make_unique<riddle::constructor>(*this, std::vector<std::unique_ptr<riddle::field>>{}, std::vector<riddle::init_element>{}, std::vector<std::unique_ptr<riddle::statement>>{})); }
 
     void agent::new_atom(std::shared_ptr<ratio::atom> &atm) noexcept
     {
