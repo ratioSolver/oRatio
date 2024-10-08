@@ -79,7 +79,8 @@ namespace ratio
         // we add a causal link from the target atom's reason to this resolver..
         get_flaw().get_solver().get_graph().new_causal_link(target->get_reason(), *this);
 
-        for (const auto &res : get_flaw().get_resolvers())
+        assert(target->get_reason().is_expanded());
+        for (const auto &res : target->get_reason().get_resolvers())
             if (dynamic_cast<activate_fact *>(&res.get()) || dynamic_cast<activate_goal *>(&res.get()))
                 if (!get_flaw().get_solver().get_sat().new_clause({!get_rho(), res.get().get_rho()})) // we disable this unification if the target atom is not activable..
                     throw riddle::unsolvable_exception();
@@ -97,7 +98,7 @@ namespace ratio
     }
 
 #ifdef ENABLE_API
-    json::json atom_flaw::get_data() const noexcept { return {{"type", "atom_flaw"}, {"atom", {{"id", get_id(*atm)}, {"is_fact", atm->is_fact()}, {"type", atm->get_type().get_name()}, {"sigma", variable(atm->get_sigma())}}}}; }
+    json::json atom_flaw::get_data() const noexcept { return {{"type", "atom"}, {"atom", {{"id", get_id(*atm)}, {"is_fact", atm->is_fact()}, {"type", atm->get_type().get_name()}, {"sigma", variable(atm->get_sigma())}}}}; }
 
     json::json atom_flaw::activate_fact::get_data() const noexcept { return {{"type", "activate_fact"}}; }
 

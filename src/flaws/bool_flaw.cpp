@@ -26,7 +26,7 @@ namespace ratio
     bool_flaw::choose_value::choose_value(bool_flaw &bf, const utils::rational &cost, const utils::lit &l) : resolver(bf, l, cost) {}
 
 #ifdef ENABLE_API
-    json::json bool_flaw::get_data() const noexcept { return {{"type", "bool_flaw"}, {"lit", to_string(l)}}; }
+    json::json bool_flaw::get_data() const noexcept { return {{"type", "bool"}, {"lit", to_string(l)}}; }
 
     json::json bool_flaw::choose_value::get_data() const noexcept { return {{"type", "choose_value"}}; }
 #endif
