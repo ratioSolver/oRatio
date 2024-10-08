@@ -88,18 +88,19 @@ namespace ratio
         std::set<utils::inf_rational> pulses;
         for (const auto &pred : rhs.get_predicates())
             for (const auto &atm : pred.get().get_atoms())
-                if (is_impulse(static_cast<atom &>(*atm)))
-                {
-                    utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get(AT_NAME)));
-                    starting_atoms[start].insert(static_cast<atom *>(&*atm));
-                    pulses.insert(start);
-                }
-                else if (is_interval(static_cast<atom &>(*atm)))
-                {
-                    utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get(START_NAME)));
-                    starting_atoms[start].insert(static_cast<atom *>(&*atm));
-                    pulses.insert(start);
-                }
+                if (rhs.get_sat().value(static_cast<atom &>(*atm).get_sigma()) == utils::True) // we get only the active atoms..
+                    if (is_impulse(static_cast<atom &>(*atm)))
+                    { // we have an impulse atom..
+                        utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get(AT_NAME)));
+                        starting_atoms[start].insert(static_cast<atom *>(&*atm));
+                        pulses.insert(start);
+                    }
+                    else if (is_interval(static_cast<atom &>(*atm)))
+                    { // we have an interval atom..
+                        utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get(START_NAME)));
+                        starting_atoms[start].insert(static_cast<atom *>(&*atm));
+                        pulses.insert(start);
+                    }
         if (!starting_atoms.empty())
         { // we have some root atoms in the solver timeline..
             json::json slv_tl{{"id", get_id(rhs)}, {"type", "Solver"}, {"name", rhs.get_name()}};
