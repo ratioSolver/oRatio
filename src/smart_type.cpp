@@ -22,14 +22,6 @@ namespace ratio
         return resolvers;
     }
 
-    atom_listener::~atom_listener()
-    {
-        // Remove listeners from the atom's solver
-        static_cast<solver &>(atm.get_core()).get_lra_theory().remove_listener(*this);
-        static_cast<solver &>(atm.get_core()).get_rdl_theory().remove_listener(*this);
-        static_cast<solver &>(atm.get_core()).get_ov_theory().remove_listener(*this);
-    }
-
     atom_listener::atom_listener(riddle::atom &atm) : atm(atm)
     {
         // Add listeners to the atom's solver

@@ -89,11 +89,6 @@ namespace ratio
      */
     atom_listener(riddle::atom &atm);
 
-    /**
-     * @brief Default destructor for the atom_listener class.
-     */
-    virtual ~atom_listener();
-
   protected:
     riddle::atom &atm; // The atom object to listen to
   };

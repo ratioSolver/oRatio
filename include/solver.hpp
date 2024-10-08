@@ -45,7 +45,7 @@ namespace ratio
 
   public:
     solver(std::string_view name = "oRatio") noexcept;
-    virtual ~solver() = default;
+    virtual ~solver();
 
     const std::string &get_name() const noexcept { return name; }
 

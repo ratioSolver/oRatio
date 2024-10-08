@@ -28,6 +28,7 @@ namespace ratio
     atom::atom(riddle::predicate &p, bool is_fact, atom_flaw &reason, std::map<std::string, std::shared_ptr<item>, std::less<>> &&args) : riddle::atom(p, is_fact, utils::lit(static_cast<solver &>(p.get_scope().get_core()).get_sat().new_var()), std::move(args)), reason(reason) {}
 
     solver::solver(std::string_view name) noexcept : name(name), sat(), lra(sat.new_theory<semitone::lra_theory>()), idl(sat.new_theory<semitone::idl_theory>()), rdl(sat.new_theory<semitone::rdl_theory>()), ov(sat.new_theory<semitone::ov_theory>()), gr(sat.new_theory<graph>(*this)) {}
+    solver::~solver() { LOG_DEBUG("[" << name << "] Destroying solver"); }
 
     void solver::init()
     {
