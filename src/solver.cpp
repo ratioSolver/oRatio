@@ -278,7 +278,7 @@ namespace ratio
             else
             {
                 assert(is_constant(*rhs));
-                return std::make_shared<riddle::bool_item>(get_bool_type(), ov.allows(std::static_pointer_cast<riddle::enum_item>(lhs)->get_value(), static_cast<utils::enum_val &>(*rhs)));
+                return std::make_shared<riddle::bool_item>(get_bool_type(), ov.allows(std::static_pointer_cast<riddle::enum_item>(lhs)->get_value(), *rhs));
             }
         }
         else if (is_enum(*rhs))
@@ -611,5 +611,109 @@ namespace ratio
         }
     }
 
-    std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, std::string_view name) noexcept { return enm.get(name); }
+    std::shared_ptr<riddle::item> solver::get(riddle::enum_item &enm, std::string_view name) noexcept
+    {
+        auto vs = ov.domain(enm.get_value()); // the domain of the enum item..
+        assert(!vs.empty());
+        // different values of the enum can represent the same item, so we group them by the item they represent..
+        std::unordered_map<riddle::item *, std::vector<utils::lit>> itm_vars;
+        for (const auto &v : vs)
+            itm_vars[dynamic_cast<riddle::env *>(&v.get())->get(name).get()].emplace_back(ov.allows(enm.get_value(), v));
+
+        std::vector<riddle::item *> c_vals;
+        std::vector<utils::lit> c_vars;
+        for (const auto &[itm, vars] : itm_vars)
+        {
+            c_vals.push_back(itm);
+            std::vector<utils::lit> vs = vars;
+            const auto c_var = sat.new_disj(std::move(vs)); // setting a variable to true means that the item has been selected..
+            c_vars.push_back(c_var);
+            // if an item is selected, then all the other items are necessarily negated..
+            for (const auto &val_not : itm_vars)
+                if (itm != val_not.first)
+                    for (const auto &v : val_not.second)
+                    {
+                        [[maybe_unused]] bool nc = sat.new_clause({!c_var, !v});
+                        assert(nc);
+                    }
+        }
+
+        if (is_bool(enm)) // the enum item is a boolean item..
+        {
+            auto b = new_bool(); // we create a new boolean item..
+            [[maybe_unused]] bool nc;
+            for (size_t i = 0; i < c_vars.size(); i++)
+            { // if an item is selected, the value of the boolean item is the value of the item..
+                nc = sat.new_clause({!c_vars[i], sat.new_eq(static_cast<riddle::bool_item *>(c_vals[i])->get_value(), b->get_value())});
+                assert(nc);
+            }
+            return b;
+        }
+        else if (is_int(enm) || is_real(enm)) // the enum item is an arithmetic item..
+        {
+            auto min = utils::inf_rational(utils::rational::positive_infinite);
+            auto max = utils::inf_rational(utils::rational::negative_infinite);
+            // we compute the min and max values..
+            for (const auto &val : c_vals)
+            {
+                const auto [lb, ub] = lra.bounds(static_cast<riddle::arith_item *>(val)->get_value());
+                min = std::min(min, lb);
+                max = std::max(max, ub);
+            }
+            if (min == max)
+            { // we have a constant..
+                assert((is_int(enm) && min.get_infinitesimal() == 0 && min.get_rational().denominator() == 1) || (is_real(enm) && min.get_infinitesimal() == 0));
+                return std::make_shared<riddle::arith_item>(get_real_type(), utils::lin(min.get_rational()));
+            }
+            else
+            { // we have a variable..
+                assert((is_int(enm) && min.get_infinitesimal() == 0 && min.get_rational().denominator() == 1) || is_real(enm));
+                auto x = std::make_shared<riddle::arith_item>(get_real_type(), utils::lin(lra.new_var(min, max), utils::rational::one));
+                [[maybe_unused]] bool nc;
+                for (size_t i = 0; i < c_vars.size(); i++)
+                { // if an item is selected, the value of the arithmetic item is the value of the item..
+                    nc = sat.new_clause({!c_vars[i], lra.new_eq(static_cast<riddle::arith_item *>(c_vals[i])->get_value(), x->get_value())});
+                    assert(nc);
+                }
+                return x;
+            }
+        }
+        else if (is_time(enm)) // the enum item is a time item..
+        {
+            auto min = utils::inf_rational(utils::rational::positive_infinite);
+            auto max = utils::inf_rational(utils::rational::negative_infinite);
+            // we compute the min and max values..
+            for (const auto &val : c_vals)
+            {
+                const auto [lb, ub] = lra.bounds(static_cast<riddle::arith_item *>(val)->get_value());
+                min = std::min(min, lb);
+                max = std::max(max, ub);
+            }
+            if (min == max) // we have a constant..
+            {
+                assert(min.get_infinitesimal() == 0);
+                return std::make_shared<riddle::arith_item>(get_time_type(), utils::lin(min.get_rational()));
+            }
+            else
+            { // we have a variable..
+                auto x = new_time();
+                [[maybe_unused]] bool nc;
+                nc = sat.new_clause({rdl.new_distance(0, x->get_value().vars.begin()->first, min, max)});
+                for (size_t i = 0; i < c_vars.size(); i++)
+                { // if an item is selected, the value of the time item is the value of the item..
+                    nc = sat.new_clause({!c_vars[i], rdl.new_eq(static_cast<riddle::arith_item *>(c_vals[i])->get_value(), x->get_value())});
+                    assert(nc);
+                }
+                return x;
+            }
+        }
+        else // the enum item is an enum item..
+        {
+            assert(is_enum(enm));
+            std::vector<std::pair<std::reference_wrapper<utils::enum_val>, utils::lit>> vals;
+            for (size_t i = 0; i < c_vals.size(); i++)
+                vals.emplace_back(*c_vals[i], c_vars[i]);
+            return std::make_shared<riddle::enum_item>(static_cast<riddle::component_type &>(enm.get_type()).get_field(name).value().get().get_type(), ov.new_var(std::move(vals)));
+        }
+    }
 } // namespace ratio
