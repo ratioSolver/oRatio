@@ -6,7 +6,15 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive) noexcept : s(s), causes(causes), exclusive(exclusive), position(s.get_idl_theory().new_var()) {}
+    flaw::flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive) noexcept : s(s), causes(causes), exclusive(exclusive), position(s.get_idl_theory().new_var())
+    {
+#ifdef ENABLE_API
+        s.get_sat().add_listener(*this);
+        s.get_idl_theory().add_listener(*this);
+
+        listen_idl(position);
+#endif
+    }
 
     resolver &flaw::get_cheapest_resolver() const noexcept
     {
@@ -38,5 +46,14 @@ namespace ratio
 
         // we initialize the phi variable of this flaw as the conjunction of the flaw's causes' rho variables..
         phi = s.get_sat().new_conj(std::move(cs));
+#ifdef ENABLE_API
+        listen_sat(variable(phi));
+#endif
     }
+
+#ifdef ENABLE_API
+    void flaw::on_sat_value_changed(VARIABLE_TYPE v) { s.flaw_state_changed(*this); }
+
+    void flaw::on_idl_value_changed(VARIABLE_TYPE v) { s.flaw_position_changed(*this); }
+#endif
 } // namespace ratio

@@ -1,11 +1,12 @@
 #pragma once
 
-#include <cstdint>
-#include <vector>
 #include "rational.hpp"
 #include "lit.hpp"
+#include <cstdint>
+#include <vector>
 
 #ifdef ENABLE_API
+#include "sat_value_listener.hpp"
 #include "json.hpp"
 #endif
 
@@ -23,7 +24,11 @@ namespace ratio
    * It contains information about the flaw it solves, the rho variable, the intrinsic cost, and the preconditions.
    * Derived classes must implement the `apply()` function to apply the resolver.
    */
+#ifdef ENABLE_API
+  class resolver : public semitone::sat_value_listener
+#else
   class resolver
+#endif
   {
     friend class graph;
     friend class flaw;
@@ -72,6 +77,8 @@ namespace ratio
     virtual void apply() = 0;
 
 #ifdef ENABLE_API
+    void on_sat_value_changed(VARIABLE_TYPE v) override;
+
     /**
      * @brief Get a JSON representation of the data of the resolver.
      *

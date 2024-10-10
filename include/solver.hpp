@@ -42,6 +42,10 @@ namespace ratio
   class solver : public riddle::core
   {
     friend class graph;
+#ifdef ENABLE_API
+    friend class flaw;
+    friend class resolver;
+#endif
 
   public:
     solver(std::string_view name = "oRatio") noexcept;

@@ -1,13 +1,15 @@
 #pragma once
 
+#include "lit.hpp"
+#include "rational.hpp"
 #include <functional>
 #include <memory>
 #include <vector>
 #include <cstdint>
-#include "lit.hpp"
-#include "rational.hpp"
 
 #ifdef ENABLE_API
+#include "sat_value_listener.hpp"
+#include "idl_value_listener.hpp"
 #include "json.hpp"
 #endif
 
@@ -23,7 +25,11 @@ namespace ratio
    *
    * The `flaw` class represents a flaw in a solver. A flaw is a problem or inconsistency that needs to be resolved by applying resolvers. It keeps track of the resolvers that caused the flaw, the resolvers that support the flaw, the estimated cost of the flaw, and other relevant information.
    */
+#ifdef ENABLE_API
+  class flaw : public semitone::sat_value_listener, public semitone::idl_value_listener
+#else
   class flaw
+#endif
   {
     friend class graph;
 
@@ -124,6 +130,10 @@ namespace ratio
     virtual void compute_resolvers() = 0;
 
 #ifdef ENABLE_API
+    void on_sat_value_changed(VARIABLE_TYPE v) override;
+
+    void on_idl_value_changed(VARIABLE_TYPE v) override;
+
     /**
      * @brief Get a JSON representation of the data of the flaw.
      *
