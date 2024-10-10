@@ -128,8 +128,39 @@ namespace ratio
                             {
                                 // we add the MCS to the set of found flaws..
                                 rr_flaws.insert(mcs);
-                                get_solver().get_graph().new_flaw<rr_flaw>(*this, mcs);
+                                get_solver().get_graph().new_flaw<rr_flaw>(*this, *rr, mcs);
                             }
+
+                            // we compute the possible resolvers..
+                            std::vector<std::pair<utils::lit, double>> choices;
+                            std::unordered_set<VARIABLE_TYPE> vars;
+                            // we consider all the pairs of atoms in the Minimal Conflict Sets (MCSs)..
+                            for (const auto &as : utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
+                            {
+                                const auto a0_start = std::static_pointer_cast<riddle::arith_item>(as[0]->get(START_NAME))->get_value();
+                                const auto a0_end = std::static_pointer_cast<riddle::arith_item>(as[0]->get(END_NAME))->get_value();
+                                const auto a1_start = std::static_pointer_cast<riddle::arith_item>(as[1]->get(START_NAME))->get_value();
+                                const auto a1_end = std::static_pointer_cast<riddle::arith_item>(as[1]->get(END_NAME))->get_value();
+
+                                if (auto a0_it = leqs.find(as[0]); a0_it != leqs.end())
+                                    if (auto a1_it = a0_it->second.find(as[1]); a1_it != a0_it->second.end())
+                                        if (get_solver().get_sat().value(a1_it->second) == utils::Undefined && vars.insert(variable(a1_it->second)).second)
+                                            choices.push_back({a1_it->second, commit(a0_start, a0_end, a1_start, a1_end)});
+                                if (auto a1_it = leqs.find(as[1]); a1_it != leqs.end())
+                                    if (auto a0_it = a1_it->second.find(as[0]); a0_it != a1_it->second.end())
+                                        if (get_solver().get_sat().value(a0_it->second) == utils::Undefined && vars.insert(variable(a0_it->second)).second)
+                                            choices.push_back({a0_it->second, commit(a1_start, a1_end, a0_start, a0_end)});
+                                for (const auto atm : as)
+                                    if (auto frb_it = frbs.find(atm); frb_it != frbs.end())
+                                    {
+                                        auto nr_frbs = std::count_if(frb_it->second.cbegin(), frb_it->second.cend(), [this](const auto &frb)
+                                                                     { return get_solver().get_sat().value(frb.second) == utils::Undefined; });
+                                        for (const auto &frb : frb_it->second)
+                                            if (get_solver().get_sat().value(frb.second) == utils::Undefined && vars.insert(variable(frb.second)).second)
+                                                choices.push_back({frb.second, 1. - 1. / nr_frbs});
+                                    }
+                            }
+                            incs.push_back(std::move(choices));
                         }
 
                         // we decrease the size of the current mcs..
@@ -139,6 +170,9 @@ namespace ratio
                     }
                 }
             }
+
+            if (!has_conflict) // the reusable-resource instance is consistent..
+                to_check.erase(rr);
         }
         return incs;
     }
@@ -189,6 +223,17 @@ namespace ratio
         auto listener = std::make_unique<rr_atom_listener>(*this, *atm);
         listener->something_changed();
         listeners.push_back(std::move(listener));
+    }
+
+    double reusable_resource::commit(const utils::lin &a0_start, const utils::lin &a0_end, const utils::lin &a1_start, const utils::lin &a1_end) noexcept
+    {
+#ifdef DL_TN
+        const auto [min, max] = get_solver().get_rdl_theory().distance(a0_end, a1_start);
+        return is_infinite(min) || is_infinite(max) ? 0.5 : to_double((std::min(max.get_rational(), utils::rational::zero) - std::min(min.get_rational(), utils::rational::zero)) / (max.get_rational() - min.get_rational()));
+#elif defined(LRA_TN)
+        const auto work = (get_solver().get_lra_theory().value(a1_end).get_rational() - get_solver().get_lra_theory().value(a1_start).get_rational()) * (get_solver().get_lra_theory().value(a0_end).get_rational() - get_solver().get_lra_theory().value(a1_start).get_rational());
+        return work == utils::rational::zero ? -std::numeric_limits<double>::max() : 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator());
+#endif
     }
 
 #ifdef ENABLE_API
@@ -277,8 +322,28 @@ namespace ratio
     }
 #endif
 
-    reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr, const std::set<atom *> &mcs) : flaw(rr.get_solver(), smart_type::get_resolvers(mcs)), rr(rr), mcs(mcs) {}
-    void reusable_resource::rr_flaw::compute_resolvers() {}
+    reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr_tp, const riddle::component &rr, const std::set<atom *> &mcs) : flaw(rr_tp.get_solver(), smart_type::get_resolvers(mcs)), rr_tp(rr_tp), rr(rr), mcs(mcs) {}
+    void reusable_resource::rr_flaw::compute_resolvers()
+    {
+        std::unordered_set<VARIABLE_TYPE> vars;
+        for (const auto &as : utils::combinations(std::vector<atom *>(mcs.cbegin(), mcs.cend()), 2))
+        {
+            if (const auto a0_it = rr_tp.leqs.find(as[0]); a0_it != rr_tp.leqs.cend())
+                if (const auto a0_a1_it = a0_it->second.find(as[1]); a0_a1_it != a0_it->second.cend())
+                    if (get_solver().get_sat().value(a0_a1_it->second) != utils::False && vars.insert(variable(a0_a1_it->second)).second)
+                        get_solver().get_graph().new_resolver<order_resolver>(*this, a0_a1_it->second, *as[0], *as[1]);
+
+            if (const auto a1_it = rr_tp.leqs.find(as[1]); a1_it != rr_tp.leqs.cend())
+                if (const auto a1_a0_it = a1_it->second.find(as[0]); a1_a0_it != a1_it->second.cend())
+                    if (get_solver().get_sat().value(a1_a0_it->second) != utils::False && vars.insert(variable(a1_a0_it->second)).second)
+                        get_solver().get_graph().new_resolver<order_resolver>(*this, a1_a0_it->second, *as[1], *as[0]);
+        }
+        for (const auto atm : mcs)
+            if (const auto atm_frbs = rr_tp.frbs.find(atm); atm_frbs != rr_tp.frbs.cend())
+                for (const auto &[atm_rr, rr_sel] : atm_frbs->second)
+                    if (get_solver().get_sat().value(rr_sel) != utils::False && vars.insert(variable(rr_sel)).second)
+                        get_solver().get_graph().new_resolver<forbid_resolver>(*this, rr_sel, *atm, static_cast<riddle::component &>(*atm_rr));
+    }
 
 #ifdef ENABLE_API
     json::json reusable_resource::rr_flaw::get_data() const noexcept

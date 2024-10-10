@@ -515,6 +515,9 @@ namespace ratio
 
         auto incs = get_incs(); // all the current inconsistencies..
         LOG_DEBUG("[" << get_name() << "] Found " << incs.size() << " inconsistencies");
+        if (!get_sat().propagate())
+            throw riddle::unsolvable_exception();
+        STATE_CHANGED();
 
         // we solve the inconsistencies..
         while (!incs.empty())
@@ -544,6 +547,7 @@ namespace ratio
                         gr.record(std::move(learnt));
                         if (!get_sat().propagate())
                             throw riddle::unsolvable_exception();
+                        STATE_CHANGED();
                     }
                 else
                 { // we have a non-trivial inconsistencies, so we have to take a decision..
@@ -574,6 +578,8 @@ namespace ratio
 
             incs = get_incs(); // we get the new inconsistencies..
             LOG_DEBUG("[" << get_name() << "] Found " << incs.size() << " inconsistencies");
+            if (!get_sat().propagate())
+                throw riddle::unsolvable_exception();
         }
 
         LOG_DEBUG("[" << get_name() << "] Inconsistencies solved");

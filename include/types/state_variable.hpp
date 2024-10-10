@@ -24,6 +24,17 @@ namespace ratio
 
     void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept override;
 
+    /**
+     * @brief Computes the cost of ordering two atoms.
+     *
+     * @param a0_start The start variable of the first atom.
+     * @param a0_end The end variable of the first atom.
+     * @param a1_start The start variable of the second atom.
+     * @param a1_end The end variable of the second atom.
+     * @return The cost of ordering the two atoms.
+     */
+    double commit(const utils::lin &a0_start, const utils::lin &a0_end, const utils::lin &a1_start, const utils::lin &a1_end) noexcept;
+
 #ifdef ENABLE_API
     json::json extract() const noexcept override;
 #endif
@@ -39,7 +50,7 @@ namespace ratio
     class sv_flaw final : public flaw
     {
     public:
-      sv_flaw(state_variable &sv, const std::set<atom *> &mcs);
+      sv_flaw(state_variable &sv_tp, const riddle::component &sv, const std::set<atom *> &mcs);
 
     private:
       void compute_resolvers() override;
@@ -112,7 +123,8 @@ namespace ratio
 #endif
 
     private:
-      state_variable &sv;
+      state_variable &sv_tp;
+      const riddle::component &sv;
       const std::set<atom *> mcs;
     };
 
