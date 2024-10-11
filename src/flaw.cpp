@@ -6,7 +6,7 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive) noexcept : s(s), causes(causes), exclusive(exclusive), position(s.get_idl_theory().new_var())
+    flaw::flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive, bool enqueue) noexcept : s(s), causes(causes), exclusive(exclusive), enqueue(enqueue), position(s.get_idl_theory().new_var())
     {
 #ifdef ENABLE_API
         s.get_sat().add_listener(*this);

@@ -4,7 +4,7 @@
 
 namespace ratio
 {
-    disj_flaw::disj_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&lits, bool exclusive) noexcept : flaw(s, std::move(causes), exclusive), lits(lits) { assert(!lits.empty()); }
+    disj_flaw::disj_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&lits, bool exclusive) noexcept : flaw(s, std::move(causes), exclusive, false), lits(lits) { assert(!lits.empty()); }
 
     void disj_flaw::compute_resolvers()
     {

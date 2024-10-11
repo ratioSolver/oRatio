@@ -34,7 +34,7 @@ namespace ratio
     friend class graph;
 
   public:
-    flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive = false) noexcept;
+    flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, bool exclusive = false, bool enqueue = true) noexcept;
     virtual ~flaw() = default;
 
     /**
@@ -147,7 +147,8 @@ namespace ratio
   private:
     solver &s;                                                     // the solver this flaw belongs to..
     std::vector<std::reference_wrapper<resolver>> causes;          // the resolvers that caused this flaw..
-    bool exclusive;                                                // whether this flaw is exclusive..
+    const bool exclusive;                                          // whether this flaw is exclusive..
+    const bool enqueue;                                            // whether this flaw must be enqueued or can be expanded..
     utils::lit phi;                                                // the literal indicating whether the flaw is active or not (this literal is initialized by the `init` procedure)..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
     VARIABLE_TYPE position;                                        // the position variable (i.e., an integer time-point) associated to this flaw..

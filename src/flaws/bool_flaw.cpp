@@ -4,7 +4,7 @@
 
 namespace ratio
 {
-    bool_flaw::bool_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, const utils::lit &l) noexcept : flaw(s, std::move(causes)), l(l) {}
+    bool_flaw::bool_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, const utils::lit &l) noexcept : flaw(s, std::move(causes), true, false), l(l) {}
 
     void bool_flaw::compute_resolvers()
     {

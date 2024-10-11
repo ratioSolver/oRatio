@@ -253,7 +253,7 @@ namespace ratio
     }
 #endif
 
-    state_variable::sv_flaw::sv_flaw(state_variable &sv_tp, const riddle::component &sv, const std::set<atom *> &mcs) : flaw(sv_tp.get_solver(), smart_type::get_resolvers(mcs)), sv_tp(sv_tp), sv(sv), mcs(mcs) {}
+    state_variable::sv_flaw::sv_flaw(state_variable &sv_tp, const riddle::component &sv, const std::set<atom *> &mcs) : flaw(sv_tp.get_solver(), smart_type::get_resolvers(mcs), true, false), sv_tp(sv_tp), sv(sv), mcs(mcs) {}
     void state_variable::sv_flaw::compute_resolvers()
     {
         std::unordered_set<VARIABLE_TYPE> vars;

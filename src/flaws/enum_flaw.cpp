@@ -7,10 +7,7 @@
 
 namespace ratio
 {
-    enum_flaw::enum_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::shared_ptr<riddle::enum_item> item) noexcept : flaw(s, std::move(causes)), itm(item)
-    {
-        assert(itm != nullptr);
-    }
+    enum_flaw::enum_flaw(solver &s, std::vector<std::reference_wrapper<resolver>> &&causes, std::shared_ptr<riddle::enum_item> item) noexcept : flaw(s, std::move(causes), true, false), itm(item) { assert(itm != nullptr); }
 
     void enum_flaw::compute_resolvers()
     { // we add a resolver for each possible value of the enum..

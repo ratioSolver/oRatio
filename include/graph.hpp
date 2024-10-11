@@ -72,12 +72,16 @@ namespace ratio
         f->init();
         NEW_FLAW(*f);
         phis[variable(f->phi)].push_back(std::unique_ptr<flaw>(f));
-        flaw_q.push_back(*f); // we add the flaw to the flaw queue..
 
         if (get_sat().value(f->phi) == utils::True)
           active_flaws.insert(f); // the flaw is already active..
         else
           bind(variable(f->phi)); // we listen for the flaw to become active..
+
+        if (f->enqueue)
+          flaw_q.push_back(*f); // we add the flaw to the flaw queue..
+        else
+          expand_flaw(*f);
       }
       else // we add the flaw to the pending flaws..
         pending_flaws.push_back(std::unique_ptr<flaw>(f));

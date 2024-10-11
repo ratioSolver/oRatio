@@ -322,7 +322,7 @@ namespace ratio
     }
 #endif
 
-    reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr_tp, const riddle::component &rr, const std::set<atom *> &mcs) : flaw(rr_tp.get_solver(), smart_type::get_resolvers(mcs)), rr_tp(rr_tp), rr(rr), mcs(mcs) {}
+    reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr_tp, const riddle::component &rr, const std::set<atom *> &mcs) : flaw(rr_tp.get_solver(), smart_type::get_resolvers(mcs), true, false), rr_tp(rr_tp), rr(rr), mcs(mcs) {}
     void reusable_resource::rr_flaw::compute_resolvers()
     {
         std::unordered_set<VARIABLE_TYPE> vars;
