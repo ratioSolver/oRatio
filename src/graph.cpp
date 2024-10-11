@@ -259,12 +259,16 @@ namespace ratio
                 c_f.init();
                 NEW_FLAW(c_f);
                 phis[variable(c_f.get_phi())].push_back(std::move(f));
-                flaw_q.push_back(c_f); // we add the flaw to the flaw queue..
 
                 if (get_sat().value(c_f.phi) == utils::True)
                     active_flaws.insert(&c_f); // the flaw is already active..
                 else
                     bind(variable(c_f.phi)); // we listen for the flaw to become active..
+
+                if (c_f.enqueue)
+                    flaw_q.push_back(c_f); // we add the flaw to the flaw queue..
+                else
+                    expand_flaw(c_f);
             }
             pending_flaws.clear();
         }
