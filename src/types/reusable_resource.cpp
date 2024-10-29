@@ -201,8 +201,6 @@ namespace ratio
 #elif defined(LRA_TN)
             auto before = get_solver().get_lra_theory().new_leq(std::static_pointer_cast<riddle::arith_item>(end)->get_value(), std::static_pointer_cast<riddle::arith_item>(c_start)->get_value());
             auto after = get_solver().get_lra_theory().new_leq(std::static_pointer_cast<riddle::arith_item>(c_end)->get_value(), std::static_pointer_cast<riddle::arith_item>(start)->get_value());
-            [[maybe_unused]] bool nc = get_solver().get_sat().new_clause({!before, !after}); // the ordering constraints are always disjunctive..
-            assert(nc);
 #endif
             if (get_solver().get_sat().value(before) == utils::Undefined)
                 leqs[atm.get()][&c_atm.get()] = before;
