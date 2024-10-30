@@ -166,7 +166,6 @@ namespace ratio
 
     bool graph::propagate(const utils::lit &p) noexcept
     {
-        assert(cnfl.empty());
         assert(phis.count(variable(p)) || rhos.count(variable(p)));
 
         if (auto phi_it = phis.find(variable(p)); phi_it != phis.end()) // some flaws' state has changed..
@@ -211,8 +210,7 @@ namespace ratio
     }
 
     bool graph::check() noexcept
-    {                         // we check the graph for consistency..
-        assert(cnfl.empty()); // the conflict set should be empty..
+    { // we check the graph for consistency..
         assert(std::all_of(active_flaws.cbegin(), active_flaws.cend(), [this](const auto &f)
                            { return get_sat().value(f->get_phi()) == utils::True; })); // all active flaws should be active..
         assert(std::all_of(phis.cbegin(), phis.cend(), [this](const auto &p)
@@ -233,7 +231,6 @@ namespace ratio
     void graph::pop() noexcept
     {
         LOG_TRACE("[" << slv.get_name() << "] Popping the current trail");
-        assert(cnfl.empty());
         assert(!trail.empty());
         auto &t = trail.back();
         // we restore the previous state of the graph..

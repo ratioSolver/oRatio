@@ -262,7 +262,12 @@ namespace ratio
         else if (is_arith(*lhs) && is_arith(*rhs))
         {
             if ((is_int(*lhs) || is_real(*lhs)) && (is_int(*rhs) || is_real(*rhs)))
-                return std::make_shared<riddle::bool_item>(get_bool_type(), lra.new_eq(std::static_pointer_cast<riddle::arith_item>(lhs)->get_value(), std::static_pointer_cast<riddle::arith_item>(rhs)->get_value()));
+            {
+                std::vector<utils::lit> eqs;
+                eqs.push_back(lra.new_leq(std::static_pointer_cast<riddle::arith_item>(lhs)->get_value(), std::static_pointer_cast<riddle::arith_item>(rhs)->get_value()));
+                eqs.push_back(lra.new_leq(std::static_pointer_cast<riddle::arith_item>(rhs)->get_value(), std::static_pointer_cast<riddle::arith_item>(lhs)->get_value()));
+                return std::make_shared<riddle::bool_item>(get_bool_type(), sat.new_conj(std::move(eqs)));
+            }
             else
             {
                 assert(is_time(*lhs) && is_time(*rhs));
@@ -678,7 +683,10 @@ namespace ratio
                 [[maybe_unused]] bool nc;
                 for (size_t i = 0; i < c_vars.size(); i++)
                 { // if an item is selected, the value of the arithmetic item is the value of the item..
-                    nc = sat.new_clause({!c_vars[i], lra.new_eq(static_cast<riddle::arith_item *>(c_vals[i])->get_value(), x->get_value())});
+                    std::vector<utils::lit> eqs;
+                    eqs.push_back(lra.new_leq(static_cast<riddle::arith_item *>(c_vals[i])->get_value(), x->get_value()));
+                    eqs.push_back(lra.new_leq(x->get_value(), static_cast<riddle::arith_item *>(c_vals[i])->get_value()));
+                    nc = sat.new_clause({!c_vars[i], sat.new_conj(std::move(eqs))});
                     assert(nc);
                 }
                 return x;
