@@ -223,8 +223,8 @@ namespace ratio
     }
     void graph::push() noexcept
     {
-        LOG_TRACE("[" << slv.get_name() << "] Pushing a new trail");
         LOG_DEBUG("[" << slv.get_name() << "] " << std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+        LOG_TRACE("[" << slv.get_name() << "] Pushing a new trail");
         trail.push_back({}); // we push a new trail..
         assert(check());
     }
