@@ -1,10 +1,11 @@
-#include <cassert>
 #include "reusable_resource.hpp"
 #include "graph.hpp"
 #include "combinations.hpp"
+// #include "logging.hpp"
 #ifdef ENABLE_API
 #include "solver_api.hpp"
 #endif
+#include <cassert>
 
 namespace ratio
 {
@@ -179,6 +180,7 @@ namespace ratio
 
     void reusable_resource::new_atom(std::shared_ptr<ratio::atom> &atm) noexcept
     {
+        // LOG_DEBUG("σ" << to_string(atm->get_sigma()) << ": " << atm->get_type().get_name());
         if (atm->is_fact())
         {
             assert(is_interval(*atm));
@@ -202,6 +204,8 @@ namespace ratio
             auto before = get_solver().get_lra_theory().new_leq(std::static_pointer_cast<riddle::arith_item>(end)->get_value(), std::static_pointer_cast<riddle::arith_item>(c_start)->get_value());
             auto after = get_solver().get_lra_theory().new_leq(std::static_pointer_cast<riddle::arith_item>(c_end)->get_value(), std::static_pointer_cast<riddle::arith_item>(start)->get_value());
 #endif
+            // LOG_DEBUG(to_string(before) << ": σ" << to_string(atm->get_sigma()) << " -> " << "σ" << to_string(c_atm.get().get_sigma()));
+            // LOG_DEBUG(to_string(after) << ": σ" << to_string(c_atm.get().get_sigma()) << " -> " << "σ" << to_string(atm->get_sigma()));
             if (get_solver().get_sat().value(before) == utils::Undefined)
                 leqs[atm.get()][&c_atm.get()] = before;
             if (get_solver().get_sat().value(after) == utils::Undefined)

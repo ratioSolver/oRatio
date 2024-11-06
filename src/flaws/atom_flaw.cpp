@@ -12,7 +12,9 @@ namespace ratio
     {
         assert(get_solver().get_sat().value(get_phi()) != utils::False);        // The flaw is not necessarily false
         assert(get_solver().get_sat().value(atm->get_sigma()) != utils::False); // The atom is not necessarily inactive
+#ifdef ENABLE_API
         LOG_TRACE("Computing resolvers for " << to_json(*this).dump());
+#endif
         // we check if the atom can unify..
         if (get_solver().get_sat().value(atm->get_sigma()) == utils::Undefined)
             for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
