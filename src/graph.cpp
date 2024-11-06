@@ -115,7 +115,7 @@ namespace ratio
                     if (!get_sat().new_clause({!f.get_phi(), !rs[i], !rs[j]}))
                         throw riddle::unsolvable_exception();
             // if exactly one of the resolvers is activated, the flaw is solved..
-            for (size_t i = 0; i < lits.size(); ++i)
+            for (size_t i = 0; i < rs.size(); ++i)
             {
                 lits = rs;
                 lits[i] = !lits[i];
