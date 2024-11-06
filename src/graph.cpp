@@ -202,8 +202,11 @@ namespace ratio
                     if (active_flaws.erase(&r->get_flaw()) && !get_sat().root_level()) // the flaw has been solved..
                         trail.back().solved_flaws.emplace(&r->get_flaw());
                 }
-                else // the resolver is negated..
+                else
+                { // the resolver is negated..
                     assert(get_sat().value(r->rho) == utils::False);
+                    compute_flaw_cost(r->get_flaw()); // we compute the resolver's flaw's cost and propagate it through the graph..
+                }
             }
 
         return true;
