@@ -173,7 +173,7 @@ namespace ratio
         utils::lin sum;
         for (const auto &xpr : xprs)
             sum = sum + xpr->get_value();
-        auto &tp = determine_type(xprs);
+        auto &tp = determine_type(*this, xprs);
         if (&get_int_type() == &tp)
             return std::make_shared<riddle::arith_item>(get_int_type(), sum);
         assert(&get_real_type() == &tp);
@@ -186,7 +186,7 @@ namespace ratio
         utils::lin diff = xprs[0]->get_value();
         for (size_t i = 1; i < xprs.size(); i++)
             diff -= xprs[i]->get_value();
-        auto &tp = determine_type(xprs);
+        auto &tp = determine_type(*this, xprs);
         if (&get_int_type() == &tp)
             return std::make_shared<riddle::arith_item>(get_int_type(), diff);
         else if (&get_real_type() == &tp)
@@ -210,7 +210,7 @@ namespace ratio
                     assert(is_constant(*xpr) && arithmetic_value(*xpr).get_infinitesimal() == 0);
                     prod = prod * arithmetic_value(*xpr).get_rational();
                 }
-            auto &tp = determine_type(xprs);
+            auto &tp = determine_type(*this, xprs);
             if (&get_int_type() == &tp)
                 return std::make_shared<riddle::arith_item>(get_int_type(), prod);
             assert(&get_real_type() == &tp);
@@ -223,7 +223,7 @@ namespace ratio
             utils::rational prod = xprs[0]->get_type().get_scope().get_core().arithmetic_value(*xprs[0]).get_rational();
             for (size_t i = 1; i < xprs.size(); i++)
                 prod = prod * xprs[i]->get_type().get_scope().get_core().arithmetic_value(*xprs[i]).get_rational();
-            auto &tp = determine_type(xprs);
+            auto &tp = determine_type(*this, xprs);
             if (&get_int_type() == &tp)
                 return std::make_shared<riddle::arith_item>(get_int_type(), utils::lin(prod));
             assert(&get_real_type() == &tp);
@@ -241,7 +241,7 @@ namespace ratio
             assert(is_constant(*xprs[i]) && is_zero(arithmetic_value(*xprs[i]).get_infinitesimal()));
             quot = quot / arithmetic_value(*xprs[i]).get_rational();
         }
-        auto &tp = determine_type(xprs);
+        auto &tp = determine_type(*this, xprs);
         if (&get_int_type() == &tp)
             return std::make_shared<riddle::arith_item>(get_int_type(), quot);
         assert(&get_real_type() == &tp);
