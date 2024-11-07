@@ -23,7 +23,7 @@ namespace ratio
   private:
     std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() noexcept override { return {}; }
 
-    void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept override;
+    void new_atom(std::shared_ptr<ratio::atom> &atm) override;
 
 #ifdef ENABLE_API
     json::json extract() const noexcept override;
@@ -43,6 +43,11 @@ namespace ratio
 
       consumable_resource &cr;
     };
+
+  private:
+    std::vector<riddle::init_element> ctr_inits;               // the initializations of the constructor..
+    std::vector<std::unique_ptr<riddle::statement>> ctr_body;  // the body of the constructor..
+    std::vector<std::unique_ptr<riddle::statement>> pred_body; // the body of the `Produce` and `Consume` predicates..
 
   private:
     std::set<const riddle::item *> to_check;                        // the consumable-resource instances whose atoms have changed..

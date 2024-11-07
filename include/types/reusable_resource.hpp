@@ -23,7 +23,7 @@ namespace ratio
   private:
     std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() noexcept override;
 
-    void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept override;
+    void new_atom(std::shared_ptr<ratio::atom> &atm) override;
 
     /**
      * @brief Computes the cost of ordering two atoms.
@@ -143,6 +143,11 @@ namespace ratio
 
       reusable_resource &rr;
     };
+
+  private:
+    std::vector<riddle::init_element> ctr_inits;              // the initializations of the constructor..
+    std::vector<std::unique_ptr<riddle::statement>> ctr_body; // the body of the constructor..
+    std::vector<std::unique_ptr<riddle::statement>> use_body; // the body of the `Use` predicate..
 
   private:
     std::set<const riddle::item *> to_check;                        // the reusable-resource instances whose atoms have changed..

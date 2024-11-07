@@ -68,7 +68,7 @@ namespace ratio
      *
      * @param atm The new atom that has been created.
      */
-    virtual void new_atom(std::shared_ptr<ratio::atom> &atm) noexcept = 0;
+    virtual void new_atom(std::shared_ptr<ratio::atom> &atm) = 0;
 
   private:
     solver &slv;
