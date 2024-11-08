@@ -29,7 +29,7 @@ namespace ratio
                     continue; // the atom is unified with another atom
                 if (get_solver().get_sat().value(static_cast<atom &>(*a).get_reason().get_phi()) == utils::False)
                     continue; // the atom cannot be activated
-                if (get_solver().matches(atm, a))
+                if (get_solver().matches(*atm, *a))
                     get_solver().get_graph().new_resolver<unify_atom>(*this, std::static_pointer_cast<atom>(a), get_solver().eq(atm, a)->get_value());
             }
 

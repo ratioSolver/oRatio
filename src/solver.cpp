@@ -349,39 +349,51 @@ namespace ratio
             return core::new_bool(false);
     }
 
-    bool solver::matches(const std::shared_ptr<riddle::item> &lhs, const std::shared_ptr<riddle::item> &rhs) const noexcept
+    bool solver::matches(riddle::item &lhs, riddle::item &rhs) const noexcept
     {
-        if (&*lhs == &*rhs) // the two items are the same item..
+        if (&lhs == &rhs) // the two items are the same item..
             return true;
-        else if (is_bool(*lhs) && is_bool(*rhs)) // we are comparing two boolean items..
+        else if (is_bool(lhs) && is_bool(rhs)) // we are comparing two boolean items..
         {
-            auto l = bool_value(*std::static_pointer_cast<riddle::bool_item>(lhs));
-            auto r = bool_value(*std::static_pointer_cast<riddle::bool_item>(rhs));
+            auto l = bool_value(static_cast<riddle::bool_item &>(lhs));
+            auto r = bool_value(static_cast<riddle::bool_item &>(rhs));
             return l == r || l == utils::Undefined || r == utils::Undefined;
         }
-        else if (is_arith(*lhs) && is_arith(*rhs)) // we are comparing two arithmetic items..
+        else if (is_arith(lhs) && is_arith(rhs)) // we are comparing two arithmetic items..
         {
-            if ((is_int(*lhs) || is_real(*lhs)) && (is_int(*rhs) || is_real(*rhs))) // we are comparing two integer or real items..
-                return lra.matches(std::static_pointer_cast<riddle::arith_item>(lhs)->get_value(), std::static_pointer_cast<riddle::arith_item>(rhs)->get_value());
+            if ((is_int(lhs) || is_real(lhs)) && (is_int(rhs) || is_real(rhs))) // we are comparing two integer or real items..
+                return lra.matches(static_cast<riddle::arith_item &>(lhs).get_value(), static_cast<riddle::arith_item &>(rhs).get_value());
             else // we are comparing two time items..
-                return rdl.matches(std::static_pointer_cast<riddle::arith_item>(lhs)->get_value(), std::static_pointer_cast<riddle::arith_item>(rhs)->get_value());
+                return rdl.matches(static_cast<riddle::arith_item &>(lhs).get_value(), static_cast<riddle::arith_item &>(rhs).get_value());
         }
-        else if (is_string(*lhs) && is_string(*rhs)) // we are comparing two string items..
-            return std::static_pointer_cast<riddle::string_item>(lhs)->get_value() == std::static_pointer_cast<riddle::string_item>(rhs)->get_value();
-        else if (is_enum(*lhs) && is_enum(*rhs)) // we are comparing two enum items..
-            return ov.matches(std::static_pointer_cast<riddle::enum_item>(lhs)->get_value(), std::static_pointer_cast<riddle::enum_item>(rhs)->get_value());
-        else if (&lhs->get_type() == &rhs->get_type()) // we are comparing two items of the same type..
+        else if (is_string(lhs) && is_string(rhs)) // we are comparing two string items..
+            return static_cast<riddle::string_item &>(lhs).get_value() == static_cast<riddle::string_item &>(rhs).get_value();
+        else if (is_enum(lhs))
         {
-            if (const auto p = dynamic_cast<riddle::predicate *>(&lhs->get_type()))
+            if (is_enum(rhs)) // we are comparing two enum items..
+                return ov.matches(static_cast<riddle::enum_item &>(lhs).get_value(), static_cast<riddle::enum_item &>(rhs).get_value());
+            else
+            { // we are comparing an enum item with a constant..
+                for (const auto &v : ov.domain(static_cast<riddle::enum_item &>(lhs).get_value()))
+                    if (matches(static_cast<riddle::item &>(v.get()), rhs))
+                        return true;
+                return false;
+            }
+        }
+        else if (is_enum(rhs)) // we are comparing a constant with an enum item..
+            return matches(rhs, lhs);
+        else if (&lhs.get_type() == &rhs.get_type()) // we are comparing two items of the same type..
+        {
+            if (const auto p = dynamic_cast<riddle::predicate *>(&lhs.get_type()))
             { // we are comparing two atoms..
-                auto &l = static_cast<riddle::atom &>(*lhs);
-                auto &r = static_cast<riddle::atom &>(*rhs);
+                auto &l = static_cast<riddle::atom &>(lhs);
+                auto &r = static_cast<riddle::atom &>(rhs);
                 std::queue<riddle::predicate *> q;
                 q.push(p);
                 while (!q.empty())
                 {
                     for (const auto &[f_name, f] : q.front()->get_fields())
-                        if (!f->is_synthetic() && !matches(l.get(f_name), r.get(f_name)))
+                        if (!f->is_synthetic() && !matches(*l.get(f_name), *r.get(f_name)))
                             return false;
                     for (const auto &pp : q.front()->get_parents())
                         q.push(&pp.get());
@@ -389,16 +401,16 @@ namespace ratio
                 }
                 return true;
             }
-            else if (const auto t = dynamic_cast<riddle::component_type *>(&lhs->get_type()))
+            else if (const auto t = dynamic_cast<riddle::component_type *>(&lhs.get_type()))
             { // we are comparing two components..
-                auto &l = static_cast<riddle::component &>(*lhs);
-                auto &r = static_cast<riddle::component &>(*rhs);
+                auto &l = static_cast<riddle::component &>(lhs);
+                auto &r = static_cast<riddle::component &>(rhs);
                 std::queue<riddle::component_type *> q;
                 q.push(t);
                 while (!q.empty())
                 {
                     for (const auto &[f_name, f] : q.front()->get_fields())
-                        if (!f->is_synthetic() && !matches(l.get(f_name), r.get(f_name)))
+                        if (!f->is_synthetic() && !matches(*l.get(f_name), *r.get(f_name)))
                             return false;
                     for (const auto &pp : q.front()->get_parents())
                         q.push(&pp.get());
