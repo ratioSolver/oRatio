@@ -88,7 +88,8 @@ namespace ratio
         std::set<utils::inf_rational> pulses;
         for (const auto &pred : rhs.get_predicates())
             for (const auto &atm : pred.get().get_atoms())
-                if (rhs.get_sat().value(static_cast<atom &>(*atm).get_sigma()) == utils::True) // we get only the active atoms..
+                if (rhs.get_sat().value(static_cast<atom &>(*atm).get_sigma()) == utils::True)
+                { // we get only the active atoms..
                     if (is_impulse(static_cast<atom &>(*atm)))
                     { // we have an impulse atom..
                         utils::inf_rational start = rhs.arithmetic_value(static_cast<riddle::arith_item &>(*atm->get(AT_NAME)));
@@ -101,6 +102,7 @@ namespace ratio
                         starting_atoms[start].insert(static_cast<atom *>(&*atm));
                         pulses.insert(start);
                     }
+                }
         if (!starting_atoms.empty())
         { // we have some root atoms in the solver timeline..
             json::json slv_tl{{"id", static_cast<uint64_t>(get_id(rhs))}, {"type", "Solver"}, {"name", rhs.get_name()}};
