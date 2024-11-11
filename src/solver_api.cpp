@@ -9,8 +9,8 @@ namespace ratio
     [[nodiscard]] json::json to_json(const utils::rational &rat) noexcept
     {
         json::json j_rat;
-        j_rat["num"] = rat.numerator();
-        j_rat["den"] = rat.denominator();
+        j_rat["num"] = static_cast<int64_t>(rat.numerator());
+        j_rat["den"] = static_cast<int64_t>(rat.denominator());
         return j_rat;
     }
 
@@ -160,7 +160,7 @@ namespace ratio
 
         if (auto a = dynamic_cast<const riddle::atom *>(&itm))
         {
-            j_itm["sigma"] = variable(a->get_sigma());
+            j_itm["sigma"] = static_cast<uint64_t>(variable(a->get_sigma()));
             switch (static_cast<solver &>(a->get_type().get_scope().get_core()).get_sat().value(a->get_sigma()))
             {
             case utils::True:
@@ -350,7 +350,7 @@ namespace ratio
         j["type"] = "flaw_position_changed";
         j["solver_id"] = static_cast<uint64_t>(get_id(f.get_solver()));
         j["id"] = static_cast<uint64_t>(get_id(f));
-        j["position"] = f.get_solver().get_idl_theory().bounds(f.get_position()).first;
+        j["position"] = static_cast<uint64_t>(f.get_solver().get_idl_theory().bounds(f.get_position()).first);
         return j;
     }
 
