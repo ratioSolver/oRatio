@@ -33,6 +33,7 @@ option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
 option(ENABLE_API "oRatio API" OFF)
 
 add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp src/smart_type.cpp src/flaws/atom_flaw.cpp src/flaws/bool_flaw.cpp src/flaws/disj_flaw.cpp src/flaws/disjunction_flaw.cpp src/flaws/enum_flaw.cpp src/types/agent.cpp src/types/state_variable.cpp src/types/consumable_resource.cpp src/types/reusable_resource.cpp $<$<BOOL:${ENABLE_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/solver_api.cpp>)
+add_dependencies(oRatioLib RiDDLe SeMiTONE)
 target_link_libraries(oRatioLib PUBLIC RiDDLe SeMiTONE)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/flaws> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/types> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
@@ -70,9 +71,10 @@ if(ENABLE_API)
     target_compile_definitions(oRatioLib PRIVATE ENABLE_API)
 endif()
 
-add_executable(oRatio src/main.cpp)
+add_executable(oRatio src/main.cpp src/solver_api.cpp)
+add_dependencies(oRatio oRatioLib)
 target_link_libraries(oRatio PRIVATE oRatioLib)
-target_include_directories(oRatio PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_compile_definitions(oRatio PRIVATE ENABLE_API=1 COMPUTE_NAMES=1)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
