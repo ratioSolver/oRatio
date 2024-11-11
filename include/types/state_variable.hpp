@@ -135,10 +135,10 @@ namespace ratio
 
       void something_changed();
 
-      void on_sat_value_changed(std::size_t) override { something_changed(); }
-      void on_rdl_value_changed(std::size_t) override { something_changed(); }
-      void on_lra_value_changed(std::size_t) override { something_changed(); }
-      void on_ov_value_changed(std::size_t) override { something_changed(); }
+      void on_sat_value_changed(utils::var) override { something_changed(); }
+      void on_rdl_value_changed(utils::var) override { something_changed(); }
+      void on_lra_value_changed(utils::var) override { something_changed(); }
+      void on_ov_value_changed(utils::var) override { something_changed(); }
 
       state_variable &sv;
     };

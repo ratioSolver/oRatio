@@ -133,7 +133,7 @@ namespace ratio
 
                             // we compute the possible resolvers..
                             std::vector<std::pair<utils::lit, double>> choices;
-                            std::unordered_set<std::size_t> vars;
+                            std::unordered_set<utils::var> vars;
                             // we consider all the pairs of atoms in the Minimal Conflict Sets (MCSs)..
                             for (const auto &as : utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
                             {
@@ -333,7 +333,7 @@ namespace ratio
     reusable_resource::rr_flaw::rr_flaw(reusable_resource &rr_tp, const riddle::component &rr, const std::set<atom *> &mcs) : flaw(rr_tp.get_solver(), smart_type::get_resolvers(mcs), true, false), rr_tp(rr_tp), rr(rr), mcs(mcs) {}
     void reusable_resource::rr_flaw::compute_resolvers()
     {
-        std::unordered_set<std::size_t> vars;
+        std::unordered_set<utils::var> vars;
         for (const auto &as : utils::combinations(std::vector<atom *>(mcs.cbegin(), mcs.cend()), 2))
         {
             if (const auto a0_it = rr_tp.leqs.find(as[0]); a0_it != rr_tp.leqs.cend())

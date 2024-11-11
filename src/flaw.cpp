@@ -52,8 +52,8 @@ namespace ratio
     }
 
 #ifdef ENABLE_API
-    void flaw::on_sat_value_changed(std::size_t v) { s.flaw_state_changed(*this); }
+    void flaw::on_sat_value_changed(utils::var v) { s.flaw_state_changed(*this); }
 
-    void flaw::on_idl_value_changed(std::size_t v) { s.flaw_position_changed(*this); }
+    void flaw::on_idl_value_changed(utils::var v) { s.flaw_position_changed(*this); }
 #endif
 } // namespace ratio
