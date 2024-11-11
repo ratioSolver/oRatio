@@ -309,7 +309,7 @@ namespace ratio
                 for (const auto &atm : overlapping_atoms)
                 {
                     c_usage += get_solver().arithmetic_value(static_cast<riddle::arith_item &>(*atm->get(REUSABLE_RESOURCE_AMOUNT_NAME)));
-                    j_atms.push_back(get_id(*atm));
+                    j_atms.push_back(static_cast<uint64_t>(get_id(*atm)));
                 }
                 j_val["atoms"] = std::move(j_atms);
                 j_val[REUSABLE_RESOURCE_AMOUNT_NAME] = to_json(c_usage);
@@ -360,7 +360,7 @@ namespace ratio
 
         json::json atms(json::json_type::array);
         for (const auto &atm : mcs)
-            atms.push_back(get_id(*atm));
+            atms.push_back(static_cast<uint64_t>(get_id(*atm)));
         data["atoms"] = atms;
 
         return data;
@@ -370,13 +370,13 @@ namespace ratio
     reusable_resource::rr_flaw::order_resolver::order_resolver(rr_flaw &flw, const utils::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::zero), before(before), after(after) {}
 
 #ifdef ENABLE_API
-    json::json reusable_resource::rr_flaw::order_resolver::get_data() const noexcept { return {{"type", "order"}, {"before", get_id(before)}, {"after", get_id(after)}}; }
+    json::json reusable_resource::rr_flaw::order_resolver::get_data() const noexcept { return {{"type", "order"}, {"before", static_cast<uint64_t>(get_id(before))}, {"after", static_cast<uint64_t>(get_id(after))}}; }
 #endif
 
     reusable_resource::rr_flaw::forbid_resolver::forbid_resolver(rr_flaw &flw, const utils::lit &r, atom &atm, riddle::component &itm) : resolver(flw, r, utils::rational::zero), atm(atm), itm(itm) {}
 
 #ifdef ENABLE_API
-    json::json reusable_resource::rr_flaw::forbid_resolver::get_data() const noexcept { return {{"type", "forbid"}, {"forbid_atom", get_id(atm)}, {"forbid_item", get_id(itm)}}; }
+    json::json reusable_resource::rr_flaw::forbid_resolver::get_data() const noexcept { return {{"type", "forbid"}, {"forbid_atom", static_cast<uint64_t>(get_id(atm))}, {"forbid_item", static_cast<uint64_t>(get_id(itm))}}; }
 #endif
 
     reusable_resource::rr_atom_listener::rr_atom_listener(reusable_resource &rr, atom &a) : atom_listener(a), rr(rr) {}

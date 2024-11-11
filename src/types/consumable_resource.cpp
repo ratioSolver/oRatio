@@ -176,7 +176,7 @@ namespace ratio
                     auto c_coeff = get_predicate(CONSUMABLE_RESOURCE_PRODUCTION_PREDICATE_NAME).value().get().is_assignable_from(atm->get_type()) ? amount : -amount;
                     c_coeff /= (get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(END_NAME))) - get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(atm->get(START_NAME)))).get_rational();
                     c_angular_coefficient += c_coeff;
-                    j_atms.push_back(get_id(*atm));
+                    j_atms.push_back(static_cast<uint64_t>(get_id(*atm)));
                 }
                 j_val["atoms"] = std::move(j_atms);
                 j_val[START_NAME] = to_json(c_val);

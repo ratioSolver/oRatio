@@ -237,7 +237,7 @@ namespace ratio
 
                 json::json j_atms(json::json_type::array);
                 for (const auto &atm : overlapping_atoms)
-                    j_atms.push_back(get_id(*atm));
+                    j_atms.push_back(static_cast<uint64_t>(get_id(*atm)));
                 j_val["atoms"] = std::move(j_atms);
                 j_vals.push_back(std::move(j_val));
 
@@ -286,7 +286,7 @@ namespace ratio
 
         json::json atms(json::json_type::array);
         for (const auto &atm : mcs)
-            atms.push_back(get_id(*atm));
+            atms.push_back(static_cast<uint64_t>(get_id(*atm)));
         data["atoms"] = atms;
 
         return data;
@@ -296,13 +296,13 @@ namespace ratio
     state_variable::sv_flaw::order_resolver::order_resolver(sv_flaw &flw, const utils::lit &r, const atom &before, const atom &after) : resolver(flw, r, utils::rational::zero), before(before), after(after) {}
 
 #ifdef ENABLE_API
-    json::json state_variable::sv_flaw::order_resolver::get_data() const noexcept { return {{"type", "order"}, {"before", get_id(before)}, {"after", get_id(after)}}; }
+    json::json state_variable::sv_flaw::order_resolver::get_data() const noexcept { return {{"type", "order"}, {"before", static_cast<uint64_t>(get_id(before))}, {"after", static_cast<uint64_t>(get_id(after))}}; }
 #endif
 
     state_variable::sv_flaw::forbid_resolver::forbid_resolver(sv_flaw &flw, const utils::lit &r, atom &atm, riddle::component &itm) : resolver(flw, r, utils::rational::zero), atm(atm), itm(itm) {}
 
 #ifdef ENABLE_API
-    json::json state_variable::sv_flaw::forbid_resolver::get_data() const noexcept { return {{"type", "forbid"}, {"forbid_atom", get_id(atm)}, {"forbid_item", get_id(itm)}}; }
+    json::json state_variable::sv_flaw::forbid_resolver::get_data() const noexcept { return {{"type", "forbid"}, {"forbid_atom", static_cast<uint64_t>(get_id(atm))}, {"forbid_item", static_cast<uint64_t>(get_id(itm))}}; }
 #endif
 
     state_variable::sv_atom_listener::sv_atom_listener(state_variable &sv, atom &a) : atom_listener(a), sv(sv) {}

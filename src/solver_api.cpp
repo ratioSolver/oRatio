@@ -103,11 +103,11 @@ namespace ratio
                     }
         if (!starting_atoms.empty())
         { // we have some root atoms in the solver timeline..
-            json::json slv_tl{{"id", get_id(rhs)}, {"type", "Solver"}, {"name", rhs.get_name()}};
+            json::json slv_tl{{"id", static_cast<uint64_t>(get_id(rhs))}, {"type", "Solver"}, {"name", rhs.get_name()}};
             json::json j_atms(json::json_type::array);
             for (const auto &p : pulses)
                 for (const auto &atm : starting_atoms.at(p))
-                    j_atms.push_back(get_id(*atm));
+                    j_atms.push_back(static_cast<uint64_t>(get_id(*atm)));
             slv_tl["values"] = std::move(j_atms);
             j_timelines.push_back(std::move(slv_tl));
         }
@@ -135,7 +135,7 @@ namespace ratio
 
     [[nodiscard]] json::json to_json(const riddle::item &itm) noexcept
     {
-        json::json j_itm{{"id", get_id(itm)}};
+        json::json j_itm{{"id", static_cast<uint64_t>(get_id(itm))}};
 #ifdef COMPUTE_NAMES
         j_itm["name"] = itm.get_type().get_scope().get_core().guess_name(itm);
 #endif
@@ -232,14 +232,14 @@ namespace ratio
             j_val["var"] = std::to_string(e_itm.get_value());
             json::json vals(json::json_type::array);
             for (auto &val : itm.get_type().get_scope().get_core().domain(e_itm))
-                vals.push_back(get_id(dynamic_cast<riddle::item &>(val.get())));
+                vals.push_back(static_cast<uint64_t>(get_id(dynamic_cast<riddle::item &>(val.get()))));
             j_val["vals"] = std::move(vals);
             return j_val;
         }
         else
         {
             j_val["type"] = "item";
-            j_val["val"] = get_id(itm);
+            j_val["val"] = static_cast<uint64_t>(get_id(itm));
             return j_val;
         }
     }
@@ -264,10 +264,10 @@ namespace ratio
 
     [[nodiscard]] json::json to_json(const flaw &f) noexcept
     {
-        json::json j_flaw{{"id", get_id(f)}, {"state", to_state(f)}, {"phi", to_string(f.get_phi())}, {"cost", to_json(f.get_estimated_cost())}, {"pos", std::to_string(f.get_solver().get_idl_theory().bounds(f.get_position()).first)}, {"data", f.get_data()}};
+        json::json j_flaw{{"id", static_cast<uint64_t>(get_id(f))}, {"state", to_state(f)}, {"phi", to_string(f.get_phi())}, {"cost", to_json(f.get_estimated_cost())}, {"pos", std::to_string(f.get_solver().get_idl_theory().bounds(f.get_position()).first)}, {"data", f.get_data()}};
         json::json causes(json::json_type::array);
         for (const auto &c : f.get_causes())
-            causes.push_back(get_id(c.get()));
+            causes.push_back(static_cast<uint64_t>(get_id(c.get())));
         j_flaw["causes"] = std::move(causes);
         return j_flaw;
     }
@@ -287,10 +287,10 @@ namespace ratio
 
     [[nodiscard]] json::json to_json(const resolver &r) noexcept
     {
-        json::json j_r{{"id", get_id(r)}, {"state", to_state(r)}, {"flaw", get_id(r.get_flaw())}, {"rho", to_string(r.get_rho())}, {"intrinsic_cost", to_json(r.get_intrinsic_cost())}, {"data", r.get_data()}};
+        json::json j_r{{"id", static_cast<uint64_t>(get_id(r))}, {"state", to_state(r)}, {"flaw", static_cast<uint64_t>(get_id(r.get_flaw()))}, {"rho", to_string(r.get_rho())}, {"intrinsic_cost", to_json(r.get_intrinsic_cost())}, {"data", r.get_data()}};
         json::json preconditions(json::json_type::array);
         for (const auto &p : r.get_preconditions())
-            preconditions.push_back(get_id(p.get()));
+            preconditions.push_back(static_cast<uint64_t>(get_id(p.get())));
         j_r["preconditions"] = std::move(preconditions);
         return j_r;
     }
@@ -312,7 +312,7 @@ namespace ratio
     {
         json::json j = to_json(g);
         j["type"] = "solver_graph";
-        j["id"] = get_id(g.get_solver());
+        j["id"] = static_cast<uint64_t>(get_id(g.get_solver()));
         return j;
     }
 
@@ -320,7 +320,7 @@ namespace ratio
     {
         json::json j = to_json(f);
         j["type"] = "flaw_created";
-        j["solver_id"] = get_id(f.get_solver());
+        j["solver_id"] = static_cast<uint64_t>(get_id(f.get_solver()));
         return j;
     }
 
@@ -328,8 +328,8 @@ namespace ratio
     {
         json::json j;
         j["type"] = "flaw_state_changed";
-        j["solver_id"] = get_id(f.get_solver());
-        j["id"] = get_id(f);
+        j["solver_id"] = static_cast<uint64_t>(get_id(f.get_solver()));
+        j["id"] = static_cast<uint64_t>(get_id(f));
         j["state"] = to_state(f);
         return j;
     }
@@ -338,8 +338,8 @@ namespace ratio
     {
         json::json j;
         j["type"] = "flaw_cost_changed";
-        j["solver_id"] = get_id(f.get_solver());
-        j["id"] = get_id(f);
+        j["solver_id"] = static_cast<uint64_t>(get_id(f.get_solver()));
+        j["id"] = static_cast<uint64_t>(get_id(f));
         j["cost"] = to_json(f.get_estimated_cost());
         return j;
     }
@@ -348,8 +348,8 @@ namespace ratio
     {
         json::json j;
         j["type"] = "flaw_position_changed";
-        j["solver_id"] = get_id(f.get_solver());
-        j["id"] = get_id(f);
+        j["solver_id"] = static_cast<uint64_t>(get_id(f.get_solver()));
+        j["id"] = static_cast<uint64_t>(get_id(f));
         j["position"] = f.get_solver().get_idl_theory().bounds(f.get_position()).first;
         return j;
     }
@@ -358,8 +358,8 @@ namespace ratio
     {
         json::json j;
         j["type"] = "current_flaw";
-        j["solver_id"] = get_id(f.get_solver());
-        j["id"] = get_id(f);
+        j["solver_id"] = static_cast<uint64_t>(get_id(f.get_solver()));
+        j["id"] = static_cast<uint64_t>(get_id(f));
         return j;
     }
 
@@ -367,7 +367,7 @@ namespace ratio
     {
         json::json j = to_json(r);
         j["type"] = "resolver_created";
-        j["solver_id"] = get_id(r.get_flaw().get_solver());
+        j["solver_id"] = static_cast<uint64_t>(get_id(r.get_flaw().get_solver()));
         return j;
     }
 
@@ -375,8 +375,8 @@ namespace ratio
     {
         json::json j;
         j["type"] = "resolver_state_changed";
-        j["solver_id"] = get_id(r.get_flaw().get_solver());
-        j["id"] = get_id(r);
+        j["solver_id"] = static_cast<uint64_t>(get_id(r.get_flaw().get_solver()));
+        j["id"] = static_cast<uint64_t>(get_id(r));
         j["state"] = to_state(r);
         return j;
     }
@@ -385,8 +385,8 @@ namespace ratio
     {
         json::json j;
         j["type"] = "current_resolver";
-        j["solver_id"] = get_id(r.get_flaw().get_solver());
-        j["id"] = get_id(r);
+        j["solver_id"] = static_cast<uint64_t>(get_id(r.get_flaw().get_solver()));
+        j["id"] = static_cast<uint64_t>(get_id(r));
         return j;
     }
 
@@ -394,9 +394,9 @@ namespace ratio
     {
         json::json j;
         j["type"] = "causal_link_added";
-        j["solver_id"] = get_id(f.get_solver());
-        j["flaw_id"] = get_id(f);
-        j["resolver_id"] = get_id(r);
+        j["solver_id"] = static_cast<uint64_t>(get_id(f.get_solver()));
+        j["flaw_id"] = static_cast<uint64_t>(get_id(f));
+        j["resolver_id"] = static_cast<uint64_t>(get_id(r));
         return j;
     }
 } // namespace ratio

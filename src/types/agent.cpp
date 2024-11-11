@@ -61,7 +61,7 @@ namespace ratio
             json::json j_atms(json::json_type::array);
             for (const auto &p : pulses)
                 for (const auto &atm : starting_atoms.at(p))
-                    j_atms.push_back(get_id(*atm));
+                    j_atms.push_back(static_cast<uint64_t>(get_id(*atm)));
             tl["values"] = std::move(j_atms);
 
             tls.push_back(std::move(tl));
