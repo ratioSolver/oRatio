@@ -27,9 +27,11 @@ namespace ratio
     json::json enum_flaw::choose_value::get_data() const noexcept
     {
         json::json j{{"type", "assignment"}, {"value", value(dynamic_cast<const riddle::item &>(val))}};
+#ifdef COMPUTE_NAMES
         auto name = get_flaw().get_solver().guess_name(dynamic_cast<const riddle::item &>(val));
         if (!name.empty())
             j["name"] = name;
+#endif
         return j;
     }
 #endif

@@ -198,7 +198,10 @@ namespace ratio
 
         for (const auto &[sv, atms] : sv_instances)
         {
-            json::json tl{{"id", get_id(*sv)}, {"type", STATE_VARIABLE_TYPE_NAME}, {"name", get_solver().guess_name(*sv)}};
+            json::json tl{{"id", get_id(*sv)}, {"type", STATE_VARIABLE_TYPE_NAME}};
+#ifdef COMPUTE_NAMES
+            tl["name"] = get_solver().guess_name(*sv);
+#endif
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<atom *>> starting_atoms;

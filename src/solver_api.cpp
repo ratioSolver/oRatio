@@ -135,7 +135,10 @@ namespace ratio
 
     [[nodiscard]] json::json to_json(const riddle::item &itm) noexcept
     {
-        json::json j_itm{{"id", get_id(itm)}, {"name", itm.get_type().get_scope().get_core().guess_name(itm)}};
+        json::json j_itm{{"id", get_id(itm)}};
+#ifdef COMPUTE_NAMES
+        j_itm["name"] = itm.get_type().get_scope().get_core().guess_name(itm);
+#endif
         // we add the full name of the type of the item..
         std::string tp_name = itm.get_type().get_name();
         const auto *t = &itm.get_type();

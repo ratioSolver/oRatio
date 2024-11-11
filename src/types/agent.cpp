@@ -41,7 +41,10 @@ namespace ratio
 
         for (const auto &[agnt, atms] : agnt_instances)
         {
-            json::json tl{{"id", get_id(*agnt)}, {"type", AGENT_TYPE_NAME}, {"name", get_solver().guess_name(*agnt)}};
+            json::json tl{{"id", get_id(*agnt)}, {"type", AGENT_TYPE_NAME}};
+#ifdef COMPUTE_NAMES
+            tl["name"] = get_solver().guess_name(*agnt);
+#endif
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<atom *>> starting_atoms;
