@@ -100,12 +100,12 @@ namespace ratio
     }
 
 #ifdef ENABLE_API
-    json::json atom_flaw::get_data() const noexcept { return {{"type", "atom"}, {"atom", {{"id", get_id(*atm)}, {"is_fact", atm->is_fact()}, {"type", atm->get_type().get_name()}, {"sigma", variable(atm->get_sigma())}}}}; }
+    json::json atom_flaw::get_data() const noexcept { return {{"type", "atom"}, {"atom", {{"id", static_cast<uint64_t>(get_id(*atm))}, {"is_fact", atm->is_fact()}, {"type", atm->get_type().get_name()}, {"sigma", static_cast<uint64_t>(variable(atm->get_sigma()))}}}}; }
 
     json::json atom_flaw::activate_fact::get_data() const noexcept { return {{"type", "activate_fact"}}; }
 
     json::json atom_flaw::activate_goal::get_data() const noexcept { return {{"type", "activate_goal"}}; }
 
-    json::json atom_flaw::unify_atom::get_data() const noexcept { return {{"type", "unify_atom"}, {"target", get_id(*target)}}; }
+    json::json atom_flaw::unify_atom::get_data() const noexcept { return {{"type", "unify_atom"}, {"target", static_cast<uint64_t>(get_id(*target))}}; }
 #endif
 } // namespace ratio
