@@ -75,9 +75,9 @@ namespace ratio
     /**
      * @brief Get the position variable associated to this flaw.
      *
-     * @return VARIABLE_TYPE the position variable associated to this flaw.
+     * @return std::size_t the position variable associated to this flaw.
      */
-    VARIABLE_TYPE get_position() const noexcept { return position; }
+    std::size_t get_position() const noexcept { return position; }
 
     /**
      * @brief Check whether this flaw has been expanded.
@@ -130,9 +130,9 @@ namespace ratio
     virtual void compute_resolvers() = 0;
 
 #ifdef ENABLE_API
-    void on_sat_value_changed(VARIABLE_TYPE v) override;
+    void on_sat_value_changed(std::size_t v) override;
 
-    void on_idl_value_changed(VARIABLE_TYPE v) override;
+    void on_idl_value_changed(std::size_t v) override;
 
     /**
      * @brief Get a JSON representation of the data of the flaw.
@@ -151,7 +151,7 @@ namespace ratio
     const bool enqueue;                                            // whether this flaw must be enqueued or can be expanded..
     utils::lit phi;                                                // the literal indicating whether the flaw is active or not (this literal is initialized by the `init` procedure)..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
-    VARIABLE_TYPE position;                                        // the position variable (i.e., an integer time-point) associated to this flaw..
+    std::size_t position;                                          // the position variable (i.e., an integer time-point) associated to this flaw..
     bool expanded = false;                                         // whether this flaw has been expanded or not..
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..

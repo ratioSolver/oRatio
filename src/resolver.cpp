@@ -42,6 +42,6 @@ namespace ratio
     }
 
 #ifdef ENABLE_API
-    void resolver::on_sat_value_changed(VARIABLE_TYPE v) { f.get_solver().resolver_state_changed(*this); }
+    void resolver::on_sat_value_changed(std::size_t v) { f.get_solver().resolver_state_changed(*this); }
 #endif
 } // namespace ratio

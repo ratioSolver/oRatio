@@ -71,7 +71,7 @@ namespace ratio
                     has_conflict = true;
                     // we compute the possible resolvers..
                     std::vector<std::pair<utils::lit, double>> choices;
-                    std::unordered_set<VARIABLE_TYPE> vars;
+                    std::unordered_set<std::size_t> vars;
                     // we consider all the pairs of atoms in the Minimal Conflict Sets (MCSs)..
                     for (const auto &as : utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
                     {
@@ -259,7 +259,7 @@ namespace ratio
     state_variable::sv_flaw::sv_flaw(state_variable &sv_tp, const riddle::component &sv, const std::set<atom *> &mcs) : flaw(sv_tp.get_solver(), smart_type::get_resolvers(mcs), true, false), sv_tp(sv_tp), sv(sv), mcs(mcs) {}
     void state_variable::sv_flaw::compute_resolvers()
     {
-        std::unordered_set<VARIABLE_TYPE> vars;
+        std::unordered_set<std::size_t> vars;
         for (const auto &as : utils::combinations(std::vector<atom *>(mcs.cbegin(), mcs.cend()), 2))
         {
             if (const auto a0_it = sv_tp.leqs.find(as[0]); a0_it != sv_tp.leqs.cend())

@@ -77,7 +77,7 @@ namespace ratio
     virtual void apply() = 0;
 
 #ifdef ENABLE_API
-    void on_sat_value_changed(VARIABLE_TYPE v) override;
+    void on_sat_value_changed(std::size_t v) override;
 
     /**
      * @brief Get a JSON representation of the data of the resolver.

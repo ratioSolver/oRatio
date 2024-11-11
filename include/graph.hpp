@@ -276,18 +276,18 @@ namespace ratio
     void pop() noexcept override;
 
   private:
-    solver &slv;                                                                    // the solver this graph belongs to..
-    std::unordered_map<VARIABLE_TYPE, std::vector<std::unique_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
-    std::vector<std::unique_ptr<flaw>> pending_flaws;                               // pending flaws, waiting for root-level to be initialized..
-    std::unordered_map<VARIABLE_TYPE, std::vector<std::unique_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
-    std::optional<std::reference_wrapper<flaw>> c_flaw;                             // the current flaw..
-    std::optional<std::reference_wrapper<resolver>> c_res;                          // the current resolver..
-    utils::lit tmp_ni;                                                              // the temporary controlling literal, used for restoring the controlling literal..
-    utils::lit ni{utils::TRUE_lit};                                                 // the current controlling literal..
-    std::deque<std::reference_wrapper<flaw>> flaw_q;                                // the flaw queue (for the graph building procedure)..
-    std::unordered_set<flaw *> visited;                                             // the visited flaws, for graph cost propagation (and deferrable flaws check)..
-    std::unordered_set<flaw *> active_flaws;                                        // the currently active flaws..
-    VARIABLE_TYPE gamma;                                                            // the variable representing the validity of this graph..
+    solver &slv;                                                                  // the solver this graph belongs to..
+    std::unordered_map<std::size_t, std::vector<std::unique_ptr<flaw>>> phis;     // the phi variables (propositional variable to flaws) of the flaws..
+    std::vector<std::unique_ptr<flaw>> pending_flaws;                             // pending flaws, waiting for root-level to be initialized..
+    std::unordered_map<std::size_t, std::vector<std::unique_ptr<resolver>>> rhos; // the rho variables (propositional variable to resolver) of the resolvers..
+    std::optional<std::reference_wrapper<flaw>> c_flaw;                           // the current flaw..
+    std::optional<std::reference_wrapper<resolver>> c_res;                        // the current resolver..
+    utils::lit tmp_ni;                                                            // the temporary controlling literal, used for restoring the controlling literal..
+    utils::lit ni{utils::TRUE_lit};                                               // the current controlling literal..
+    std::deque<std::reference_wrapper<flaw>> flaw_q;                              // the flaw queue (for the graph building procedure)..
+    std::unordered_set<flaw *> visited;                                           // the visited flaws, for graph cost propagation (and deferrable flaws check)..
+    std::unordered_set<flaw *> active_flaws;                                      // the currently active flaws..
+    std::size_t gamma;                                                            // the variable representing the validity of this graph..
 
     /**
      * @brief Represents a layer in the solver.
