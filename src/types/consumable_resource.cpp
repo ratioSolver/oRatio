@@ -130,7 +130,7 @@ namespace ratio
         for (const auto &[cres, atms] : cr_instances)
         {
             const auto c_initial_amount = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(cres->get(CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME)));
-            json::json tl{{"id", get_id(*cres)}, {"type", CONSUMABLE_RESOURCE_TYPE_NAME}, {CONSUMABLE_RESOURCE_CAPACITY_NAME, to_json(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(cres->get(CONSUMABLE_RESOURCE_CAPACITY_NAME))))}, {CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME, to_json(c_initial_amount)}};
+            json::json tl{{"id", static_cast<uint64_t>(get_id(*cres))}, {"type", CONSUMABLE_RESOURCE_TYPE_NAME}, {CONSUMABLE_RESOURCE_CAPACITY_NAME, to_json(get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(cres->get(CONSUMABLE_RESOURCE_CAPACITY_NAME))))}, {CONSUMABLE_RESOURCE_INITIAL_AMOUNT_NAME, to_json(c_initial_amount)}};
 #ifdef COMPUTE_NAMES
             tl["name"] = get_solver().guess_name(*cres);
 #endif

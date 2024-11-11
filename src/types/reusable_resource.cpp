@@ -262,7 +262,7 @@ namespace ratio
 
         for (const auto &[rr, atms] : rr_instances)
         {
-            json::json tl{{"id", get_id(*rr)}, {"type", REUSABLE_RESOURCE_TYPE_NAME}};
+            json::json tl{{"id", static_cast<uint64_t>(get_id(*rr))}, {"type", REUSABLE_RESOURCE_TYPE_NAME}};
 #ifdef COMPUTE_NAMES
             tl["name"] = get_solver().guess_name(*rr);
 #endif

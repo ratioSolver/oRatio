@@ -41,7 +41,7 @@ namespace ratio
 
         for (const auto &[agnt, atms] : agnt_instances)
         {
-            json::json tl{{"id", get_id(*agnt)}, {"type", AGENT_TYPE_NAME}};
+            json::json tl{{"id", static_cast<uint64_t>(get_id(*agnt))}, {"type", AGENT_TYPE_NAME}};
 #ifdef COMPUTE_NAMES
             tl["name"] = get_solver().guess_name(*agnt);
 #endif
