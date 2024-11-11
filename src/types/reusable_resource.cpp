@@ -262,7 +262,10 @@ namespace ratio
 
         for (const auto &[rr, atms] : rr_instances)
         {
-            json::json tl{{"id", get_id(*rr)}, {"type", REUSABLE_RESOURCE_TYPE_NAME}, {"name", get_solver().guess_name(*rr)}};
+            json::json tl{{"id", get_id(*rr)}, {"type", REUSABLE_RESOURCE_TYPE_NAME}};
+#ifdef COMPUTE_NAMES
+            tl["name"] = get_solver().guess_name(*rr);
+#endif
 
             const auto c_capacity = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(rr->get(REUSABLE_RESOURCE_CAPACITY_NAME)));
             tl[REUSABLE_RESOURCE_CAPACITY_NAME] = to_json(c_capacity);
