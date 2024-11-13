@@ -5,7 +5,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
 include(CTest)
 enable_testing()
 
-set(JSON_INCLUDE_UTILS OFF CACHE BOOL "Enable JSON Utils" FORCE)
 set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
 
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
