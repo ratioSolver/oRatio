@@ -213,6 +213,11 @@ namespace ratio
                 leqs[atm.get()][&c_atm.get()] = before;
             if (get_solver().get_sat().value(after) == utils::Undefined)
                 leqs[&c_atm.get()][atm.get()] = after;
+            if (get_solver().get_sat().value(before) == utils::False || get_solver().get_sat().value(after) == utils::False)
+            {
+                [[maybe_unused]] auto nc = get_solver().get_sat().new_clause({!atm->get_sigma(), !c_atm.get().get_sigma(), before, after});
+                assert(nc);
+            }
         }
 
         const auto tau = atm->get(riddle::TAU_NAME);
