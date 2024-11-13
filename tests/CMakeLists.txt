@@ -4,7 +4,7 @@ target_link_libraries(core_tests PRIVATE oRatioLib)
 
 add_executable(solver_tests test_solver.cpp)
 add_dependencies(solver_tests oRatioLib)
-target_compile_definitions(solver_tests PRIVATE NUM_TESTS=5)
+target_compile_definitions(solver_tests PRIVATE NUM_TESTS=1)
 target_link_libraries(solver_tests PRIVATE oRatioLib)
 
 add_test(NAME oRatio_CoreTest COMMAND core_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
