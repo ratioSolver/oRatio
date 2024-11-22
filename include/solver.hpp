@@ -265,6 +265,15 @@ namespace ratio
    * @return True if the atom is of type "Impulse", false otherwise.
    */
   inline bool is_impulse(const atom &atm) noexcept { return atm.get_core().get_predicate(IMPULSE_PREDICATE_NAME)->get().is_assignable_from(atm.get_type()); }
+
+  /**
+   * Checks if the given predicate is of type "Impulse".
+   *
+   * @param pred The predicate to check.
+   * @return True if the predicate is of type "Impulse", false otherwise.
+   */
+  inline bool is_impulse(const riddle::predicate &pred) noexcept { return pred.get_scope().get_core().get_predicate(IMPULSE_PREDICATE_NAME)->get().is_assignable_from(pred); }
+
   /**
    * Checks if the given atom is of type "Interval".
    *
@@ -272,6 +281,14 @@ namespace ratio
    * @return True if the atom is of type "Interval", false otherwise.
    */
   inline bool is_interval(const atom &atm) noexcept { return atm.get_core().get_predicate(INTERVAL_PREDICATE_NAME)->get().is_assignable_from(atm.get_type()); }
+
+  /**
+   * Checks if the given predicate is of type "Interval".
+   *
+   * @param pred The predicate to check.
+   * @return True if the predicate is of type "Interval", false otherwise.
+   */
+  inline bool is_interval(const riddle::predicate &pred) noexcept { return pred.get_scope().get_core().get_predicate(INTERVAL_PREDICATE_NAME)->get().is_assignable_from(pred); }
 
   /**
    * @brief Gets the unique identifier of the given solver.
