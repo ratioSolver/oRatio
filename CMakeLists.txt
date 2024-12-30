@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.5.0)
-project(oRatioLib VERSION 0.2.0 LANGUAGES CXX)
+project(oRatioLib VERSION 0.3.0 LANGUAGES CXX)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
+
+include(FetchContent)
+FetchContent_Declare(z3
+        GIT_REPOSITORY https://github.com/Z3Prover/z3
+        GIT_TAG        z3-4.13.4
+)
+FetchContent_MakeAvailable(z3)
 
 include(CTest)
 enable_testing()
@@ -32,8 +39,8 @@ add_subdirectory(extern/riddle)
 add_library(oRatioLib src/solver.cpp)
 target_compile_features(oRatioLib PUBLIC cxx_std_17)
 add_dependencies(oRatioLib RiDDLe)
-target_link_libraries(oRatioLib PUBLIC RiDDLe)
-target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_link_libraries(oRatioLib PUBLIC RiDDLe libz3)
+target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> ${z3_SOURCE_DIR}/src/api)
 
 if(${HEURISTIC_TYPE} STREQUAL "h_max")
     target_compile_definitions(oRatioLib PRIVATE H_MAX)

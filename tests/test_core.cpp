@@ -1,8 +1,15 @@
-#include <cassert>
 #include "solver.hpp"
+#include <cassert>
 
 void test_basic_core()
 {
+    ratio::solver slv;
+    auto i0 = slv.new_int();
+    auto i1 = slv.new_int();
+    slv.solve();
+
+    assert(slv.arith_value(*i0) == 0);
+    assert(slv.arith_value(*i1) == 0);
 }
 
 int main(int argc, char const *argv[])
