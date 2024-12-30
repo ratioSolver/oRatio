@@ -10,7 +10,7 @@ namespace ratio
     riddle::bool_expr solver::new_bool(const bool value) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ctx.bool_val(value)); }
     utils::lbool solver::bool_value(const riddle::bool_item &expr) const noexcept
     {
-        switch (mdl.eval(static_cast<const bool_item &>(expr).get_expr()).bool_value())
+        switch (mdl.eval(static_cast<const bool_item &>(expr).get_expr(), true).bool_value())
         {
         case Z3_L_TRUE:
             return utils::True;
@@ -48,11 +48,11 @@ namespace ratio
 
     utils::inf_rational solver::arith_value(const riddle::arith_item &expr) const noexcept
     {
-        auto val = mdl.eval(static_cast<const arith_item &>(expr).get_expr());
+        auto val = mdl.eval(static_cast<const arith_item &>(expr).get_expr(), true);
         if (val.is_int())
-            return utils::inf_rational(val.get_numeral_int64());
+            return utils::inf_rational(val.get_numeral_int());
         else if (val.is_real())
-            return utils::inf_rational(val.numerator().get_numeral_int64(), val.denominator().get_numeral_int64());
+            return utils::inf_rational(val.numerator().get_numeral_int(), val.denominator().get_numeral_int());
         else
             assert(false);
     }
