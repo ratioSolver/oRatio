@@ -103,10 +103,11 @@ namespace ratio
     }
     riddle::arith_expr solver::new_product(std::vector<riddle::arith_expr> &&xprs)
     {
-        std::vector<Z3_ast> args;
+        z3::expr_vector args(ctx);
         for (const auto &xpr : xprs)
             args.push_back(static_cast<const arith_item &>(*xpr).get_expr());
-        return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), to_expr(ctx, Z3_mk_mul(ctx, args.size(), args.data())));
+        z3::array<Z3_ast> _args(args);
+        return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), to_expr(ctx, Z3_mk_mul(ctx, _args.size(), _args.ptr())));
     }
     riddle::arith_expr solver::new_divide(riddle::arith_expr lhs, riddle::arith_expr rhs) { return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), static_cast<const arith_item &>(*lhs).get_expr() / static_cast<const arith_item &>(*rhs).get_expr()); }
 
