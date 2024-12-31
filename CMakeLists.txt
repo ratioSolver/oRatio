@@ -63,7 +63,7 @@ if(BUILD_TESTING)
 endif()
 
 if(MSVC)
-    target_compile_options(oRatioLib PRIVATE /W4)
+    target_compile_options(oRatioLib PRIVATE /W4 /Oy-)
 else()
     target_compile_options(oRatioLib PRIVATE -Wall -Wextra -Wpedantic -fsanitize=undefined)
     if (ENABLE_COVERAGE)
