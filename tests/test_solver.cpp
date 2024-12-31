@@ -20,6 +20,7 @@ int main(int argc, char const *argv[])
     std::string sol_name = argv[argc - 1];
 
     LOG_INFO("starting oRatio");
+    std::vector<bool> results;
     std::vector<std::chrono::nanoseconds> times;
     for (size_t i = 0; i < NUM_TESTS; ++i)
     {
@@ -31,9 +32,15 @@ int main(int argc, char const *argv[])
             s.read(prob_names);
 
             if (s.solve())
+            {
                 LOG_INFO("hurray!! we have found a solution..");
+                results.push_back(true);
+            }
             else
+            {
                 LOG_INFO("the problem is unsolvable..");
+                results.push_back(false);
+            }
             auto dur = std::chrono::high_resolution_clock::now() - start;
             LOG_INFO("running time: " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count()) + " ms");
             times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(dur));
@@ -45,6 +52,13 @@ int main(int argc, char const *argv[])
         }
     }
     LOG_INFO("average running time: " + std::to_string(std::accumulate(times.begin(), times.end(), std::chrono::nanoseconds(0)).count() / NUM_TESTS / 1000000) + " ms");
+    assert(std::all_of(results.begin(), results.end(), [](bool b)
+                       { return b; }) ||
+           std::none_of(results.begin(), results.end(), [](bool b)
+                        { return b; }));
 
-    return 0;
+    return std::all_of(results.begin(), results.end(), [](bool b)
+                       { return b; })
+               ? 0
+               : 1;
 }
