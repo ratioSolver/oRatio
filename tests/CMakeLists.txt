@@ -32,3 +32,5 @@ else()
 endif()
 
 add_test(NAME oRatio_CoreTest COMMAND core_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_test(NAME SolverTest00 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_00.rddl" "solution.json")
