@@ -35,7 +35,7 @@ if(${HEURISTIC_TYPE_INDEX} EQUAL -1)
 endif()
 message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 
-# add_subdirectory(extern/riddle)
+add_subdirectory(extern/riddle)
 
 add_executable(oRatioLib test/main.cpp)
 # add_library(oRatioLib src/solver.cpp)
