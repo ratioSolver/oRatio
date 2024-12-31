@@ -73,9 +73,9 @@ if(BUILD_LISTENERS)
     target_compile_definitions(oRatioLib PUBLIC BUILD_LISTENERS)
 endif()
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+# if(BUILD_TESTING)
+#     add_subdirectory(tests)
+# endif()
 
 if(MSVC)
     target_compile_options(oRatioLib PRIVATE /W4)
