@@ -2,6 +2,7 @@
 #include "logging.hpp"
 #include <chrono>
 #include <numeric>
+#include <algorithm>
 
 int main(int argc, char const *argv[])
 {
