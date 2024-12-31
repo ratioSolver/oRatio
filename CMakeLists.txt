@@ -2,19 +2,21 @@ cmake_minimum_required(VERSION 3.10.0)
 project(oRatioLib VERSION 0.3.0 LANGUAGES CXX)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
 
-include(FetchContent)
-FetchContent_Declare(z3
-        GIT_REPOSITORY https://github.com/Z3Prover/z3
-        GIT_TAG        z3-4.13.4
-)
-FetchContent_MakeAvailable(z3)
-
 include(CTest)
 enable_testing()
 
 set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
 
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
+
+set(CONSTRAINT_REASONER_TYPES Z3 SeMiTONE)
+set(CONSTRAINT_REASONER_TYPE Z3 CACHE STRING "Constraint reasoner type")
+set_property(CACHE CONSTRAINT_REASONER_TYPE PROPERTY STRINGS ${CONSTRAINT_REASONER_TYPES})
+list(FIND CONSTRAINT_REASONER_TYPES ${CONSTRAINT_REASONER_TYPE} CONSTRAINT_REASONER_TYPE_INDEX)
+if(${CONSTRAINT_REASONER_TYPE_INDEX} EQUAL -1)
+    message(FATAL_ERROR "Invalid constraint reasoner type ${CONSTRAINT_REASONER_TYPE}")
+endif()
+message(STATUS "Constraint reasoner type: ${CONSTRAINT_REASONER_TYPE}")
 
 set(TEMPORAL_NETWORK_TYPES LRA DL)
 set(TEMPORAL_NETWORK_TYPE LRA CACHE STRING "Temporal network type")
@@ -39,8 +41,21 @@ add_subdirectory(extern/riddle)
 add_library(oRatioLib src/solver.cpp)
 target_compile_features(oRatioLib PUBLIC cxx_std_17)
 add_dependencies(oRatioLib RiDDLe)
-target_link_libraries(oRatioLib PUBLIC RiDDLe libz3)
-target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> ${z3_SOURCE_DIR}/src/api)
+target_link_libraries(oRatioLib PUBLIC RiDDLe)
+target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+if(${CONSTRAINT_REASONER_TYPE} STREQUAL "Z3")
+    include(FetchContent)
+    FetchContent_Declare(z3 GIT_REPOSITORY https://github.com/Z3Prover/z3 GIT_TAG z3-4.13.4)
+    FetchContent_MakeAvailable(z3)
+
+    target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/z3> ${z3_SOURCE_DIR}/src/api)
+    target_sources(oRatioLib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/z3/z3core.cpp)
+    target_link_libraries(oRatioLib PUBLIC libz3)
+    target_compile_definitions(oRatioLib PUBLIC Z3)
+elseif(${CONSTRAINT_REASONER_TYPE} STREQUAL "SeMiTONE")
+    target_compile_definitions(oRatioLib PUBLIC SEMITONE)
+endif()
 
 if(${HEURISTIC_TYPE} STREQUAL "h_max")
     target_compile_definitions(oRatioLib PRIVATE H_MAX)
