@@ -22,12 +22,12 @@ namespace ratio
     }
 
     riddle::arith_expr solver::new_int() { return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), ctx.int_const(("i" + std::to_string(int_count++)).c_str())); }
-    riddle::arith_expr solver::new_int(const INT_TYPE value) { return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), ctx.int_val(value)); }
+    riddle::arith_expr solver::new_int(const INT_TYPE value) { return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), ctx.int_val(static_cast<int64_t>(value))); }
     riddle::arith_expr solver::new_int(const INT_TYPE lb, const INT_TYPE ub)
     {
         auto xpr = ctx.int_const(("i" + std::to_string(int_count++)).c_str());
-        slv.add(xpr >= ctx.int_val(lb));
-        slv.add(xpr <= ctx.int_val(ub));
+        slv.add(xpr >= ctx.int_val(static_cast<int64_t>(lb)));
+        slv.add(xpr <= ctx.int_val(static_cast<int64_t>(ub)));
         return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(xpr));
     }
     riddle::arith_expr solver::new_uncertain_int(const INT_TYPE lb, const INT_TYPE ub) { return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), ctx.int_const(("i" + std::to_string(int_count++)).c_str())); }
@@ -64,7 +64,7 @@ namespace ratio
     {
         auto xpr = ctx.int_const(("e" + std::to_string(enum_count++)).c_str());
         slv.add(xpr >= ctx.int_val(0));
-        slv.add(xpr < ctx.int_val(values.size()));
+        slv.add(xpr < ctx.int_val(static_cast<uint64_t>(values.size())));
         return std::make_shared<enum_item>(static_cast<riddle::enum_type &>(tp), std::move(xpr), std::move(values));
     }
 
