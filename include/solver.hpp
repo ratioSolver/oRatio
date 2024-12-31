@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core.hpp"
-#include "z3++.h"
+#include "c++/z3++.h"
 
 namespace ratio
 {
