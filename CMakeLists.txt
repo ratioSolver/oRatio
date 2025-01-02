@@ -37,7 +37,7 @@ message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 
 add_subdirectory(extern/riddle)
 
-add_library(oRatioLib src/solver.cpp)
+add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp)
 target_compile_features(oRatioLib PUBLIC cxx_std_17)
 add_dependencies(oRatioLib RiDDLe)
 target_link_libraries(oRatioLib PUBLIC RiDDLe)
