@@ -1,5 +1,6 @@
 #pragma once
 
+#include "solver.hpp"
 namespace ratio
 {
   class graph

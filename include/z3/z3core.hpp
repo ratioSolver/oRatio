@@ -116,12 +116,12 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr new_eq(std::shared_ptr<riddle::item> lhs, std::shared_ptr<riddle::item> rhs) override;
 
-    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
     void assert_fact(riddle::bool_expr fact) override;
 
-    riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) override;
-
     bool solve();
+
+  protected:
+    virtual riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) override;
 
   private:
     z3::context ctx;

@@ -130,11 +130,6 @@ namespace ratio
 
     riddle::bool_expr core::new_eq(std::shared_ptr<riddle::item> lhs, std::shared_ptr<riddle::item> rhs) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const arith_item &>(*lhs).get_expr() == static_cast<const arith_item &>(*rhs).get_expr()); }
 
-    void core::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
-    {
-        throw std::runtime_error("Not implemented");
-    }
-
     void core::assert_fact(riddle::bool_expr fact) { slv.add(static_cast<const bool_item &>(*fact).get_expr()); }
 
     riddle::atom_expr core::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args)
