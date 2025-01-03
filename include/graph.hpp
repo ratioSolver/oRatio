@@ -1,8 +1,6 @@
 #pragma once
 
 #include "core.hpp"
-#include "flaw.hpp"
-#include "resolver.hpp"
 
 #ifdef ENABLE_API
 #define NEW_FLAW(f) flaw_created(f)
@@ -24,6 +22,44 @@
 
 namespace ratio
 {
+  class graph;
+  class resolver;
+
+  class flaw
+  {
+    friend class resolver;
+
+  public:
+    flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes);
+
+    [[nodiscard]] graph &get_graph() noexcept { return gr; }
+    [[nodiscard]] const graph &get_graph() const noexcept { return gr; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_causes() const noexcept { return causes; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept { return resolvers; }
+
+  private:
+    graph &gr;                                               // the graph this flaw belongs to..
+    std::vector<std::reference_wrapper<resolver>> causes;    // the causes of this flaw..
+    std::vector<std::reference_wrapper<resolver>> resolvers; // the resolvers for this flaw..
+  };
+
+  class resolver
+  {
+  public:
+    resolver(flaw &f, utils::rational &&intrinsic_cost);
+
+    [[nodiscard]] flaw &get_flaw() noexcept { return f; }
+    [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
+
+    [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+
+  private:
+    flaw &f;
+    utils::rational intrinsic_cost;
+  };
+
   class graph : public riddle::core
   {
   public:
