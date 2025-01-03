@@ -27,6 +27,7 @@ namespace ratio
 
   class flaw
   {
+    friend class graph;
     friend class resolver;
 
   public:
@@ -40,6 +41,9 @@ namespace ratio
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept { return resolvers; }
 
   private:
+    virtual void compute_resolvers() = 0;
+
+  private:
     graph &gr;                                               // the graph this flaw belongs to..
     std::vector<std::reference_wrapper<resolver>> causes;    // the causes of this flaw..
     std::vector<std::reference_wrapper<resolver>> resolvers; // the resolvers for this flaw..
@@ -47,6 +51,8 @@ namespace ratio
 
   class resolver
   {
+    friend class graph;
+
   public:
     resolver(flaw &f, utils::rational &&intrinsic_cost);
 
@@ -54,6 +60,9 @@ namespace ratio
     [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
 
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+
+  private:
+    virtual void apply() = 0;
 
   private:
     flaw &f;
@@ -80,7 +89,7 @@ namespace ratio
       static_assert(std::is_base_of_v<flaw, Tp>, "Tp must be a subclass of flaw");
       auto f = new Tp(std::forward<Args>(args)...);
       NEW_FLAW(*f);
-      phis.emplace_back(std::unique_ptr<flaw>(f));
+      flaws.emplace_back(std::unique_ptr<flaw>(f));
       return *f;
     }
 
@@ -98,9 +107,12 @@ namespace ratio
       static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
       auto r = new Tp(std::forward<Args>(args)...);
       NEW_RESOLVER(*r);
-      rhos.emplace_back(std::unique_ptr<resolver>(r));
+      resolvers.emplace_back(std::unique_ptr<resolver>(r));
       return *r;
     }
+
+    std::optional<std::reference_wrapper<flaw>> get_current_flaw() noexcept { return c_flaw; }
+    std::optional<std::reference_wrapper<resolver>> get_current_resolver() noexcept { return c_res; }
 
   private:
 #ifdef BUILD_LISTENERS
@@ -190,8 +202,8 @@ namespace ratio
 #endif
 
   private:
-    std::vector<std::unique_ptr<flaw>> phis;               // The set of flaws
-    std::vector<std::unique_ptr<resolver>> rhos;           // The set of resolvers
+    std::vector<std::unique_ptr<flaw>> flaws;              // The set of flaws
+    std::vector<std::unique_ptr<resolver>> resolvers;      // The set of resolvers
     std::optional<std::reference_wrapper<flaw>> c_flaw;    // the current flaw..
     std::optional<std::reference_wrapper<resolver>> c_res; // the current resolver..
   };

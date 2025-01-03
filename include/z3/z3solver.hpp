@@ -5,6 +5,8 @@
 
 namespace ratio
 {
+  class z3flaw;
+
   class bool_item : public riddle::bool_item
   {
   public:
@@ -70,6 +72,8 @@ namespace ratio
 
   class z3solver : public graph
   {
+    friend class z3flaw;
+
   public:
     z3solver();
 

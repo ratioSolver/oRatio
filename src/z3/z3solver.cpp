@@ -1,4 +1,5 @@
 #include "z3solver.hpp"
+#include "z3flaws.hpp"
 #include "logging.hpp"
 #include <cassert>
 
@@ -133,14 +134,25 @@ namespace ratio
     void z3solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
     }
-    void z3solver::assert_fact(riddle::bool_expr fact) { slv.add(static_cast<const bool_item &>(*fact).get_expr()); }
+    void z3solver::assert_fact(riddle::bool_expr fact)
+    {
+        if (get_current_resolver().has_value())
+            slv.add(z3::implies(static_cast<z3resolver &>(get_current_resolver().value().get()).get_rho(), static_cast<const bool_item &>(*fact).get_expr()));
+        else
+            slv.add(static_cast<const bool_item &>(*fact).get_expr());
+    }
 
     riddle::atom_expr z3solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args)
     {
         auto xpr = ctx.int_const(("a" + std::to_string(atom_count++)).c_str());
         slv.add(xpr >= ctx.int_val(0));
         slv.add(xpr < ctx.int_val(2));
-        return std::make_shared<atom>(pred, is_fact, std::move(xpr), std::move(args));
+        auto atm = std::make_shared<atom>(pred, is_fact, std::move(xpr), std::move(args));
+        std::vector<std::reference_wrapper<resolver>> causes;
+        if (get_current_resolver().has_value())
+            causes.push_back(get_current_resolver().value());
+        auto &f = new_flaw<z3atom_flaw>(*this, std::move(causes), atm);
+        return atm;
     }
 
     bool z3solver::solve()
