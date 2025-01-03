@@ -1,9 +1,17 @@
-#include "solver.hpp"
+#if defined(SEMITONE)
+#include "semitonesolver.hpp"
+#elif defined(Z3)
+#include "z3solver.hpp"
+#endif
 #include <cassert>
 
 void test_basic_core()
 {
-    ratio::solver slv;
+#if defined(SEMITONE)
+        ratio::semitonesolver slv;
+#elif defined(Z3)
+        ratio::z3solver slv;
+#endif
 
     auto i0 = slv.new_int();
     auto i1 = slv.new_int();

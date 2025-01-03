@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core.hpp"
+#include "graph.hpp"
 #include "c++/z3++.h"
 
 namespace ratio
@@ -68,10 +68,10 @@ namespace ratio
     z3::expr expr;
   };
 
-  class core : public riddle::core
+  class z3solver : public graph
   {
   public:
-    core();
+    z3solver();
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
@@ -116,6 +116,7 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr new_eq(std::shared_ptr<riddle::item> lhs, std::shared_ptr<riddle::item> rhs) override;
 
+    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
     void assert_fact(riddle::bool_expr fact) override;
 
     bool solve();

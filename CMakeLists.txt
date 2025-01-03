@@ -37,7 +37,7 @@ message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 
 add_subdirectory(extern/riddle)
 
-add_library(oRatioLib src/solver.cpp src/graph.cpp src/flaw.cpp src/resolver.cpp)
+add_library(oRatioLib src/graph.cpp src/flaw.cpp src/resolver.cpp)
 target_compile_features(oRatioLib PUBLIC cxx_std_17)
 add_dependencies(oRatioLib RiDDLe)
 target_link_libraries(oRatioLib PUBLIC RiDDLe)
@@ -49,7 +49,7 @@ if(${CONSTRAINT_REASONER_TYPE} STREQUAL "Z3")
     FetchContent_MakeAvailable(z3)
 
     target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/z3> ${z3_SOURCE_DIR}/src/api)
-    target_sources(oRatioLib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/z3/z3core.cpp)
+    target_sources(oRatioLib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/z3/z3solver.cpp)
     target_link_libraries(oRatioLib PUBLIC libz3)
     target_compile_definitions(oRatioLib PUBLIC Z3)
 elseif(${CONSTRAINT_REASONER_TYPE} STREQUAL "SeMiTONE")

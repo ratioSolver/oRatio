@@ -1,4 +1,8 @@
-#include "solver.hpp"
+#if defined(SEMITONE)
+#include "semitonesolver.hpp"
+#elif defined(Z3)
+#include "z3solver.hpp"
+#endif
 #include "logging.hpp"
 #include <chrono>
 #include <numeric>
@@ -27,7 +31,11 @@ int main(int argc, char const *argv[])
     {
         LOG_INFO("running test " + std::to_string(i + 1) + " of " + std::to_string(NUM_TESTS));
         auto start = std::chrono::high_resolution_clock::now();
-        ratio::solver s;
+#if defined(SEMITONE)
+        ratio::semitonesolver s;
+#elif defined(Z3)
+        ratio::z3solver s;
+#endif
         try
         {
             s.read(prob_names);
