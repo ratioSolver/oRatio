@@ -1,10 +1,175 @@
 #include "z3solver.hpp"
 #include "z3flaws.hpp"
 #include "logging.hpp"
+#include <queue>
 #include <cassert>
 
 namespace ratio
 {
+    riddle::bool_expr bool_item::operator==(riddle::expr rhs) const
+    {
+        auto &ctx = static_cast<z3solver &>(get_type().get_scope()).ctx;
+        if (rhs.get() == this) // same item
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(true));
+        else if (rhs->get_type().get_name() != riddle::bool_kw) // different types
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(false));
+        else if (auto b = std::dynamic_pointer_cast<bool_item>(rhs)) // same type
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), expr == b->get_expr());
+        else if (auto e = std::dynamic_pointer_cast<enum_item>(rhs)) // enum with bool values (otherwise handled by type check)
+        {
+            z3::expr_vector eqs(ctx);
+            for (size_t i = 0; i < e->get_values().size(); i++)
+            {
+                z3::expr_vector eq(ctx);
+                eq.push_back(e->get_expr() == ctx.int_val(static_cast<uint64_t>(i)));
+                eq.push_back(static_cast<const bool_item &>(e->get_values()[i].get()).get_expr() == expr);
+                eqs.push_back(z3::mk_and(eq));
+            }
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
+        }
+        else
+            assert(false);
+    }
+
+    riddle::bool_expr arith_item::operator==(riddle::expr rhs) const
+    {
+        auto &ctx = static_cast<z3solver &>(get_type().get_scope()).ctx;
+        if (rhs.get() == this) // same item
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(true));
+        else if (!rhs->get_type().is_assignable_from(get_type()) || !get_type().is_assignable_from(rhs->get_type())) // different types
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(false));
+        else if (auto i = std::dynamic_pointer_cast<arith_item>(rhs)) // same type
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), expr == i->get_expr());
+        else if (auto e = std::dynamic_pointer_cast<enum_item>(rhs)) // enum with arith values (otherwise handled by type check)
+        {
+            z3::expr_vector eqs(ctx);
+            for (size_t i = 0; i < e->get_values().size(); i++)
+            {
+                z3::expr_vector eq(ctx);
+                eq.push_back(e->get_expr() == ctx.int_val(static_cast<uint64_t>(i)));
+                eq.push_back(static_cast<const arith_item &>(e->get_values()[i].get()).get_expr() == expr);
+                eqs.push_back(z3::mk_and(eq));
+            }
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
+        }
+        else
+            assert(false);
+    }
+
+    riddle::bool_expr string_item::operator==(riddle::expr rhs) const
+    {
+        auto &ctx = static_cast<z3solver &>(get_type().get_scope()).ctx;
+        if (rhs.get() == this) // same item
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(true));
+        else if (rhs->get_type().get_name() != riddle::string_kw) // different types
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(false));
+        else if (auto s = std::dynamic_pointer_cast<string_item>(rhs)) // same type
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), expr == s->get_expr());
+        else if (auto e = std::dynamic_pointer_cast<enum_item>(rhs)) // enum with string values (otherwise handled by type check)
+        {
+            z3::expr_vector eqs(ctx);
+            for (size_t i = 0; i < e->get_values().size(); i++)
+            {
+                z3::expr_vector eq(ctx);
+                eq.push_back(e->get_expr() == ctx.int_val(static_cast<uint64_t>(i)));
+                eq.push_back(static_cast<const string_item &>(e->get_values()[i].get()).get_expr() == expr);
+                eqs.push_back(z3::mk_and(eq));
+            }
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
+        }
+        else
+            assert(false);
+    }
+
+    riddle::bool_expr enum_item::operator==(riddle::expr rhs) const
+    {
+        auto &ctx = static_cast<z3solver &>(get_type().get_scope()).ctx;
+        if (rhs.get() == this) // same item
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(true));
+        else if (!rhs->get_type().is_assignable_from(get_type()) || !get_type().is_assignable_from(rhs->get_type())) // different types
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(false));
+        else if (auto b = std::dynamic_pointer_cast<bool_item>(rhs)) // bool with enum values (otherwise handled by type check)
+        {
+            z3::expr_vector eqs(ctx);
+            for (size_t i = 0; i < get_values().size(); i++)
+            {
+                z3::expr_vector eq(ctx);
+                eq.push_back(expr == ctx.int_val(static_cast<uint64_t>(i)));
+                eq.push_back(static_cast<const bool_item &>(get_values()[i].get()).get_expr() == b->get_expr());
+                eqs.push_back(z3::mk_and(eq));
+            }
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
+        }
+        else if (auto a = std::dynamic_pointer_cast<arith_item>(rhs)) // arith with enum values (otherwise handled by type check)
+        {
+            z3::expr_vector eqs(ctx);
+            for (size_t i = 0; i < get_values().size(); i++)
+            {
+                z3::expr_vector eq(ctx);
+                eq.push_back(expr == ctx.int_val(static_cast<uint64_t>(i)));
+                eq.push_back(static_cast<const arith_item &>(get_values()[i].get()).get_expr() == a->get_expr());
+                eqs.push_back(z3::mk_and(eq));
+            }
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
+        }
+        else if (auto s = std::dynamic_pointer_cast<string_item>(rhs)) // string with enum values (otherwise handled by type check)
+        {
+            z3::expr_vector eqs(ctx);
+            for (size_t i = 0; i < get_values().size(); i++)
+            {
+                z3::expr_vector eq(ctx);
+                eq.push_back(expr == ctx.int_val(static_cast<uint64_t>(i)));
+                eq.push_back(static_cast<const string_item &>(get_values()[i].get()).get_expr() == s->get_expr());
+                eqs.push_back(z3::mk_and(eq));
+            }
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
+        }
+        else if (auto e = std::dynamic_pointer_cast<enum_item>(rhs)) // both enums with common values (otherwise handled by type check)
+        {
+            z3::expr_vector eqs(ctx);
+            for (size_t i = 0; i < get_values().size(); i++)
+                for (size_t j = 0; j < e->get_values().size(); j++)
+                    if (&get_values()[i].get() == &e->get_values()[j].get())
+                    {
+                        z3::expr_vector eq(ctx);
+                        eq.push_back(expr == ctx.int_val(static_cast<uint64_t>(i)));
+                        eq.push_back(e->get_expr() == ctx.int_val(static_cast<uint64_t>(j)));
+                        eqs.push_back(z3::mk_and(eq));
+                    }
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
+        }
+        else
+            assert(false);
+    }
+
+    riddle::bool_expr atom::operator==(riddle::expr rhs) const
+    {
+        auto &ctx = static_cast<z3solver &>(get_core()).ctx;
+        if (rhs.get() == this) // same atom
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(true));
+        else if (!rhs->get_type().is_assignable_from(get_type()) || !get_type().is_assignable_from(rhs->get_type())) // different predicates
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(false));
+        else if (auto a = std::dynamic_pointer_cast<atom>(rhs)) // same predicate
+        {
+            z3::expr_vector eqs(ctx);
+            std::queue<const riddle::predicate *> q;
+            q.push(&static_cast<const riddle::predicate &>(get_type()));
+            while (!q.empty())
+            {
+                auto pred = q.front();
+                q.pop();
+                for (const auto &arg : pred->get_args())
+                    eqs.push_back(std::dynamic_pointer_cast<bool_item>(get_core().new_eq(items.at(arg.get().get_name()), a->items.at(arg.get().get_name())))->get_expr());
+
+                for (const auto &p : pred->get_parents())
+                    q.push(&p.get());
+            }
+            return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_and(eqs));
+        }
+        else
+            assert(false);
+    }
+
     z3solver::z3solver() : slv(ctx), mdl(ctx) {}
 
     riddle::bool_expr z3solver::new_bool() { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ctx.bool_const(("b" + std::to_string(bool_count++)).c_str())); }
@@ -128,8 +293,6 @@ namespace ratio
     riddle::bool_expr z3solver::new_le(riddle::arith_expr lhs, riddle::arith_expr rhs) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const arith_item &>(*lhs).get_expr() <= static_cast<const arith_item &>(*rhs).get_expr()); }
     riddle::bool_expr z3solver::new_gt(riddle::arith_expr lhs, riddle::arith_expr rhs) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const arith_item &>(*lhs).get_expr() > static_cast<const arith_item &>(*rhs).get_expr()); }
     riddle::bool_expr z3solver::new_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const arith_item &>(*lhs).get_expr() >= static_cast<const arith_item &>(*rhs).get_expr()); }
-
-    riddle::bool_expr z3solver::new_eq(std::shared_ptr<riddle::item> lhs, std::shared_ptr<riddle::item> rhs) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const arith_item &>(*lhs).get_expr() == static_cast<const arith_item &>(*rhs).get_expr()); }
 
     void z3solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {

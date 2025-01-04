@@ -15,6 +15,8 @@ namespace ratio
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
 
+    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
+
   private:
     z3::expr expr;
   };
@@ -29,6 +31,8 @@ namespace ratio
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
 
+    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
+
   private:
     z3::expr expr;
   };
@@ -41,6 +45,8 @@ namespace ratio
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
 
+    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
+
   private:
     z3::expr expr;
   };
@@ -48,14 +54,15 @@ namespace ratio
   class enum_item : public riddle::enum_item
   {
   public:
-    enum_item(riddle::type &tp, z3::expr &&expr, std::vector<std::reference_wrapper<utils::enum_val>> &&values) : riddle::enum_item(tp), expr(expr), values(values) {}
+    enum_item(riddle::type &tp, z3::expr &&expr, std::vector<std::reference_wrapper<utils::enum_val>> &&values) : riddle::enum_item(tp, std::move(values)), expr(expr) {}
 
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
 
+    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
+
   private:
     z3::expr expr;
-    std::vector<std::reference_wrapper<utils::enum_val>> values;
   };
 
   class atom : public riddle::atom
@@ -63,8 +70,10 @@ namespace ratio
   public:
     atom(riddle::predicate &pred, bool is_fact, z3::expr &&expr, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) : riddle::atom(pred, is_fact, std::move(args)), expr(expr) {}
 
-    [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
-    [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
+    [[nodiscard]] z3::expr &get_sigma() noexcept { return expr; }
+    [[nodiscard]] const z3::expr &get_sigma() const noexcept { return expr; }
+
+    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
   private:
     z3::expr expr;
@@ -72,6 +81,11 @@ namespace ratio
 
   class z3solver : public graph
   {
+    friend class bool_item;
+    friend class arith_item;
+    friend class string_item;
+    friend class enum_item;
+    friend class atom;
     friend class z3flaw;
 
   public:
@@ -117,8 +131,6 @@ namespace ratio
     [[nodiscard]] riddle::bool_expr new_le(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
     [[nodiscard]] riddle::bool_expr new_gt(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
     [[nodiscard]] riddle::bool_expr new_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
-
-    [[nodiscard]] riddle::bool_expr new_eq(std::shared_ptr<riddle::item> lhs, std::shared_ptr<riddle::item> rhs) override;
 
     void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
     void assert_fact(riddle::bool_expr fact) override;
