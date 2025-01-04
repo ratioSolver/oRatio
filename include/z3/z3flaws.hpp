@@ -46,4 +46,18 @@ namespace ratio
   private:
     riddle::atom_expr atom;
   };
+
+  class z3disjunction_flaw : public z3flaw
+  {
+  public:
+    z3disjunction_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+
+    [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
+
+  private:
+    void compute_resolvers() override;
+
+  private:
+    std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
+  };
 } // namespace ratio

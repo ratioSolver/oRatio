@@ -1,4 +1,5 @@
 #include "z3flaws.hpp"
+#include "conjunction.hpp"
 
 namespace ratio
 {
@@ -17,6 +18,12 @@ namespace ratio
     z3atom_flaw::z3atom_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::atom_expr atom) noexcept : z3flaw(slv, std::move(causes)), atom(std::move(atom)) {}
 
     void z3atom_flaw::compute_resolvers()
+    {
+    }
+
+    z3disjunction_flaw::z3disjunction_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : z3flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
+
+    void z3disjunction_flaw::compute_resolvers()
     {
     }
 } // namespace ratio

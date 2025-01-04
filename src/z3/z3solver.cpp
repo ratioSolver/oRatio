@@ -296,6 +296,10 @@ namespace ratio
 
     void z3solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
+        std::vector<std::reference_wrapper<resolver>> causes;
+        if (get_current_resolver().has_value())
+            causes.push_back(get_current_resolver().value());
+        new_flaw<z3disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
     }
     void z3solver::assert_fact(riddle::bool_expr fact)
     {
@@ -314,7 +318,7 @@ namespace ratio
         std::vector<std::reference_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())
             causes.push_back(get_current_resolver().value());
-        auto &f = new_flaw<z3atom_flaw>(*this, std::move(causes), atm);
+        new_flaw<z3atom_flaw>(*this, std::move(causes), atm);
         return atm;
     }
 

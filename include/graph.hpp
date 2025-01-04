@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.hpp"
+#include <deque>
 
 #ifdef ENABLE_API
 #define NEW_FLAW(f) flaw_created(f)
@@ -90,6 +91,7 @@ namespace ratio
       auto f = new Tp(std::forward<Args>(args)...);
       NEW_FLAW(*f);
       flaws.emplace_back(std::unique_ptr<flaw>(f));
+      flaw_q.push_back(*f);
       return *f;
     }
 
@@ -206,5 +208,6 @@ namespace ratio
     std::vector<std::unique_ptr<resolver>> resolvers;      // The set of resolvers
     std::optional<std::reference_wrapper<flaw>> c_flaw;    // the current flaw..
     std::optional<std::reference_wrapper<resolver>> c_res; // the current resolver..
+    std::deque<std::reference_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..
   };
 } // namespace ratio
