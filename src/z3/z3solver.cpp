@@ -1,5 +1,6 @@
 #include "z3solver.hpp"
 #include "z3flaws.hpp"
+#include "z3types.hpp"
 #include "logging.hpp"
 #include <queue>
 #include <cassert>
@@ -170,7 +171,11 @@ namespace ratio
             assert(false);
     }
 
-    z3solver::z3solver() : slv(ctx), mdl(ctx) {}
+    z3solver::z3solver() : slv(ctx), mdl(ctx)
+    {
+        add_type(std::make_unique<z3state_variable>(*this));
+        add_type(std::make_unique<z3reusable_resource>(*this));
+    }
 
     riddle::bool_expr z3solver::new_bool() { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ctx.bool_const(("b" + std::to_string(bool_count++)).c_str())); }
     riddle::bool_expr z3solver::new_bool(const bool value) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ctx.bool_val(value)); }
