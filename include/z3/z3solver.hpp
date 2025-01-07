@@ -141,6 +141,9 @@ namespace ratio
     virtual riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) override;
 
   private:
+    void expanded_flaw(flaw &f) override;
+
+  private:
     z3::context ctx;
     z3::solver slv;
     z3::model mdl;

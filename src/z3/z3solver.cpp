@@ -325,11 +325,34 @@ namespace ratio
     bool z3solver::solve()
     {
         auto res = slv.check();
-        if (res == z3::sat)
+        if (res == z3::unsat)
+            return false; // no solution..
+
+        build(); // we build the causal graph..
+
+        do
         {
-            mdl = slv.get_model();
-            return true;
-        }
-        return false;
+            z3::expr_vector unexpanded_flaws(ctx);
+            for (const auto &flaw : get_queued_flaws())
+                unexpanded_flaws.push_back(!static_cast<z3flaw &>(flaw.get()).get_phi());
+            res = slv.check(unexpanded_flaws); // we check negating the unexpanded flaws..
+            if (res == z3::unsat)
+            {
+                auto core = slv.unsat_core(); // we get the core of the unsat..
+                if (unexpanded_flaws.empty())
+                    return false; // no solution..
+            }
+        } while (res == z3::unsat);
+
+        mdl = slv.get_model();
+        return true;
+    }
+
+    void z3solver::expanded_flaw(flaw &f)
+    {
+        z3::expr_vector ress(ctx);
+        for (const auto &resolver : f.get_resolvers())
+            ress.push_back(static_cast<z3resolver &>(resolver.get()).get_rho());
+        slv.add(z3::implies(static_cast<z3flaw &>(f).get_phi(), z3::mk_or(ress))); // if the flaw is active, then at least one resolver must be active
     }
 } // namespace ratio

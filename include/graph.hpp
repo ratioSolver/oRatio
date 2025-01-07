@@ -2,6 +2,7 @@
 
 #include "core.hpp"
 #include <deque>
+#include <unordered_set>
 
 #ifdef ENABLE_API
 #define NEW_FLAW(f) flaw_created(f)
@@ -11,6 +12,8 @@
 #define NEW_RESOLVER(r) resolver_created(r)
 #define RESOLVER_STATE_CHANGED(r) resolver_state_changed(r)
 #define NEW_CAUSAL_LINK(f, r) causal_link_added(f, r)
+#define CURRENT_FLAW(f) current_flaw(f)
+#define CURRENT_RESOLVER(r) current_resolver(r)
 #else
 #define NEW_FLAW(f)
 #define FLAW_STATE_CHANGED(f)
@@ -19,6 +22,8 @@
 #define NEW_RESOLVER(r)
 #define RESOLVER_STATE_CHANGED(r)
 #define NEW_CAUSAL_LINK(f, r)
+#define CURRENT_FLAW(f)
+#define CURRENT_RESOLVER(r)
 #endif
 
 namespace ratio
@@ -33,6 +38,8 @@ namespace ratio
 
   public:
     flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes);
+    flaw(const flaw &) = delete;
+    virtual ~flaw() = default;
 
     [[nodiscard]] graph &get_graph() noexcept { return gr; }
     [[nodiscard]] const graph &get_graph() const noexcept { return gr; }
@@ -41,33 +48,47 @@ namespace ratio
 
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept { return resolvers; }
 
+    [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_supports() const noexcept { return supports; }
+
   private:
     virtual void compute_resolvers() = 0;
 
   private:
-    graph &gr;                                               // the graph this flaw belongs to..
-    std::vector<std::reference_wrapper<resolver>> causes;    // the causes of this flaw..
-    std::vector<std::reference_wrapper<resolver>> resolvers; // the resolvers for this flaw..
+    graph &gr;                                                     // the graph this flaw belongs to..
+    std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
+    std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
+    utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
+    std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
   };
 
   class resolver
   {
     friend class graph;
+    friend class flaw;
 
   public:
     resolver(flaw &f, utils::rational &&intrinsic_cost);
+    resolver(const resolver &) = delete;
+    virtual ~resolver() = default;
 
     [[nodiscard]] flaw &get_flaw() noexcept { return f; }
     [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
 
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
 
+    [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
+
+    [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
+
   private:
     virtual void apply() = 0;
 
   private:
-    flaw &f;
-    utils::rational intrinsic_cost;
+    flaw &f;                                                 // the flaw solved by this resolver..
+    utils::rational intrinsic_cost;                          // the intrinsic cost of this resolver..
+    std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
 
   class graph : public riddle::core
@@ -91,7 +112,9 @@ namespace ratio
       auto f = new Tp(std::forward<Args>(args)...);
       NEW_FLAW(*f);
       flaws.emplace_back(std::unique_ptr<flaw>(f));
-      flaw_q.push_back(*f);
+      flaw_q.push_back(*f); // add to the flaw queue..
+      if (f->get_causes().empty())
+        root_flaws.push_back(*f); // add to the root-level flaws..
       return *f;
     }
 
@@ -113,8 +136,40 @@ namespace ratio
       return *r;
     }
 
-    std::optional<std::reference_wrapper<flaw>> get_current_flaw() noexcept { return c_flaw; }
-    std::optional<std::reference_wrapper<resolver>> get_current_resolver() noexcept { return c_res; }
+    [[nodiscard]] std::optional<std::reference_wrapper<flaw>> get_current_flaw() noexcept { return c_flaw; }
+    void set_current_flaw(std::optional<std::reference_wrapper<flaw>> flaw) noexcept
+    {
+      c_flaw = flaw;
+      CURRENT_FLAW(flaw);
+    }
+
+    [[nodiscard]] std::optional<std::reference_wrapper<resolver>> get_current_resolver() noexcept { return c_res; }
+    void set_current_resolver(std::optional<std::reference_wrapper<resolver>> resolver) noexcept
+    {
+      c_res = resolver;
+      CURRENT_RESOLVER(resolver);
+    }
+
+    [[nodiscard]] std::vector<std::reference_wrapper<flaw>> get_queued_flaws() const noexcept;
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_root_flaws() const noexcept { return root_flaws; }
+
+    /**
+     * @brief Builds the graph.
+     *
+     * This function builds the graph by expanding the flaws and applying the resolvers.
+     */
+    void build();
+
+    void expand_flaws(const std::vector<std::reference_wrapper<flaw>> &flaws);
+
+  private:
+    void expand_flaw(flaw &f);
+
+    virtual void expanded_flaw(flaw &) = 0;
+    virtual void flaw_cost_computed(flaw &, const utils::rational &) {}
+
+    void compute_flaw_cost(flaw &f);
 
   private:
 #ifdef BUILD_LISTENERS
@@ -165,7 +220,7 @@ namespace ratio
      *
      * @param flaw The current flaw.
      */
-    virtual void current_flaw(const flaw &) {}
+    virtual void current_flaw(std::optional<std::reference_wrapper<flaw>>) {}
 
     /**
      * @brief Notifies when a resolver has been created.
@@ -190,7 +245,7 @@ namespace ratio
      *
      * @param resolver The current resolver.
      */
-    virtual void current_resolver(const resolver &) {}
+    virtual void current_resolver(std::optional<std::reference_wrapper<resolver>>) {}
 
     /**
      * @brief Notifies when a causal link has been added.
@@ -209,5 +264,7 @@ namespace ratio
     std::optional<std::reference_wrapper<flaw>> c_flaw;    // the current flaw..
     std::optional<std::reference_wrapper<resolver>> c_res; // the current resolver..
     std::deque<std::reference_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..
+    std::vector<std::reference_wrapper<flaw>> root_flaws;  // the root-level flaws..
+    std::unordered_set<flaw *> visited;                    // the visited flaws, for graph cost propagation (and deferrable flaws check)..
   };
 } // namespace ratio
