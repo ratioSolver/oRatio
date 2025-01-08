@@ -36,4 +36,6 @@ add_test(NAME oRatio_CoreTest COMMAND core_tests WORKING_DIRECTORY ${CMAKE_BINAR
 add_test(NAME SolverTest00 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_00.rddl" "solution.json")
 add_test(NAME SolverTest01 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_01.rddl" "solution.json")
 add_test(NAME SolverTest02 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_02.rddl" "solution.json")
+add_test(NAME SolverTest03 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_03.rddl" "solution.json")
+add_test(NAME SolverTest04 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_04.rddl" "solution.json")
 set_tests_properties(SolverTest02 PROPERTIES WILL_FAIL TRUE)
