@@ -23,6 +23,7 @@ namespace ratio
   class z3resolver : public resolver
   {
   public:
+    z3resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;
     z3resolver(flaw &f, utils::rational &&intrinsic_cost, z3::expr &&rho) noexcept;
 
     [[nodiscard]] z3::expr &get_rho() noexcept { return rho; }
@@ -32,7 +33,7 @@ namespace ratio
     z3::expr rho;
   };
 
-  class z3atom_flaw : public z3flaw
+  class z3atom_flaw final : public z3flaw
   {
   public:
     z3atom_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::atom_expr atom) noexcept;
@@ -47,7 +48,30 @@ namespace ratio
     riddle::atom_expr atom;
   };
 
-  class z3disjunction_flaw : public z3flaw
+  class z3activate_fact final : public z3resolver
+  {
+  public:
+    z3activate_fact(z3atom_flaw &f) noexcept;
+    z3activate_fact(z3atom_flaw &f, z3::expr &&rho) noexcept;
+  };
+
+  class z3activate_goal final : public z3resolver
+  {
+  public:
+    z3activate_goal(z3atom_flaw &f) noexcept;
+    z3activate_goal(z3atom_flaw &f, z3::expr &&rho) noexcept;
+  };
+
+  class z3unify_atom final : public z3resolver
+  {
+  public:
+    z3unify_atom(z3atom_flaw &f, riddle::atom_expr atm) noexcept;
+
+  private:
+    riddle::atom_expr atm;
+  };
+
+  class z3disjunction_flaw final : public z3flaw
   {
   public:
     z3disjunction_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
@@ -59,5 +83,14 @@ namespace ratio
 
   private:
     std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
+  };
+
+  class z3choose_conjunction final : public z3resolver
+  {
+  public:
+    z3choose_conjunction(z3disjunction_flaw &f, riddle::conjunction &conj) noexcept;
+
+  private:
+    riddle::conjunction &conj;
   };
 } // namespace ratio

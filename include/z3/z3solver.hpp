@@ -87,6 +87,7 @@ namespace ratio
     friend class enum_item;
     friend class atom;
     friend class z3flaw;
+    friend class z3resolver;
 
   public:
     z3solver();
