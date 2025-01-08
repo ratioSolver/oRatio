@@ -140,7 +140,14 @@ namespace ratio
             return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
         }
         else
-            assert(false);
+        {
+            auto it = std::find_if(get_values().begin(), get_values().end(), [&rhs](const auto &v)
+                                   { return &v.get() == rhs.get(); });
+            if (it != get_values().end())
+                return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), expr == ctx.int_val(static_cast<uint64_t>(std::distance(get_values().begin(), it))));
+            else
+                return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(false));
+        }
     }
 
     riddle::bool_expr atom::operator==(riddle::expr rhs) const
