@@ -257,6 +257,11 @@ namespace ratio
         slv.add(xpr < ctx.int_val(static_cast<uint64_t>(values.size())));
         return std::make_shared<enum_item>(static_cast<riddle::enum_type &>(tp), std::move(xpr), std::move(values));
     }
+    utils::enum_val &z3solver::enum_value(const riddle::enum_item &expr) const noexcept
+    {
+        auto val = mdl.eval(static_cast<const enum_item &>(expr).get_expr(), true);
+        return static_cast<utils::enum_val &>(expr.get_values()[val.get_numeral_uint()].get());
+    }
 
     riddle::bool_expr z3solver::new_and(std::vector<riddle::bool_expr> &&exprs)
     {
