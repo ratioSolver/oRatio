@@ -13,11 +13,15 @@ namespace ratio
     [[nodiscard]] z3::expr &get_phi() noexcept { return phi; }
     [[nodiscard]] const z3::expr &get_phi() const noexcept { return phi; }
 
+    [[nodiscard]] z3::expr &get_position() noexcept { return pos; }
+    [[nodiscard]] const z3::expr &get_position() const noexcept { return pos; }
+
   private:
     static z3::expr compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept;
 
   private:
-    z3::expr phi;
+    z3::expr phi; // the literal indicating whether the flaw is active or not..
+    z3::expr pos; // the position variable associated to this flaw (for avoiding causality loops)..
   };
 
   class z3resolver : public resolver
@@ -28,6 +32,9 @@ namespace ratio
 
     [[nodiscard]] z3::expr &get_rho() noexcept { return rho; }
     [[nodiscard]] const z3::expr &get_rho() const noexcept { return rho; }
+
+  protected:
+    void add(const z3::expr &e);
 
   private:
     z3::expr rho;
@@ -98,6 +105,9 @@ namespace ratio
   {
   public:
     z3choose_conjunction(z3disjunction_flaw &f, riddle::conjunction &conj) noexcept;
+
+  private:
+    void apply() override;
 
   private:
     riddle::conjunction &conj;

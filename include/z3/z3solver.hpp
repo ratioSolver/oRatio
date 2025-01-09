@@ -78,8 +78,8 @@ namespace ratio
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
   private:
-    z3flaw &flaw; // the flaw associated with this atom..
-    z3::expr sigma;
+    z3flaw &flaw;   // the flaw associated with this atom..
+    z3::expr sigma; // the activation status of the atom (i.e., 0 if inactive, 1 if active, 2 if unified)....
   };
 
   class z3solver : public graph
@@ -159,5 +159,6 @@ namespace ratio
     size_t string_count = 0;
     size_t enum_count = 0;
     size_t atom_count = 0;
+    size_t position_count = 0;
   };
 } // namespace ratio

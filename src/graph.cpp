@@ -77,10 +77,10 @@ namespace ratio
 
     flaw::flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes) : gr(gr), causes(causes)
     {
-        for (auto &c : causes)
+        for (auto &cause : causes)
         {
-            c.get().preconditions.push_back(*this); // this flaw is a precondition of its `c` cause..
-            supports.push_back(c);                  // .. and it also supports the `c` cause..
+            cause.get().preconditions.push_back(*this); // this flaw is a precondition of its `cause` cause..
+            supports.push_back(cause);                  // .. and it also supports the `cause` cause..
         }
     }
     utils::rational flaw::compute_cost() const
