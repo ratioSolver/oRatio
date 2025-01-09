@@ -68,15 +68,18 @@ namespace ratio
   class atom : public riddle::atom
   {
   public:
-    atom(riddle::predicate &pred, bool is_fact, z3::expr &&expr, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) : riddle::atom(pred, is_fact, std::move(args)), expr(expr) {}
+    atom(z3flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args);
 
-    [[nodiscard]] z3::expr &get_sigma() noexcept { return expr; }
-    [[nodiscard]] const z3::expr &get_sigma() const noexcept { return expr; }
+    [[nodiscard]] z3flaw &get_flaw() noexcept { return flaw; }
+
+    [[nodiscard]] z3::expr &get_sigma() noexcept { return sigma; }
+    [[nodiscard]] const z3::expr &get_sigma() const noexcept { return sigma; }
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
   private:
-    z3::expr expr;
+    z3flaw &flaw; // the flaw associated with this atom..
+    z3::expr sigma;
   };
 
   class z3solver : public graph

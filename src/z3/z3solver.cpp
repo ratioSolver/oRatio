@@ -150,6 +150,11 @@ namespace ratio
         }
     }
 
+    atom::atom(z3flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) : riddle::atom(pred, is_fact, std::move(args)), flaw(flaw), sigma(static_cast<z3solver &>(get_core()).ctx.int_const(("a" + std::to_string(static_cast<z3solver &>(get_core()).atom_count++)).c_str()))
+    {
+        static_cast<z3solver &>(get_core()).slv.add(sigma >= static_cast<z3solver &>(get_core()).ctx.int_val(0));
+        static_cast<z3solver &>(get_core()).slv.add(sigma < static_cast<z3solver &>(get_core()).ctx.int_val(2));
+    }
     riddle::bool_expr atom::operator==(riddle::expr rhs) const
     {
         auto &ctx = static_cast<z3solver &>(get_core()).ctx;
@@ -328,15 +333,11 @@ namespace ratio
 
     riddle::atom_expr z3solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args)
     {
-        auto xpr = ctx.int_const(("a" + std::to_string(atom_count++)).c_str());
-        slv.add(xpr >= ctx.int_val(0));
-        slv.add(xpr < ctx.int_val(2));
-        auto atm = std::make_shared<atom>(pred, is_fact, std::move(xpr), std::move(args));
         std::vector<std::reference_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())
             causes.push_back(get_current_resolver().value());
-        new_flaw<z3atom_flaw>(*this, std::move(causes), atm);
-        return atm;
+        auto &af = new_flaw<z3atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args));
+        return af.get_atom();
     }
 
     bool z3solver::solve()

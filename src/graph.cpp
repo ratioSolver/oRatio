@@ -5,30 +5,6 @@
 
 namespace ratio
 {
-    flaw::flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes) : gr(gr), causes(causes)
-    {
-        for (auto &cause : causes)
-            cause.get().preconditions.push_back(*this);
-    }
-
-    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) : f(f), intrinsic_cost(intrinsic_cost) { f.resolvers.push_back(*this); }
-
-    utils::rational resolver::resolver::get_estimated_cost() const noexcept
-    {
-#ifdef H_ADD
-        // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
-        return intrinsic_cost + std::accumulate(preconditions.begin(), preconditions.end(), utils::rational::zero, [](const auto &lhs, const auto &prec)
-                                                { return lhs + prec.get().get_estimated_cost(); });
-#endif
-#ifdef H_MAX
-        // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
-        return intrinsic_cost + std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
-                                                 { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); })
-                                    ->get()
-                                    .get_estimated_cost();
-#endif
-    }
-
     graph::graph() {}
 
     std::vector<std::reference_wrapper<flaw>> graph::get_queued_flaws() const noexcept
@@ -61,9 +37,11 @@ namespace ratio
 
     void graph::expand_flaw(flaw &f)
     {
-        set_current_flaw(f); // set the current flaw..
+        assert(!f.is_expanded()); // the flaw should not be expanded..
+        set_current_flaw(f);      // set the current flaw..
 
         f.compute_resolvers(); // compute the resolvers for the current flaw..
+        f.expanded = true;     // mark the flaw as expanded..
         expanded_flaw(f);      // notify the listeners that the flaw has been expanded (might be used for enforcing causality constraints)..
 
         for (auto &resolver : f.get_resolvers())
@@ -82,11 +60,7 @@ namespace ratio
     void graph::compute_flaw_cost(flaw &f)
     {
         // we compute the cost of the flaw as the minimum cost of its resolvers..
-        auto new_cost = visited.count(&f) ? utils::rational::positive_infinite : std::min_element(f.get_resolvers().begin(), f.get_resolvers().end(), [](const auto &lhs, const auto &rhs)
-                                                                                                  { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); })
-                                                                                     ->get()
-                                                                                     .get_estimated_cost();
-        if (f.est_cost != new_cost)
+        if (auto new_cost = visited.count(&f) ? utils::rational::positive_infinite : f.compute_cost(); f.est_cost != new_cost)
         { // we update the cost of the flaw..
             auto old_cost = f.est_cost;
             f.est_cost = new_cost;
@@ -99,5 +73,49 @@ namespace ratio
                 compute_flaw_cost(support.get().f);
             visited.erase(&f);
         }
+    }
+
+    flaw::flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes) : gr(gr), causes(causes)
+    {
+        for (auto &c : causes)
+        {
+            c.get().preconditions.push_back(*this); // this flaw is a precondition of its `c` cause..
+            supports.push_back(c);                  // .. and it also supports the `c` cause..
+        }
+    }
+    utils::rational flaw::compute_cost() const
+    {
+        switch (resolvers.size())
+        {
+        case 0:
+            return utils::rational::positive_infinite;
+        case 1:
+            return resolvers.front().get().get_estimated_cost();
+        default:
+            return std::min_element(resolvers.begin(), resolvers.end(), [](const auto &lhs, const auto &rhs)
+                                    { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); })
+                ->get()
+                .get_estimated_cost();
+        }
+    }
+
+    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) : f(f), intrinsic_cost(intrinsic_cost) { f.resolvers.push_back(*this); }
+
+    utils::rational resolver::resolver::get_estimated_cost() const noexcept
+    {
+#ifdef H_ADD
+        // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
+        return std::accumulate(preconditions.begin(), preconditions.end(), intrinsic_cost, [](const auto &lhs, const auto &prec)
+                               { return lhs + prec.get().get_estimated_cost(); });
+#endif
+#ifdef H_MAX
+        if (preconditions.empty())
+            return intrinsic_cost;
+        // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
+        return intrinsic_cost + std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
+                                                 { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); })
+                                    ->get()
+                                    .get_estimated_cost();
+#endif
     }
 } // namespace ratio

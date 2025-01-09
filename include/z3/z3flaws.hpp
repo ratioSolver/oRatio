@@ -36,16 +36,16 @@ namespace ratio
   class z3atom_flaw final : public z3flaw
   {
   public:
-    z3atom_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::atom_expr atom) noexcept;
+    z3atom_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) noexcept;
 
-    [[nodiscard]] riddle::atom_expr &get_atom() noexcept { return atom; }
-    [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atom; }
+    [[nodiscard]] riddle::atom_expr &get_atom() noexcept { return atm; }
+    [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
 
   private:
     void compute_resolvers() override;
 
   private:
-    riddle::atom_expr atom;
+    riddle::atom_expr atm; // the atom that is the subject of the flaw..
   };
 
   class z3activate_fact final : public z3resolver
@@ -53,6 +53,9 @@ namespace ratio
   public:
     z3activate_fact(z3atom_flaw &f) noexcept;
     z3activate_fact(z3atom_flaw &f, z3::expr &&rho) noexcept;
+
+  private:
+    void apply() override;
   };
 
   class z3activate_goal final : public z3resolver
@@ -60,6 +63,9 @@ namespace ratio
   public:
     z3activate_goal(z3atom_flaw &f) noexcept;
     z3activate_goal(z3atom_flaw &f, z3::expr &&rho) noexcept;
+
+  private:
+    void apply() override;
   };
 
   class z3unify_atom final : public z3resolver
@@ -68,7 +74,10 @@ namespace ratio
     z3unify_atom(z3atom_flaw &f, riddle::atom_expr atm) noexcept;
 
   private:
-    riddle::atom_expr atm;
+    void apply() override;
+
+  private:
+    riddle::atom_expr atm; // the atom to unify with..
   };
 
   class z3disjunction_flaw final : public z3flaw

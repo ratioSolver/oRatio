@@ -28,71 +28,13 @@
 
 namespace ratio
 {
-  class graph;
+  class flaw;
   class resolver;
-
-  class flaw
-  {
-    friend class graph;
-    friend class resolver;
-
-  public:
-    flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes);
-    flaw(const flaw &) = delete;
-    virtual ~flaw() = default;
-
-    [[nodiscard]] graph &get_graph() noexcept { return gr; }
-    [[nodiscard]] const graph &get_graph() const noexcept { return gr; }
-
-    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_causes() const noexcept { return causes; }
-
-    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept { return resolvers; }
-
-    [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
-
-    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_supports() const noexcept { return supports; }
-
-  private:
-    virtual void compute_resolvers() = 0;
-
-  private:
-    graph &gr;                                                     // the graph this flaw belongs to..
-    std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
-    std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
-    utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
-    std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
-  };
-
-  class resolver
-  {
-    friend class graph;
-    friend class flaw;
-
-  public:
-    resolver(flaw &f, utils::rational &&intrinsic_cost);
-    resolver(const resolver &) = delete;
-    virtual ~resolver() = default;
-
-    [[nodiscard]] flaw &get_flaw() noexcept { return f; }
-    [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
-
-    [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
-
-    [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
-
-    [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
-
-  private:
-    virtual void apply() = 0;
-
-  private:
-    flaw &f;                                                 // the flaw solved by this resolver..
-    utils::rational intrinsic_cost;                          // the intrinsic cost of this resolver..
-    std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
-  };
 
   class graph : public riddle::core
   {
+    friend class flaw;
+
   public:
     graph();
 
@@ -266,5 +208,77 @@ namespace ratio
     std::deque<std::reference_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..
     std::vector<std::reference_wrapper<flaw>> root_flaws;  // the root-level flaws..
     std::unordered_set<flaw *> visited;                    // the visited flaws, for graph cost propagation (and deferrable flaws check)..
+  };
+
+  class flaw
+  {
+    friend class graph;
+    friend class resolver;
+
+  public:
+    flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes);
+    flaw(const flaw &) = delete;
+    virtual ~flaw() = default;
+
+    [[nodiscard]] graph &get_graph() noexcept { return gr; }
+    [[nodiscard]] const graph &get_graph() const noexcept { return gr; }
+
+    [[nodiscard]] bool is_expanded() const noexcept { return expanded; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_causes() const noexcept { return causes; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept { return resolvers; }
+
+    [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_supports() const noexcept { return supports; }
+
+  protected:
+    template <typename Tp, typename... Args>
+    Tp &new_resolver(Args &&...args) noexcept
+    {
+      static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
+      return gr.new_resolver<Tp>(std::forward<Args>(args)...);
+    }
+
+  private:
+    virtual void compute_resolvers() = 0;
+    virtual utils::rational compute_cost() const;
+
+  private:
+    graph &gr;                                                     // the graph this flaw belongs to..
+    bool expanded = false;                                         // whether this flaw has been expanded or not..
+    std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
+    std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
+    utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
+    std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
+  };
+
+  class resolver
+  {
+    friend class graph;
+    friend class flaw;
+
+  public:
+    resolver(flaw &f, utils::rational &&intrinsic_cost);
+    resolver(const resolver &) = delete;
+    virtual ~resolver() = default;
+
+    [[nodiscard]] flaw &get_flaw() noexcept { return f; }
+    [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
+
+    [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
+
+    [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
+
+  private:
+    virtual void apply() = 0;
+
+  private:
+    flaw &f;                                                 // the flaw solved by this resolver..
+    utils::rational intrinsic_cost;                          // the intrinsic cost of this resolver..
+    std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
 } // namespace ratio
