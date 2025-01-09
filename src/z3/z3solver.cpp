@@ -349,21 +349,61 @@ namespace ratio
 
         build(); // we build the causal graph..
 
-        do
-        {
+        while (true)
+        { // we try to solve the problem with the current causal graph..
             z3::expr_vector unexpanded_flaws(ctx);
+            std::unordered_map<std::string, std::reference_wrapper<ratio::flaw>> flaw_map;
             for (const auto &flaw : get_queued_flaws())
-                unexpanded_flaws.push_back(!static_cast<z3flaw &>(flaw.get()).get_phi());
-            res = slv.check(unexpanded_flaws); // we check negating the unexpanded flaws..
-            if (res == z3::unsat)
             {
-                auto core = slv.unsat_core(); // we get the core of the unsat..
-                if (unexpanded_flaws.empty())
-                    return false; // no solution..
+                unexpanded_flaws.push_back(static_cast<z3flaw &>(flaw.get()).get_phi());
+                flaw_map.emplace(static_cast<z3flaw &>(flaw.get()).get_phi().to_string(), flaw);
             }
-        } while (res == z3::unsat);
+            while (true)
+            {
+                res = slv.check(unexpanded_flaws); // we check negating the unexpanded flaws..
+                if (res == z3::sat)
+                { // if we find any inconsistency, we solve it..
+                    mdl = slv.get_model();
+                    bool inconsistencies = false;
+                    std::queue<riddle::component_type *> q;
+                    for (const auto &[_, tp] : get_types())
+                        if (auto ctp = dynamic_cast<riddle::component_type *>(tp.get()))
+                            q.push(ctp);
+                    while (!q.empty())
+                    {
+                        auto tp = q.front();
+                        q.pop();
+                        if (auto z3tp = dynamic_cast<z3component_type *>(tp))
+                            if (z3tp->solve_inconsistencies())
+                                inconsistencies = true;
+                        if (auto ctp = dynamic_cast<riddle::component_type *>(tp))
+                            for (const auto &p : ctp->get_parents())
+                                q.push(&p.get());
+                    }
+                    if (!inconsistencies)
+                        return true; // solution found..
+                }
+                else if (unexpanded_flaws.empty())
+                    return false; // no solution..
+                else
+                { // we analyze the unsat core..
+                    auto u_core = slv.unsat_core();
+                    std::vector<std::reference_wrapper<ratio::flaw>> flaws;
+                    for (const auto &f : u_core)
+                        if (auto f_it = flaw_map.find(f.to_string()); f_it != flaw_map.end())
+                            flaws.push_back(f_it->second);
 
-        mdl = slv.get_model();
+                    if (!flaws.empty())
+                    { // we expand the graph..
+                        expand_flaws(flaws);
+                        break;
+                    }
+                    else // the unsat core is within the current causal graph (i.e., no solution..)
+                        return false;
+                }
+            }
+        }
+
         return true;
     }
 
