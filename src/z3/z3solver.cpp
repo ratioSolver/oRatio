@@ -383,6 +383,11 @@ namespace ratio
                     if (!inconsistencies)
                         return true; // solution found..
                 }
+                else if (res == z3::unknown)
+                {
+                    LOG_ERR("Z3 solver failed to solve the problem: " << slv.reason_unknown());
+                    return false; // no solution..
+                }
                 else if (unexpanded_flaws.empty())
                     return false; // no solution..
                 else
