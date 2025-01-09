@@ -362,8 +362,9 @@ namespace ratio
             {
                 res = slv.check(unexpanded_flaws); // we check negating the unexpanded flaws..
                 if (res == z3::sat)
-                { // if we find any inconsistency, we solve it..
+                { // we found a solution with the current causal graph..
                     mdl = slv.get_model();
+                    // if we find any inconsistency, we solve it..
                     bool inconsistencies = false;
                     std::queue<riddle::component_type *> q;
                     for (const auto &[_, tp] : get_types())
