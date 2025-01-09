@@ -182,6 +182,7 @@ namespace ratio
         else
             assert(false);
     }
+    bool atom::is_active() const noexcept { return static_cast<z3solver &>(get_core()).mdl.eval(sigma, true).get_numeral_int() == 1; }
 
     z3solver::z3solver() : slv(ctx), mdl(ctx)
     {

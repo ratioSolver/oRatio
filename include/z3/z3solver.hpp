@@ -6,6 +6,8 @@
 namespace ratio
 {
   class z3flaw;
+  class z3resolver;
+  class z3component_type;
 
   class bool_item : public riddle::bool_item
   {
@@ -77,6 +79,8 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
+    [[nodiscard]] bool is_active() const noexcept;
+
   private:
     z3flaw &flaw;   // the flaw associated with this atom..
     z3::expr sigma; // the activation status of the atom (i.e., 0 if inactive, 1 if active, 2 if unified)....
@@ -91,6 +95,7 @@ namespace ratio
     friend class atom;
     friend class z3flaw;
     friend class z3resolver;
+    friend class z3component_type;
 
   public:
     z3solver();
