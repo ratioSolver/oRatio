@@ -5,7 +5,7 @@
 
 namespace ratio
 {
-    graph::graph() {}
+    graph::graph(std::string_view name) : core(name) {}
 
     std::vector<std::reference_wrapper<flaw>> graph::get_queued_flaws() const noexcept
     {

@@ -36,7 +36,7 @@ namespace ratio
     friend class flaw;
 
   public:
-    graph();
+    graph(std::string_view name = "oRatio");
 
   protected:
     /**

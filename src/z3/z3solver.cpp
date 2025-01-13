@@ -184,7 +184,7 @@ namespace ratio
     }
     bool atom::is_active() const noexcept { return static_cast<z3solver &>(get_core()).mdl.eval(sigma, true).get_numeral_int() == 1; }
 
-    z3solver::z3solver() : slv(ctx), mdl(ctx)
+    z3solver::z3solver(std::string_view name) : graph(name), slv(ctx), mdl(ctx)
     {
         add_type(std::make_unique<z3state_variable>(*this));
         add_type(std::make_unique<z3reusable_resource>(*this));

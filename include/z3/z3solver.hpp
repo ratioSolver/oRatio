@@ -98,7 +98,7 @@ namespace ratio
     friend class z3component_type;
 
   public:
-    z3solver();
+    z3solver(std::string_view name = "oRatio");
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
