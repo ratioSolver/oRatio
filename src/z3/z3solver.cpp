@@ -31,6 +31,12 @@ namespace ratio
         else
             assert(false);
     }
+    json::json bool_item::to_json() const
+    {
+        json::json j = riddle::bool_item::to_json();
+        j["lit"] = expr.to_string();
+        return j;
+    }
 
     riddle::bool_expr arith_item::operator==(riddle::expr rhs) const
     {
@@ -56,6 +62,12 @@ namespace ratio
         else
             assert(false);
     }
+    json::json arith_item::to_json() const
+    {
+        json::json j = riddle::arith_item::to_json();
+        j["lin"] = expr.to_string();
+        return j;
+    }
 
     riddle::bool_expr string_item::operator==(riddle::expr rhs) const
     {
@@ -80,6 +92,12 @@ namespace ratio
         }
         else
             assert(false);
+    }
+    json::json string_item::to_json() const
+    {
+        json::json j = riddle::string_item::to_json();
+        j["str"] = expr.to_string();
+        return j;
     }
 
     riddle::bool_expr enum_item::operator==(riddle::expr rhs) const
@@ -149,6 +167,12 @@ namespace ratio
                 return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), ctx.bool_val(false));
         }
     }
+    json::json enum_item::to_json() const
+    {
+        json::json j = riddle::enum_item::to_json();
+        j["var"] = expr.to_string();
+        return j;
+    }
 
     atom::atom(z3flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) : riddle::atom(pred, is_fact, std::move(args)), flaw(flaw), sigma(static_cast<z3solver &>(get_core()).ctx.int_const(("a" + std::to_string(static_cast<z3solver &>(get_core()).atom_count++)).c_str()))
     {
@@ -182,7 +206,26 @@ namespace ratio
         else
             assert(false);
     }
-    bool atom::is_active() const noexcept { return static_cast<z3solver &>(get_core()).mdl.eval(sigma, true).get_numeral_int() == 1; }
+    riddle::atom_state atom::get_state() const
+    {
+        switch (static_cast<z3solver &>(get_core()).mdl.eval(sigma, true).get_numeral_int())
+        {
+        case 0:
+            return riddle::atom_state::inactive;
+        case 1:
+            return riddle::atom_state::active;
+        case 2:
+            return riddle::atom_state::unified;
+        default:
+            assert(false);
+        }
+    }
+    json::json atom::to_json() const
+    {
+        json::json j = riddle::atom::to_json();
+        j["sigma"] = sigma.to_string();
+        return j;
+    }
 
     z3solver::z3solver(std::string_view name) : graph(name), slv(ctx), mdl(ctx)
     {
@@ -255,6 +298,8 @@ namespace ratio
 
     riddle::string_expr z3solver::new_string() { return std::make_shared<string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ctx.string_const(("s" + std::to_string(string_count++)).c_str())); }
     riddle::string_expr z3solver::new_string(std::string &&value) { return std::make_shared<string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ctx.string_val(value.c_str())); }
+
+    std::string z3solver::string_value(const riddle::string_item &expr) const noexcept { return mdl.eval(static_cast<const string_item &>(expr).get_expr(), true).to_string(); }
 
     riddle::enum_expr z3solver::new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values)
     {

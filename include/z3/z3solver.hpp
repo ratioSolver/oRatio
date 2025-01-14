@@ -19,6 +19,8 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
+    [[nodiscard]] json::json to_json() const override;
+
   private:
     z3::expr expr;
   };
@@ -35,6 +37,8 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
+    [[nodiscard]] json::json to_json() const override;
+
   private:
     z3::expr expr;
   };
@@ -49,6 +53,8 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
+    [[nodiscard]] json::json to_json() const override;
+
   private:
     z3::expr expr;
   };
@@ -62,6 +68,8 @@ namespace ratio
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
+
+    [[nodiscard]] json::json to_json() const override;
 
   private:
     z3::expr expr;
@@ -79,7 +87,9 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
-    [[nodiscard]] bool is_active() const noexcept;
+    [[nodiscard]] riddle::atom_state get_state() const override;
+
+    [[nodiscard]] json::json to_json() const override;
 
   private:
     z3flaw &flaw;   // the flaw associated with this atom..
@@ -121,6 +131,7 @@ namespace ratio
 
     [[nodiscard]] riddle::string_expr new_string() override;
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
+    [[nodiscard]] std::string string_value(const riddle::string_item &expr) const noexcept override;
 
     [[nodiscard]] riddle::enum_expr new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) override;
     [[nodiscard]] utils::enum_val &enum_value(const riddle::enum_item &expr) const noexcept override;

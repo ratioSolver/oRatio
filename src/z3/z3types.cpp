@@ -21,7 +21,7 @@ namespace ratio
         std::unordered_map<const riddle::component *, std::map<utils::inf_rational, std::pair<std::vector<atom *>, std::vector<atom *>>>> sv_instances;
         for (const auto &[name, pred] : get_predicates())
             for (const auto &atm : pred->get_atoms())
-                if (static_cast<atom &>(*atm).is_active())
+                if (static_cast<atom &>(*atm).get_state() == riddle::atom_state::active)
                 {
                     auto &tau = static_cast<riddle::enum_item &>(*atm->get(riddle::tau_kw)); // the atom's tau variable..
                     auto &sv = static_cast<riddle::component &>(get_core().enum_value(tau)); // the tau variable's value..
@@ -69,7 +69,7 @@ namespace ratio
         std::unordered_map<riddle::component *, std::map<utils::inf_rational, std::pair<std::vector<atom *>, std::vector<atom *>>>> sv_instances;
         for (const auto &[name, pred] : get_predicates())
             for (const auto &atm : pred->get_atoms())
-                if (static_cast<atom &>(*atm).is_active())
+                if (static_cast<atom &>(*atm).get_state() == riddle::atom_state::active)
                 {
                     auto &tau = static_cast<riddle::enum_item &>(*atm->get(riddle::tau_kw)); // the atom's tau variable..
                     auto &sv = static_cast<riddle::component &>(get_core().enum_value(tau)); // the tau variable's value..
