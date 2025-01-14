@@ -73,16 +73,15 @@ if(BUILD_GUI_SERVER)
     set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
 
     add_executable(oRatioServer src/server/main.cpp src/server/solver_server.cpp)
-    target_compile_features(oRatioServer PUBLIC cxx_std_17)
-    target_include_directories(oRatioServer PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/server>)
-
     add_dependencies(oRatioServer oRatioLib ratioNet)
     target_link_libraries(oRatioServer PRIVATE oRatioLib ratioNet)
+    target_include_directories(oRatioServer PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/server>)
 
     if(MSVC)
         target_compile_options(oRatioServer PRIVATE /W4)
     else()
         target_compile_options(oRatioServer PRIVATE -Wall -Wextra -Wpedantic -fsanitize=undefined)
+        target_link_options(oRatioServer PRIVATE -fsanitize=undefined)
         if (ENABLE_COVERAGE)
             if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
                 target_compile_options(oRatioServer PRIVATE --coverage)
