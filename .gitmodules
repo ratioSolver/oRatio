@@ -2,3 +2,6 @@
 	path = extern/riddle
 	url = https://github.com/ratioSolver/RiDDLe
 	branch = memory
+[submodule "extern/rationet"]
+	path = extern/rationet
+	url = https://github.com/ratioSolver/ratioNet
