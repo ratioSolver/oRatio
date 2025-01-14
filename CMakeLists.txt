@@ -4,9 +4,9 @@ project(oRatioLib VERSION 0.3.0 LANGUAGES CXX)
 include(CTest)
 enable_testing()
 
-set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
-
+option(BUILD_LISTENERS "Builds oRatio listeners" OFF)
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
+option(BUILD_GUI_SERVER "Build the GUI server" OFF)
 
 set(CONSTRAINT_REASONER_TYPES Z3 SeMiTONE)
 set(CONSTRAINT_REASONER_TYPE Z3 CACHE STRING "Constraint reasoner type")
@@ -65,6 +65,31 @@ endif()
 message(STATUS "Check inconsistencies at each step: ${CHECK_INCONSISTENCIES}")
 if(CHECK_INCONSISTENCIES)
     target_compile_definitions(oRatioLib PRIVATE CHECK_INCONSISTENCIES)
+endif()
+
+message(STATUS "Build the GUI server: ${BUILD_GUI_SERVER}")
+if(BUILD_GUI_SERVER)
+    add_subdirectory(extern/rationet)
+    set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
+
+    add_executable(oRatioServer src/server/main.cpp src/server/solver_server.cpp)
+    target_compile_features(oRatioServer PUBLIC cxx_std_17)
+    target_include_directories(oRatioServer PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/server>)
+
+    add_dependencies(oRatioServer oRatioLib ratioNet)
+    target_link_libraries(oRatioServer PRIVATE oRatioLib ratioNet)
+
+    if(MSVC)
+        target_compile_options(oRatioServer PRIVATE /W4)
+    else()
+        target_compile_options(oRatioServer PRIVATE -Wall -Wextra -Wpedantic -fsanitize=undefined)
+        if (ENABLE_COVERAGE)
+            if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+                target_compile_options(oRatioServer PRIVATE --coverage)
+                target_link_libraries(oRatioServer PUBLIC gcov)
+            endif()
+        endif()
+    endif()
 endif()
 
 message(STATUS "Build oRatio listeners: ${BUILD_LISTENERS}")
