@@ -4,10 +4,6 @@ project(oRatioLib VERSION 0.3.0 LANGUAGES CXX)
 include(CTest)
 enable_testing()
 
-option(BUILD_LISTENERS "Builds oRatio listeners" OFF)
-option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
-option(BUILD_GUI_SERVER "Build the GUI server" OFF)
-
 set(CONSTRAINT_REASONER_TYPES Z3 SeMiTONE)
 set(CONSTRAINT_REASONER_TYPE Z3 CACHE STRING "Constraint reasoner type")
 set_property(CACHE CONSTRAINT_REASONER_TYPE PROPERTY STRINGS ${CONSTRAINT_REASONER_TYPES})
@@ -15,7 +11,6 @@ list(FIND CONSTRAINT_REASONER_TYPES ${CONSTRAINT_REASONER_TYPE} CONSTRAINT_REASO
 if(${CONSTRAINT_REASONER_TYPE_INDEX} EQUAL -1)
     message(FATAL_ERROR "Invalid constraint reasoner type ${CONSTRAINT_REASONER_TYPE}")
 endif()
-message(STATUS "Constraint reasoner type: ${CONSTRAINT_REASONER_TYPE}")
 
 set(TEMPORAL_NETWORK_TYPES LRA DL)
 set(TEMPORAL_NETWORK_TYPE LRA CACHE STRING "Temporal network type")
@@ -24,7 +19,6 @@ list(FIND TEMPORAL_NETWORK_TYPES ${TEMPORAL_NETWORK_TYPE} TEMPORAL_NETWORK_TYPE_
 if(${TEMPORAL_NETWORK_TYPE_INDEX} EQUAL -1)
     message(FATAL_ERROR "Invalid temporal network type ${TEMPORAL_NETWORK_TYPE}")
 endif()
-message(STATUS "Temporal network type: ${TEMPORAL_NETWORK_TYPE}")
 
 set(HEURISTIC_TYPES h_max h_add)
 set(HEURISTIC_TYPE h_max CACHE STRING "Heuristic type")
@@ -33,7 +27,22 @@ list(FIND HEURISTIC_TYPES ${HEURISTIC_TYPE} HEURISTIC_TYPE_INDEX)
 if(${HEURISTIC_TYPE_INDEX} EQUAL -1)
     message(FATAL_ERROR "Invalid heuristic type ${HEURISTIC_TYPE}")
 endif()
+
+option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
+option(BUILD_LISTENERS "Builds oRatio listeners" OFF)
+option(BUILD_ORATIO_SERVER "Build the oRatio server" OFF)
+
+if(BUILD_ORATIO_SERVER)
+    set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
+    set(COMPUTE_NAMES ON CACHE BOOL "Compute RiDDLe names" FORCE)
+endif()
+
+message(STATUS "Constraint reasoner type: ${CONSTRAINT_REASONER_TYPE}")
+message(STATUS "Temporal network type: ${TEMPORAL_NETWORK_TYPE}")
 message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
+message(STATUS "Check inconsistencies at each step: ${CHECK_INCONSISTENCIES}")
+message(STATUS "Build oRatio listeners: ${BUILD_LISTENERS}")
+message(STATUS "Build the oRatio server: ${BUILD_ORATIO_SERVER}")
 
 add_subdirectory(extern/riddle)
 
@@ -62,27 +71,25 @@ elseif(${HEURISTIC_TYPE} STREQUAL "h_add")
     target_compile_definitions(oRatioLib PRIVATE H_ADD)
 endif()
 
-message(STATUS "Check inconsistencies at each step: ${CHECK_INCONSISTENCIES}")
 if(CHECK_INCONSISTENCIES)
     target_compile_definitions(oRatioLib PRIVATE CHECK_INCONSISTENCIES)
 endif()
 
-message(STATUS "Build the GUI server: ${BUILD_GUI_SERVER}")
-if(BUILD_GUI_SERVER)
-    add_subdirectory(extern/rationet)
-    set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
-
-    add_executable(oRatioServer src/server/main.cpp src/server/solver_server.cpp)
-    add_dependencies(oRatioServer oRatioLib ratioNet)
-    target_link_libraries(oRatioServer PRIVATE oRatioLib ratioNet)
-    target_include_directories(oRatioServer PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/server>)
-
-    setup_sanitizers(oRatioServer)
-endif()
-
-message(STATUS "Build oRatio listeners: ${BUILD_LISTENERS}")
 if(BUILD_LISTENERS)
     target_compile_definitions(oRatioLib PUBLIC BUILD_LISTENERS)
+endif()
+
+if(BUILD_ORATIO_SERVER)
+    add_executable(oRatioServer src/server/main.cpp src/server/solver_server.cpp)
+    add_dependencies(oRatioServer oRatioLib)
+    target_include_directories(oRatioServer PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/server>)
+    if(NOT TARGET ratioNet)
+        add_subdirectory(extern/rationet)
+        add_dependencies(oRatioServer ratioNet)
+    endif()
+    target_link_libraries(oRatioServer PUBLIC oRatioLib ratioNet)
+
+    setup_sanitizers(oRatioServer)
 endif()
 
 if(BUILD_TESTING)
