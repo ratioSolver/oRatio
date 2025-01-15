@@ -104,6 +104,11 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.cy.layout(this.layout).run();
   }
 
+  flaw_state_changed(flaw: solver.graph.Flaw): void {
+    this.cy.$id(flaw.get_id().toString()).data('color', color(flaw));
+    this.cy.layout(this.layout).run();
+  }
+
   flaw_cost_changed(flaw: solver.graph.Flaw): void {
     this.cy.$id(flaw.get_id().toString()).data('color', color(flaw));
     this.cy.layout(this.layout).run();
@@ -126,6 +131,11 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.cy.layout(this.layout).run();
   }
 
+  resolver_state_changed(resolver: solver.graph.Resolver): void {
+    this.cy.$id(resolver.get_id().toString()).data('color', color(resolver));
+    this.cy.layout(this.layout).run();
+  }
+
   current_resolver(resolver: solver.graph.Resolver | null): void {
     if (this.c_resolver)
       this.cy.$id(this.c_resolver.get_id().toString()).removeClass('current');
@@ -135,6 +145,18 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     }
     this.cy.layout(this.layout).run();
   }
+
+  causal_link_added(flaw: solver.graph.Flaw, resolver: solver.graph.Resolver): void {
+    this.cy.add({ group: 'edges', data: { id: `${flaw.get_id()}-${resolver.get_id()}`, source: flaw.get_id(), target: resolver.get_id(), stroke: stroke_style(resolver) } });
+    this.cy.layout(this.layout).run();
+  }
+
+  execution_state_changed(state: solver.SolverState): void { }
+  tick(time: solver.values.Rational): void { }
+  starting(atoms: solver.values.Atom[]): void { }
+  start(atoms: solver.values.Atom[]): void { }
+  ending(atoms: solver.values.Atom[]): void { }
+  end(atoms: solver.values.Atom[]): void { }
 
   unmounting(): void { this.payload.remove_solver_listener(this); }
 

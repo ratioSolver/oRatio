@@ -25,25 +25,29 @@ export namespace solver {
     private id: number;
     private name: string;
     private state: SolverState;
+    private current_time: values.Rational;
 
     private items: Map<number, values.Item> = new Map();
-    private atoms: Map<number, values.Atom> = new Map();
+    _atoms: Map<number, values.Atom> = new Map();
     private flaws: Map<number, graph.Flaw> = new Map();
     private resolvers: Map<number, graph.Resolver> = new Map();
     private c_flaw: graph.Flaw | null = null;
     private c_resolver: graph.Resolver | null = null;
     private solver_listeners: Set<SolverListener> = new Set();
 
-    constructor(id: number, name: string, state: SolverState) {
+    constructor(id: number, name: string, state: SolverState, current_time: values.Rational) {
       super();
       this.id = id;
       this.name = name;
       this.state = state;
+      this.current_time = current_time;
     }
 
     get_id(): number { return this.id; }
     get_name(): string { return this.name; }
     get_state(): SolverState { return this.state; }
+    get_current_time(): values.Rational { return this.current_time; }
+
     get_flaws(): Map<number, graph.Flaw> { return this.flaws; }
     get_flaw(id: number): graph.Flaw { return this.flaws.get(id)!; }
     get_resolvers(): Map<number, graph.Resolver> { return this.resolvers; }
@@ -59,6 +63,10 @@ export namespace solver {
       this.flaws.set(flaw.get_id(), flaw);
       for (const listener of this.solver_listeners) listener.flaw_created(flaw);
     }
+    flaw_state_changed(flaw: graph.Flaw): void {
+      this.flaws.set(flaw.get_id(), flaw);
+      for (const listener of this.solver_listeners) listener.flaw_state_changed(flaw);
+    }
     flaw_cost_changed(flaw: graph.Flaw): void {
       this.flaws.set(flaw.get_id(), flaw);
       for (const listener of this.solver_listeners) listener.flaw_cost_changed(flaw);
@@ -73,38 +81,85 @@ export namespace solver {
       this.resolvers.set(resolver.get_id(), resolver);
       for (const listener of this.solver_listeners) listener.resolver_created(resolver);
     }
+    resolver_state_changed(resolver: graph.Resolver): void {
+      this.resolvers.set(resolver.get_id(), resolver);
+      for (const listener of this.solver_listeners) listener.resolver_state_changed(resolver);
+    }
     current_resolver(resolver: graph.Resolver | null): void {
       this.c_resolver = resolver;
       for (const listener of this.solver_listeners) listener.current_resolver(resolver);
+    }
+    causal_link_added(flaw: graph.Flaw, resolver: graph.Resolver): void {
+      flaw._supports.push(resolver);
+      resolver._preconditions.push(flaw);
+      for (const listener of this.solver_listeners) listener.causal_link_added(flaw, resolver);
+    }
+
+    execution_state_changed(state: SolverState): void {
+      this.state = state;
+      for (const listener of this.solver_listeners) listener.execution_state_changed(state);
+    }
+    tick(time: values.Rational): void {
+      this.current_time = time;
+      for (const listener of this.solver_listeners) listener.tick(time);
+    }
+
+    starting(atoms: values.Atom[]): void {
+      for (const listener of this.solver_listeners) listener.starting(atoms);
+    }
+    start(atoms: values.Atom[]): void {
+      for (const listener of this.solver_listeners) listener.start(atoms);
+    }
+    ending(atoms: values.Atom[]): void {
+      for (const listener of this.solver_listeners) listener.ending(atoms);
+    }
+    end(atoms: values.Atom[]): void {
+      for (const listener of this.solver_listeners) listener.end(atoms);
     }
 
     add_solver_listener(listener: SolverListener) { this.solver_listeners.add(listener); }
     remove_solver_listener(listener: SolverListener) { this.solver_listeners.delete(listener); }
 
     static make_solver(solver_message: SolverMessage): Solver {
-      const solver = new Solver(solver_message.id, solver_message.name, SolverState[solver_message.state as keyof typeof SolverState]);
+      const solver = new Solver(solver_message.id, solver_message.name, SolverState[solver_message.state as keyof typeof SolverState], solver_message.current_time ? values.Rational.make_rational(solver_message.current_time) : new values.Rational(0, 1));
 
       if (solver_message.items) // we create the items..
         for (const [id, im] of solver_message.items)
           solver.items.set(Number(id), new values.Item(Number(id), im.type, im.name));
       if (solver_message.atoms) // we create the atoms..
         for (const [id, am] of solver_message.atoms)
-          solver.atoms.set(Number(id), new values.Atom(Number(id), am.type, am.name, am.fact, am.sigma, values.AtomState[am.state as keyof typeof values.AtomState]));
+          solver._atoms.set(Number(id), new values.Atom(Number(id), am.type, am.name, am.fact, am.sigma, values.AtomState[am.state as keyof typeof values.AtomState]));
 
       if (solver_message.items) // we set the exprs for the items..
         for (const [id, im] of solver_message.items)
           if (im.exprs)
             for (const [name, expr] of im.exprs)
-              solver.items.get(Number(id))!.exprs.set(name, values.make_value(expr, solver.items, solver.atoms));
+              solver.items.get(Number(id))!.exprs.set(name, values.make_value(expr, solver.items, solver._atoms));
       if (solver_message.atoms) // we set the exprs for the atoms..
         for (const [id, am] of solver_message.atoms)
           if (am.exprs)
             for (const [name, expr] of am.exprs)
-              solver.atoms.get(Number(id))!.exprs.set(name, values.make_value(expr, solver.items, solver.atoms));
+              solver._atoms.get(Number(id))!.exprs.set(name, values.make_value(expr, solver.items, solver._atoms));
 
       if (solver_message.exprs) // we set the exprs for the solver..
         for (const [name, expr] of solver_message.exprs)
-          solver.exprs.set(name, values.make_value(expr, solver.items, solver.atoms));
+          solver.exprs.set(name, values.make_value(expr, solver.items, solver._atoms));
+
+      if (solver_message.flaws) // we create the flaws..
+        for (const [id, fm] of solver_message.flaws)
+          solver.flaws.set(Number(id), new graph.Flaw(Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
+
+      if (solver_message.resolvers) // we create the resolvers..
+        for (const [id, rm] of solver_message.resolvers)
+          solver.resolvers.set(Number(id), new graph.Resolver(Number(id), rm.rho, rm.preconditions.map((id: number) => solver.get_flaw(id)), solver.get_flaw(rm.flaw), graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
+
+      if (solver_message.flaws)
+        for (const [id, fm] of solver_message.flaws) {
+          for (const cause of fm.causes) // we set the causes for the flaws..
+            solver.flaws.get(Number(id))!.get_causes().push(solver.get_resolver(cause));
+          for (const support of fm.supports) // we set the supports for the flaws..
+            solver.flaws.get(Number(id))!.get_supports().push(solver.get_resolver(support));
+        }
 
       return solver;
     }
@@ -115,11 +170,23 @@ export namespace solver {
     state_changed(state: SolverState): void;
 
     flaw_created(flaw: graph.Flaw): void;
+    flaw_state_changed(flaw: graph.Flaw): void;
     flaw_cost_changed(flaw: graph.Flaw): void;
     current_flaw(flaw: graph.Flaw | null): void;
 
     resolver_created(resolver: graph.Resolver): void;
+    resolver_state_changed(resolver: graph.Resolver): void;
     current_resolver(resolver: graph.Resolver | null): void;
+
+    causal_link_added(flaw: graph.Flaw, resolver: graph.Resolver): void;
+
+    execution_state_changed(state: SolverState): void;
+    tick(time: values.Rational): void;
+
+    starting(atoms: values.Atom[]): void;
+    start(atoms: values.Atom[]): void;
+    ending(atoms: values.Atom[]): void;
+    end(atoms: values.Atom[]): void;
   }
 
   export class SolverSet implements SolverSetListener {
@@ -151,52 +218,96 @@ export namespace solver {
       for (const listener of this.solver_set_listeners) { listener.solver_deleted(id); }
     }
 
-    update_solvers(message: any): void {
+    update_solvers(message: SolversUpdateMessage | any): void {
       switch (message.type) {
         case 'solvers':
+          const ssm = message as SolversMessage;
           const solvers = new Map<number, Solver>();
-          for (const solver_message of message.solvers)
+          for (const solver_message of ssm.solvers)
             solvers.set(solver_message.id, Solver.make_solver(solver_message));
           this.init(solvers);
           break;
         case 'new_solver':
-          this.solver_created(Solver.make_solver(message.solver));
+          const nsm = message as NewSolverMessage;
+          this.solver_created(Solver.make_solver(nsm.solver));
           break;
         case 'deleted_solver':
-          this.solver_deleted(message.id);
+          const dsm = message as DeletedSolverMessage;
+          this.solver_deleted(dsm.id);
           break;
         case 'flaw_created':
-          const flaw_message: FlawMessage = message.flaw;
-          const resolvers: graph.Resolver[] = flaw_message.causes.map((id: number) => this.solvers.get(flaw_message.solver_id)!.get_resolver(id));
-          this.solvers.get(flaw_message.solver_id)!.flaw_created(new graph.Flaw(flaw_message.id, flaw_message.phi, resolvers, graph.State[flaw_message.state as keyof typeof graph.State], flaw_message.cost, flaw_message.data));
+          const fcm = message as FlawCreatedMessage;
+          const causes: graph.Resolver[] = fcm.causes.map((id: number) => this.solvers.get(fcm.solver_id)!.get_resolver(id));
+          const supports: graph.Resolver[] = fcm.supports.map((id: number) => this.solvers.get(fcm.solver_id)!.get_resolver(id));
+          this.solvers.get(fcm.solver_id)!.flaw_created(new graph.Flaw(fcm.id, fcm.phi, causes, supports, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
           break;
         case 'flaw_state_changed':
+          const fscm = message as FlawStateChangedMessage;
+          const fsc = this.solvers.get(fscm.solver_id)!.get_flaw(fscm.id);
+          fsc._state = graph.State[fscm.state as keyof typeof graph.State];
+          this.solvers.get(fscm.solver_id)!.flaw_state_changed(fsc);
           break;
         case 'flaw_cost_changed':
+          const fccm = message as FlawCostChangedMessage;
+          const fcc = this.solvers.get(fccm.solver_id)!.get_flaw(fccm.id);
+          fcc._cost = fccm.cost;
+          this.solvers.get(fccm.solver_id)!.flaw_cost_changed(fcc);
           break;
         case 'flaw_position_changed':
+          const fpcm = message as FlawPositionChangedMessage;
+          const fpc = this.solvers.get(fpcm.solver_id)!.get_flaw(fpcm.id);
+          fpc._position = fpcm.position;
+          this.solvers.get(fpcm.solver_id)!.flaw_state_changed(fpc);
           break;
         case 'current_flaw':
+          const cfm = message as CurrentFlawMessage;
+          this.solvers.get(cfm.solver_id)!.current_flaw(cfm.id ? this.solvers.get(cfm.solver_id)!.get_flaw(cfm.id) : null);
           break;
         case 'resolver_created':
+          const rcm = message as ResolverCreatedMessage;
+          const preconditions: graph.Flaw[] = rcm.preconditions.map((id: number) => this.solvers.get(rcm.solver_id)!.get_flaw(id));
+          const flaw = this.solvers.get(rcm.solver_id)!.get_flaw(rcm.flaw);
+          this.solvers.get(rcm.solver_id)!.resolver_created(new graph.Resolver(rcm.id, rcm.rho, preconditions, flaw, graph.State[rcm.state as keyof typeof graph.State], rcm.intrinsic_cost, rcm.data));
           break;
         case 'resolver_state_changed':
+          const rscm = message as ResolverStateChangedMessage;
+          const rsc = this.solvers.get(rscm.solver_id)!.get_resolver(rscm.id);
+          rsc._state = graph.State[rscm.state as keyof typeof graph.State];
+          this.solvers.get(rscm.solver_id)!.resolver_state_changed(rsc);
           break;
         case 'current_resolver':
+          const crm = message as CurrentResolverMessage;
+          this.solvers.get(crm.solver_id)!.current_resolver(crm.id ? this.solvers.get(crm.solver_id)!.get_resolver(crm.id) : null);
           break;
         case 'causal_link_added':
+          const clam = message as CausalLinkAddedMessage;
+          const from = this.solvers.get(clam.solver_id)!.get_flaw(clam.flaw_id);
+          const to = this.solvers.get(clam.solver_id)!.get_resolver(clam.resolver_id);
+          this.solvers.get(clam.solver_id)!.causal_link_added(from, to);
           break;
         case 'solver_execution_state_changed':
+          const sescm = message as SolverExecutionStateChangedMessage;
+          this.solvers.get(sescm.solver_id)!.execution_state_changed(SolverState[sescm.state as keyof typeof SolverState]);
           break;
         case 'tick':
+          const tm = message as TickMessage;
+          this.solvers.get(tm.solver_id)!.tick(values.Rational.make_rational(tm.time));
           break;
         case 'starting':
+          const stm = message as StartingMessage;
+          this.solvers.get(stm.solver_id)!.starting(stm.atoms.map((id: number) => this.solvers.get(stm.solver_id)!._atoms.get(id)!));
           break;
         case 'ending':
+          const etm = message as EndingMessage;
+          this.solvers.get(etm.solver_id)!.ending(etm.atoms.map((id: number) => this.solvers.get(etm.solver_id)!._atoms.get(id)!));
           break;
         case 'start':
+          const sm = message as StartMessage;
+          this.solvers.get(sm.solver_id)!.start(sm.atoms.map((id: number) => this.solvers.get(sm.solver_id)!._atoms.get(id)!));
           break;
         case 'end':
+          const em = message as EndMessage;
+          this.solvers.get(em.solver_id)!.end(em.atoms.map((id: number) => this.solvers.get(em.solver_id)!._atoms.get(id)!));
           break;
       }
     }
@@ -228,31 +339,37 @@ export namespace solver {
 
       private id: number;
       private phi: string;
-      private causes: Resolver[];
-      private state: State;
-      private cost: number;
+      _causes: Resolver[];
+      _supports: Resolver[];
+      _state: State;
+      _cost: number;
+      _position: number;
       private data: FlawData;
 
-      constructor(id: number, phi: string, causes: Resolver[], state: State, cost: number, data: FlawData) {
+      constructor(id: number, phi: string, causes: Resolver[], supports: Resolver[], state: State, cost: number, position: number, data: FlawData) {
         this.id = id;
         this.phi = phi;
-        this.causes = causes;
-        this.state = state;
-        this.cost = cost;
+        this._causes = causes;
+        this._supports = supports;
+        this._state = state;
+        this._cost = cost;
+        this._position = position;
         this.data = data;
       }
 
       get_id(): number { return this.id; }
       get_phi(): string { return this.phi; }
-      get_causes(): Resolver[] { return this.causes; }
-      get_state(): State { return this.state; }
-      get_cost(): number { return this.cost; }
+      get_causes(): Resolver[] { return this._causes; }
+      get_supports(): Resolver[] { return this._supports; }
+      get_state(): State { return this._state; }
+      get_position(): number { return this._position; }
+      get_cost(): number { return this._cost; }
 
       to_string(expressive = false): string {
         if (expressive)
           switch (this.data.type) {
             case 'atom':
-              return this.phi + ' ' + (this.data.atom!.is_fact ? 'fact' : 'goal') + ' ' + this.data.atom!.type.split(':').pop() + ' ' + this.cost;
+              return this.phi + ' ' + (this.data.atom!.is_fact ? 'fact' : 'goal') + ' ' + this.data.atom!.type.split(':').pop() + ' ' + this._cost;
             default:
               return this.phi;
           }
@@ -270,33 +387,33 @@ export namespace solver {
 
       private id: number;
       private rho: string;
-      private preconditions: Flaw[];
+      _preconditions: Flaw[];
       private flaw: Flaw;
-      private state: State;
+      _state: State;
       private intrinsic_cost: number;
       private data: ResolverData;
 
       constructor(id: number, rho: string, preconditions: Flaw[], flaw: Flaw, state: State, intrinsic_cost: number, data: ResolverData) {
         this.id = id;
         this.rho = rho;
-        this.preconditions = preconditions;
+        this._preconditions = preconditions;
         this.flaw = flaw;
-        this.state = state;
+        this._state = state;
         this.intrinsic_cost = intrinsic_cost;
         this.data = data;
       }
 
       get_id(): number { return this.id; }
       get_rho(): string { return this.rho; }
-      get_preconditions(): Flaw[] { return this.preconditions; }
+      get_preconditions(): Flaw[] { return this._preconditions; }
       get_flaw(): Flaw { return this.flaw; }
-      get_state(): State { return this.state; }
+      get_state(): State { return this._state; }
       get_intrinsic_cost(): number { return this.intrinsic_cost; }
 
       get_cost(): number {
-        if (this.state == State.forbidden)
+        if (this._state == State.forbidden)
           return Infinity;
-        return (this.preconditions.length ? Math.max.apply(null, this.preconditions.map(flaw => flaw.get_cost())) : 0) + this.intrinsic_cost;
+        return (this._preconditions.length ? Math.max.apply(null, this._preconditions.map(flaw => flaw.get_cost())) : 0) + this.intrinsic_cost;
       }
 
       to_string(expressive = false): string {
@@ -753,15 +870,150 @@ export namespace solver {
   }
 }
 
+interface SolversMessage {
+
+  type: string;
+  solvers: SolverMessage[];
+}
+
+interface NewSolverMessage {
+
+  type: string;
+  solver: SolverMessage;
+}
+
+interface DeletedSolverMessage {
+
+  type: string;
+  id: number;
+}
+
+interface FlawCreatedMessage extends FlawMessage {
+
+  type: string;
+  solver_id: number;
+  id: number;
+}
+
+interface FlawStateChangedMessage {
+
+  type: string;
+  solver_id: number;
+  id: number;
+  state: string;
+}
+
+interface FlawCostChangedMessage {
+
+  type: string;
+  solver_id: number;
+  id: number;
+  cost: number;
+}
+
+interface FlawPositionChangedMessage {
+
+  type: string;
+  solver_id: number;
+  id: number;
+  position: number;
+}
+
+interface CurrentFlawMessage {
+
+  type: string;
+  solver_id: number;
+  id: number;
+}
+
+interface ResolverCreatedMessage extends ResolverMessage {
+
+  type: string;
+  solver_id: number;
+  id: number;
+}
+
+interface ResolverStateChangedMessage {
+
+  type: string;
+  solver_id: number;
+  id: number;
+  state: string;
+}
+
+interface CurrentResolverMessage {
+
+  type: string;
+  solver_id: number;
+  id: number;
+}
+
+interface CausalLinkAddedMessage {
+
+  type: string;
+  solver_id: number;
+  flaw_id: number;
+  resolver_id: number;
+}
+
+interface SolverExecutionStateChangedMessage {
+
+  type: string;
+  solver_id: number;
+  state: string;
+}
+
+interface TickMessage {
+
+  type: string;
+  solver_id: number;
+  time: RationalMessage;
+}
+
+interface StartingMessage {
+
+  type: string;
+  solver_id: number;
+  atoms: number[];
+}
+
+interface StartMessage {
+
+  type: string;
+  solver_id: number;
+  atoms: number[];
+}
+
+interface EndingMessage {
+
+  type: string;
+  solver_id: number;
+  atoms: number[];
+}
+
+interface EndMessage {
+
+  type: string;
+  solver_id: number;
+  atoms: number[];
+}
+
 interface SolverMessage {
 
   id: number;
   name: string;
   state: string;
+  current_time?: RationalMessage;
   items?: Map<number, ItemMessage>;
   atoms?: Map<number, AtomMessage>;
   exprs?: Map<string, ValueMessage>;
+  flaws?: Map<number, FlawMessage>;
+  resolvers?: Map<number, ResolverMessage>;
+  current_flaw?: number;
+  current_resolver?: number;
 }
+
+type SolversUpdateMessage = SolversMessage | NewSolverMessage | DeletedSolverMessage | FlawCreatedMessage | FlawStateChangedMessage | FlawCostChangedMessage | FlawPositionChangedMessage | CurrentFlawMessage | ResolverCreatedMessage | ResolverStateChangedMessage | CurrentResolverMessage | CausalLinkAddedMessage | SolverExecutionStateChangedMessage | TickMessage | StartingMessage | StartMessage | EndingMessage | EndMessage;
 
 interface RationalMessage {
 
@@ -850,20 +1102,13 @@ type ValueMessage = BoolMessage | IntMessage | RealMessage | TimeMessage | Strin
 
 interface FlawMessage {
 
-  solver_id: number;
-  id: number;
   phi: string;
   causes: number[];
+  supports: number[];
   state: string;
   cost: number;
-  data: {
-    type: string;
-    atom?: {
-      sigma: number;
-      type: string;
-      is_fact: boolean;
-    };
-  };
+  position: number;
+  data: FlawData;
 }
 
 interface FlawData {
@@ -878,7 +1123,8 @@ interface FlawData {
 
 interface ResolverMessage {
 
-  id: number;
+  solver_id?: number;
+  id?: number;
   rho: string;
   preconditions: number[];
   flaw: number;

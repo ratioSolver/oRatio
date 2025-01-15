@@ -17,10 +17,20 @@ export class SolverAnchor extends AnchorComponent<solver.Solver> implements solv
 
   state_changed(state: solver.SolverState): void { this.render(); }
   flaw_created(flaw: solver.graph.Flaw): void { }
+  flaw_state_changed(flaw: solver.graph.Flaw): void { }
   flaw_cost_changed(flaw: solver.graph.Flaw): void { }
   current_flaw(flaw: solver.graph.Flaw | null): void { }
   resolver_created(resolver: solver.graph.Resolver): void { }
+  resolver_state_changed(resolver: solver.graph.Resolver): void { }
   current_resolver(resolver: solver.graph.Resolver | null): void { }
+  causal_link_added(flaw: solver.graph.Flaw, resolver: solver.graph.Resolver): void { }
+
+  execution_state_changed(state: solver.SolverState): void { }
+  tick(time: solver.values.Rational): void { }
+  starting(atoms: solver.values.Atom[]): void { }
+  start(atoms: solver.values.Atom[]): void { }
+  ending(atoms: solver.values.Atom[]): void { }
+  end(atoms: solver.values.Atom[]): void { }
 
   private render(): void {
     this.element.innerHTML = to_icon(this.payload.get_state()) + ' ' + this.payload.get_name();

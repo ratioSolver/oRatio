@@ -37,9 +37,19 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
   state_changed(state: solver.SolverState): void { }
   flaw_created(flaw: solver.graph.Flaw): void { }
   flaw_cost_changed(flaw: solver.graph.Flaw): void { }
+  flaw_state_changed(flaw: solver.graph.Flaw): void { }
   current_flaw(flaw: solver.graph.Flaw | null): void { }
   resolver_created(resolver: solver.graph.Resolver): void { }
+  resolver_state_changed(resolver: solver.graph.Resolver): void { }
   current_resolver(resolver: solver.graph.Resolver | null): void { }
+  causal_link_added(flaw: solver.graph.Flaw, resolver: solver.graph.Resolver): void { }
+
+  execution_state_changed(state: solver.SolverState): void { }
+  tick(time: solver.values.Rational): void { }
+  starting(atoms: solver.values.Atom[]): void { }
+  start(atoms: solver.values.Atom[]): void { }
+  ending(atoms: solver.values.Atom[]): void { }
+  end(atoms: solver.values.Atom[]): void { }
 
   unmounting(): void { this.payload.remove_solver_listener(this); }
 }
