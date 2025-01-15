@@ -1,4 +1,6 @@
-import { Settings, AppComponent, App, Connection, SolverComponent } from 'ratio-gui';
+import { Settings, AppComponent, App, Connection, SolverComponent } from 'ratio-lib';
+
+Settings.get_instance().load_settings({ port: 8080, ws_path: 'ratio' });
 
 class oRatio extends AppComponent {
 

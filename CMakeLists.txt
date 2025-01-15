@@ -91,8 +91,10 @@ if(BUILD_ORATIO_SERVER)
 
     setup_sanitizers(oRatioServer)
 
-    add_custom_target(npm_install ALL COMMAND npm install WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui COMMENT "Installing the oRatio GUI" VERBATIM)
-    add_custom_target(npm_build ALL COMMAND npm run build WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui COMMENT "Building the oRatio GUI" VERBATIM DEPENDS npm_install)
+    add_custom_target(npm_lib_install ALL COMMAND npm install WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui/lib COMMENT "Installing the oRatio WebLib" VERBATIM)
+    add_custom_target(npm_lib_build ALL COMMAND npm run build WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui/lib COMMENT "Building the oRatio WebLib" VERBATIM DEPENDS npm_lib_install)
+    add_custom_target(npm_app_install ALL COMMAND npm install WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui/app COMMENT "Installing the oRatio WebApp" VERBATIM DEPENDS npm_lib_build)
+    add_custom_target(npm_app_build ALL COMMAND npm run build WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui/app COMMENT "Building the oRatio WebApp" VERBATIM DEPENDS npm_app_install)
 endif()
 
 if(BUILD_TESTING)

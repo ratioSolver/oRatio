@@ -10,6 +10,8 @@ namespace ratio::server
     {
         add_route(network::Get, "^/$", std::bind(&server::index, this, network::placeholders::request));
         add_route(network::Get, "^(/assets/.+)|/.+\\.ico|/.+\\.png", std::bind(&server::assets, this, network::placeholders::request));
+
+        add_ws_route("/ratio").on_open(std::bind(&server::on_ws_open, this, network::placeholders::request)).on_message(std::bind(&server::on_ws_message, this, std::placeholders::_1, std::placeholders::_2)).on_close(std::bind(&server::on_ws_close, this, network::placeholders::request)).on_error(std::bind(&server::on_ws_error, this, network::placeholders::request, std::placeholders::_2));
     }
 
     std::unique_ptr<network::response> server::index(const network::request &)
@@ -22,6 +24,19 @@ namespace ratio::server
         if (target.find('?') != std::string::npos)
             target = target.substr(0, target.find('?'));
         return std::make_unique<network::file_response>(assets_dir + target);
+    }
+
+    void server::on_ws_open(network::ws_session &ws)
+    {
+    }
+    void server::on_ws_message(network::ws_session &ws, std::string_view msg)
+    {
+    }
+    void server::on_ws_close(network::ws_session &ws)
+    {
+    }
+    void server::on_ws_error(network::ws_session &ws, const std::error_code &)
+    {
     }
 
     void server::state_changed() {}

@@ -1,5 +1,5 @@
 {
-  "name": "ratio-gui-lib",
+  "name": "ratio-lib",
   "version": "0.0.17",
   "type": "module",
   "main": "dist/index.js",

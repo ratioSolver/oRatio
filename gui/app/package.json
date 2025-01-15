@@ -13,6 +13,6 @@
     "vite": "^6.0.5"
   },
   "dependencies": {
-    "ratio-gui": "^0.0.16"
+    "ratio-lib": "^0.0.17"
   }
 }
