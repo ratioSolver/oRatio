@@ -90,6 +90,9 @@ if(BUILD_ORATIO_SERVER)
     target_link_libraries(oRatioServer PUBLIC oRatioLib ratioNet)
 
     setup_sanitizers(oRatioServer)
+
+    add_custom_target(npm_install ALL COMMAND npm install WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui COMMENT "Installing the oRatio GUI" VERBATIM)
+    add_custom_target(npm_build ALL COMMAND npm run build WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gui COMMENT "Building the oRatio GUI" VERBATIM DEPENDS npm_install)
 endif()
 
 if(BUILD_TESTING)

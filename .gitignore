@@ -1,2 +1,4 @@
 .vscode
+.z3-trace
 build
+solution.json
