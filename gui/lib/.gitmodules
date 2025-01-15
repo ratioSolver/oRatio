@@ -1,0 +1,6 @@
+[submodule "extern/plexa"]
+	path = extern/plexa
+	url = https://github.com/ratioSolver/PlExA
+[submodule "extern/rationet"]
+	path = extern/rationet
+	url = https://github.com/ratioSolver/ratioNet
