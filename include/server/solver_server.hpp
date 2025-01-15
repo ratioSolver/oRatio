@@ -16,7 +16,10 @@ namespace ratio::server
 #endif
   {
   public:
-    server();
+    server(std::string_view assets_dir = "/gui/dist");
+
+  private:
+    std::unique_ptr<network::response> index(const network::request &req);
 
   private:
     void state_changed() override;
@@ -27,5 +30,8 @@ namespace ratio::server
     void resolver_created(const ratio::resolver &r) override;
     void resolver_state_changed(const ratio::resolver &r) override;
     void causal_link_added(const ratio::flaw &f, const ratio::resolver &r) override;
+
+  private:
+    const std::string assets_dir;
   };
 } // namespace ratio::server

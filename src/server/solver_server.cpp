@@ -5,10 +5,13 @@ namespace ratio::server
 #if defined(SEMITONE)
     server::server() : network::server(), ratio::semitonesolver()
 #elif defined(Z3)
-    server::server() : network::server(), ratio::z3solver()
+    server::server(std::string_view assets_dir) : network::server(), ratio::z3solver(), assets_dir(assets_dir)
 #endif
     {
+        add_route(network::Get, "^/$", std::bind(&server::index, this, network::placeholders::request));
     }
+
+    std::unique_ptr<network::response> server::index(const network::request &) { return std::make_unique<network::file_response>(assets_dir + "/index.html"); }
 
     void server::state_changed() {}
     void server::flaw_created(const ratio::flaw &f) {}
