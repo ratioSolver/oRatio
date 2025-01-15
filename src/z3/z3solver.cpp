@@ -34,7 +34,7 @@ namespace ratio
     json::json bool_item::to_json() const
     {
         json::json j = riddle::bool_item::to_json();
-        j["lit"] = expr.to_string();
+        j["lit"] = std::string_view(expr.to_string());
         return j;
     }
 
@@ -65,7 +65,7 @@ namespace ratio
     json::json arith_item::to_json() const
     {
         json::json j = riddle::arith_item::to_json();
-        j["lin"] = expr.to_string();
+        j["lin"] = std::string_view(expr.to_string());
         return j;
     }
 
@@ -96,7 +96,7 @@ namespace ratio
     json::json string_item::to_json() const
     {
         json::json j = riddle::string_item::to_json();
-        j["str"] = expr.to_string();
+        j["str"] = std::string_view(expr.to_string());
         return j;
     }
 
@@ -170,7 +170,7 @@ namespace ratio
     json::json enum_item::to_json() const
     {
         json::json j = riddle::enum_item::to_json();
-        j["var"] = expr.to_string();
+        j["var"] = std::string_view(expr.to_string());
         return j;
     }
 
@@ -223,7 +223,7 @@ namespace ratio
     json::json atom::to_json() const
     {
         json::json j = riddle::atom::to_json();
-        j["sigma"] = sigma.to_string();
+        j["sigma"] = std::string_view(sigma.to_string());
         return j;
     }
 
