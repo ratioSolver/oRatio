@@ -23,12 +23,21 @@ namespace ratio
             for (const auto &atm : pred->get_atoms())
                 if (static_cast<atom &>(*atm).get_state() == riddle::atom_state::active)
                 {
-                    auto &tau = static_cast<riddle::enum_item &>(*atm->get(riddle::tau_kw)); // the atom's tau variable..
-                    auto &sv = static_cast<riddle::component &>(get_core().enum_value(tau)); // the tau variable's value..
+                    auto tau = atm->get(riddle::tau_kw); // the atom's tau variable..
                     const auto start = get_core().arith_value(static_cast<riddle::arith_item &>(*atm->get(riddle::start_kw)));
                     const auto end = get_core().arith_value(static_cast<riddle::arith_item &>(*atm->get(riddle::end_kw)));
-                    sv_instances[&sv][start].first.push_back(&static_cast<atom &>(*atm));
-                    sv_instances[&sv][end].second.push_back(&static_cast<atom &>(*atm));
+
+                    if (auto svs = dynamic_cast<riddle::enum_item *>(tau.get()))
+                        for (const auto &sv : get_core().enum_value(*svs))
+                        {
+                            sv_instances[static_cast<riddle::component *>(&sv.get())][start].first.push_back(&static_cast<atom &>(*atm));
+                            sv_instances[static_cast<riddle::component *>(&sv.get())][end].second.push_back(&static_cast<atom &>(*atm));
+                        }
+                    else
+                    {
+                        sv_instances[static_cast<riddle::component *>(tau.get())][start].first.push_back(&static_cast<atom &>(*atm));
+                        sv_instances[static_cast<riddle::component *>(tau.get())][end].second.push_back(&static_cast<atom &>(*atm));
+                    }
                 }
 
         bool has_conflicts = false;
@@ -66,22 +75,31 @@ namespace ratio
 
     bool z3reusable_resource::solve_inconsistencies()
     { // we assign the atoms to the reusable-resources..
-        std::unordered_map<riddle::component *, std::map<utils::inf_rational, std::pair<std::vector<atom *>, std::vector<atom *>>>> sv_instances;
+        std::unordered_map<riddle::component *, std::map<utils::inf_rational, std::pair<std::vector<atom *>, std::vector<atom *>>>> rr_instances;
         for (const auto &[name, pred] : get_predicates())
             for (const auto &atm : pred->get_atoms())
                 if (static_cast<atom &>(*atm).get_state() == riddle::atom_state::active)
                 {
-                    auto &tau = static_cast<riddle::enum_item &>(*atm->get(riddle::tau_kw)); // the atom's tau variable..
-                    auto &sv = static_cast<riddle::component &>(get_core().enum_value(tau)); // the tau variable's value..
+                    auto tau = atm->get(riddle::tau_kw); // the atom's tau variable..
                     const auto start = get_core().arith_value(static_cast<riddle::arith_item &>(*atm->get(riddle::start_kw)));
                     const auto end = get_core().arith_value(static_cast<riddle::arith_item &>(*atm->get(riddle::end_kw)));
-                    sv_instances[&sv][start].first.push_back(&static_cast<atom &>(*atm));
-                    sv_instances[&sv][end].second.push_back(&static_cast<atom &>(*atm));
+
+                    if (auto svs = dynamic_cast<riddle::enum_item *>(tau.get()))
+                        for (const auto &sv : get_core().enum_value(*svs))
+                        {
+                            rr_instances[static_cast<riddle::component *>(&sv.get())][start].first.push_back(&static_cast<atom &>(*atm));
+                            rr_instances[static_cast<riddle::component *>(&sv.get())][end].second.push_back(&static_cast<atom &>(*atm));
+                        }
+                    else
+                    {
+                        rr_instances[static_cast<riddle::component *>(tau.get())][start].first.push_back(&static_cast<atom &>(*atm));
+                        rr_instances[static_cast<riddle::component *>(tau.get())][end].second.push_back(&static_cast<atom &>(*atm));
+                    }
                 }
 
         bool has_conflicts = false;
         // we detect inconsistencies for each of the reusable-resource instances..
-        for ([[maybe_unused]] auto &[rr, atms] : sv_instances)
+        for ([[maybe_unused]] auto &[rr, atms] : rr_instances)
         {
             // we scroll through the timeline looking for inconsistencies..
             auto capacity = get_core().arith_value(static_cast<riddle::arith_item &>(*rr->get(reusable_resource_capacity_kw)));

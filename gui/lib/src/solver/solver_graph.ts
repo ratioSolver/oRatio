@@ -69,16 +69,10 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
       ]
     });
 
-    solver.add_solver_listener(this);
-  }
-
-  init(items: Map<string, solver.values.Value>, atoms: Map<number, solver.values.Atom>, state: solver.SolverState, flaws: Map<number, solver.graph.Flaw>, resolvers: Map<number, solver.graph.Resolver>, c_flaw: solver.graph.Flaw | null, c_resolver: solver.graph.Resolver | null): void {
-    this.cy.elements().remove(); // We clear the graph
-
-    for (const [_, flaw] of flaws)
+    for (const [_, flaw] of solver.get_flaws())
       this.create_flaw_node(flaw);
 
-    for (const [_, resolver] of resolvers) {
+    for (const [_, resolver] of solver.get_resolvers()) {
       this.create_resolver_node(resolver);
 
       this.cy.add({ group: 'edges', data: { id: `${resolver.get_id()}-${resolver.get_flaw().get_id()}`, source: resolver.get_id(), target: resolver.get_flaw().get_id(), stroke: stroke_style(resolver) } });
@@ -86,16 +80,18 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
         this.cy.add({ group: 'edges', data: { id: `${resolver.get_id()}-${pre.get_id()}`, source: resolver.get_id(), target: pre.get_id(), stroke: stroke_style(resolver) } });
     }
 
-    if (c_flaw) {
-      this.cy.$id(c_flaw.get_id().toString()).addClass('current');
-      this.c_flaw = c_flaw;
+    if (solver.get_current_flaw()) {
+      this.cy.$id(solver.get_current_flaw()!.get_id().toString()).addClass('current');
+      this.c_flaw = solver.get_current_flaw();
     }
 
-    if (c_resolver) {
-      this.cy.$id(c_resolver.get_id().toString()).addClass('current');
-      this.c_resolver = c_resolver;
+    if (solver.get_current_resolver()) {
+      this.cy.$id(solver.get_current_resolver()!.get_id().toString()).addClass('current');
+      this.c_resolver = solver.get_current_resolver();
     }
     this.cy.layout(this.layout).run();
+
+    solver.add_solver_listener(this);
   }
 
   state_changed(state: solver.SolverState): void { }

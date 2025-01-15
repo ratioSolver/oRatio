@@ -1,31 +1,14 @@
 export namespace solver {
 
-  class Env implements EnvListener {
+  class Env {
 
-    protected items: Map<string, values.Value> = new Map();
-    private env_listeners: Set<EnvListener> = new Set();
+    exprs: Map<string, values.Value> = new Map();
 
-    value_added(name: string, value: values.Value): void {
-      this.items.set(name, value);
-      for (const listener of this.env_listeners) listener.value_added(name, value);
-    }
-    value_removed(name: string): void {
-      this.items.delete(name);
-      for (const listener of this.env_listeners) listener.value_removed(name);
-    }
-
-    add_item_listener(listener: EnvListener) { this.env_listeners.add(listener); }
-    remove_item_listener(listener: EnvListener) { this.env_listeners.delete(listener); }
+    get_exprs(): Map<string, values.Value> { return this.exprs; }
 
     to_string(items: Map<number, values.Value>, expressive: boolean): string {
-      return `{${Array.from(this.items.entries()).map(([name, value]) => `${name}: ${value.to_string(items, expressive)}`).join(', ')}}`;
+      return `{${Array.from(this.exprs.entries()).map(([name, value]) => `${name}: ${value.to_string(items, expressive)}`).join(', ')}}`;
     }
-  }
-
-  export interface EnvListener {
-
-    value_added(name: string, value: values.Value): void;
-    value_removed(name: string): void;
   }
 
   export enum SolverState {
@@ -43,6 +26,7 @@ export namespace solver {
     private name: string;
     private state: SolverState;
 
+    private items: Map<number, values.Item> = new Map();
     private atoms: Map<number, values.Atom> = new Map();
     private flaws: Map<number, graph.Flaw> = new Map();
     private resolvers: Map<number, graph.Resolver> = new Map();
@@ -60,16 +44,13 @@ export namespace solver {
     get_id(): number { return this.id; }
     get_name(): string { return this.name; }
     get_state(): SolverState { return this.state; }
+    get_flaws(): Map<number, graph.Flaw> { return this.flaws; }
+    get_flaw(id: number): graph.Flaw { return this.flaws.get(id)!; }
+    get_resolvers(): Map<number, graph.Resolver> { return this.resolvers; }
+    get_resolver(id: number): graph.Resolver { return this.resolvers.get(id)!; }
+    get_current_flaw(): graph.Flaw | null { return this.c_flaw; }
+    get_current_resolver(): graph.Resolver | null { return this.c_resolver; }
 
-    init(items: Map<string, values.Value>, atoms: Map<number, values.Atom>, state: SolverState, flaws: Map<number, graph.Flaw>, resolvers: Map<number, graph.Resolver>, c_flaw: graph.Flaw | null, c_resolver: graph.Resolver | null): void {
-      this.items = items;
-      this.atoms = atoms;
-      this.state = state;
-      this.flaws = flaws;
-      this.resolvers = resolvers;
-      this.c_flaw = c_flaw;
-      this.c_resolver = c_resolver;
-    }
     state_changed(state: SolverState): void {
       this.state = state;
       for (const listener of this.solver_listeners) listener.state_changed(state);
@@ -97,16 +78,39 @@ export namespace solver {
       for (const listener of this.solver_listeners) listener.current_resolver(resolver);
     }
 
-    add_solver_listener(listener: SolverListener) {
-      this.solver_listeners.add(listener);
-      listener.init(this.items, this.atoms, this.state, this.flaws, this.resolvers, this.c_flaw, this.c_resolver);
-    }
+    add_solver_listener(listener: SolverListener) { this.solver_listeners.add(listener); }
     remove_solver_listener(listener: SolverListener) { this.solver_listeners.delete(listener); }
+
+    static make_solver(solver_message: SolverMessage): Solver {
+      const solver = new Solver(solver_message.id, solver_message.name, SolverState[solver_message.state as keyof typeof SolverState]);
+
+      if (solver_message.items) // we create the items..
+        for (const [id, im] of solver_message.items)
+          solver.items.set(Number(id), new values.Item(Number(id), im.type, im.name));
+      if (solver_message.atoms) // we create the atoms..
+        for (const [id, am] of solver_message.atoms)
+          solver.atoms.set(Number(id), new values.Atom(Number(id), am.type, am.name, am.fact, am.sigma, values.AtomState[am.state as keyof typeof values.AtomState]));
+
+      if (solver_message.items) // we set the exprs for the items..
+        for (const [id, im] of solver_message.items)
+          if (im.exprs)
+            for (const [name, expr] of im.exprs)
+              solver.items.get(Number(id))!.exprs.set(name, values.make_value(expr, solver.items, solver.atoms));
+      if (solver_message.atoms) // we set the exprs for the atoms..
+        for (const [id, am] of solver_message.atoms)
+          if (am.exprs)
+            for (const [name, expr] of am.exprs)
+              solver.atoms.get(Number(id))!.exprs.set(name, values.make_value(expr, solver.items, solver.atoms));
+
+      if (solver_message.exprs) // we set the exprs for the solver..
+        for (const [name, expr] of solver_message.exprs)
+          solver.exprs.set(name, values.make_value(expr, solver.items, solver.atoms));
+
+      return solver;
+    }
   }
 
   export interface SolverListener {
-
-    init(items: Map<string, values.Value>, atoms: Map<number, values.Atom>, state: SolverState, flaws: Map<number, graph.Flaw>, resolvers: Map<number, graph.Resolver>, c_flaw: graph.Flaw | null, c_resolver: graph.Resolver | null): void;
 
     state_changed(state: SolverState): void;
 
@@ -120,11 +124,21 @@ export namespace solver {
 
   export class SolverSet implements SolverSetListener {
 
+    private static instance: SolverSet;
     private solvers: Map<number, solver.Solver> = new Map();
     private solver_set_listeners: Set<SolverSetListener> = new Set();
 
+    private constructor() { }
+
+    static get_instance() {
+      if (!SolverSet.instance)
+        SolverSet.instance = new SolverSet();
+      return SolverSet.instance;
+    }
+
     init(solvers: Map<number, Solver>): void {
       this.solvers = solvers;
+      for (const listener of this.solver_set_listeners) { listener.init(solvers); }
     }
 
     solver_created(solver: Solver): void {
@@ -136,6 +150,59 @@ export namespace solver {
       this.solvers.delete(id);
       for (const listener of this.solver_set_listeners) { listener.solver_deleted(id); }
     }
+
+    update_solvers(message: any): void {
+      switch (message.type) {
+        case 'solvers':
+          const solvers = new Map<number, Solver>();
+          for (const solver_message of message.solvers)
+            solvers.set(solver_message.id, Solver.make_solver(solver_message));
+          this.init(solvers);
+          break;
+        case 'new_solver':
+          this.solver_created(Solver.make_solver(message.solver));
+          break;
+        case 'deleted_solver':
+          this.solver_deleted(message.id);
+          break;
+        case 'flaw_created':
+          const flaw_message: FlawMessage = message.flaw;
+          const resolvers: graph.Resolver[] = flaw_message.causes.map((id: number) => this.solvers.get(flaw_message.solver_id)!.get_resolver(id));
+          this.solvers.get(flaw_message.solver_id)!.flaw_created(new graph.Flaw(flaw_message.id, flaw_message.phi, resolvers, graph.State[flaw_message.state as keyof typeof graph.State], flaw_message.cost, flaw_message.data));
+          break;
+        case 'flaw_state_changed':
+          break;
+        case 'flaw_cost_changed':
+          break;
+        case 'flaw_position_changed':
+          break;
+        case 'current_flaw':
+          break;
+        case 'resolver_created':
+          break;
+        case 'resolver_state_changed':
+          break;
+        case 'current_resolver':
+          break;
+        case 'causal_link_added':
+          break;
+        case 'solver_execution_state_changed':
+          break;
+        case 'tick':
+          break;
+        case 'starting':
+          break;
+        case 'ending':
+          break;
+        case 'start':
+          break;
+        case 'end':
+          break;
+      }
+    }
+
+    add_solver_set_listener(listener: SolverSetListener) { this.solver_set_listeners.add(listener); }
+    remove_solver_set_listener(listener: SolverSetListener) { this.solver_set_listeners.delete(listener); }
   }
 
   export interface SolverSetListener {
@@ -155,16 +222,6 @@ export namespace solver {
       active,
       inactive,
       forbidden
-    }
-
-    interface FlawData {
-
-      type: string;
-      atom?: {
-        sigma: number;
-        type: string;
-        is_fact: boolean;
-      };
     }
 
     export class Flaw {
@@ -207,13 +264,6 @@ export namespace solver {
               return this.phi;
           }
       }
-    }
-
-    interface ResolverData {
-
-      type: string;
-      name?: string;
-      value?: any;
     }
 
     export class Resolver {
@@ -299,7 +349,7 @@ export namespace solver {
         }
       }
 
-      static make_rational(val: any): Rational { return new Rational(val.num, val.den); }
+      static make_rational(val: RationalMessage): Rational { return new Rational(val.num, val.den); }
     }
 
     export class InfRational extends Rational {
@@ -311,7 +361,7 @@ export namespace solver {
         this.inf = inf;
       }
 
-      static make_inf_rational(val: any): InfRational { return new InfRational(val.num, val.den, val.inf ? Rational.make_rational(val.inf) : new Rational(0, 1)); }
+      static make_inf_rational(val: InfRationalMessage): InfRational { return new InfRational(val.num, val.den, val.inf ? Rational.make_rational(val.inf) : new Rational(0, 1)); }
     }
 
     export interface Value {
@@ -346,6 +396,8 @@ export namespace solver {
             return expressive ? 'undefined' : 'U';
         }
       }
+
+      static make_bool(val: BoolMessage): Bool { return new Bool(val.lit, LBool[val.val as keyof typeof LBool]); }
     }
 
     export class Int implements Value {
@@ -371,6 +423,8 @@ export namespace solver {
         } else
           return this.val.toString();
       }
+
+      static make_int(val: IntMessage): Int { return new Int(val.lin, val.val, val.lb, val.ub); }
     }
 
     export class Real implements Value {
@@ -396,6 +450,8 @@ export namespace solver {
         } else
           return this.val.to_string();
       }
+
+      static make_real(val: RealMessage): Real { return new Real(val.lin, InfRational.make_inf_rational(val.val), val.lb ? InfRational.make_inf_rational(val.lb!) : undefined, val.ub ? InfRational.make_inf_rational(val.ub!) : undefined); }
     }
 
     export class Time implements Value {
@@ -421,6 +477,8 @@ export namespace solver {
         } else
           return this.val.to_string();
       }
+
+      static make_time(val: TimeMessage): Time { return new Time(val.lin, InfRational.make_inf_rational(val.val), val.lb ? InfRational.make_inf_rational(val.lb!) : undefined, val.ub ? InfRational.make_inf_rational(val.ub!) : undefined); }
     }
 
     export class String implements Value {
@@ -438,24 +496,28 @@ export namespace solver {
         else
           return `'${this.val}'`;
       }
+
+      static make_string(val: StringMessage): String { return new String(val.val); }
     }
 
     export class Enum implements Value {
 
-      v: string;
+      var: string;
       vals: Item[];
 
       constructor(v: string, vals: Item[]) {
-        this.v = v;
+        this.var = v;
         this.vals = vals;
       }
 
       to_string(items: Map<number, Value>, expressive = false): string {
         if (expressive)
-          return (this.vals.length == 1 ? this.vals[0].to_string(items, expressive) : `{${this.vals.map((item: Item) => item.to_string(items, expressive)).join(', ')}}`) + ` (${this.v})`;
+          return (this.vals.length == 1 ? this.vals[0].to_string(items, expressive) : `{${this.vals.map((item: Item) => item.to_string(items, expressive)).join(', ')}}`) + ` (${this.var})`;
         else
           return this.vals.length == 1 ? this.vals[0].to_string(items, expressive) : `{${this.vals.map((item: Item) => item.to_string(items, expressive)).join(', ')}}`;
       }
+
+      static make_enum(val: EnumMessage, items: Map<number, Value>): Enum { return new Enum(val.var, val.vals.map((item: number) => items.get(item) as Item)); }
     }
 
     export class Item extends Env implements Value {
@@ -470,6 +532,10 @@ export namespace solver {
         this.type = type;
         this.name = name;
       }
+
+      get_id(): number { return this.id; }
+      get_type(): string { return this.type; }
+      get_name(): string { return this.name; }
 
       to_string(items: Map<number, Value>, expressive = false): string {
         if (expressive)
@@ -487,19 +553,23 @@ export namespace solver {
 
     export class Atom extends Item implements Value {
 
-      private is_fact: boolean;
+      private fact: boolean;
       private sigma: string;
       private state: AtomState;
 
-      constructor(id: number, type: string, name: string, is_fact: boolean, sigma: string, state: AtomState) {
+      constructor(id: number, type: string, name: string, fact: boolean, sigma: string, state: AtomState) {
         super(id, type, name);
-        this.is_fact = is_fact;
+        this.fact = fact;
         this.sigma = sigma;
         this.state = state;
       }
 
+      is_fact(): boolean { return this.fact; }
+      get_sigma(): string { return this.sigma; }
+      get_state(): AtomState { return this.state; }
+
       to_string(items: Map<number, Value>, expressive = false): string {
-        let pars = Array.from(this.items.entries());
+        let pars = Array.from(this.exprs.entries());
         if (!expressive)
           pars = pars.filter(([name, _]) => name !== 'start' && name !== 'end' && name !== 'duration' && name !== 'tau');
         const pars_str = pars.map(([name, value]) => `${name}: ${value.to_string(items, expressive)}`).join(', ');
@@ -510,26 +580,26 @@ export namespace solver {
       }
     }
 
-    export function make_value(value: any, items: Map<number, Value>): Value {
-      switch (value.type) {
+    export function make_value(value_message: ValueMessage, items: Map<number, Value>, atoms: Map<number, Atom>): Value {
+      switch (value_message.type) {
         case 'bool':
-          return new Bool(value.lit, LBool[value.val as keyof typeof LBool]);
+          return Bool.make_bool(value_message as BoolMessage);
         case 'int':
-          return new Int(value.lin, value.val, value.lb, value.ub);
+          return Int.make_int(value_message as IntMessage);
         case 'real':
-          return new Real(value.lin, InfRational.make_inf_rational(value.val), value.lb ? InfRational.make_inf_rational(value.lb) : undefined, value.ub ? InfRational.make_inf_rational(value.ub) : undefined);
+          return Real.make_real(value_message as RealMessage);
         case 'time':
-          return new Time(value.lin, InfRational.make_inf_rational(value.val), value.lb ? InfRational.make_inf_rational(value.lb) : undefined, value.ub ? InfRational.make_inf_rational(value.ub) : undefined);
+          return Time.make_time(value_message as TimeMessage);
         case 'string':
-          return new String(value.val);
+          return String.make_string(value_message as StringMessage);
         case 'enum':
-          return new Enum(value.v, value.vals.map((item: any) => items.get(item)));
+          return Enum.make_enum(value_message as EnumMessage, items);
         case 'item':
-          return items.get(value.id)!;
+          return items.get((value_message as ItemValueMessage).val)!;
         case 'atom':
-          return items.get(value.id)!;
+          return atoms.get((value_message as AtomValueMessage).val)!;
         default:
-          throw new Error(`Unknown type: ${value.type}`);
+          throw new Error(`Unknown type: ${value_message.type}`);
       }
     }
   }
@@ -681,4 +751,145 @@ export namespace solver {
       }
     }
   }
+}
+
+interface SolverMessage {
+
+  id: number;
+  name: string;
+  state: string;
+  items?: Map<number, ItemMessage>;
+  atoms?: Map<number, AtomMessage>;
+  exprs?: Map<string, ValueMessage>;
+}
+
+interface RationalMessage {
+
+  num: number;
+  den: number;
+}
+
+interface InfRationalMessage extends RationalMessage {
+
+  inf?: RationalMessage;
+}
+
+interface ItemMessage {
+
+  type: string;
+  name: string;
+  exprs?: Map<string, ValueMessage>;
+}
+
+interface AtomMessage extends ItemMessage {
+
+  fact: boolean;
+  sigma: string;
+  state: string;
+}
+interface BoolMessage {
+
+  type: string;
+  lit: string;
+  val: string;
+}
+
+interface IntMessage {
+
+  type: string;
+  lin: string;
+  val: number;
+  lb?: number;
+  ub?: number;
+}
+
+interface RealMessage {
+
+  type: string;
+  lin: string;
+  val: InfRationalMessage;
+  lb?: InfRationalMessage;
+  ub?: InfRationalMessage;
+}
+
+interface TimeMessage {
+
+  type: string;
+  lin: string;
+  val: InfRationalMessage;
+  lb?: InfRationalMessage;
+  ub?: InfRationalMessage;
+}
+
+interface StringMessage {
+
+  type: string;
+  val: string;
+}
+
+interface EnumMessage {
+
+  type: string;
+  var: string;
+  vals: number[];
+}
+
+interface ItemValueMessage {
+
+  type: string;
+  val: number;
+}
+
+interface AtomValueMessage {
+
+  type: string;
+  val: number;
+}
+
+type ValueMessage = BoolMessage | IntMessage | RealMessage | TimeMessage | StringMessage | EnumMessage | ItemValueMessage | AtomValueMessage;
+
+interface FlawMessage {
+
+  solver_id: number;
+  id: number;
+  phi: string;
+  causes: number[];
+  state: string;
+  cost: number;
+  data: {
+    type: string;
+    atom?: {
+      sigma: number;
+      type: string;
+      is_fact: boolean;
+    };
+  };
+}
+
+interface FlawData {
+
+  type: string;
+  atom?: {
+    sigma: number;
+    type: string;
+    is_fact: boolean;
+  };
+}
+
+interface ResolverMessage {
+
+  id: number;
+  rho: string;
+  preconditions: number[];
+  flaw: number;
+  state: string;
+  intrinsic_cost: number;
+  data: ResolverData;
+}
+
+interface ResolverData {
+
+  type: string;
+  name?: string;
+  value?: any;
 }

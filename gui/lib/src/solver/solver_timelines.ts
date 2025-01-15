@@ -28,11 +28,10 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
   constructor(solver: solver.Solver) {
     super(solver, document.querySelector('#slv-' + solver.get_id() + '-timelines') as HTMLDivElement);
     this.element.classList.add('d-flex', 'flex-column', 'flex-grow-1');
-    solver.add_solver_listener(this);
-  }
 
-  init(items: Map<string, solver.values.Value>, atoms: Map<number, solver.values.Atom>, state: solver.SolverState, flaws: Map<number, solver.graph.Flaw>, resolvers: Map<number, solver.graph.Resolver>, c_flaw: solver.graph.Flaw | null, c_resolver: solver.graph.Resolver | null): void {
     Plotly.react(this.element, [], this.layout, this.config);
+
+    solver.add_solver_listener(this);
   }
 
   state_changed(state: solver.SolverState): void { }

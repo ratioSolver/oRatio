@@ -134,7 +134,7 @@ namespace ratio
     [[nodiscard]] std::string string_value(const riddle::string_item &expr) const noexcept override;
 
     [[nodiscard]] riddle::enum_expr new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) override;
-    [[nodiscard]] utils::enum_val &enum_value(const riddle::enum_item &expr) const noexcept override;
+    [[nodiscard]] std::vector<std::reference_wrapper<utils::enum_val>> enum_value(const riddle::enum_item &expr) const noexcept override;
 
     [[nodiscard]] riddle::bool_expr new_and(std::vector<riddle::bool_expr> &&exprs) override;
     [[nodiscard]] riddle::bool_expr new_or(std::vector<riddle::bool_expr> &&exprs) override;
