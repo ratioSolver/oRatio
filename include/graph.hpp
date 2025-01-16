@@ -37,6 +37,9 @@ namespace ratio
 
   public:
     graph(std::string_view name = "oRatio");
+    virtual ~graph() = default;
+
+    [[nodiscard]] virtual json::json to_json() const override;
 
   protected:
     /**
@@ -225,6 +228,8 @@ namespace ratio
 
     [[nodiscard]] bool is_expanded() const noexcept { return expanded; }
 
+    [[nodiscard]] virtual utils::lbool get_state() const = 0;
+
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_causes() const noexcept { return causes; }
 
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept { return resolvers; }
@@ -232,6 +237,10 @@ namespace ratio
     [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
 
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_supports() const noexcept { return supports; }
+
+    [[nodiscard]] virtual json::json to_json() const;
+
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
   protected:
     template <typename Tp, typename... Args>
@@ -267,11 +276,17 @@ namespace ratio
     [[nodiscard]] flaw &get_flaw() noexcept { return f; }
     [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
 
+    [[nodiscard]] virtual utils::lbool get_state() const = 0;
+
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
 
     [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
 
     [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
+
+    [[nodiscard]] virtual json::json to_json() const;
+
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
   private:
     virtual void apply() = 0;

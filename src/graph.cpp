@@ -7,6 +7,12 @@ namespace ratio
 {
     graph::graph(std::string_view name) : core(name) {}
 
+    json::json graph::to_json() const
+    {
+        json::json j_graph = core::to_json();
+        return j_graph;
+    }
+
     std::vector<std::reference_wrapper<flaw>> graph::get_queued_flaws() const noexcept
     {
         std::vector<std::reference_wrapper<flaw>> res;
@@ -83,6 +89,7 @@ namespace ratio
             supports.push_back(cause);                  // .. and it also supports the `cause` cause..
         }
     }
+
     utils::rational flaw::compute_cost() const
     {
         switch (resolvers.size())
@@ -97,6 +104,28 @@ namespace ratio
                 ->get()
                 .get_estimated_cost();
         }
+    }
+
+    json::json flaw::to_json() const
+    {
+        json::json j_flaw{{"cost", {{"num", est_cost.numerator()}, {"den", est_cost.denominator()}}}};
+        switch (get_state())
+        {
+        case utils::True:
+            j_flaw["state"] = "active";
+            break;
+        case utils::False:
+            j_flaw["state"] = "forbidden";
+            break;
+        case utils::Undefined:
+            j_flaw["state"] = "inactive";
+            break;
+        }
+        json::json j_causes(json::json_type::array);
+        for (const auto &c : causes)
+            j_causes.push_back(c.get().get_id());
+        j_flaw["causes"] = std::move(j_causes);
+        return j_flaw;
     }
 
     resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) : f(f), intrinsic_cost(intrinsic_cost) { f.resolvers.push_back(*this); }
@@ -117,5 +146,27 @@ namespace ratio
                                     ->get()
                                     .get_estimated_cost();
 #endif
+    }
+
+    json::json resolver::to_json() const
+    {
+        json::json j_resolver{{"cost", {{"num", intrinsic_cost.numerator()}, {"den", intrinsic_cost.denominator()}}}};
+        switch (get_state())
+        {
+        case utils::True:
+            j_resolver["state"] = "active";
+            break;
+        case utils::False:
+            j_resolver["state"] = "forbidden";
+            break;
+        case utils::Undefined:
+            j_resolver["state"] = "inactive";
+            break;
+        }
+        json::json j_preconditions(json::json_type::array);
+        for (const auto &p : preconditions)
+            j_preconditions.push_back(p.get().get_id());
+        j_resolver["preconditions"] = std::move(j_preconditions);
+        return j_resolver;
     }
 } // namespace ratio
