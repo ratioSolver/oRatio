@@ -457,6 +457,10 @@ export namespace solver {
         this.den = den;
       }
 
+      get_num(): number { return this.num; }
+
+      get_den(): number { return this.den; }
+
       to_number(): number { return this.num / this.den; }
 
       to_string(): string {
@@ -481,6 +485,8 @@ export namespace solver {
         super(num, den);
         this.inf = inf;
       }
+
+      get_inf(): Rational { return this.inf; }
 
       static make_inf_rational(val: InfRationalMessage): InfRational { return new InfRational(val.num, val.den, val.inf ? Rational.make_rational(val.inf) : new Rational(0, 1)); }
     }
@@ -507,7 +513,7 @@ export namespace solver {
         this.val = val;
       }
 
-      to_string(_: Map<number, Value>, expressive = false): string {
+      to_string(_items: Map<number, Value>, expressive = false): string {
         switch (this.val) {
           case LBool.True:
             return expressive ? 'true' : '⊤';
@@ -535,7 +541,7 @@ export namespace solver {
         this.ub = ub;
       }
 
-      to_string(_: Map<number, Value>, expressive = false): string {
+      to_string(_items: Map<number, Value>, expressive = false): string {
         if (expressive) {
           let res = `${this.val}`;
           if (this.lb || this.ub)
@@ -562,7 +568,7 @@ export namespace solver {
         this.ub = ub;
       }
 
-      to_string(_: Map<number, Value>, expressive = false): string {
+      to_string(_items: Map<number, Value>, expressive = false): string {
         if (expressive) {
           let res = `${this.val.to_string()}`;
           if (this.lb || this.ub)
@@ -589,7 +595,7 @@ export namespace solver {
         this.ub = ub;
       }
 
-      to_string(_: Map<number, Value>, expressive = false): string {
+      to_string(_items: Map<number, Value>, expressive = false): string {
         if (expressive) {
           let res = `${this.val.to_string()}`;
           if (this.lb || this.ub)
@@ -658,7 +664,7 @@ export namespace solver {
       get_type(): string { return this.type; }
       get_name(): string { return this.name; }
 
-      to_string(items: Map<number, Value>, expressive = false): string {
+      override to_string(items: Map<number, Value>, expressive = false): string {
         if (expressive)
           return this.type.split(':').pop() + ' ' + this.name + super.to_string(items, expressive);
         else
@@ -689,7 +695,7 @@ export namespace solver {
       get_sigma(): string { return this.sigma; }
       get_state(): AtomState { return this.state; }
 
-      to_string(items: Map<number, Value>, expressive = false): string {
+      override to_string(items: Map<number, Value>, expressive = false): string {
         let pars = Array.from(this.exprs.entries());
         if (!expressive)
           pars = pars.filter(([name, _]) => name !== 'start' && name !== 'end' && name !== 'duration' && name !== 'tau');
@@ -742,6 +748,8 @@ export namespace solver {
         this.name = name;
         this.values = values;
       }
+
+      public get_id(): string { return this.id; }
 
       public get_name(): string { return this.name; }
 

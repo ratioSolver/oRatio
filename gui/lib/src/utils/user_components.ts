@@ -1,5 +1,5 @@
 import { ButtonComponent, Component } from '../app';
-import { CurrentUser, User } from './user';
+import { CurrentUser } from './user';
 
 export class LogInButton extends ButtonComponent<void> {
 
@@ -110,7 +110,7 @@ export class LogInModal extends Component<void, HTMLDivElement> {
 
     const remember_group = document.createElement('div');
     remember_group.classList.add('form-check');
-    
+
     const remember_input = document.createElement('input');
     remember_input.type = 'checkbox';
     remember_input.classList.add('form-check-input');

@@ -84,7 +84,7 @@ export abstract class ListComponent<P, E extends HTMLElement, L extends HTMLElem
 
   constructor(payload: Component<P, E>[], element: L, compareFn?: (a: P, b: P) => number) {
     super(payload, element)
-    this.compareFn = compareFn || ((a, b) => 0);
+    this.compareFn = compareFn || ((_a: P, _b: P) => 0);
     this.children = payload;
     this.children.sort((a, b) => this.compareFn(a.payload, b.payload));
     const fragment = document.createDocumentFragment();
@@ -93,7 +93,7 @@ export abstract class ListComponent<P, E extends HTMLElement, L extends HTMLElem
     this.element.appendChild(fragment);
   }
 
-  add_child(child: Component<P, E>): void {
+  override add_child(child: Component<P, E>): void {
     super.add_child(child);
     this.children.push(child);
     this.children.sort((a, b) => this.compareFn(a.payload, b.payload));
@@ -104,7 +104,7 @@ export abstract class ListComponent<P, E extends HTMLElement, L extends HTMLElem
       this.element.insertBefore(child.element, this.children[index + 1].element);
   }
 
-  remove_child(child: Component<P, E>): void {
+  override remove_child(child: Component<P, E>): void {
     const index = this.children.indexOf(child);
     if (index !== -1) {
       this.children.splice(index, 1);
@@ -196,14 +196,14 @@ export class AppComponent extends Component<App, HTMLDivElement> implements AppL
       this.add_child(component);
   }
 
-  connected(info: any): void { }
-  received_message(message: any): void { }
+  connected(_info: any): void { }
+  received_message(_message: any): void { }
   disconnected(): void { }
-  connection_error(error: any): void { }
+  connection_error(_error: any): void { }
 
-  populate_navbar(container: HTMLDivElement): void { }
+  populate_navbar(_container: HTMLDivElement): void { }
 
-  unmounting(): void {
+  override unmounting(): void {
     App.get_instance().remove_app_listener(this);
     Connection.get_instance().remove_connection_listener(this);
   }

@@ -31,28 +31,28 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
     this.element.classList.add('d-flex', 'flex-column', 'flex-grow-1');
   }
 
-  mounted(): void {
+  override mounted(): void {
     Plotly.react(this.element, [], this.layout, this.config);
 
     this.payload.add_solver_listener(this);
   }
 
-  state_changed(state: solver.SolverState): void { }
-  flaw_created(flaw: solver.graph.Flaw): void { }
-  flaw_cost_changed(flaw: solver.graph.Flaw): void { }
-  flaw_state_changed(flaw: solver.graph.Flaw): void { }
-  current_flaw(flaw: solver.graph.Flaw | null): void { }
-  resolver_created(resolver: solver.graph.Resolver): void { }
-  resolver_state_changed(resolver: solver.graph.Resolver): void { }
-  current_resolver(resolver: solver.graph.Resolver | null): void { }
-  causal_link_added(flaw: solver.graph.Flaw, resolver: solver.graph.Resolver): void { }
+  state_changed(_state: solver.SolverState): void { }
+  flaw_created(_flaw: solver.graph.Flaw): void { }
+  flaw_cost_changed(_flaw: solver.graph.Flaw): void { }
+  flaw_state_changed(_flaw: solver.graph.Flaw): void { }
+  current_flaw(_flaw: solver.graph.Flaw | null): void { }
+  resolver_created(_resolver: solver.graph.Resolver): void { }
+  resolver_state_changed(_resolver: solver.graph.Resolver): void { }
+  current_resolver(_resolver: solver.graph.Resolver | null): void { }
+  causal_link_added(_flaw: solver.graph.Flaw, _resolver: solver.graph.Resolver): void { }
 
-  execution_state_changed(state: solver.SolverState): void { }
-  tick(time: solver.values.Rational): void { }
-  starting(atoms: solver.values.Atom[]): void { }
-  start(atoms: solver.values.Atom[]): void { }
-  ending(atoms: solver.values.Atom[]): void { }
-  end(atoms: solver.values.Atom[]): void { }
+  execution_state_changed(_state: solver.SolverState): void { }
+  tick(_time: solver.values.Rational): void { }
+  starting(_atoms: solver.values.Atom[]): void { }
+  start(_atoms: solver.values.Atom[]): void { }
+  ending(_atoms: solver.values.Atom[]): void { }
+  end(_atoms: solver.values.Atom[]): void { }
 
-  unmounting(): void { this.payload.remove_solver_listener(this); }
+  override unmounting(): void { this.payload.remove_solver_listener(this); }
 }

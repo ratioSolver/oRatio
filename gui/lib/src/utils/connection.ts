@@ -46,6 +46,7 @@ export class Connection {
     this.socket.onerror = (error) => {
       console.error('Connection error: ', error);
       for (const listener of this.connection_listeners) { listener.connection_error(error); }
+      setTimeout(() => this.connect(token, timeout), timeout);
     };
   }
 

@@ -26,7 +26,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.element.classList.add('d-flex', 'flex-column', 'flex-grow-1');
   }
 
-  mounted(): void {
+  override mounted(): void {
     this.cy = cytoscape({
       container: this.element,
       style: [
@@ -98,7 +98,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.payload.add_solver_listener(this);
   }
 
-  state_changed(state: solver.SolverState): void { }
+  state_changed(_state: solver.SolverState): void { }
 
   flaw_created(flaw: solver.graph.Flaw): void {
     this.create_flaw_node(flaw);
@@ -155,14 +155,14 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.cy!.layout(this.layout).run();
   }
 
-  execution_state_changed(state: solver.SolverState): void { }
-  tick(time: solver.values.Rational): void { }
-  starting(atoms: solver.values.Atom[]): void { }
-  start(atoms: solver.values.Atom[]): void { }
-  ending(atoms: solver.values.Atom[]): void { }
-  end(atoms: solver.values.Atom[]): void { }
+  execution_state_changed(_state: solver.SolverState): void { }
+  tick(_time: solver.values.Rational): void { }
+  starting(_atoms: solver.values.Atom[]): void { }
+  start(_atoms: solver.values.Atom[]): void { }
+  ending(_atoms: solver.values.Atom[]): void { }
+  end(_atoms: solver.values.Atom[]): void { }
 
-  unmounting(): void { this.payload.remove_solver_listener(this); }
+  override unmounting(): void { this.payload.remove_solver_listener(this); }
 
   private create_flaw_node(flaw: solver.graph.Flaw): cytoscape.CollectionReturnValue {
     const fn = this.cy!.add({ group: 'nodes', data: { id: flaw.get_id().toString(), type: 'flaw', label: flaw.to_string(), color: color(flaw), stroke: stroke_style(flaw) } });

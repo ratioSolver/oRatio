@@ -15,28 +15,28 @@ export class SolverAnchor extends AnchorComponent<solver.Solver> implements solv
     this.element.addEventListener('click', () => { App.get_instance().selected_component(this); });
   }
 
-  state_changed(state: solver.SolverState): void { this.render(); }
-  flaw_created(flaw: solver.graph.Flaw): void { }
-  flaw_state_changed(flaw: solver.graph.Flaw): void { }
-  flaw_cost_changed(flaw: solver.graph.Flaw): void { }
-  current_flaw(flaw: solver.graph.Flaw | null): void { }
-  resolver_created(resolver: solver.graph.Resolver): void { }
-  resolver_state_changed(resolver: solver.graph.Resolver): void { }
-  current_resolver(resolver: solver.graph.Resolver | null): void { }
-  causal_link_added(flaw: solver.graph.Flaw, resolver: solver.graph.Resolver): void { }
+  state_changed(_state: solver.SolverState): void { this.render(); }
+  flaw_created(_flaw: solver.graph.Flaw): void { }
+  flaw_state_changed(_flaw: solver.graph.Flaw): void { }
+  flaw_cost_changed(_flaw: solver.graph.Flaw): void { }
+  current_flaw(_flaw: solver.graph.Flaw | null): void { }
+  resolver_created(_resolver: solver.graph.Resolver): void { }
+  resolver_state_changed(_resolver: solver.graph.Resolver): void { }
+  current_resolver(_resolver: solver.graph.Resolver | null): void { }
+  causal_link_added(_flaw: solver.graph.Flaw, _resolver: solver.graph.Resolver): void { }
 
-  execution_state_changed(state: solver.SolverState): void { }
-  tick(time: solver.values.Rational): void { }
-  starting(atoms: solver.values.Atom[]): void { }
-  start(atoms: solver.values.Atom[]): void { }
-  ending(atoms: solver.values.Atom[]): void { }
-  end(atoms: solver.values.Atom[]): void { }
+  execution_state_changed(_state: solver.SolverState): void { }
+  tick(_time: solver.values.Rational): void { }
+  starting(_atoms: solver.values.Atom[]): void { }
+  start(_atoms: solver.values.Atom[]): void { }
+  ending(_atoms: solver.values.Atom[]): void { }
+  end(_atoms: solver.values.Atom[]): void { }
 
   private render(): void {
     this.element.innerHTML = to_icon(this.payload.get_state()) + ' ' + this.payload.get_name();
   }
 
-  unmounting(): void {
+  override unmounting(): void {
     this.payload.remove_solver_listener(this);
     if (App.get_instance().get_selected_component() === this)
       App.get_instance().selected_component(null);
@@ -118,7 +118,7 @@ export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
     this.element.appendChild(fragment);
   }
 
-  unmounting(): void { if (this.selected_comp) this.selected_comp.unmounting(); }
+  override unmounting(): void { if (this.selected_comp) this.selected_comp.unmounting(); }
 }
 
 function to_icon(state: solver.SolverState): string[] {

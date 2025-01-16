@@ -14,7 +14,7 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
     Connection.get_instance().connect();
   }
 
-  populate_navbar(container: HTMLDivElement): void {
+  override populate_navbar(container: HTMLDivElement): void {
     const brand = document.createElement('a');
     brand.classList.add('navbar-brand');
 
@@ -73,10 +73,10 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
     this.solver = solvers.values().next().value!;
     App.get_instance().selected_component(new TimelinesChart(this.solver));
   }
-  solver_created(_: solver.Solver): void { }
-  solver_deleted(_: number): void { }
+  solver_created(_solver: solver.Solver): void { }
+  solver_deleted(_id: number): void { }
 
-  received_message(message: any): void { solver.SolverSet.get_instance().update_solvers(message); }
+  override received_message(message: any): void { solver.SolverSet.get_instance().update_solvers(message); }
 }
 
 new oRatio();
