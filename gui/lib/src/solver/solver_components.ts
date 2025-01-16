@@ -68,14 +68,16 @@ export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
 
   constructor(solver: solver.Solver) {
     super(solver, document.createElement('div'));
+    this.element.id = 'slv-' + solver.get_id();
     this.element.classList.add('d-flex', 'flex-column', 'flex-grow-1');
     const fragment = document.createDocumentFragment();
     const pills = document.createElement('ul');
     pills.classList.add('nav', 'nav-pills', 'mb-3');
 
     const timelines_pill = document.createElement('li');
+    timelines_pill.classList.add('nav-item');
     timelines_pill.role = 'presentation';
-    const timelines_pill_link = document.createElement('a');
+    const timelines_pill_link = document.createElement('button');
     timelines_pill_link.classList.add('nav-link', 'active');
     timelines_pill_link.id = 'timelines-tab';
     timelines_pill_link.setAttribute('data-bs-toggle', 'pill');
@@ -88,8 +90,9 @@ export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
     pills.appendChild(timelines_pill);
 
     const graph_pill = document.createElement('li');
+    graph_pill.classList.add('nav-item');
     graph_pill.role = 'presentation';
-    const graph_pill_link = document.createElement('a');
+    const graph_pill_link = document.createElement('button');
     graph_pill_link.classList.add('nav-link');
     graph_pill_link.id = 'graph-tab';
     graph_pill_link.setAttribute('data-bs-toggle', 'pill');
@@ -107,29 +110,31 @@ export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
     tab_content.classList.add('tab-content');
     tab_content.id = 'slv-' + solver.get_id() + '-tab-content';
 
-    const timelines = document.createElement('div');
-    timelines.classList.add('tab-pane', 'fade', 'show', 'active');
-    timelines.id = 'slv-' + solver.get_id() + '-timelines';
-    timelines.setAttribute('role', 'tabpanel');
-    timelines.setAttribute('aria-labelledby', 'timelines-tab');
-    tab_content.appendChild(timelines);
+    this.timelines_chart = new TimelinesChart(solver);
+    this.timelines_chart.element.classList.add('tab-pane', 'fade', 'show', 'active');
+    this.timelines_chart.element.setAttribute('role', 'tabpanel');
+    this.timelines_chart.element.setAttribute('aria-labelledby', 'timelines-tab');
+    tab_content.appendChild(this.timelines_chart.element);
 
-    const graph = document.createElement('div');
-    graph.classList.add('tab-pane', 'fade');
-    graph.id = 'slv-' + solver.get_id() + '-graph';
-    graph.setAttribute('role', 'tabpanel');
-    graph.setAttribute('aria-labelledby', 'graph-tab');
-    tab_content.appendChild(graph);
+    this.graph_component = new SolverGraph(solver);
+    this.graph_component.element.classList.add('tab-pane', 'fade');
+    this.graph_component.element.setAttribute('role', 'tabpanel');
+    this.graph_component.element.setAttribute('aria-labelledby', 'graph-tab');
+    tab_content.appendChild(this.graph_component.element);
 
     fragment.appendChild(tab_content);
 
-    this.timelines_chart = new TimelinesChart(solver);
-    this.graph_component = new SolverGraph(solver);
+    this.element.appendChild(fragment);
+  }
+
+  mounted(): void {
+    this.timelines_chart.mounted();
+    this.graph_component.mounted();
   }
 
   unmounting(): void {
-    this.timelines_chart.remove();
-    this.graph_component.remove();
+    this.timelines_chart.unmounting();
+    this.graph_component.unmounting();
   }
 }
 

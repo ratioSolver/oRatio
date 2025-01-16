@@ -23,7 +23,6 @@ namespace ratio::server
     std::unique_ptr<network::response> assets(const network::request &req);
 
     void on_ws_open(network::ws_session &ws);
-    void on_ws_message(network::ws_session &ws, std::string_view msg);
     void on_ws_close(network::ws_session &ws);
     void on_ws_error(network::ws_session &ws, const std::error_code &);
 
@@ -39,5 +38,6 @@ namespace ratio::server
 
   private:
     const std::string assets_dir;
+    std::unordered_set<network::ws_session *> clients;
   };
 } // namespace ratio::server

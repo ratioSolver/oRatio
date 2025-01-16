@@ -26,12 +26,15 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
   private config = { responsive: true, displaylogo: false };
 
   constructor(solver: solver.Solver) {
-    super(solver, document.querySelector('#slv-' + solver.get_id() + '-timelines') as HTMLDivElement);
+    super(solver, document.createElement('div'));
+    this.element.id = 'slv-' + solver.get_id() + '-timelines';
     this.element.classList.add('d-flex', 'flex-column', 'flex-grow-1');
+  }
 
+  mounted(): void {
     Plotly.react(this.element, [], this.layout, this.config);
 
-    solver.add_solver_listener(this);
+    this.payload.add_solver_listener(this);
   }
 
   state_changed(state: solver.SolverState): void { }

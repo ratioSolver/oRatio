@@ -80,7 +80,7 @@ if(BUILD_LISTENERS)
 endif()
 
 if(BUILD_ORATIO_SERVER)
-    add_executable(oRatioServer src/server/main.cpp src/server/solver_server.cpp)
+    add_executable(oRatioServer src/server/main.cpp src/server/solver_api.cpp src/server/solver_server.cpp)
     add_dependencies(oRatioServer oRatioLib)
     target_include_directories(oRatioServer PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/server>)
     if(NOT TARGET ratioNet)

@@ -1,4 +1,4 @@
-import { ConnectionListener } from "./utils/connection";
+import { Connection, ConnectionListener } from "./utils/connection";
 
 export class App implements AppListener {
 
@@ -45,17 +45,35 @@ export abstract class Component<P, E extends HTMLElement> {
 
   payload: P; // The payload of the component
   element: E; // The element of the component
+  protected child_nodes: Set<Component<any, HTMLElement>> = new Set(); // The children of the component
 
   constructor(payload: P, element: E) {
     this.payload = payload;
     this.element = element;
   }
 
+  add_child(child: Component<any, HTMLElement>): void {
+    this.child_nodes.add(child);
+    this.element.appendChild(child.element);
+    child.mounted();
+  }
+
+  remove_child(child: Component<any, HTMLElement>): void {
+    if (this.child_nodes.has(child)) {
+      this.child_nodes.delete(child);
+      child.remove();
+    } else
+      throw new Error('Child not found');
+  }
+
   remove(): void {
+    for (const child of this.child_nodes)
+      child.unmounting();
     this.unmounting();
     this.element.remove();
   }
 
+  mounted(): void { }
   unmounting(): void { }
 }
 
@@ -76,6 +94,7 @@ export abstract class ListComponent<P, E extends HTMLElement, L extends HTMLElem
   }
 
   add_child(child: Component<P, E>): void {
+    super.add_child(child);
     this.children.push(child);
     this.children.sort((a, b) => this.compareFn(a.payload, b.payload));
     const index = this.children.indexOf(child);
@@ -89,21 +108,13 @@ export abstract class ListComponent<P, E extends HTMLElement, L extends HTMLElem
     const index = this.children.indexOf(child);
     if (index !== -1) {
       this.children.splice(index, 1);
-      child.remove();
+      super.remove_child(child);
     } else
       throw new Error('Child not found');
-  }
-
-  remove(): void {
-    for (const child of this.children)
-      child.remove();
-    super.remove();
   }
 }
 
 export class AppComponent extends Component<App, HTMLDivElement> implements AppListener, ConnectionListener {
-
-  private main: HTMLDivElement;
 
   constructor() {
     super(App.get_instance(), document.querySelector('#app') as HTMLDivElement);
@@ -139,17 +150,15 @@ export class AppComponent extends Component<App, HTMLDivElement> implements AppL
     navbar.appendChild(nav_container);
     fragment.appendChild(navbar);
 
-    // Add the Main..
-    this.main = document.createElement('div');
-    this.main.classList.add('d-flex', 'flex-column', 'flex-grow-1');
-    fragment.appendChild(this.main);
-
     // Add the toast container..
     const toast_container = document.createElement('div');
     toast_container.classList.add('toast-container');
     fragment.appendChild(toast_container);
 
     this.element.appendChild(fragment);
+
+    App.get_instance().add_app_listener(this);
+    Connection.get_instance().add_connection_listener(this);
   }
 
   toast(info: string): void {
@@ -184,7 +193,7 @@ export class AppComponent extends Component<App, HTMLDivElement> implements AppL
 
   selected_component(component: Component<any, HTMLElement> | null): void {
     if (component)
-      this.main.appendChild(component.element);
+      this.add_child(component);
   }
 
   connected(info: any): void { }
@@ -194,7 +203,10 @@ export class AppComponent extends Component<App, HTMLDivElement> implements AppL
 
   populate_navbar(container: HTMLDivElement): void { }
 
-  unmounting(): void { App.get_instance().remove_app_listener(this); }
+  unmounting(): void {
+    App.get_instance().remove_app_listener(this);
+    Connection.get_instance().remove_connection_listener(this);
+  }
 }
 
 export class AnchorComponent<P> extends Component<P, HTMLAnchorElement> {

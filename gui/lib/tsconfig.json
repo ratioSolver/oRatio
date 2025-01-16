@@ -3,12 +3,16 @@
     "module": "ESNext",
     "target": "ES2015",
     "declaration": true,
+    "incremental": true,
     "outDir": "./dist",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
     "resolveJsonModule": true,
-    "lib": ["ESNext", "DOM"],
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
   },
   "include": [
     "src/**/*"

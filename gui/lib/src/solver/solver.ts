@@ -121,40 +121,40 @@ export namespace solver {
     remove_solver_listener(listener: SolverListener) { this.solver_listeners.delete(listener); }
 
     static make_solver(solver_message: SolverMessage): Solver {
-      const solver = new Solver(solver_message.id, solver_message.name, SolverState[solver_message.state as keyof typeof SolverState], solver_message.current_time ? values.Rational.make_rational(solver_message.current_time) : new values.Rational(0, 1));
+      const solver = new Solver(solver_message.id as number, solver_message.name, SolverState[solver_message.state as keyof typeof SolverState], solver_message.current_time ? values.Rational.make_rational(solver_message.current_time) : new values.Rational(0, 1));
 
       if (solver_message.items) // we create the items..
-        for (const [id, im] of solver_message.items)
+        for (const [id, im] of Object.entries(solver_message.items))
           solver.items.set(Number(id), new values.Item(Number(id), im.type, im.name));
       if (solver_message.atoms) // we create the atoms..
-        for (const [id, am] of solver_message.atoms)
+        for (const [id, am] of Object.entries(solver_message.atoms))
           solver._atoms.set(Number(id), new values.Atom(Number(id), am.type, am.name, am.fact, am.sigma, values.AtomState[am.state as keyof typeof values.AtomState]));
 
       if (solver_message.items) // we set the exprs for the items..
-        for (const [id, im] of solver_message.items)
+        for (const [id, im] of Object.entries(solver_message.items))
           if (im.exprs)
-            for (const [name, expr] of im.exprs)
+            for (const [name, expr] of Object.entries(im.exprs))
               solver.items.get(Number(id))!.exprs.set(name, values.make_value(expr, solver.items, solver._atoms));
       if (solver_message.atoms) // we set the exprs for the atoms..
-        for (const [id, am] of solver_message.atoms)
+        for (const [id, am] of Object.entries(solver_message.atoms))
           if (am.exprs)
-            for (const [name, expr] of am.exprs)
+            for (const [name, expr] of Object.entries(am.exprs))
               solver._atoms.get(Number(id))!.exprs.set(name, values.make_value(expr, solver.items, solver._atoms));
 
       if (solver_message.exprs) // we set the exprs for the solver..
-        for (const [name, expr] of solver_message.exprs)
+        for (const [name, expr] of Object.entries(solver_message.exprs))
           solver.exprs.set(name, values.make_value(expr, solver.items, solver._atoms));
 
       if (solver_message.flaws) // we create the flaws..
-        for (const [id, fm] of solver_message.flaws)
+        for (const [id, fm] of Object.entries(solver_message.flaws))
           solver.flaws.set(Number(id), new graph.Flaw(Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
 
       if (solver_message.resolvers) // we create the resolvers..
-        for (const [id, rm] of solver_message.resolvers)
+        for (const [id, rm] of Object.entries(solver_message.resolvers))
           solver.resolvers.set(Number(id), new graph.Resolver(Number(id), rm.rho, rm.preconditions.map((id: number) => solver.get_flaw(id)), solver.get_flaw(rm.flaw), graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
 
       if (solver_message.flaws)
-        for (const [id, fm] of solver_message.flaws) {
+        for (const [id, fm] of Object.entries(solver_message.flaws)) {
           for (const cause of fm.causes) // we set the causes for the flaws..
             solver.flaws.get(Number(id))!.get_causes().push(solver.get_resolver(cause));
           for (const support of fm.supports) // we set the supports for the flaws..
@@ -220,11 +220,15 @@ export namespace solver {
 
     update_solvers(message: SolversUpdateMessage | any): void {
       switch (message.type) {
+        case 'solver':
+          const csm = message as CurrentSolverMessage;
+          this.init(new Map([[0, Solver.make_solver(csm)]]));
+          break;
         case 'solvers':
           const ssm = message as SolversMessage;
           const solvers = new Map<number, Solver>();
           for (const solver_message of ssm.solvers)
-            solvers.set(solver_message.id, Solver.make_solver(solver_message));
+            solvers.set(solver_message.id!, Solver.make_solver(solver_message));
           this.init(solvers);
           break;
         case 'new_solver':
@@ -568,7 +572,7 @@ export namespace solver {
           return this.val.to_string();
       }
 
-      static make_real(val: RealMessage): Real { return new Real(val.lin, InfRational.make_inf_rational(val.val), val.lb ? InfRational.make_inf_rational(val.lb!) : undefined, val.ub ? InfRational.make_inf_rational(val.ub!) : undefined); }
+      static make_real(val: RealMessage): Real { return new Real(val.lin, InfRational.make_inf_rational(val), val.lb ? InfRational.make_inf_rational(val.lb!) : undefined, val.ub ? InfRational.make_inf_rational(val.ub!) : undefined); }
     }
 
     export class Time implements Value {
@@ -595,7 +599,7 @@ export namespace solver {
           return this.val.to_string();
       }
 
-      static make_time(val: TimeMessage): Time { return new Time(val.lin, InfRational.make_inf_rational(val.val), val.lb ? InfRational.make_inf_rational(val.lb!) : undefined, val.ub ? InfRational.make_inf_rational(val.ub!) : undefined); }
+      static make_time(val: TimeMessage): Time { return new Time(val.lin, InfRational.make_inf_rational(val), val.lb ? InfRational.make_inf_rational(val.lb!) : undefined, val.ub ? InfRational.make_inf_rational(val.ub!) : undefined); }
     }
 
     export class String implements Value {
@@ -870,6 +874,11 @@ export namespace solver {
   }
 }
 
+interface CurrentSolverMessage extends SolverMessage {
+
+  type: string;
+}
+
 interface SolversMessage {
 
   type: string;
@@ -1000,20 +1009,20 @@ interface EndMessage {
 
 interface SolverMessage {
 
-  id: number;
+  id?: number;
   name: string;
   state: string;
   current_time?: RationalMessage;
-  items?: Map<number, ItemMessage>;
-  atoms?: Map<number, AtomMessage>;
-  exprs?: Map<string, ValueMessage>;
-  flaws?: Map<number, FlawMessage>;
-  resolvers?: Map<number, ResolverMessage>;
+  items?: Record<number, ItemMessage>;
+  atoms?: Record<number, AtomMessage>;
+  exprs?: Record<string, ValueMessage>;
+  flaws?: Record<number, FlawMessage>;
+  resolvers?: Record<number, ResolverMessage>;
   current_flaw?: number;
   current_resolver?: number;
 }
 
-type SolversUpdateMessage = SolversMessage | NewSolverMessage | DeletedSolverMessage | FlawCreatedMessage | FlawStateChangedMessage | FlawCostChangedMessage | FlawPositionChangedMessage | CurrentFlawMessage | ResolverCreatedMessage | ResolverStateChangedMessage | CurrentResolverMessage | CausalLinkAddedMessage | SolverExecutionStateChangedMessage | TickMessage | StartingMessage | StartMessage | EndingMessage | EndMessage;
+type SolversUpdateMessage = CurrentSolverMessage | SolversMessage | NewSolverMessage | DeletedSolverMessage | FlawCreatedMessage | FlawStateChangedMessage | FlawCostChangedMessage | FlawPositionChangedMessage | CurrentFlawMessage | ResolverCreatedMessage | ResolverStateChangedMessage | CurrentResolverMessage | CausalLinkAddedMessage | SolverExecutionStateChangedMessage | TickMessage | StartingMessage | StartMessage | EndingMessage | EndMessage;
 
 interface RationalMessage {
 
@@ -1030,7 +1039,7 @@ interface ItemMessage {
 
   type: string;
   name: string;
-  exprs?: Map<string, ValueMessage>;
+  exprs?: Record<string, ValueMessage>;
 }
 
 interface AtomMessage extends ItemMessage {
@@ -1055,20 +1064,18 @@ interface IntMessage {
   ub?: number;
 }
 
-interface RealMessage {
+interface RealMessage extends InfRationalMessage {
 
   type: string;
   lin: string;
-  val: InfRationalMessage;
   lb?: InfRationalMessage;
   ub?: InfRationalMessage;
 }
 
-interface TimeMessage {
+interface TimeMessage extends InfRationalMessage {
 
   type: string;
   lin: string;
-  val: InfRationalMessage;
   lb?: InfRationalMessage;
   ub?: InfRationalMessage;
 }

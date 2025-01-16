@@ -48,6 +48,9 @@ export class Connection {
       for (const listener of this.connection_listeners) { listener.connection_error(error); }
     };
   }
+
+  add_connection_listener(listener: ConnectionListener): void { this.connection_listeners.add(listener); }
+  remove_connection_listener(listener: ConnectionListener): void { this.connection_listeners.delete(listener); }
 }
 
 export interface ConnectionListener {
