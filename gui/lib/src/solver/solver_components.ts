@@ -63,8 +63,7 @@ export class SolverListComponent extends UListComponent<solver.Solver> {
 
 export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
 
-  private timelines_chart: TimelinesChart;
-  private graph_component: SolverGraph;
+  private selected_comp: Component<any, HTMLElement> | null = null;
 
   constructor(solver: solver.Solver) {
     super(solver, document.createElement('div'));
@@ -77,65 +76,49 @@ export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
     const timelines_pill = document.createElement('li');
     timelines_pill.classList.add('nav-item');
     timelines_pill.role = 'presentation';
-    const timelines_pill_link = document.createElement('button');
-    timelines_pill_link.classList.add('nav-link', 'active');
-    timelines_pill_link.id = 'timelines-tab';
-    timelines_pill_link.setAttribute('data-bs-toggle', 'pill');
-    timelines_pill_link.setAttribute('data-bs-target', '#slv-' + solver.get_id() + '-timelines');
-    timelines_pill_link.setAttribute('role', 'tab');
-    timelines_pill_link.setAttribute('aria-controls', 'timelines');
-    timelines_pill_link.setAttribute('aria-selected', 'true');
-    timelines_pill_link.innerText = 'Timelines';
-    timelines_pill.appendChild(timelines_pill_link);
+    const timelines_button = document.createElement('button');
+    timelines_button.classList.add('nav-link', 'active');
+    timelines_button.id = 'timelines-tab';
+    timelines_button.type = 'button';
+    timelines_button.addEventListener('click', () => {
+      this.selected_comp?.remove();
+      this.selected_comp = new TimelinesChart(solver);
+      this.add_child(this.selected_comp);
+    });
+    timelines_button.setAttribute('data-bs-toggle', 'pill');
+    timelines_button.setAttribute('role', 'tab');
+    timelines_button.setAttribute('aria-controls', 'timelines');
+    timelines_button.setAttribute('aria-selected', 'true');
+    timelines_button.innerText = 'Timelines';
+    timelines_pill.appendChild(timelines_button);
     pills.appendChild(timelines_pill);
 
     const graph_pill = document.createElement('li');
     graph_pill.classList.add('nav-item');
     graph_pill.role = 'presentation';
-    const graph_pill_link = document.createElement('button');
-    graph_pill_link.classList.add('nav-link');
-    graph_pill_link.id = 'graph-tab';
-    graph_pill_link.setAttribute('data-bs-toggle', 'pill');
-    graph_pill_link.setAttribute('data-bs-target', '#slv-' + solver.get_id() + '-graph');
-    graph_pill_link.setAttribute('role', 'tab');
-    graph_pill_link.setAttribute('aria-controls', 'graph');
-    graph_pill_link.setAttribute('aria-selected', 'false');
-    graph_pill_link.innerText = 'Graph';
-    graph_pill.appendChild(graph_pill_link);
+    const graph_button = document.createElement('button');
+    graph_button.classList.add('nav-link');
+    graph_button.id = 'graph-tab';
+    graph_button.type = 'button';
+    graph_button.addEventListener('click', () => {
+      this.selected_comp?.remove();
+      this.selected_comp = new SolverGraph(solver);
+      this.add_child(this.selected_comp);
+    });
+    graph_button.setAttribute('data-bs-toggle', 'pill');
+    graph_button.setAttribute('role', 'tab');
+    graph_button.setAttribute('aria-controls', 'graph');
+    graph_button.setAttribute('aria-selected', 'false');
+    graph_button.innerText = 'Graph';
+    graph_pill.appendChild(graph_button);
     pills.appendChild(graph_pill);
 
     fragment.appendChild(pills);
 
-    const tab_content = document.createElement('div');
-    tab_content.classList.add('tab-content');
-    tab_content.id = 'slv-' + solver.get_id() + '-tab-content';
-
-    this.timelines_chart = new TimelinesChart(solver);
-    this.timelines_chart.element.classList.add('tab-pane', 'fade', 'show', 'active');
-    this.timelines_chart.element.setAttribute('role', 'tabpanel');
-    this.timelines_chart.element.setAttribute('aria-labelledby', 'timelines-tab');
-    tab_content.appendChild(this.timelines_chart.element);
-
-    this.graph_component = new SolverGraph(solver);
-    this.graph_component.element.classList.add('tab-pane', 'fade');
-    this.graph_component.element.setAttribute('role', 'tabpanel');
-    this.graph_component.element.setAttribute('aria-labelledby', 'graph-tab');
-    tab_content.appendChild(this.graph_component.element);
-
-    fragment.appendChild(tab_content);
-
     this.element.appendChild(fragment);
   }
 
-  mounted(): void {
-    this.timelines_chart.mounted();
-    this.graph_component.mounted();
-  }
-
-  unmounting(): void {
-    this.timelines_chart.unmounting();
-    this.graph_component.unmounting();
-  }
+  unmounting(): void { if (this.selected_comp) this.selected_comp.unmounting(); }
 }
 
 function to_icon(state: solver.SolverState): string[] {
