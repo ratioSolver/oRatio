@@ -98,7 +98,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.payload.add_solver_listener(this);
   }
 
-  state_changed(_state: solver.SolverState): void { }
+  state_changed(_state: solver.ExecutionState): void { }
 
   flaw_created(flaw: solver.graph.Flaw): void {
     this.create_flaw_node(flaw);
@@ -155,7 +155,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.cy!.layout(this.layout).run();
   }
 
-  execution_state_changed(_state: solver.SolverState): void { }
+  execution_state_changed(_state: solver.ExecutionState): void { }
   tick(_time: solver.values.Rational): void { }
   starting(_atoms: solver.values.Atom[]): void { }
   start(_atoms: solver.values.Atom[]): void { }

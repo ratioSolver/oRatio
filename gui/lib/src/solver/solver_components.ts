@@ -15,7 +15,7 @@ export class SolverAnchor extends AnchorComponent<solver.Solver> implements solv
     this.element.addEventListener('click', () => { App.get_instance().selected_component(this); });
   }
 
-  state_changed(_state: solver.SolverState): void { this.render(); }
+  state_changed(_state: solver.ExecutionState): void { this.render(); }
   flaw_created(_flaw: solver.graph.Flaw): void { }
   flaw_state_changed(_flaw: solver.graph.Flaw): void { }
   flaw_cost_changed(_flaw: solver.graph.Flaw): void { }
@@ -25,7 +25,7 @@ export class SolverAnchor extends AnchorComponent<solver.Solver> implements solv
   current_resolver(_resolver: solver.graph.Resolver | null): void { }
   causal_link_added(_flaw: solver.graph.Flaw, _resolver: solver.graph.Resolver): void { }
 
-  execution_state_changed(_state: solver.SolverState): void { }
+  execution_state_changed(_state: solver.ExecutionState): void { }
   tick(_time: solver.values.Rational): void { }
   starting(_atoms: solver.values.Atom[]): void { }
   start(_atoms: solver.values.Atom[]): void { }
@@ -121,13 +121,13 @@ export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
   override unmounting(): void { if (this.selected_comp) this.selected_comp.unmounting(); }
 }
 
-function to_icon(state: solver.SolverState): string[] {
+function to_icon(state: solver.ExecutionState): string[] {
   switch (state) {
-    case solver.SolverState.reasoning:
-    case solver.SolverState.adapting: return icon(faBrain).html;
-    case solver.SolverState.idle: return icon(faPauseCircle).html;
-    case solver.SolverState.executing: return icon(faPlayCircle).html;
-    case solver.SolverState.finished: return icon(faCheckCircle).html;
-    case solver.SolverState.failed: return icon(faXmarkCircle).html;
+    case solver.ExecutionState.reasoning:
+    case solver.ExecutionState.adapting: return icon(faBrain).html;
+    case solver.ExecutionState.idle: return icon(faPauseCircle).html;
+    case solver.ExecutionState.executing: return icon(faPlayCircle).html;
+    case solver.ExecutionState.finished: return icon(faCheckCircle).html;
+    case solver.ExecutionState.failed: return icon(faXmarkCircle).html;
   }
 }
