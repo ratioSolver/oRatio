@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.21)
 project(oRatioLib VERSION 0.3.0 LANGUAGES CXX)
 
 include(CTest)
@@ -105,11 +105,11 @@ if (BUILD_EXECUTABLE)
     setup_sanitizers(oRatio)
 endif()
 
+setup_sanitizers(oRatioLib)
+
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
-
-setup_sanitizers(oRatioLib)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
