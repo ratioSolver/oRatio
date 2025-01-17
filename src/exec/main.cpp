@@ -1,6 +1,18 @@
+#ifdef BUILD_SERVER
 #include "solver_server.hpp"
-#include "logging.hpp"
 #include <thread>
+#define SOLVER_CLASS ratio::server::server
+#else
+#if defined(SEMITONE)
+#include "semitonesolver.hpp"
+#define SOLVER_CLASS ratio::semitonesolver
+#elif defined(Z3)
+#include "z3solver.hpp"
+#define SOLVER_CLASS ratio::z3solver
+#endif
+#include <fstream>
+#endif
+#include "logging.hpp"
 
 int main(int argc, char const *argv[])
 {
@@ -20,20 +32,23 @@ int main(int argc, char const *argv[])
 
     LOG_INFO("starting oRatio server");
 
-    ratio::server::server server;
+    SOLVER_CLASS solver;
 
-    auto srv_ft = std::async(std::launch::async, [&server]
-                             { server.start(); });
+#ifdef BUILD_SERVER
+    auto srv_ft = std::async(std::launch::async, [&solver]
+                             { solver.start(); });
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    server.read(prob_names);
+#endif
 
-    if (server.solve())
+    solver.read(prob_names);
+
+    if (solver.solve())
     {
         LOG_INFO("hurray!! we have found a solution..");
 
         std::ofstream sol_file;
         sol_file.open(sol_name);
-        sol_file << server.to_json().dump();
+        sol_file << solver.to_json().dump();
         sol_file.close();
     }
     else
