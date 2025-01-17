@@ -6,19 +6,10 @@ namespace ratio
     z3flaw::z3flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept : flaw(slv, std::move(causes)), phi(compute_phi(slv, get_causes())), pos(slv.ctx.real_const(("p" + std::to_string(slv.position_count++)).c_str()))
     {
         for (const auto &cause : causes)
-            slv.slv.add(z3::implies(phi, pos <= static_cast<z3flaw &>(cause.get().get_flaw()).get_position() - 1));
+            slv.slv.add(z3::implies(phi, pos <= static_cast<z3flaw &>(cause.get().get_flaw()).pos - 1));
     }
 
-    utils::lbool z3flaw::get_state() const noexcept
-    {
-        auto val = static_cast<const z3solver &>(get_graph()).mdl.eval(phi, true);
-        if (val.is_true())
-            return utils::True;
-        else if (val.is_false())
-            return utils::False;
-        else
-            return utils::Undefined;
-    }
+    size_t z3flaw::get_position() const noexcept { return static_cast<const z3solver &>(get_graph()).mdl.eval(pos, true).get_numeral_uint(); }
 
     z3::expr z3flaw::compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept
     {
@@ -30,17 +21,6 @@ namespace ratio
 
     z3resolver::z3resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost)), rho(static_cast<z3solver &>(f.get_graph()).ctx.bool_const(("b" + std::to_string(static_cast<z3solver &>(f.get_graph()).bool_count++)).c_str())) {}
     z3resolver::z3resolver(flaw &f, utils::rational &&intrinsic_cost, z3::expr &&rho) noexcept : resolver(f, std::move(intrinsic_cost)), rho(std::move(rho)) {}
-
-    utils::lbool z3resolver::get_state() const noexcept
-    {
-        auto val = static_cast<const z3solver &>(get_flaw().get_graph()).mdl.eval(rho, true);
-        if (val.is_true())
-            return utils::True;
-        else if (val.is_false())
-            return utils::False;
-        else
-            return utils::Undefined;
-    }
 
     void z3resolver::add(const z3::expr &e) { static_cast<z3solver &>(get_flaw().get_graph()).slv.add(z3::implies(rho, e)); }
 

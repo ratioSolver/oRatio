@@ -13,6 +13,45 @@ namespace ratio
         return j_graph;
     }
 
+    std::vector<std::reference_wrapper<flaw>> graph::get_flaws() const noexcept
+    {
+        std::vector<std::reference_wrapper<flaw>> fs;
+        for (const auto &f : flaws)
+            fs.push_back(*f);
+        return fs;
+    }
+
+    std::vector<std::reference_wrapper<resolver>> graph::get_resolvers() const noexcept
+    {
+        std::vector<std::reference_wrapper<resolver>> rs;
+        for (const auto &r : resolvers)
+            rs.push_back(*r);
+        return rs;
+    }
+
+    void graph::set_flaw_state(flaw &f, utils::lbool state) noexcept
+    {
+        if (f.state != state)
+        {
+            auto old_state = f.state;
+            updating_flaw_state(f, old_state);
+            f.state = state;
+            FLAW_STATE_CHANGED(f);
+            compute_flaw_cost(f);
+        }
+    }
+    void graph::set_resolver_state(resolver &r, utils::lbool state) noexcept
+    {
+        if (r.state != state)
+        {
+            auto old_state = r.state;
+            updating_resolver_state(r, old_state);
+            r.state = state;
+            RESOLVER_STATE_CHANGED(r);
+            compute_flaw_cost(r.get_flaw());
+        }
+    }
+
     std::vector<std::reference_wrapper<flaw>> graph::get_queued_flaws() const noexcept
     {
         std::vector<std::reference_wrapper<flaw>> res;
@@ -65,12 +104,17 @@ namespace ratio
 
     void graph::compute_flaw_cost(flaw &f)
     {
-        // we compute the cost of the flaw as the minimum cost of its resolvers..
-        if (auto new_cost = visited.count(&f) ? utils::rational::positive_infinite : f.compute_cost(); f.est_cost != new_cost)
+        utils::rational c_cost = utils::rational::positive_infinite;
+        if (f.state == utils::False)
+            for (const auto &res : f.resolvers)
+                if (res.get().state != utils::False)
+                    c_cost = std::min(c_cost, res.get().get_estimated_cost());
+
+        if (f.est_cost != c_cost)
         { // we update the cost of the flaw..
             auto old_cost = f.est_cost;
-            f.est_cost = new_cost;
-            flaw_cost_computed(f, old_cost);
+            f.est_cost = c_cost;
+            updating_flaw_cost(f, old_cost);
             FLAW_COST_CHANGED(f);
 
             // we propagate the cost to the supported resolvers..
@@ -90,37 +134,9 @@ namespace ratio
         }
     }
 
-    utils::rational flaw::compute_cost() const
-    {
-        switch (resolvers.size())
-        {
-        case 0:
-            return utils::rational::positive_infinite;
-        case 1:
-            return resolvers.front().get().get_estimated_cost();
-        default:
-            return std::min_element(resolvers.begin(), resolvers.end(), [](const auto &lhs, const auto &rhs)
-                                    { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); })
-                ->get()
-                .get_estimated_cost();
-        }
-    }
-
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", {{"num", est_cost.numerator()}, {"den", est_cost.denominator()}}}};
-        switch (get_state())
-        {
-        case utils::True:
-            j_flaw["state"] = "active";
-            break;
-        case utils::False:
-            j_flaw["state"] = "forbidden";
-            break;
-        case utils::Undefined:
-            j_flaw["state"] = "inactive";
-            break;
-        }
+        json::json j_flaw{{"cost", {{"num", est_cost.numerator()}, {"den", est_cost.denominator()}, {"state", to_string(get_state())}}}};
         json::json j_causes(json::json_type::array);
         for (const auto &c : causes)
             j_causes.push_back(c.get().get_id());
@@ -150,19 +166,7 @@ namespace ratio
 
     json::json resolver::to_json() const
     {
-        json::json j_resolver{{"cost", {{"num", intrinsic_cost.numerator()}, {"den", intrinsic_cost.denominator()}}}};
-        switch (get_state())
-        {
-        case utils::True:
-            j_resolver["state"] = "active";
-            break;
-        case utils::False:
-            j_resolver["state"] = "forbidden";
-            break;
-        case utils::Undefined:
-            j_resolver["state"] = "inactive";
-            break;
-        }
+        json::json j_resolver{{"cost", {{"num", intrinsic_cost.numerator()}, {"den", intrinsic_cost.denominator()}, {"state", to_string(get_state())}}}};
         json::json j_preconditions(json::json_type::array);
         for (const auto &p : preconditions)
             j_preconditions.push_back(p.get().get_id());

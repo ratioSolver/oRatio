@@ -427,7 +427,43 @@ namespace ratio
                                 q.push(&p.get());
                     }
                     if (!inconsistencies)
-                        return true; // solution found..
+                    { // solution found..
+#ifdef BUILD_LISTENERS
+                        for (const auto &r : get_resolvers())
+                        {
+                            utils::lbool state;
+                            switch (mdl.eval(static_cast<const z3resolver &>(r.get()).get_rho(), true).bool_value())
+                            {
+                            case Z3_L_TRUE:
+                                state = utils::True;
+                                break;
+                            case Z3_L_FALSE:
+                                state = utils::False;
+                                break;
+                            default:
+                                state = utils::Undefined;
+                            }
+                            set_resolver_state(r.get(), state);
+                        }
+                        for (const auto &f : get_flaws())
+                        {
+                            utils::lbool state;
+                            switch (mdl.eval(static_cast<const z3flaw &>(f.get()).get_phi(), true).bool_value())
+                            {
+                            case Z3_L_TRUE:
+                                state = utils::True;
+                                break;
+                            case Z3_L_FALSE:
+                                state = utils::False;
+                                break;
+                            default:
+                                state = utils::Undefined;
+                            }
+                            set_flaw_state(f.get(), state);
+                        }
+#endif
+                        return true;
+                    }
                 }
                 else if (res == z3::unknown)
                 {
@@ -454,8 +490,7 @@ namespace ratio
                 }
             }
         }
-
-        return true;
+        assert(false);
     }
 
     void z3solver::expanded_flaw(flaw &f)

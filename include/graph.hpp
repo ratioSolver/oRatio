@@ -4,7 +4,7 @@
 #include <deque>
 #include <unordered_set>
 
-#ifdef ENABLE_API
+#ifdef BUILD_LISTENERS
 #define NEW_FLAW(f) flaw_created(f)
 #define FLAW_STATE_CHANGED(f) flaw_state_changed(f)
 #define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
@@ -81,6 +81,9 @@ namespace ratio
       return *r;
     }
 
+    [[nodiscard]] std::vector<std::reference_wrapper<flaw>> get_flaws() const noexcept;
+    [[nodiscard]] std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept;
+
     [[nodiscard]] std::optional<std::reference_wrapper<flaw>> get_current_flaw() noexcept { return c_flaw; }
     void set_current_flaw(std::optional<std::reference_wrapper<flaw>> flaw) noexcept
     {
@@ -94,6 +97,9 @@ namespace ratio
       c_res = resolver;
       CURRENT_RESOLVER(resolver);
     }
+
+    void set_flaw_state(flaw &f, utils::lbool state) noexcept;
+    void set_resolver_state(resolver &r, utils::lbool state) noexcept;
 
     [[nodiscard]] std::vector<std::reference_wrapper<flaw>> get_queued_flaws() const noexcept;
 
@@ -112,7 +118,10 @@ namespace ratio
     void expand_flaw(flaw &f);
 
     virtual void expanded_flaw(flaw &) = 0;
-    virtual void flaw_cost_computed(flaw &, const utils::rational &) {}
+
+    virtual void updating_flaw_state(flaw &, const utils::lbool &) {}
+    virtual void updating_flaw_cost(flaw &, const utils::rational &) {}
+    virtual void updating_resolver_state(resolver &, const utils::lbool &) {}
 
     void compute_flaw_cost(flaw &f);
 
@@ -228,7 +237,9 @@ namespace ratio
 
     [[nodiscard]] bool is_expanded() const noexcept { return expanded; }
 
-    [[nodiscard]] virtual utils::lbool get_state() const = 0;
+    [[nodiscard]] utils::lbool get_state() const noexcept { return state; }
+
+    [[nodiscard]] virtual size_t get_position() const = 0;
 
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_causes() const noexcept { return causes; }
 
@@ -252,11 +263,11 @@ namespace ratio
 
   private:
     virtual void compute_resolvers() = 0;
-    virtual utils::rational compute_cost() const;
 
   private:
     graph &gr;                                                     // the graph this flaw belongs to..
     bool expanded = false;                                         // whether this flaw has been expanded or not..
+    utils::lbool state = utils::Undefined;                         // the current state of the flaw..
     std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
@@ -276,7 +287,7 @@ namespace ratio
     [[nodiscard]] flaw &get_flaw() noexcept { return f; }
     [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
 
-    [[nodiscard]] virtual utils::lbool get_state() const = 0;
+    [[nodiscard]] utils::lbool get_state() const noexcept { return state; }
 
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
 
@@ -293,7 +304,21 @@ namespace ratio
 
   private:
     flaw &f;                                                 // the flaw solved by this resolver..
+    utils::lbool state = utils::Undefined;                   // the current state of the resolver..
     utils::rational intrinsic_cost;                          // the intrinsic cost of this resolver..
     std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
+
+  inline std::string to_string(const utils::lbool &node_state) noexcept
+  {
+    switch (node_state)
+    {
+    case utils::True:
+      return "active";
+    case utils::False:
+      return "forbidden";
+    default:
+      return "inactive";
+    }
+  }
 } // namespace ratio
