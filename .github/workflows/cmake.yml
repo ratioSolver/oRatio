@@ -3,31 +3,8 @@ name: CMake
 on: [push, pull_request]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        build_type: [Debug, Release]
-        #temporal_network: [LA, DL]
-        #heuristic_type: [h_max, h_add]
-        #deferrable_flaws: [ON, OFF]
-        #graph_pruning: [ON, OFF]
-        #graph_refining: [ON, OFF]
-        #check_inconsistencies: [ON, OFF]
-        #build_listeners: [ON, OFF]
-
-    env:
-      BUILD_TYPE: ${{ matrix.build_type }}
-      #TEMPORAL_NETWORK_TYPE: ${{ matrix.temporal_network }}
-      #HEURISTIC_TYPE: ${{ matrix.heuristic_type }}
-      #DEFERRABLE_FLAWS: ${{ matrix.deferrable_flaws }}
-      #GRAPH_PRUNING: ${{ matrix.graph_pruning }}
-      #GRAPH_REFINING: ${{ matrix.graph_refining }}
-      #CHECK_INCONSISTENCIES: ${{ matrix.check_inconsistencies }}
-      #BUILD_LISTENERS: ${{ matrix.build_listeners }}
+  ubuntu-address-undefined-coverage:
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -35,40 +12,161 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        if: matrix.build_type == 'Debug' && matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y lcov valgrind
-  
-      - name: Configure CMake (Debug)
-        if: matrix.build_type == 'Debug'
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -DGRAPH_REFINING=${{env.GRAPH_REFINING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
-  
+          sudo apt-get install -y cmake lcov
+
       - name: Configure CMake
-        if: matrix.build_type == 'Release'
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DGRAPH_REFINING=${{env.GRAPH_REFINING}} -DCHECK_INCONSISTENCIES=${{env.CHECK_INCONSISTENCIES}} #-DTEMPORAL_NETWORK_TYPE=${{env.TEMPORAL_NETWORK_TYPE}} -DHEURISTIC_TYPE=${{env.HEURISTIC_TYPE}} -DDEFERRABLE_FLAWS=${{env.DEFERRABLE_FLAWS}} -DGRAPH_PRUNING=${{env.GRAPH_PRUNING}} -DBUILD_LISTENERS=${{env.BUILD_LISTENERS}}
-  
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DENABLE_UBSAN=ON -DENABLE_COV=ON
+
       - name: Build
-        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-  
-      - name: Test with coverage and memory sanitizer
-        if: matrix.build_type == 'Debug' && matrix.os == 'ubuntu-latest'
-        working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure -T Test -T Coverage -T MemCheck
+        run: cmake --build build --config Debug
+
+      - name: Test with address sanitizer, undefined behavior sanitizer and coverage
+        working-directory: build
+        run: ctest -C Debug --rerun-failed --output-on-failure -T Test -T Coverage
+
+      - name: Make coverage report
+        run: |
+          lcov --capture --directory build --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' --output-file coverage.info
+          lcov --list coverage.info
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Test without coverage and memory sanitizer
-        if: matrix.build_type == 'Release' || matrix.os != 'ubuntu-latest'
-        working-directory: ${{github.workspace}}/build
-        run: ctest -C ${{env.BUILD_TYPE}} --rerun-failed --output-on-failure -T Test
+  ubuntu-memcheck:
+    runs-on: ubuntu-latest
 
-      - name: Make coverage report
-        if: matrix.build_type == 'Debug' && matrix.os == 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
         run: |
-          lcov --capture --directory ${{github.workspace}}/build --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' --output-file coverage.info
-          lcov --list coverage.info
+          sudo apt-get update
+          sudo apt-get install -y cmake valgrind
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build --config Debug
+
+      - name: Test with memory checker
+        working-directory: build
+        run: ctest -C Debug --rerun-failed --output-on-failure -T Test -T MemCheck
+
+  windows-debug:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          choco install cmake
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build --config Debug
+
+      - name: Test with address sanitizer
+        working-directory: build
+        run: ctest -C Debug --rerun-failed --output-on-failure -T Test
+
+  macos-address-undefined:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          brew install cmake
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DENABLE_UBSAN=ON
+
+      - name: Build
+        run: cmake --build build --config Debug
+
+      - name: Test with address sanitizer and undefined behavior sanitizer
+        working-directory: build
+        run: ctest -C Debug --rerun-failed --output-on-failure -T Test
+
+  ubuntu-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        working-directory: build
+        run: ctest -C Release --rerun-failed --output-on-failure -T Test
+
+  windows-release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          choco install cmake
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        working-directory: build
+        run: ctest -C Release --rerun-failed --output-on-failure -T Test
+
+  macos-release:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          brew install cmake
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        working-directory: build
+        run: ctest -C Release --rerun-failed --output-on-failure -T Test

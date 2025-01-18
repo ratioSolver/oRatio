@@ -139,7 +139,7 @@ namespace ratio
         json::json j_flaw{{"cost", {{"num", est_cost.numerator()}, {"den", est_cost.denominator()}, {"state", to_string(get_state())}}}};
         json::json j_causes(json::json_type::array);
         for (const auto &c : causes)
-            j_causes.push_back(c.get().get_id());
+            j_causes.push_back(static_cast<uint64_t>(c.get().get_id()));
         j_flaw["causes"] = std::move(j_causes);
         return j_flaw;
     }
@@ -169,7 +169,7 @@ namespace ratio
         json::json j_resolver{{"cost", {{"num", intrinsic_cost.numerator()}, {"den", intrinsic_cost.denominator()}, {"state", to_string(get_state())}}}};
         json::json j_preconditions(json::json_type::array);
         for (const auto &p : preconditions)
-            j_preconditions.push_back(p.get().get_id());
+            j_preconditions.push_back(static_cast<uint64_t>(p.get().get_id()));
         j_resolver["preconditions"] = std::move(j_preconditions);
         return j_resolver;
     }
