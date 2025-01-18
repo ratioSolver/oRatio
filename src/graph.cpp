@@ -136,7 +136,7 @@ namespace ratio
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", {{"num", est_cost.numerator()}, {"den", est_cost.denominator()}, {"state", to_string(get_state())}}}};
+        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}, {"state", to_string(get_state())}}}};
         json::json j_causes(json::json_type::array);
         for (const auto &c : causes)
             j_causes.push_back(static_cast<uint64_t>(c.get().get_id()));
@@ -166,7 +166,7 @@ namespace ratio
 
     json::json resolver::to_json() const
     {
-        json::json j_resolver{{"cost", {{"num", intrinsic_cost.numerator()}, {"den", intrinsic_cost.denominator()}, {"state", to_string(get_state())}}}};
+        json::json j_resolver{{"cost", {{"num", static_cast<int64_t>(intrinsic_cost.numerator())}, {"den", static_cast<int64_t>(intrinsic_cost.denominator())}, {"state", to_string(get_state())}}}};
         json::json j_preconditions(json::json_type::array);
         for (const auto &p : preconditions)
             j_preconditions.push_back(static_cast<uint64_t>(p.get().get_id()));
