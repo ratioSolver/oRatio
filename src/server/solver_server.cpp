@@ -59,6 +59,7 @@ namespace ratio::server
     void server::flaw_created(const ratio::flaw &f)
     {
         auto j_msg = f.to_json();
+        j_msg["id"] = static_cast<uint64_t>(f.get_id());
         j_msg["type"] = "flaw_created";
         auto msg = j_msg.dump();
         for (auto client : clients)
@@ -89,6 +90,7 @@ namespace ratio::server
     void server::resolver_created(const ratio::resolver &r)
     {
         auto j_msg = r.to_json();
+        j_msg["id"] = static_cast<uint64_t>(r.get_id());
         j_msg["type"] = "resolver_created";
         auto msg = j_msg.dump();
         for (auto client : clients)

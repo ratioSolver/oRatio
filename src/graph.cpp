@@ -136,11 +136,14 @@ namespace ratio
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}, {"state", to_string(get_state())}}}};
-        json::json j_causes(json::json_type::array);
-        for (const auto &c : causes)
-            j_causes.push_back(static_cast<uint64_t>(c.get().get_id()));
-        j_flaw["causes"] = std::move(j_causes);
+        json::json j_flaw{{"id", static_cast<uint64_t>(get_id())}, {"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}};
+        if (!causes.empty())
+        {
+            json::json j_causes(json::json_type::array);
+            for (const auto &c : causes)
+                j_causes.push_back(static_cast<uint64_t>(c.get().get_id()));
+            j_flaw["causes"] = std::move(j_causes);
+        }
         return j_flaw;
     }
 
@@ -166,11 +169,14 @@ namespace ratio
 
     json::json resolver::to_json() const
     {
-        json::json j_resolver{{"cost", {{"num", static_cast<int64_t>(intrinsic_cost.numerator())}, {"den", static_cast<int64_t>(intrinsic_cost.denominator())}, {"state", to_string(get_state())}}}};
-        json::json j_preconditions(json::json_type::array);
-        for (const auto &p : preconditions)
-            j_preconditions.push_back(static_cast<uint64_t>(p.get().get_id()));
-        j_resolver["preconditions"] = std::move(j_preconditions);
+        json::json j_resolver{{"id", static_cast<uint64_t>(get_id())}, {"flaw", static_cast<uint64_t>(f.get_id())}, {"intrinsic_cost", {{"num", static_cast<int64_t>(intrinsic_cost.numerator())}, {"den", static_cast<int64_t>(intrinsic_cost.denominator())}}}, {"state", to_string(get_state())}};
+        if (!preconditions.empty())
+        {
+            json::json j_preconditions(json::json_type::array);
+            for (const auto &p : preconditions)
+                j_preconditions.push_back(static_cast<uint64_t>(p.get().get_id()));
+            j_resolver["preconditions"] = std::move(j_preconditions);
+        }
         return j_resolver;
     }
 } // namespace ratio

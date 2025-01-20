@@ -16,7 +16,10 @@ namespace ratio
     [[nodiscard]] const z3::expr &get_phi() const noexcept { return phi; }
 
   private:
-    static z3::expr compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept;
+    [[nodiscard]] static z3::expr compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept;
+
+  protected:
+    [[nodiscard]] json::json to_json() const override;
 
   private:
     z3::expr phi; // the literal indicating whether the flaw is active or not..
@@ -35,6 +38,8 @@ namespace ratio
   protected:
     void add(const z3::expr &e);
 
+    [[nodiscard]] json::json to_json() const override;
+
   private:
     z3::expr rho;
   };
@@ -50,6 +55,8 @@ namespace ratio
   private:
     void compute_resolvers() override;
 
+    json::json to_json() const override;
+
   private:
     riddle::atom_expr atm; // the atom that is the subject of the flaw..
   };
@@ -62,6 +69,8 @@ namespace ratio
 
   private:
     void apply() override;
+
+    json::json to_json() const override;
   };
 
   class z3activate_goal final : public z3resolver
@@ -72,6 +81,8 @@ namespace ratio
 
   private:
     void apply() override;
+
+    json::json to_json() const override;
   };
 
   class z3unify_atom final : public z3resolver
@@ -81,6 +92,8 @@ namespace ratio
 
   private:
     void apply() override;
+
+    json::json to_json() const override;
 
   private:
     riddle::atom_expr atm; // the atom to unify with..

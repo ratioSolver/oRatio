@@ -19,10 +19,24 @@ namespace ratio
         return z3::mk_and(args);
     }
 
+    json::json z3flaw::to_json() const
+    {
+        json::json j_flaw = flaw::to_json();
+        j_flaw["phi"] = phi.to_string().data();
+        return j_flaw;
+    }
+
     z3resolver::z3resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost)), rho(static_cast<z3solver &>(f.get_graph()).ctx.bool_const(("b" + std::to_string(static_cast<z3solver &>(f.get_graph()).bool_count++)).c_str())) {}
     z3resolver::z3resolver(flaw &f, utils::rational &&intrinsic_cost, z3::expr &&rho) noexcept : resolver(f, std::move(intrinsic_cost)), rho(std::move(rho)) {}
 
     void z3resolver::add(const z3::expr &e) { static_cast<z3solver &>(get_flaw().get_graph()).slv.add(z3::implies(rho, e)); }
+
+    json::json z3resolver::to_json() const
+    {
+        json::json j_resolver = resolver::to_json();
+        j_resolver["rho"] = rho.to_string().data();
+        return j_resolver;
+    }
 
     z3atom_flaw::z3atom_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) noexcept : z3flaw(slv, std::move(causes)), atm(std::make_shared<atom>(*this, pred, is_fact, std::move(args))) {}
 
@@ -43,12 +57,25 @@ namespace ratio
             new_resolver<z3activate_goal>(*this);
     }
 
+    json::json z3atom_flaw::to_json() const
+    {
+        json::json j_flaw = z3flaw::to_json();
+        j_flaw["data"] = {{"type", "atom"}, {"atom", {{"sigma", static_cast<atom &>(*atm).get_sigma().to_string()}, {"type", std::string(atm->get_type().get_name())}, {"fact", atm->is_fact()}}}};
+        return j_flaw;
+    }
+
     z3activate_fact::z3activate_fact(z3atom_flaw &f) noexcept : z3resolver(f, utils::rational(1)) {}
     z3activate_fact::z3activate_fact(z3atom_flaw &f, z3::expr &&rho) noexcept : z3resolver(f, utils::rational(1), std::move(rho)) {}
     void z3activate_fact::apply()
     {
         // activating the resolver means activating the atom..
         add(static_cast<atom &>(*static_cast<z3atom_flaw &>(get_flaw()).get_atom()).get_sigma() == 1);
+    }
+    json::json z3activate_fact::to_json() const
+    {
+        json::json j_resolver = z3resolver::to_json();
+        j_resolver["data"]["type"] = "activate_fact";
+        return j_resolver;
     }
 
     z3activate_goal::z3activate_goal(z3atom_flaw &f) noexcept : z3resolver(f, utils::rational(1)) {}
@@ -59,6 +86,12 @@ namespace ratio
         add(static_cast<atom &>(*static_cast<z3atom_flaw &>(get_flaw()).get_atom()).get_sigma() == 1);
         // we also call the corresponding rule..
         static_cast<riddle::predicate &>(static_cast<atom &>(*static_cast<z3atom_flaw &>(get_flaw()).get_atom()).get_type()).call(static_cast<z3atom_flaw &>(get_flaw()).get_atom());
+    }
+    json::json z3activate_goal::to_json() const
+    {
+        json::json j_resolver = z3resolver::to_json();
+        j_resolver["data"]["type"] = "activate_goal";
+        return j_resolver;
     }
 
     z3unify_atom::z3unify_atom(z3atom_flaw &f, riddle::atom_expr atm) noexcept : z3resolver(f, utils::rational(1)), atm(atm) {}
@@ -71,6 +104,12 @@ namespace ratio
         // ..and the two atoms must be equal..
         auto eq = *static_cast<z3atom_flaw &>(get_flaw()).get_atom() == atm;
         add(static_cast<bool_item &>(*eq).get_expr());
+    }
+    json::json z3unify_atom::to_json() const
+    {
+        json::json j_resolver = z3resolver::to_json();
+        j_resolver["data"]["type"] = "unify_atom";
+        return j_resolver;
     }
 
     z3disjunction_flaw::z3disjunction_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : z3flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
