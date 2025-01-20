@@ -162,49 +162,18 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   ending(_atoms: solver.values.Atom[]): void { }
   end(_atoms: solver.values.Atom[]): void { }
 
-  override unmounting(): void { this.payload.remove_solver_listener(this); }
+  override unmounting(): void {
+    this.payload.remove_solver_listener(this);
+    this.cy!.destroy();
+  }
 
   private create_flaw_node(flaw: solver.graph.Flaw): cytoscape.CollectionReturnValue {
     const fn = this.cy!.add({ group: 'nodes', data: { id: flaw.get_id().toString(), type: 'flaw', label: flaw.to_string(), color: color(flaw), stroke: stroke_style(flaw) } });
-    this.cy!.on('mouseover', 'node', () => {
-      const popper = fn.popper({
-        content: () => {
-          const div = document.createElement('div');
-          div.innerHTML = flaw.to_string(true);
-          return div;
-        }
-      });
-      fn.scratch('popper', popper);
-    });
-    this.cy!.on('mouseout', 'node', () => {
-      const popper = fn.scratch('popper');
-      if (popper) {
-        popper.destroy();
-        fn.removeScratch('popper');
-      }
-    });
     return fn;
   }
 
   private create_resolver_node(resolver: solver.graph.Resolver): cytoscape.CollectionReturnValue {
     const rn = this.cy!.add({ group: 'nodes', data: { id: resolver.get_id().toString(), type: 'resolver', label: resolver.to_string(), color: color(resolver), stroke: stroke_style(resolver) } });
-    this.cy!.on('mouseover', 'node', () => {
-      const popper = rn.popper({
-        content: () => {
-          const div = document.createElement('div');
-          div.innerHTML = resolver.to_string(true);
-          return div;
-        }
-      });
-      rn.scratch('popper', popper);
-    });
-    this.cy!.on('mouseout', 'node', () => {
-      const popper = rn.scratch('popper');
-      if (popper) {
-        popper.destroy();
-        rn.removeScratch('popper');
-      }
-    });
     return rn;
   }
 }
