@@ -1,4 +1,4 @@
-import { Component } from "../app";
+import { Component } from "ratio-core";
 import { solver } from "./solver";
 import cytoscape from 'cytoscape';
 import { interpolateRgb } from 'd3-interpolate';

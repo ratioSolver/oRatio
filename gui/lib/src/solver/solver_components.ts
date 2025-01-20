@@ -1,4 +1,4 @@
-import { App, Component, AnchorComponent, UListComponent } from '../app';
+import { App, Component, AnchorComponent, UListComponent } from 'ratio-core';
 import { solver } from "./solver";
 import { library, icon } from '@fortawesome/fontawesome-svg-core'
 import { faBrain, faPauseCircle, faPlayCircle, faCheckCircle, faXmarkCircle } from '@fortawesome/free-solid-svg-icons'

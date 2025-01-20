@@ -10,9 +10,6 @@ declare module 'cytoscape-popper' {
   }
 }
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-
 import cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
 import cytoscapePopper, { PopperInstance, PopperOptions, RefElement } from 'cytoscape-popper';
@@ -23,18 +20,10 @@ import {
   limitShift,
 } from '@floating-ui/dom';
 
-export * from './utils/settings';
-
-export * from './app';
-
-export * from './utils/connection';
-
 export { solver } from './solver/solver';
 export { SolverGraph } from './solver/solver_graph';
 export { TimelinesChart } from './solver/solver_timelines';
 export * from './solver/solver_components';
-
-export * from './utils/user_components';
 
 function popperFactory(ref: RefElement, content: HTMLElement, options?: PopperOptions): PopperInstance {
   const popperOptions = { middleware: [flip(), shift({ limiter: limitShift() })], ...options, };

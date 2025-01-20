@@ -1,4 +1,4 @@
-import { Component } from "../app";
+import { Component } from "ratio-core";
 import { solver } from "./solver";
 import Plotly, { Shape } from 'plotly.js-dist-min';
 

@@ -1,4 +1,5 @@
-import { Settings, AppComponent, App, Connection, solver, TimelinesChart, SolverGraph } from 'ratio-lib';
+import { Settings, AppComponent, App, Connection } from 'ratio-core';
+import { solver, TimelinesChart, SolverGraph } from 'ratio-lib';
 import './styles.css';
 
 Settings.get_instance().load_settings({ port: 8080, ws_path: 'ratio' });

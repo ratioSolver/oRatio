@@ -1,6 +1,6 @@
 {
   "name": "ratio-lib",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,6 +30,7 @@
     "cytoscape-dagre": "^2.5.0",
     "cytoscape-popper": "^4.0.1",
     "d3-interpolate": "^3.0.1",
-    "plotly.js-dist-min": "^2.34.0"
+    "plotly.js-dist-min": "^2.34.0",
+    "ratio-core": "file:../core"
   }
 }
