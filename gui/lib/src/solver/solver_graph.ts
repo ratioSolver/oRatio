@@ -19,6 +19,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   };
   private c_flaw: solver.graph.Flaw | null = null;
   private c_resolver: solver.graph.Resolver | null = null
+  private tooltip_style = "position: absolute; top: 0; left: 0; background-color: #444; color: white; border-radius: 4px; opacity: 0.8;";
 
   constructor(solver: solver.Solver) {
     super(solver, document.createElement('div'));
@@ -169,11 +170,59 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
 
   private create_flaw_node(flaw: solver.graph.Flaw): cytoscape.CollectionReturnValue {
     const fn = this.cy!.add({ group: 'nodes', data: { id: flaw.get_id().toString(), type: 'flaw', label: flaw.to_string(), color: color(flaw), stroke: stroke_style(flaw) } });
+    fn.on('mouseover', () => {
+      const popper = fn.popper({
+        content: () => {
+          var div = document.createElement('div');
+          div.style.cssText = this.tooltip_style;
+          div.innerHTML = flaw.to_string(true);
+          document.body.appendChild(div);
+          return div;
+        }
+      });
+      fn.scratch('popper', popper);
+    });
+    fn.on('mouseout', () => {
+      const popper = fn.scratch('popper');
+      if (popper) {
+        popper.destroy();
+        fn.removeScratch('popper');
+      }
+    });
+    fn.on('position', () => {
+      const popper = fn.scratch('popper');
+      if (popper)
+        popper.update();
+    });
     return fn;
   }
 
   private create_resolver_node(resolver: solver.graph.Resolver): cytoscape.CollectionReturnValue {
     const rn = this.cy!.add({ group: 'nodes', data: { id: resolver.get_id().toString(), type: 'resolver', label: resolver.to_string(), color: color(resolver), stroke: stroke_style(resolver) } });
+    rn.on('mouseover', () => {
+      const popper = rn.popper({
+        content: () => {
+          var div = document.createElement('div');
+          div.style.cssText = this.tooltip_style;
+          div.innerHTML = resolver.to_string(true);
+          document.body.appendChild(div);
+          return div;
+        }
+      });
+      rn.scratch('popper', popper);
+    });
+    rn.on('mouseout', () => {
+      const popper = rn.scratch('popper');
+      if (popper) {
+        popper.destroy();
+        rn.removeScratch('popper');
+      }
+    });
+    rn.on('position', () => {
+      const popper = rn.scratch('popper');
+      if (popper)
+        popper.update();
+    });
     return rn;
   }
 }

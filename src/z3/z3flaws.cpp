@@ -104,6 +104,9 @@ namespace ratio
         // ..and the two atoms must be equal..
         auto eq = *static_cast<z3atom_flaw &>(get_flaw()).get_atom() == atm;
         add(static_cast<bool_item &>(*eq).get_expr());
+
+        // we also add the corresponding causal link..
+        static_cast<z3solver &>(get_flaw().get_graph()).add_causal_link(static_cast<atom &>(*atm).get_flaw(), *this);
     }
     json::json z3unify_atom::to_json() const
     {

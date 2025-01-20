@@ -7,6 +7,7 @@ declare module 'cytoscape-popper' {
 
   interface PopperInstance {
     update(): void;
+    destroy(): void;
   }
 }
 
@@ -17,7 +18,7 @@ import {
   computePosition,
   flip,
   shift,
-  limitShift,
+  limitShift
 } from '@floating-ui/dom';
 
 export { solver } from './solver/solver';
@@ -36,8 +37,13 @@ function popperFactory(ref: RefElement, content: HTMLElement, options?: PopperOp
       });
     });
   }
+
+  function destroy() {
+    content.remove();
+  }
+
   update();
-  return { update };
+  return { update, destroy };
 }
 
 cytoscape.use(dagre);

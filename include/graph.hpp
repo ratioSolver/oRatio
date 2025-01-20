@@ -114,6 +114,8 @@ namespace ratio
 
     void expand_flaws(const std::vector<std::reference_wrapper<flaw>> &flaws);
 
+    void add_causal_link(flaw &f, resolver &r) noexcept;
+
   private:
     void expand_flaw(flaw &f);
 
@@ -124,6 +126,8 @@ namespace ratio
     virtual void updating_resolver_state(resolver &, const utils::lbool &) {}
 
     void compute_flaw_cost(flaw &f);
+
+    virtual void added_causal_link(flaw &, resolver &) {}
 
   private:
 #ifdef BUILD_LISTENERS

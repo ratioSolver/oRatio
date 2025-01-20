@@ -80,6 +80,14 @@ namespace ratio
             expand_flaw(flaw.get());
     }
 
+    void graph::add_causal_link(flaw &f, resolver &r) noexcept
+    {
+        f.supports.push_back(r);
+        r.preconditions.push_back(f);
+        added_causal_link(f, r); // notify the listeners that a causal link has been added..
+        NEW_CAUSAL_LINK(f, r);
+    }
+
     void graph::expand_flaw(flaw &f)
     {
         assert(!f.is_expanded()); // the flaw should not be expanded..
@@ -105,7 +113,7 @@ namespace ratio
     void graph::compute_flaw_cost(flaw &f)
     {
         utils::rational c_cost = utils::rational::positive_infinite;
-        if (f.state == utils::False)
+        if (f.state != utils::False)
             for (const auto &res : f.resolvers)
                 if (res.get().state != utils::False)
                     c_cost = std::min(c_cost, res.get().get_estimated_cost());

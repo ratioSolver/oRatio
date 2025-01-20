@@ -500,4 +500,9 @@ namespace ratio
             ress.push_back(static_cast<z3resolver &>(resolver.get()).get_rho());
         slv.add(z3::implies(static_cast<z3flaw &>(f).get_phi(), z3::mk_or(ress))); // if the flaw is active, then at least one resolver must be active
     }
+
+    void z3solver::added_causal_link(flaw &f, resolver &r)
+    {
+        slv.add(z3::implies(static_cast<z3resolver &>(r).get_rho(), static_cast<z3flaw &>(f).get_phi())); // if the resolver is active, then the flaw must be active
+    }
 } // namespace ratio

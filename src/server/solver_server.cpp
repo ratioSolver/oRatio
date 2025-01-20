@@ -87,6 +87,15 @@ namespace ratio::server
         for (auto client : clients)
             client->send(msg);
     }
+    void server::current_flaw(std::optional<std::reference_wrapper<ratio::flaw>> f)
+    {
+        auto j_msg = json::json{{"type", "current_flaw"}};
+        if (f)
+            j_msg["id"] = static_cast<uint64_t>(f->get().get_id());
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
     void server::resolver_created(const ratio::resolver &r)
     {
         auto j_msg = r.to_json();
@@ -99,6 +108,15 @@ namespace ratio::server
     void server::resolver_state_changed(const ratio::resolver &r)
     {
         auto j_msg = json::json{{"type", "resolver_state_changed"}, {"id", r.get_id()}, {"state", to_string(r.get_state())}};
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+    void server::current_resolver(std::optional<std::reference_wrapper<ratio::resolver>> r)
+    {
+        auto j_msg = json::json{{"type", "current_resolver"}};
+        if (r)
+            j_msg["id"] = static_cast<uint64_t>(r->get().get_id());
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

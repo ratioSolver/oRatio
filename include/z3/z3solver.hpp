@@ -8,6 +8,7 @@ namespace ratio
   class z3flaw;
   class z3resolver;
   class z3component_type;
+  class z3unify_atom;
 
   class bool_item : public riddle::bool_item
   {
@@ -106,6 +107,7 @@ namespace ratio
     friend class z3flaw;
     friend class z3resolver;
     friend class z3component_type;
+    friend class z3unify_atom;
 
   public:
     z3solver(std::string_view name = "oRatio");
@@ -163,6 +165,8 @@ namespace ratio
 
   private:
     void expanded_flaw(flaw &f) override;
+
+    void added_causal_link(flaw &f, resolver &r) override;
 
   private:
     z3::context ctx;

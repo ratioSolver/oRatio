@@ -376,7 +376,7 @@ export namespace solver {
           if (this.data)
             switch (this.data.type) {
               case 'atom':
-                return this.phi + ' ' + ((this.data as AtomFlawData).atom.is_fact ? 'fact' : 'goal') + ' ' + (this.data as AtomFlawData).atom.type.split(':').pop() + ' ' + this._cost;
+                return this.phi + ' ' + ((this.data as AtomFlawData).atom.fact ? 'fact' : 'goal') + ' ' + (this.data as AtomFlawData).atom.type.split(':').pop() + ' ' + (this._cost.num / this._cost.den);
               default:
                 return this.phi + ' ' + (this._cost.num / this._cost.den);
             }
@@ -387,7 +387,7 @@ export namespace solver {
           if (this.data)
             switch (this.data.type) {
               case 'atom':
-                return ((this.data as AtomFlawData).atom.is_fact ? 'fact' : 'goal') + ' ' + (this.data as AtomFlawData).atom.type.split(':').pop();
+                return ((this.data as AtomFlawData).atom.fact ? 'fact' : 'goal') + ' ' + (this.data as AtomFlawData).atom.type.split(':').pop();
               default:
                 return this.phi;
             }
@@ -1163,7 +1163,7 @@ interface AtomFlawData extends FlawData {
   atom: {
     sigma: number;
     type: string;
-    is_fact: boolean;
+    fact: boolean;
   };
 }
 
