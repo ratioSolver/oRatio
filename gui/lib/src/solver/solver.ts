@@ -63,14 +63,9 @@ export namespace solver {
       this.flaws.set(flaw.get_id(), flaw);
       for (const listener of this.solver_listeners) listener.flaw_created(flaw);
     }
-    flaw_state_changed(flaw: graph.Flaw): void {
-      this.flaws.set(flaw.get_id(), flaw);
-      for (const listener of this.solver_listeners) listener.flaw_state_changed(flaw);
-    }
-    flaw_cost_changed(flaw: graph.Flaw): void {
-      this.flaws.set(flaw.get_id(), flaw);
-      for (const listener of this.solver_listeners) listener.flaw_cost_changed(flaw);
-    }
+    flaw_state_changed(flaw: graph.Flaw): void { for (const listener of this.solver_listeners) listener.flaw_state_changed(flaw); }
+    flaw_position_changed(flaw: graph.Flaw): void { for (const listener of this.solver_listeners) listener.flaw_position_changed(flaw); }
+    flaw_cost_changed(flaw: graph.Flaw): void { for (const listener of this.solver_listeners) listener.flaw_cost_changed(flaw); }
     current_flaw(flaw: graph.Flaw | null): void {
       this.c_flaw = flaw;
       if (this.c_resolver)
@@ -81,10 +76,7 @@ export namespace solver {
       this.resolvers.set(resolver.get_id(), resolver);
       for (const listener of this.solver_listeners) listener.resolver_created(resolver);
     }
-    resolver_state_changed(resolver: graph.Resolver): void {
-      this.resolvers.set(resolver.get_id(), resolver);
-      for (const listener of this.solver_listeners) listener.resolver_state_changed(resolver);
-    }
+    resolver_state_changed(resolver: graph.Resolver): void { for (const listener of this.solver_listeners) listener.resolver_state_changed(resolver); }
     current_resolver(resolver: graph.Resolver | null): void {
       this.c_resolver = resolver;
       for (const listener of this.solver_listeners) listener.current_resolver(resolver);
@@ -103,18 +95,10 @@ export namespace solver {
       for (const listener of this.solver_listeners) listener.tick(time);
     }
 
-    starting(atoms: values.Atom[]): void {
-      for (const listener of this.solver_listeners) listener.starting(atoms);
-    }
-    start(atoms: values.Atom[]): void {
-      for (const listener of this.solver_listeners) listener.start(atoms);
-    }
-    ending(atoms: values.Atom[]): void {
-      for (const listener of this.solver_listeners) listener.ending(atoms);
-    }
-    end(atoms: values.Atom[]): void {
-      for (const listener of this.solver_listeners) listener.end(atoms);
-    }
+    starting(atoms: values.Atom[]): void { for (const listener of this.solver_listeners) listener.starting(atoms); }
+    start(atoms: values.Atom[]): void { for (const listener of this.solver_listeners) listener.start(atoms); }
+    ending(atoms: values.Atom[]): void { for (const listener of this.solver_listeners) listener.ending(atoms); }
+    end(atoms: values.Atom[]): void { for (const listener of this.solver_listeners) listener.end(atoms); }
 
     add_solver_listener(listener: SolverListener) { this.solver_listeners.add(listener); }
     remove_solver_listener(listener: SolverListener) { this.solver_listeners.delete(listener); }
@@ -176,6 +160,7 @@ export namespace solver {
 
     flaw_created(flaw: graph.Flaw): void;
     flaw_state_changed(flaw: graph.Flaw): void;
+    flaw_position_changed(flaw: graph.Flaw): void;
     flaw_cost_changed(flaw: graph.Flaw): void;
     current_flaw(flaw: graph.Flaw | null): void;
 
@@ -266,7 +251,7 @@ export namespace solver {
           const fpcm = message as FlawPositionChangedMessage;
           const fpc = this.solvers.get(get_id(fpcm.solver_id))!.get_flaw(fpcm.id);
           fpc._position = fpcm.position;
-          this.solvers.get(get_id(fpcm.solver_id))!.flaw_state_changed(fpc);
+          this.solvers.get(get_id(fpcm.solver_id))!.flaw_position_changed(fpc);
           break;
         case 'current_flaw':
           const cfm = message as CurrentFlawMessage;
@@ -362,6 +347,8 @@ export namespace solver {
         this._cost = cost;
         this._position = position;
         this.data = data;
+        for (const cause of this._causes) // we set the preconditions for the causes..
+          cause._preconditions.push(this);
       }
 
       get_id(): number { return this.id; }
@@ -1041,8 +1028,8 @@ interface EndMessage {
 interface StateMessage {
 
   solver_id?: number;
-  items?: Record<number, ItemMessage>;
-  atoms?: Record<number, AtomMessage>;
+  items?: Record<string, ItemMessage>;
+  atoms?: Record<string, AtomMessage>;
   exprs?: Record<string, ValueMessage>;
 }
 
@@ -1051,8 +1038,8 @@ interface SolverMessage extends StateMessage {
   name: string;
   state: string;
   current_time?: RationalMessage;
-  flaws?: Record<number, FlawMessage>;
-  resolvers?: Record<number, ResolverMessage>;
+  flaws?: Record<string, FlawMessage>;
+  resolvers?: Record<string, ResolverMessage>;
   current_flaw?: number;
   current_resolver?: number;
 }

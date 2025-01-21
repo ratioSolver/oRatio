@@ -10,6 +10,24 @@ namespace ratio
     json::json graph::to_json() const
     {
         json::json j_graph = core::to_json();
+        if (!flaws.empty())
+        {
+            json::json j_flaws;
+            for (const auto &f : flaws)
+                j_flaws[std::to_string(f->get_id())] = f->to_json();
+            j_graph["flaws"] = std::move(j_flaws);
+        }
+        if (!resolvers.empty())
+        {
+            json::json j_resolvers;
+            for (const auto &r : resolvers)
+                j_resolvers[std::to_string(r->get_id())] = r->to_json();
+            j_graph["resolvers"] = std::move(j_resolvers);
+        }
+        if (get_current_flaw().has_value())
+            j_graph["current_flaw"] = static_cast<uint64_t>(get_current_flaw().value().get().get_id());
+        if (get_current_resolver().has_value())
+            j_graph["current_resolver"] = static_cast<uint64_t>(get_current_resolver().value().get().get_id());
         return j_graph;
     }
 
@@ -144,7 +162,7 @@ namespace ratio
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"id", static_cast<uint64_t>(get_id())}, {"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}};
+        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);
@@ -177,7 +195,7 @@ namespace ratio
 
     json::json resolver::to_json() const
     {
-        json::json j_resolver{{"id", static_cast<uint64_t>(get_id())}, {"flaw", static_cast<uint64_t>(f.get_id())}, {"intrinsic_cost", {{"num", static_cast<int64_t>(intrinsic_cost.numerator())}, {"den", static_cast<int64_t>(intrinsic_cost.denominator())}}}, {"state", to_string(get_state())}};
+        json::json j_resolver{{"flaw", static_cast<uint64_t>(f.get_id())}, {"intrinsic_cost", {{"num", static_cast<int64_t>(intrinsic_cost.numerator())}, {"den", static_cast<int64_t>(intrinsic_cost.denominator())}}}, {"state", to_string(get_state())}};
         if (!preconditions.empty())
         {
             json::json j_preconditions(json::json_type::array);

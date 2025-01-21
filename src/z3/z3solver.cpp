@@ -29,7 +29,7 @@ namespace ratio
             return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
         }
         else
-            assert(false);
+            throw std::runtime_error("Invalid type");
     }
     json::json bool_item::to_json() const
     {
@@ -60,7 +60,7 @@ namespace ratio
             return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
         }
         else
-            assert(false);
+            throw std::runtime_error("Invalid type");
     }
     json::json arith_item::to_json() const
     {
@@ -91,7 +91,7 @@ namespace ratio
             return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_or(eqs));
         }
         else
-            assert(false);
+            throw std::runtime_error("Invalid type");
     }
     json::json string_item::to_json() const
     {
@@ -204,7 +204,7 @@ namespace ratio
             return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_and(eqs));
         }
         else
-            assert(false);
+            throw std::runtime_error("Invalid type");
     }
     riddle::atom_state atom::get_state() const
     {
@@ -217,7 +217,7 @@ namespace ratio
         case 2:
             return riddle::atom_state::unified;
         default:
-            assert(false);
+            throw std::runtime_error("Invalid state");
         }
     }
     json::json atom::to_json() const
@@ -293,7 +293,7 @@ namespace ratio
         else if (val.is_real())
             return utils::inf_rational(val.numerator().get_numeral_int(), val.denominator().get_numeral_int());
         else
-            assert(false);
+            std::terminate();
     }
 
     riddle::string_expr z3solver::new_string() { return std::make_shared<string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ctx.string_const(("s" + std::to_string(string_count++)).c_str())); }

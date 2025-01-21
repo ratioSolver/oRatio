@@ -84,14 +84,14 @@ namespace ratio
     [[nodiscard]] std::vector<std::reference_wrapper<flaw>> get_flaws() const noexcept;
     [[nodiscard]] std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept;
 
-    [[nodiscard]] std::optional<std::reference_wrapper<flaw>> get_current_flaw() noexcept { return c_flaw; }
+    [[nodiscard]] std::optional<std::reference_wrapper<flaw>> get_current_flaw() const noexcept { return c_flaw; }
     void set_current_flaw(std::optional<std::reference_wrapper<flaw>> flaw) noexcept
     {
       c_flaw = flaw;
       CURRENT_FLAW(flaw);
     }
 
-    [[nodiscard]] std::optional<std::reference_wrapper<resolver>> get_current_resolver() noexcept { return c_res; }
+    [[nodiscard]] std::optional<std::reference_wrapper<resolver>> get_current_resolver() const noexcept { return c_res; }
     void set_current_resolver(std::optional<std::reference_wrapper<resolver>> resolver) noexcept
     {
       c_res = resolver;

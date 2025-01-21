@@ -15,7 +15,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     fit: false,
     nodeDimensionsIncludeLabels: true,
     animate: true,
-    animationDuration: 100
+    animationDuration: 50
   };
   private c_flaw: solver.graph.Flaw | null = null;
   private c_resolver: solver.graph.Resolver | null = null
@@ -82,7 +82,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
 
       this.cy.add({ group: 'edges', data: { id: `${resolver.get_id()}-${resolver.get_flaw().get_id()}`, source: resolver.get_id(), target: resolver.get_flaw().get_id(), stroke: stroke_style(resolver) } });
       for (const pre of resolver.get_preconditions())
-        this.cy.add({ group: 'edges', data: { id: `${resolver.get_id()}-${pre.get_id()}`, source: resolver.get_id(), target: pre.get_id(), stroke: stroke_style(resolver) } });
+        this.cy.add({ group: 'edges', data: { id: `${pre.get_id()}-${resolver.get_id()}`, source: pre.get_id(), target: resolver.get_id(), stroke: stroke_style(resolver) } });
     }
 
     if (this.payload.get_current_flaw()) {
@@ -109,15 +109,11 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.cy!.layout(this.layout).run();
   }
 
-  flaw_state_changed(flaw: solver.graph.Flaw): void {
-    this.cy!.$id(flaw.get_id().toString()).data('color', color(flaw));
-    this.cy!.layout(this.layout).run();
-  }
+  flaw_state_changed(flaw: solver.graph.Flaw): void { this.cy!.$id(flaw.get_id().toString()).data({ color: color(flaw), stroke: stroke_style(flaw) }); }
 
-  flaw_cost_changed(flaw: solver.graph.Flaw): void {
-    this.cy!.$id(flaw.get_id().toString()).data('color', color(flaw));
-    this.cy!.layout(this.layout).run();
-  }
+  flaw_position_changed(flaw: solver.graph.Flaw): void { this.cy!.$id(flaw.get_id().toString()).data('label', flaw.to_string()); }
+
+  flaw_cost_changed(flaw: solver.graph.Flaw): void { this.cy!.$id(flaw.get_id().toString()).data('color', color(flaw)); }
 
   current_flaw(flaw: solver.graph.Flaw | null): void {
     if (this.c_flaw)
@@ -137,8 +133,10 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   }
 
   resolver_state_changed(resolver: solver.graph.Resolver): void {
-    this.cy!.$id(resolver.get_id().toString()).data('color', color(resolver));
-    this.cy!.layout(this.layout).run();
+    this.cy!.$id(resolver.get_id().toString()).data({ color: color(resolver), stroke: stroke_style(resolver) });
+    this.cy!.$id(`${resolver.get_id()}-${resolver.get_flaw().get_id()}`).data('stroke', stroke_style(resolver));
+    for (const pre of resolver.get_preconditions())
+      this.cy!.$id(`${pre.get_id()}-${resolver.get_id()}`).data('stroke', stroke_style(resolver));
   }
 
   current_resolver(resolver: solver.graph.Resolver | null): void {
@@ -148,7 +146,6 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
       this.cy!.$id(resolver.get_id().toString()).addClass('current');
       this.c_resolver = resolver;
     }
-    this.cy!.layout(this.layout).run();
   }
 
   causal_link_added(flaw: solver.graph.Flaw, resolver: solver.graph.Resolver): void {
@@ -227,8 +224,8 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   }
 }
 
-function color(flaw: solver.graph.Flaw | solver.graph.Resolver): string {
-  const cost = flaw.get_cost();
+function color(node: solver.graph.Flaw | solver.graph.Resolver): string {
+  const cost = node.get_cost();
   if (cost === Infinity)
     return infiniteColor; // We use black for infinite cost
   else if (cost > 100)
