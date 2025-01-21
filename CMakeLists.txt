@@ -58,6 +58,7 @@ if(${CONSTRAINT_REASONER_TYPE} STREQUAL "Z3")
     include(FetchContent)
     FetchContent_Declare(z3 GIT_REPOSITORY https://github.com/Z3Prover/z3 GIT_TAG z3-4.13.4)
     FetchContent_MakeAvailable(z3)
+    list(APPEND CTEST_CUSTOM_COVERAGE_EXCLUDE "${z3_SOURCE_DIR}")
 
     target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/z3> ${z3_SOURCE_DIR}/src/api)
     target_sources(oRatioLib PRIVATE src/z3/z3solver.cpp src/z3/z3flaws.cpp src/z3/z3types.cpp)
