@@ -19,4 +19,5 @@ add_test(NAME SolverTest04 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/ri
 add_test(NAME SolverTest05 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_05.rddl" "solution.json")
 add_test(NAME SolverTest06 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_06.rddl" "solution.json")
 add_test(NAME SolverTest07 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_07.rddl" "solution.json")
+add_test(NAME SolverTest08 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_08.rddl" "solution.json")
 set_tests_properties(SolverTest02 SolverTest05 SolverTest06 PROPERTIES WILL_FAIL TRUE)

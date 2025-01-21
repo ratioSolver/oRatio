@@ -1,6 +1,7 @@
 #include "z3solver.hpp"
 #include "z3flaws.hpp"
 #include "z3types.hpp"
+#include "init.hpp"
 #include "logging.hpp"
 #include <queue>
 #include <cassert>
@@ -231,6 +232,7 @@ namespace ratio
     {
         add_type(std::make_unique<z3state_variable>(*this));
         add_type(std::make_unique<z3reusable_resource>(*this));
+        read(INIT_STRING);
     }
 
     riddle::bool_expr z3solver::new_bool() { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ctx.bool_const(("b" + std::to_string(bool_count++)).c_str())); }
@@ -303,6 +305,7 @@ namespace ratio
 
     riddle::enum_expr z3solver::new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values)
     {
+        assert(!values.empty());
         auto xpr = ctx.int_const(("e" + std::to_string(enum_count++)).c_str());
         slv.add(xpr >= ctx.int_val(0));
         slv.add(xpr < ctx.int_val(static_cast<uint64_t>(values.size())));
@@ -338,24 +341,74 @@ namespace ratio
 
     riddle::bool_expr z3solver::new_not(riddle::bool_expr expr) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), !static_cast<const bool_item &>(*expr).get_expr()); }
 
-    riddle::arith_expr z3solver::new_negation(riddle::arith_expr xpr) { return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), -static_cast<const arith_item &>(*xpr).get_expr()); }
+    riddle::arith_expr z3solver::new_negation(riddle::arith_expr xpr)
+    {
+        if (xpr->get_type().get_name() == riddle::int_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), -static_cast<const arith_item &>(*xpr).get_expr());
+        else if (xpr->get_type().get_name() == riddle::real_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), -static_cast<const arith_item &>(*xpr).get_expr());
+        else
+            throw std::runtime_error("Invalid type");
+    }
 
     riddle::arith_expr z3solver::new_sum(std::vector<riddle::arith_expr> &&xprs)
     {
+        assert(xprs.size() > 2);
         z3::expr_vector args(ctx);
         for (const auto &xpr : xprs)
             args.push_back(static_cast<const arith_item &>(*xpr).get_expr());
-        return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), z3::sum(args));
+        auto &tp = type_promotion(xprs);
+        if (tp.get_name() == riddle::int_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), z3::sum(args));
+        else if (tp.get_name() == riddle::real_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), z3::sum(args));
+        else
+            throw std::runtime_error("Invalid type");
     }
-    riddle::arith_expr z3solver::new_product(std::vector<riddle::arith_expr> &&xprs)
+    riddle::arith_expr z3solver::new_subtraction(std::vector<riddle::arith_expr> &&xprs)
     {
+        assert(xprs.size() > 2);
         z3::expr_vector args(ctx);
         for (const auto &xpr : xprs)
             args.push_back(static_cast<const arith_item &>(*xpr).get_expr());
         z3::array<Z3_ast> _args(args);
-        return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), to_expr(ctx, Z3_mk_mul(ctx, _args.size(), _args.ptr())));
+        auto &tp = type_promotion(xprs);
+        if (tp.get_name() == riddle::int_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), to_expr(ctx, Z3_mk_sub(ctx, _args.size(), _args.ptr())));
+        else if (tp.get_name() == riddle::real_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), to_expr(ctx, Z3_mk_sub(ctx, _args.size(), _args.ptr())));
+        else
+            throw std::runtime_error("Invalid type");
     }
-    riddle::arith_expr z3solver::new_divide(riddle::arith_expr lhs, riddle::arith_expr rhs) { return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), static_cast<const arith_item &>(*lhs).get_expr() / static_cast<const arith_item &>(*rhs).get_expr()); }
+    riddle::arith_expr z3solver::new_product(std::vector<riddle::arith_expr> &&xprs)
+    {
+        assert(xprs.size() > 2);
+        z3::expr_vector args(ctx);
+        for (const auto &xpr : xprs)
+            args.push_back(static_cast<const arith_item &>(*xpr).get_expr());
+        z3::array<Z3_ast> _args(args);
+        auto &tp = type_promotion(xprs);
+        if (tp.get_name() == riddle::int_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), to_expr(ctx, Z3_mk_mul(ctx, _args.size(), _args.ptr())));
+        else if (tp.get_name() == riddle::real_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), to_expr(ctx, Z3_mk_mul(ctx, _args.size(), _args.ptr())));
+        else
+            throw std::runtime_error("Invalid type");
+    }
+    riddle::arith_expr z3solver::new_division(std::vector<riddle::arith_expr> &&xprs)
+    {
+        assert(xprs.size() > 2);
+        z3::expr xpr = static_cast<const arith_item &>(*xprs[0]).get_expr();
+        for (size_t i = 1; i < xprs.size(); i++)
+            xpr = xpr / static_cast<const arith_item &>(*xprs[i]).get_expr();
+        auto &tp = type_promotion(xprs);
+        if (tp.get_name() == riddle::int_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(xpr));
+        else if (tp.get_name() == riddle::real_kw)
+            return std::make_shared<arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(xpr));
+        else
+            throw std::runtime_error("Invalid type");
+    }
 
     riddle::bool_expr z3solver::new_lt(riddle::arith_expr lhs, riddle::arith_expr rhs) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const arith_item &>(*lhs).get_expr() < static_cast<const arith_item &>(*rhs).get_expr()); }
     riddle::bool_expr z3solver::new_le(riddle::arith_expr lhs, riddle::arith_expr rhs) { return std::make_shared<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const arith_item &>(*lhs).get_expr() <= static_cast<const arith_item &>(*rhs).get_expr()); }
@@ -364,6 +417,7 @@ namespace ratio
 
     void z3solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
+        assert(disjuncts.size() > 2);
         std::vector<std::reference_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())
             causes.push_back(get_current_resolver().value());

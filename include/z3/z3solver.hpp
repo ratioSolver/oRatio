@@ -147,8 +147,9 @@ namespace ratio
     [[nodiscard]] riddle::arith_expr new_negation(riddle::arith_expr xpr) override;
 
     [[nodiscard]] riddle::arith_expr new_sum(std::vector<riddle::arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_subtraction(std::vector<riddle::arith_expr> &&xprs) override;
     [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::arith_expr> &&xprs) override;
-    [[nodiscard]] riddle::arith_expr new_divide(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
+    [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::arith_expr> &&xprs) override;
 
     [[nodiscard]] riddle::bool_expr new_lt(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
     [[nodiscard]] riddle::bool_expr new_le(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
