@@ -353,7 +353,7 @@ namespace ratio
 
     riddle::arith_expr z3solver::new_sum(std::vector<riddle::arith_expr> &&xprs)
     {
-        assert(xprs.size() > 2);
+        assert(xprs.size() > 1);
         z3::expr_vector args(ctx);
         for (const auto &xpr : xprs)
             args.push_back(static_cast<const arith_item &>(*xpr).get_expr());
@@ -367,7 +367,7 @@ namespace ratio
     }
     riddle::arith_expr z3solver::new_subtraction(std::vector<riddle::arith_expr> &&xprs)
     {
-        assert(xprs.size() > 2);
+        assert(xprs.size() > 1);
         z3::expr_vector args(ctx);
         for (const auto &xpr : xprs)
             args.push_back(static_cast<const arith_item &>(*xpr).get_expr());
@@ -382,7 +382,7 @@ namespace ratio
     }
     riddle::arith_expr z3solver::new_product(std::vector<riddle::arith_expr> &&xprs)
     {
-        assert(xprs.size() > 2);
+        assert(xprs.size() > 1);
         z3::expr_vector args(ctx);
         for (const auto &xpr : xprs)
             args.push_back(static_cast<const arith_item &>(*xpr).get_expr());
@@ -397,7 +397,7 @@ namespace ratio
     }
     riddle::arith_expr z3solver::new_division(std::vector<riddle::arith_expr> &&xprs)
     {
-        assert(xprs.size() > 2);
+        assert(xprs.size() > 1);
         z3::expr xpr = static_cast<const arith_item &>(*xprs[0]).get_expr();
         for (size_t i = 1; i < xprs.size(); i++)
             xpr = xpr / static_cast<const arith_item &>(*xprs[i]).get_expr();

@@ -28,6 +28,9 @@ namespace ratio
     virtual ~z3state_variable() = default;
 
     bool solve_inconsistencies() override;
+
+  private:
+    void created_predicate(riddle::predicate &pred) override;
   };
 
   class z3reusable_resource final : public z3component_type
@@ -37,5 +40,8 @@ namespace ratio
     virtual ~z3reusable_resource() = default;
 
     bool solve_inconsistencies() override;
+
+  private:
+    void created_predicate(riddle::predicate &pred) override;
   };
 } // namespace ratio

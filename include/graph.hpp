@@ -31,6 +31,9 @@ namespace ratio
   class flaw;
   class resolver;
 
+  constexpr const char *impulse_kw = "Impulse";
+  constexpr const char *interval_kw = "Interval";
+
   class graph : public riddle::core
   {
     friend class flaw;

@@ -71,6 +71,8 @@ namespace ratio
         return has_conflicts;
     }
 
+    void z3state_variable::created_predicate(riddle::predicate &pred) { add_parent(pred, get_core().get_predicate(interval_kw)); }
+
     z3reusable_resource::z3reusable_resource(z3solver &slv) noexcept : z3component_type(slv, reusable_resource_kw) {}
 
     bool z3reusable_resource::solve_inconsistencies()
@@ -165,4 +167,6 @@ namespace ratio
 
         return has_conflicts;
     }
+
+    void z3reusable_resource::created_predicate(riddle::predicate &pred) { add_parent(pred, get_core().get_predicate(interval_kw)); }
 } // namespace ratio
