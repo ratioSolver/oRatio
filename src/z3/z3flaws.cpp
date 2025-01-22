@@ -5,16 +5,24 @@ namespace ratio
 {
     z3flaw::z3flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept : flaw(slv, std::move(causes)), phi(compute_phi(slv, get_causes())), pos(slv.ctx.real_const(("p" + std::to_string(slv.position_count++)).c_str()))
     {
-        for (const auto &cause : causes)
+        for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
             slv.slv.add(z3::implies(phi, pos <= static_cast<z3flaw &>(cause.get().get_flaw()).pos - 1));
     }
 
     z3::expr z3flaw::compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept
     {
-        z3::expr_vector args(slv.ctx);
+        z3::expr_vector cs(slv.ctx);
         for (const auto &cause : causes)
-            args.push_back(static_cast<z3resolver &>(cause.get()).get_rho());
-        return z3::mk_and(args);
+            cs.push_back(static_cast<z3resolver &>(cause.get()).get_rho());
+        return z3::mk_and(cs);
+    }
+
+    void z3flaw::expanded_flaw()
+    {
+        z3::expr_vector rs(static_cast<z3solver &>(get_graph()).ctx);
+        for (const auto &resolver : get_resolvers())
+            rs.push_back(static_cast<z3resolver &>(resolver.get()).get_rho());
+        static_cast<z3solver &>(get_graph()).slv.add(z3::implies(phi, z3::mk_or(rs))); // if the flaw is active, then at least one resolver must be active..
     }
 
     json::json z3flaw::to_json() const

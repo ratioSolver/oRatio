@@ -272,6 +272,7 @@ namespace ratio
 
   private:
     virtual void compute_resolvers() = 0;
+    virtual void expanded_flaw() {}
 
   private:
     graph &gr;                                                     // the graph this flaw belongs to..

@@ -19,6 +19,8 @@ namespace ratio
   private:
     [[nodiscard]] static z3::expr compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept;
 
+    void expanded_flaw() override;
+
   protected:
     [[nodiscard]] json::json to_json() const override;
 

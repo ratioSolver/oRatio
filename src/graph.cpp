@@ -105,7 +105,12 @@ namespace ratio
     void graph::expand_flaws(const std::vector<std::reference_wrapper<flaw>> &flaws)
     {
         for (auto &flaw : flaws)
+        {
             expand_flaw(flaw.get());
+            flaw_q.erase(std::remove_if(flaw_q.begin(), flaw_q.end(), [&flaw](const auto &f)
+                                        { return &f.get() == &flaw.get(); }),
+                         flaw_q.end());
+        }
     }
 
     void graph::add_causal_link(flaw &f, resolver &r) noexcept
@@ -122,6 +127,7 @@ namespace ratio
         set_current_flaw(f);      // set the current flaw..
 
         f.compute_resolvers(); // compute the resolvers for the current flaw..
+        f.expanded_flaw();     // notify the listeners that the flaw has been expanded..
         f.expanded = true;     // mark the flaw as expanded..
         expanded_flaw(f);      // notify the listeners that the flaw has been expanded (might be used for enforcing causality constraints)..
 

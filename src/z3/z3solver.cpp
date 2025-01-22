@@ -417,7 +417,7 @@ namespace ratio
 
     void z3solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
-        assert(disjuncts.size() > 2);
+        assert(disjuncts.size() > 1);
         std::vector<std::reference_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())
             causes.push_back(get_current_resolver().value());
@@ -454,7 +454,7 @@ namespace ratio
             std::unordered_map<std::string, std::reference_wrapper<ratio::flaw>> flaw_map;
             for (const auto &flaw : get_queued_flaws())
             {
-                unexpanded_flaws.push_back(static_cast<z3flaw &>(flaw.get()).get_phi());
+                unexpanded_flaws.push_back(!static_cast<z3flaw &>(flaw.get()).get_phi());
                 flaw_map.emplace(static_cast<z3flaw &>(flaw.get()).get_phi().to_string(), flaw);
             }
             while (true)
@@ -533,8 +533,8 @@ namespace ratio
                 { // we analyze the unsat core..
                     auto u_core = slv.unsat_core();
                     std::vector<std::reference_wrapper<ratio::flaw>> flaws;
-                    for (const auto &f : u_core)
-                        if (auto f_it = flaw_map.find(f.to_string()); f_it != flaw_map.end())
+                    for (const auto &n : u_core[0].args())
+                        if (auto f_it = flaw_map.find(n.to_string()); f_it != flaw_map.end())
                             flaws.push_back(f_it->second);
 
                     if (!flaws.empty())
