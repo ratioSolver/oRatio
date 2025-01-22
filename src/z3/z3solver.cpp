@@ -514,7 +514,10 @@ namespace ratio
                                 state = utils::Undefined;
                             }
                             set_flaw_state(f.get(), state);
+                            set_flaw_position(f.get(), mdl.eval(static_cast<const z3flaw &>(f.get()).get_pos(), true).get_numeral_int());
                         }
+                        assert(std::all_of(get_root_flaws().begin(), get_root_flaws().end(), [](const auto &f)
+                                           { return f.get().get_state() == utils::True; }));
 #endif
                         return true;
                     }

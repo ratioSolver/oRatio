@@ -58,6 +58,16 @@ namespace ratio
             compute_flaw_cost(f);
         }
     }
+    void graph::set_flaw_position(flaw &f, size_t pos) noexcept
+    {
+        if (f.position != pos)
+        {
+            auto old_pos = f.position;
+            updating_flaw_position(f, old_pos);
+            f.position = pos;
+            FLAW_POSITION_CHANGED(f);
+        }
+    }
     void graph::set_resolver_state(resolver &r, utils::lbool state) noexcept
     {
         if (r.state != state)

@@ -10,10 +10,11 @@ namespace ratio
   public:
     z3flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept;
 
-    [[nodiscard]] size_t get_position() const noexcept override;
-
     [[nodiscard]] z3::expr &get_phi() noexcept { return phi; }
     [[nodiscard]] const z3::expr &get_phi() const noexcept { return phi; }
+
+    [[nodiscard]] z3::expr &get_pos() noexcept { return pos; }
+    [[nodiscard]] const z3::expr &get_pos() const noexcept { return pos; }
 
   private:
     [[nodiscard]] static z3::expr compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept;

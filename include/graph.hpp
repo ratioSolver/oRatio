@@ -102,6 +102,7 @@ namespace ratio
     }
 
     void set_flaw_state(flaw &f, utils::lbool state) noexcept;
+    void set_flaw_position(flaw &f, size_t pos) noexcept;
     void set_resolver_state(resolver &r, utils::lbool state) noexcept;
 
     [[nodiscard]] std::vector<std::reference_wrapper<flaw>> get_queued_flaws() const noexcept;
@@ -125,6 +126,7 @@ namespace ratio
     virtual void expanded_flaw(flaw &) = 0;
 
     virtual void updating_flaw_state(flaw &, const utils::lbool &) {}
+    virtual void updating_flaw_position(flaw &, const size_t &) {}
     virtual void updating_flaw_cost(flaw &, const utils::rational &) {}
     virtual void updating_resolver_state(resolver &, const utils::lbool &) {}
 
@@ -246,7 +248,7 @@ namespace ratio
 
     [[nodiscard]] utils::lbool get_state() const noexcept { return state; }
 
-    [[nodiscard]] virtual size_t get_position() const = 0;
+    [[nodiscard]] size_t get_position() const noexcept { return position; }
 
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> get_causes() const noexcept { return causes; }
 
@@ -275,6 +277,7 @@ namespace ratio
     graph &gr;                                                     // the graph this flaw belongs to..
     bool expanded = false;                                         // whether this flaw has been expanded or not..
     utils::lbool state = utils::Undefined;                         // the current state of the flaw..
+    size_t position = 0;                                           // the position of the flaw in the graph..
     std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..

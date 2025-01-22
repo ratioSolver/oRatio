@@ -9,8 +9,6 @@ namespace ratio
             slv.slv.add(z3::implies(phi, pos <= static_cast<z3flaw &>(cause.get().get_flaw()).pos - 1));
     }
 
-    size_t z3flaw::get_position() const noexcept { return static_cast<const z3solver &>(get_graph()).mdl.eval(pos, true).get_numeral_uint(); }
-
     z3::expr z3flaw::compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept
     {
         z3::expr_vector args(slv.ctx);
