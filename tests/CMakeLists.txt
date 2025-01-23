@@ -9,6 +9,14 @@ target_compile_definitions(solver_tests PRIVATE NUM_TESTS=1)
 target_link_libraries(solver_tests PRIVATE oRatioLib)
 setup_sanitizers(solver_tests)
 
+if(${CONSTRAINT_REASONER_TYPE} STREQUAL "Z3")
+    add_executable(z3_tests test_z3.cpp)
+    add_dependencies(z3_tests oRatioLib)
+    target_compile_definitions(z3_tests PRIVATE NUM_TESTS=1)
+    target_link_libraries(z3_tests PRIVATE oRatioLib)
+    setup_sanitizers(z3_tests)
+endif()
+
 add_test(NAME oRatio_CoreTest COMMAND core_tests WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_test(NAME SolverTest00 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_00.rddl" "solution.json")
