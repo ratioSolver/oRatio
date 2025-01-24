@@ -6,6 +6,7 @@
 namespace ratio
 {
   class z3flaw;
+  class z3atom_flaw;
   class z3resolver;
   class z3component_type;
   class z3unify_atom;
@@ -79,9 +80,9 @@ namespace ratio
   class atom : public riddle::atom
   {
   public:
-    atom(z3flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args);
+    atom(z3atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args);
 
-    [[nodiscard]] z3flaw &get_flaw() noexcept { return flaw; }
+    [[nodiscard]] z3atom_flaw &get_flaw() noexcept { return flaw; }
 
     [[nodiscard]] z3::expr &get_sigma() noexcept { return sigma; }
     [[nodiscard]] const z3::expr &get_sigma() const noexcept { return sigma; }
@@ -93,9 +94,11 @@ namespace ratio
     [[nodiscard]] json::json to_json() const override;
 
   private:
-    z3flaw &flaw;   // the flaw associated with this atom..
-    z3::expr sigma; // the activation status of the atom (i.e., 0 if inactive, 1 if active, 2 if unified)....
+    z3atom_flaw &flaw; // the flaw associated with this atom..
+    z3::expr sigma;    // the activation status of the atom (i.e., 0 if inactive, 1 if active, 2 if unified)....
   };
+
+  using atom_expr = std::shared_ptr<atom>;
 
   class z3solver : public graph
   {

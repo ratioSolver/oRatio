@@ -33,7 +33,7 @@ namespace ratio
   {
   public:
     z3resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;
-    z3resolver(flaw &f, utils::rational &&intrinsic_cost, z3::expr &&rho) noexcept;
+    z3resolver(flaw &f, utils::rational &&intrinsic_cost, z3::expr rho) noexcept;
 
     [[nodiscard]] z3::expr &get_rho() noexcept { return rho; }
     [[nodiscard]] const z3::expr &get_rho() const noexcept { return rho; }
@@ -52,8 +52,8 @@ namespace ratio
   public:
     z3atom_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) noexcept;
 
-    [[nodiscard]] riddle::atom_expr &get_atom() noexcept { return atm; }
-    [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
+    [[nodiscard]] atom_expr &get_atom() noexcept { return atm; }
+    [[nodiscard]] const atom_expr &get_atom() const noexcept { return atm; }
 
   private:
     void compute_resolvers() override;
@@ -61,14 +61,14 @@ namespace ratio
     json::json to_json() const override;
 
   private:
-    riddle::atom_expr atm; // the atom that is the subject of the flaw..
+    atom_expr atm; // the atom that is the subject of the flaw..
   };
 
   class z3activate_fact final : public z3resolver
   {
   public:
     z3activate_fact(z3atom_flaw &f) noexcept;
-    z3activate_fact(z3atom_flaw &f, z3::expr &&rho) noexcept;
+    z3activate_fact(z3atom_flaw &f, z3::expr rho) noexcept;
 
   private:
     void apply() override;
@@ -80,7 +80,7 @@ namespace ratio
   {
   public:
     z3activate_goal(z3atom_flaw &f) noexcept;
-    z3activate_goal(z3atom_flaw &f, z3::expr &&rho) noexcept;
+    z3activate_goal(z3atom_flaw &f, z3::expr rho) noexcept;
 
   private:
     void apply() override;
@@ -91,7 +91,7 @@ namespace ratio
   class z3unify_atom final : public z3resolver
   {
   public:
-    z3unify_atom(z3atom_flaw &f, riddle::atom_expr atm) noexcept;
+    z3unify_atom(z3atom_flaw &f, atom_expr atm) noexcept;
 
   private:
     void apply() override;
@@ -99,7 +99,7 @@ namespace ratio
     json::json to_json() const override;
 
   private:
-    riddle::atom_expr atm; // the atom to unify with..
+    atom_expr atm; // the atom to unify with..
   };
 
   class z3disjunction_flaw final : public z3flaw

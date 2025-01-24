@@ -57,13 +57,14 @@ namespace ratio
     Tp &new_flaw(Args &&...args) noexcept
     {
       static_assert(std::is_base_of_v<flaw, Tp>, "Tp must be a subclass of flaw");
-      auto f = new Tp(std::forward<Args>(args)...);
-      NEW_FLAW(*f);
-      flaws.emplace_back(std::unique_ptr<flaw>(f));
-      flaw_q.push_back(*f); // add to the flaw queue..
-      if (f->get_causes().empty())
-        root_flaws.push_back(*f); // add to the root-level flaws..
-      return *f;
+      auto f = std::make_unique<Tp>(std::forward<Args>(args)...);
+      auto &f_ref = *f;
+      NEW_FLAW(f_ref);
+      flaws.emplace_back(std::move(f));
+      flaw_q.push_back(f_ref); // add to the flaw queue..
+      if (f_ref.get_causes().empty())
+        root_flaws.push_back(f_ref); // add to the root-level flaws..
+      return f_ref;
     }
 
     /**
@@ -78,10 +79,11 @@ namespace ratio
     Tp &new_resolver(Args &&...args) noexcept
     {
       static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
-      auto r = new Tp(std::forward<Args>(args)...);
-      NEW_RESOLVER(*r);
-      resolvers.emplace_back(std::unique_ptr<resolver>(r));
-      return *r;
+      auto r = std::make_unique<Tp>(std::forward<Args>(args)...);
+      auto &r_ref = *r;
+      NEW_RESOLVER(r_ref);
+      resolvers.emplace_back(std::move(r));
+      return r_ref;
     }
 
     [[nodiscard]] std::vector<std::reference_wrapper<flaw>> get_flaws() const noexcept;

@@ -1,5 +1,6 @@
 #include "z3flaws.hpp"
 #include "conjunction.hpp"
+#include "logging.hpp"
 
 namespace ratio
 {
@@ -33,7 +34,7 @@ namespace ratio
     }
 
     z3resolver::z3resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost)), rho(static_cast<z3solver &>(f.get_graph()).ctx.bool_const(("b" + std::to_string(static_cast<z3solver &>(f.get_graph()).bool_count++)).c_str())) {}
-    z3resolver::z3resolver(flaw &f, utils::rational &&intrinsic_cost, z3::expr &&rho) noexcept : resolver(f, std::move(intrinsic_cost)), rho(std::move(rho)) {}
+    z3resolver::z3resolver(flaw &f, utils::rational &&intrinsic_cost, z3::expr rho) noexcept : resolver(f, std::move(intrinsic_cost)), rho(rho) {}
 
     void z3resolver::add(const z3::expr &e) { static_cast<z3solver &>(get_flaw().get_graph()).slv.add(z3::implies(rho, e)); }
 
@@ -50,15 +51,15 @@ namespace ratio
     {
         for (auto unf_atm : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
             if (unf_atm.get() != atm.get() && static_cast<atom *>(unf_atm.get())->get_flaw().is_expanded())
-                new_resolver<z3unify_atom>(*this, unf_atm);
+                new_resolver<z3unify_atom>(*this, std::dynamic_pointer_cast<atom>(unf_atm));
 
         if (atm->is_fact())
             if (get_resolvers().empty())
-                new_resolver<z3activate_fact>(*this, z3::expr(get_phi()));
+                new_resolver<z3activate_fact>(*this, get_phi());
             else
                 new_resolver<z3activate_fact>(*this);
         else if (get_resolvers().empty())
-            new_resolver<z3activate_goal>(*this, z3::expr(get_phi()));
+            new_resolver<z3activate_goal>(*this, get_phi());
         else
             new_resolver<z3activate_goal>(*this);
     }
@@ -71,7 +72,7 @@ namespace ratio
     }
 
     z3activate_fact::z3activate_fact(z3atom_flaw &f) noexcept : z3resolver(f, utils::rational(1)) {}
-    z3activate_fact::z3activate_fact(z3atom_flaw &f, z3::expr &&rho) noexcept : z3resolver(f, utils::rational(1), std::move(rho)) {}
+    z3activate_fact::z3activate_fact(z3atom_flaw &f, z3::expr rho) noexcept : z3resolver(f, utils::rational(1), rho) {}
     void z3activate_fact::apply()
     {
         // activating the resolver means activating the atom..
@@ -85,13 +86,13 @@ namespace ratio
     }
 
     z3activate_goal::z3activate_goal(z3atom_flaw &f) noexcept : z3resolver(f, utils::rational(1)) {}
-    z3activate_goal::z3activate_goal(z3atom_flaw &f, z3::expr &&rho) noexcept : z3resolver(f, utils::rational(1), std::move(rho)) {}
+    z3activate_goal::z3activate_goal(z3atom_flaw &f, z3::expr rho) noexcept : z3resolver(f, utils::rational(1), rho) {}
     void z3activate_goal::apply()
     {
         // activating the resolver means activating the atom..
         add(static_cast<atom &>(*static_cast<z3atom_flaw &>(get_flaw()).get_atom()).get_sigma() == 1);
         // we also call the corresponding rule..
-        static_cast<riddle::predicate &>(static_cast<atom &>(*static_cast<z3atom_flaw &>(get_flaw()).get_atom()).get_type()).call(static_cast<z3atom_flaw &>(get_flaw()).get_atom());
+        static_cast<riddle::predicate &>(static_cast<z3atom_flaw &>(get_flaw()).get_atom()->get_type()).call(static_cast<z3atom_flaw &>(get_flaw()).get_atom());
     }
     json::json z3activate_goal::to_json() const
     {
@@ -100,7 +101,7 @@ namespace ratio
         return j_resolver;
     }
 
-    z3unify_atom::z3unify_atom(z3atom_flaw &f, riddle::atom_expr atm) noexcept : z3resolver(f, utils::rational(1)), atm(atm) {}
+    z3unify_atom::z3unify_atom(z3atom_flaw &f, atom_expr atm) noexcept : z3resolver(f, utils::rational(1)), atm(atm) {}
     void z3unify_atom::apply()
     {
         // unifying the atom means unifying the atoms..
@@ -112,7 +113,7 @@ namespace ratio
         add(static_cast<bool_item &>(*eq).get_expr());
 
         // we also add the corresponding causal link..
-        static_cast<z3solver &>(get_flaw().get_graph()).add_causal_link(static_cast<atom &>(*atm).get_flaw(), *this);
+        static_cast<z3solver &>(get_flaw().get_graph()).add_causal_link(atm->get_flaw(), *this);
     }
     json::json z3unify_atom::to_json() const
     {

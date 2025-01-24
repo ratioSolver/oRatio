@@ -1,6 +1,7 @@
 #include "z3solver.hpp"
 #include "z3flaws.hpp"
 #include "z3types.hpp"
+#include "conjunction.hpp"
 #include "init.hpp"
 #include "logging.hpp"
 #include <queue>
@@ -175,7 +176,7 @@ namespace ratio
         return j;
     }
 
-    atom::atom(z3flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) : riddle::atom(pred, is_fact, std::move(args)), flaw(flaw), sigma(static_cast<z3solver &>(get_core()).ctx.int_const(("a" + std::to_string(static_cast<z3solver &>(get_core()).atom_count++)).c_str()))
+    atom::atom(z3atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) : riddle::atom(pred, is_fact, std::move(args)), flaw(flaw), sigma(static_cast<z3solver &>(get_core()).ctx.int_const(("a" + std::to_string(static_cast<z3solver &>(get_core()).atom_count++)).c_str()))
     {
         static_cast<z3solver &>(get_core()).slv.add(sigma >= static_cast<z3solver &>(get_core()).ctx.int_val(0));
         static_cast<z3solver &>(get_core()).slv.add(sigma < static_cast<z3solver &>(get_core()).ctx.int_val(2));
