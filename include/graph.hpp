@@ -40,7 +40,6 @@ namespace ratio
 
   public:
     graph(std::string_view name = "oRatio");
-    virtual ~graph() = default;
 
     [[nodiscard]] virtual json::json to_json() const override;
 
