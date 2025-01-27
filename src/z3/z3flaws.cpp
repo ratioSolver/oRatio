@@ -49,8 +49,8 @@ namespace ratio
 
     void z3atom_flaw::compute_resolvers()
     {
-        for (auto unf_atm : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
-            if (unf_atm.get() != atm.get() && static_cast<atom &>(*unf_atm).get_flaw().is_expanded())
+        for (auto &unf_atm : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
+            if (unf_atm != atm && static_cast<atom &>(*unf_atm).get_flaw().is_expanded())
                 new_resolver<z3unify_atom>(*this, utils::s_ptr_cast<atom>(unf_atm));
 
         if (atm->is_fact())

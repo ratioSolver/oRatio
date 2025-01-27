@@ -179,7 +179,7 @@ namespace ratio
     atom::atom(z3atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args) : riddle::atom(pred, is_fact, std::move(args)), flaw(flaw), sigma(static_cast<z3solver &>(get_core()).ctx.int_const(("a" + std::to_string(static_cast<z3solver &>(get_core()).atom_count++)).c_str()))
     {
         static_cast<z3solver &>(get_core()).slv.add(sigma >= static_cast<z3solver &>(get_core()).ctx.int_val(0));
-        static_cast<z3solver &>(get_core()).slv.add(sigma < static_cast<z3solver &>(get_core()).ctx.int_val(2));
+        static_cast<z3solver &>(get_core()).slv.add(sigma <= static_cast<z3solver &>(get_core()).ctx.int_val(2));
     }
     riddle::bool_expr atom::operator==(riddle::expr rhs) const
     {

@@ -14,7 +14,7 @@ namespace ratio
   class bool_item : public riddle::bool_item
   {
   public:
-    bool_item(riddle::bool_type &tp, z3::expr &&expr) : riddle::bool_item(tp), expr(expr) {}
+    bool_item(riddle::bool_type &tp, z3::expr expr) : riddle::bool_item(tp), expr(expr) {}
 
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
@@ -30,9 +30,9 @@ namespace ratio
   class arith_item : public riddle::arith_item
   {
   public:
-    arith_item(riddle::int_type &tp, z3::expr &&expr) : riddle::arith_item(tp), expr(expr) {}
-    arith_item(riddle::real_type &tp, z3::expr &&expr) : riddle::arith_item(tp), expr(expr) {}
-    arith_item(riddle::time_type &tp, z3::expr &&expr) : riddle::arith_item(tp), expr(expr) {}
+    arith_item(riddle::int_type &tp, z3::expr expr) : riddle::arith_item(tp), expr(expr) {}
+    arith_item(riddle::real_type &tp, z3::expr expr) : riddle::arith_item(tp), expr(expr) {}
+    arith_item(riddle::time_type &tp, z3::expr expr) : riddle::arith_item(tp), expr(expr) {}
 
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
@@ -48,7 +48,7 @@ namespace ratio
   class string_item : public riddle::string_item
   {
   public:
-    string_item(riddle::string_type &tp, z3::expr &&expr) : riddle::string_item(tp), expr(expr) {}
+    string_item(riddle::string_type &tp, z3::expr expr) : riddle::string_item(tp), expr(expr) {}
 
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
@@ -64,7 +64,7 @@ namespace ratio
   class enum_item : public riddle::enum_item
   {
   public:
-    enum_item(riddle::type &tp, z3::expr &&expr, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) : riddle::enum_item(tp, std::move(values)), expr(expr) {}
+    enum_item(riddle::type &tp, z3::expr expr, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) : riddle::enum_item(tp, std::move(values)), expr(expr) {}
 
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
