@@ -10,7 +10,7 @@ namespace ratio::server
         return j;
     }
 
-    json::json make_solvers_message(const std::vector<std::reference_wrapper<graph>> &gs) noexcept
+    json::json make_solvers_message(const std::vector<utils::ref_wrapper<graph>> &gs) noexcept
     {
         json::json j{{"type", "solvers"}};
         for (const auto &g : gs)

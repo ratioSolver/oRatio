@@ -8,7 +8,7 @@ namespace ratio
   class z3flaw : public flaw
   {
   public:
-    z3flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept;
+    z3flaw(z3solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes) noexcept;
 
     [[nodiscard]] z3::expr &get_phi() noexcept { return phi; }
     [[nodiscard]] const z3::expr &get_phi() const noexcept { return phi; }
@@ -17,7 +17,7 @@ namespace ratio
     [[nodiscard]] const z3::expr &get_pos() const noexcept { return pos; }
 
   private:
-    [[nodiscard]] static z3::expr compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept;
+    [[nodiscard]] static z3::expr compute_phi(z3solver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept;
 
     void expanded_flaw() override;
 
@@ -50,7 +50,7 @@ namespace ratio
   class z3atom_flaw final : public z3flaw
   {
   public:
-    z3atom_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) noexcept;
+    z3atom_flaw(z3solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept;
 
     [[nodiscard]] atom_expr &get_atom() noexcept { return atm; }
     [[nodiscard]] const atom_expr &get_atom() const noexcept { return atm; }
@@ -105,15 +105,15 @@ namespace ratio
   class z3disjunction_flaw final : public z3flaw
   {
   public:
-    z3disjunction_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+    z3disjunction_flaw(z3solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept;
 
-    [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
+    [[nodiscard]] const std::vector<utils::u_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
 
   private:
     void compute_resolvers() override;
 
   private:
-    std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
+    std::vector<utils::u_ptr<riddle::conjunction>> disjuncts;
   };
 
   class z3choose_conjunction final : public z3resolver

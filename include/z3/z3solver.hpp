@@ -64,7 +64,7 @@ namespace ratio
   class enum_item : public riddle::enum_item
   {
   public:
-    enum_item(riddle::type &tp, z3::expr &&expr, std::vector<std::reference_wrapper<utils::enum_val>> &&values) : riddle::enum_item(tp, std::move(values)), expr(expr) {}
+    enum_item(riddle::type &tp, z3::expr &&expr, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) : riddle::enum_item(tp, std::move(values)), expr(expr) {}
 
     [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
     [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
@@ -80,7 +80,7 @@ namespace ratio
   class atom : public riddle::atom
   {
   public:
-    atom(z3atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args);
+    atom(z3atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args);
 
     [[nodiscard]] z3atom_flaw &get_flaw() noexcept { return flaw; }
 
@@ -98,7 +98,7 @@ namespace ratio
     z3::expr sigma;    // the activation status of the atom (i.e., 0 if inactive, 1 if active, 2 if unified)....
   };
 
-  using atom_expr = std::shared_ptr<atom>;
+  using atom_expr = utils::s_ptr<atom>;
 
   class z3solver : public graph
   {
@@ -138,8 +138,8 @@ namespace ratio
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
     [[nodiscard]] std::string string_value(const riddle::string_item &expr) const noexcept override;
 
-    [[nodiscard]] riddle::enum_expr new_enum(riddle::type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) override;
-    [[nodiscard]] std::vector<std::reference_wrapper<utils::enum_val>> enum_value(const riddle::enum_item &expr) const noexcept override;
+    [[nodiscard]] riddle::enum_expr new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) override;
+    [[nodiscard]] std::vector<utils::ref_wrapper<utils::enum_val>> enum_value(const riddle::enum_item &expr) const noexcept override;
 
     [[nodiscard]] riddle::bool_expr new_and(std::vector<riddle::bool_expr> &&exprs) override;
     [[nodiscard]] riddle::bool_expr new_or(std::vector<riddle::bool_expr> &&exprs) override;
@@ -159,13 +159,13 @@ namespace ratio
     [[nodiscard]] riddle::bool_expr new_gt(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
     [[nodiscard]] riddle::bool_expr new_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
 
-    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
+    void new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) override;
     void assert_fact(riddle::bool_expr fact) override;
 
     bool solve();
 
   protected:
-    virtual riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) override;
+    virtual riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
 
   private:
     void expanded_flaw(flaw &f) override;

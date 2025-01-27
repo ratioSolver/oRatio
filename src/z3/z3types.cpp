@@ -30,8 +30,8 @@ namespace ratio
                     if (auto svs = dynamic_cast<riddle::enum_item *>(tau.get()))
                         for (const auto &sv : get_core().enum_value(*svs))
                         {
-                            sv_instances[static_cast<riddle::component *>(&sv.get())][start].first.push_back(&static_cast<atom &>(*atm));
-                            sv_instances[static_cast<riddle::component *>(&sv.get())][end].second.push_back(&static_cast<atom &>(*atm));
+                            sv_instances[static_cast<riddle::component *>(&*sv)][start].first.push_back(&static_cast<atom &>(*atm));
+                            sv_instances[static_cast<riddle::component *>(&*sv)][end].second.push_back(&static_cast<atom &>(*atm));
                         }
                     else
                     {
@@ -59,8 +59,8 @@ namespace ratio
                     // we consider all the pairs of atoms in the Minimal Conflict Sets (MCSs)..
                     for (const auto &as : utils::combinations(std::vector<atom *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
                     {
-                        auto ress = get_core().new_or({get_core().new_le(std::dynamic_pointer_cast<riddle::arith_item>(as[0]->get(riddle::end_kw)), std::dynamic_pointer_cast<riddle::arith_item>(as[1]->get(riddle::start_kw))),
-                                                       get_core().new_le(std::dynamic_pointer_cast<riddle::arith_item>(as[1]->get(riddle::end_kw)), std::dynamic_pointer_cast<riddle::arith_item>(as[0]->get(riddle::start_kw))),
+                        auto ress = get_core().new_or({get_core().new_le(utils::s_ptr_cast<riddle::arith_item>(as[0]->get(riddle::end_kw)), utils::s_ptr_cast<riddle::arith_item>(as[1]->get(riddle::start_kw))),
+                                                       get_core().new_le(utils::s_ptr_cast<riddle::arith_item>(as[1]->get(riddle::end_kw)), utils::s_ptr_cast<riddle::arith_item>(as[0]->get(riddle::start_kw))),
                                                        get_core().new_not(get_core().new_eq(as[0]->get(riddle::tau_kw), as[1]->get(riddle::tau_kw)))});
                         add(as, static_cast<bool_item &>(*ress).get_expr());
                     }
@@ -89,8 +89,8 @@ namespace ratio
                     if (auto svs = dynamic_cast<riddle::enum_item *>(tau.get()))
                         for (const auto &sv : get_core().enum_value(*svs))
                         {
-                            rr_instances[static_cast<riddle::component *>(&sv.get())][start].first.push_back(&static_cast<atom &>(*atm));
-                            rr_instances[static_cast<riddle::component *>(&sv.get())][end].second.push_back(&static_cast<atom &>(*atm));
+                            rr_instances[static_cast<riddle::component *>(&*sv)][start].first.push_back(&static_cast<atom &>(*atm));
+                            rr_instances[static_cast<riddle::component *>(&*sv)][end].second.push_back(&static_cast<atom &>(*atm));
                         }
                     else
                     {
@@ -144,14 +144,14 @@ namespace ratio
                             std::vector<riddle::bool_expr> exprs;
                             for (const auto &as : utils::combinations(std::vector<atom *>(mcs.cbegin(), mcs.cend()), 2))
                             {
-                                exprs.push_back(get_core().new_le(std::dynamic_pointer_cast<riddle::arith_item>(as[0]->get(riddle::end_kw)), std::dynamic_pointer_cast<riddle::arith_item>(as[1]->get(riddle::start_kw))));
-                                exprs.push_back(get_core().new_le(std::dynamic_pointer_cast<riddle::arith_item>(as[1]->get(riddle::end_kw)), std::dynamic_pointer_cast<riddle::arith_item>(as[0]->get(riddle::start_kw))));
+                                exprs.push_back(get_core().new_le(utils::s_ptr_cast<riddle::arith_item>(as[0]->get(riddle::end_kw)), utils::s_ptr_cast<riddle::arith_item>(as[1]->get(riddle::start_kw))));
+                                exprs.push_back(get_core().new_le(utils::s_ptr_cast<riddle::arith_item>(as[1]->get(riddle::end_kw)), utils::s_ptr_cast<riddle::arith_item>(as[0]->get(riddle::start_kw))));
                                 exprs.push_back(get_core().new_not(get_core().new_eq(as[0]->get(riddle::tau_kw), as[1]->get(riddle::tau_kw))));
                             }
                             std::vector<riddle::arith_expr> usage_exprs;
                             for (const auto &a : mcs)
-                                usage_exprs.push_back(std::dynamic_pointer_cast<riddle::arith_item>(a->get(reusable_resource_amount_kw)));
-                            exprs.push_back(get_core().new_le(get_core().new_sum(std::move(usage_exprs)), std::dynamic_pointer_cast<riddle::arith_item>(rr->get(reusable_resource_capacity_kw))));
+                                usage_exprs.push_back(utils::s_ptr_cast<riddle::arith_item>(a->get(reusable_resource_amount_kw)));
+                            exprs.push_back(get_core().new_le(get_core().new_sum(std::move(usage_exprs)), utils::s_ptr_cast<riddle::arith_item>(rr->get(reusable_resource_capacity_kw))));
                             auto ress = get_core().new_or(std::move(exprs));
                             add(std::vector<atom *>(mcs.cbegin(), mcs.cend()), static_cast<bool_item &>(*ress).get_expr());
                         }

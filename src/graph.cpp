@@ -25,23 +25,23 @@ namespace ratio
             j_graph["resolvers"] = std::move(j_resolvers);
         }
         if (get_current_flaw().has_value())
-            j_graph["current_flaw"] = static_cast<uint64_t>(get_current_flaw().value().get().get_id());
+            j_graph["current_flaw"] = static_cast<uint64_t>(get_current_flaw().value()->get_id());
         if (get_current_resolver().has_value())
-            j_graph["current_resolver"] = static_cast<uint64_t>(get_current_resolver().value().get().get_id());
+            j_graph["current_resolver"] = static_cast<uint64_t>(get_current_resolver().value()->get_id());
         return j_graph;
     }
 
-    std::vector<std::reference_wrapper<flaw>> graph::get_flaws() const noexcept
+    std::vector<utils::ref_wrapper<flaw>> graph::get_flaws() const noexcept
     {
-        std::vector<std::reference_wrapper<flaw>> fs;
+        std::vector<utils::ref_wrapper<flaw>> fs;
         for (const auto &f : flaws)
             fs.push_back(*f);
         return fs;
     }
 
-    std::vector<std::reference_wrapper<resolver>> graph::get_resolvers() const noexcept
+    std::vector<utils::ref_wrapper<resolver>> graph::get_resolvers() const noexcept
     {
-        std::vector<std::reference_wrapper<resolver>> rs;
+        std::vector<utils::ref_wrapper<resolver>> rs;
         for (const auto &r : resolvers)
             rs.push_back(*r);
         return rs;
@@ -80,9 +80,9 @@ namespace ratio
         }
     }
 
-    std::vector<std::reference_wrapper<flaw>> graph::get_queued_flaws() const noexcept
+    std::vector<utils::ref_wrapper<flaw>> graph::get_queued_flaws() const noexcept
     {
-        std::vector<std::reference_wrapper<flaw>> res;
+        std::vector<utils::ref_wrapper<flaw>> res;
         for (const auto &flaw : flaw_q)
             res.push_back(flaw);
         return res;
@@ -91,24 +91,24 @@ namespace ratio
     void graph::build()
     {
         while (std::any_of(root_flaws.begin(), root_flaws.end(), [](const auto &flaw)
-                           { return is_infinite(flaw.get().est_cost); }))
+                           { return is_infinite(flaw->est_cost); }))
         { // while there are infinite cost flaws..
             if (flaw_q.empty())
                 throw riddle::unsolvable_exception(); // if the flaw queue is empty, then the problem is unsolvable..
 
-            auto &flaw = flaw_q.front().get();
+            auto &flaw = *flaw_q.front();
             flaw_q.pop_front();
             expand_flaw(flaw);
         }
     }
 
-    void graph::expand_flaws(const std::vector<std::reference_wrapper<flaw>> &flaws)
+    void graph::expand_flaws(const std::vector<utils::ref_wrapper<flaw>> &flaws)
     {
         for (auto &flaw : flaws)
         {
-            expand_flaw(flaw.get());
+            expand_flaw(*flaw);
             flaw_q.erase(std::remove_if(flaw_q.begin(), flaw_q.end(), [&flaw](const auto &f)
-                                        { return &f.get() == &flaw.get(); }),
+                                        { return f == flaw; }),
                          flaw_q.end());
         }
     }
@@ -134,7 +134,7 @@ namespace ratio
         for (auto &resolver : f.get_resolvers())
         {
             set_current_resolver(resolver); // set the current resolver..
-            resolver.get().apply();         // we apply the resolver..
+            resolver->apply();              // we apply the resolver..
         }
 
         compute_flaw_cost(f);    // compute the cost of the flaw..
@@ -149,8 +149,8 @@ namespace ratio
         utils::rational c_cost = utils::rational::positive_infinite;
         if (f.state != utils::False)
             for (const auto &res : f.resolvers)
-                if (res.get().state != utils::False)
-                    c_cost = std::min(c_cost, res.get().get_estimated_cost());
+                if (res->state != utils::False)
+                    c_cost = std::min(c_cost, res->get_estimated_cost());
 
         if (f.est_cost != c_cost)
         { // we update the cost of the flaw..
@@ -162,17 +162,17 @@ namespace ratio
             // we propagate the cost to the supported resolvers..
             visited.insert(&f);
             for (auto &support : f.get_supports())
-                compute_flaw_cost(support.get().f);
+                compute_flaw_cost(support->f);
             visited.erase(&f);
         }
     }
 
-    flaw::flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes) : gr(gr), causes(causes)
+    flaw::flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes) : gr(gr), causes(causes)
     {
         for (auto &cause : causes)
         {
-            cause.get().preconditions.push_back(*this); // this flaw is a precondition of its `cause` cause..
-            supports.push_back(cause);                  // .. and it also supports the `cause` cause..
+            cause->preconditions.push_back(*this); // this flaw is a precondition of its `cause` cause..
+            supports.push_back(cause);             // .. and it also supports the `cause` cause..
         }
     }
 
@@ -183,7 +183,7 @@ namespace ratio
         {
             json::json j_causes(json::json_type::array);
             for (const auto &c : causes)
-                j_causes.push_back(static_cast<uint64_t>(c.get().get_id()));
+                j_causes.push_back(static_cast<uint64_t>(c->get_id()));
             j_flaw["causes"] = std::move(j_causes);
         }
         return j_flaw;
@@ -196,16 +196,15 @@ namespace ratio
 #ifdef H_ADD
         // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
         return std::accumulate(preconditions.begin(), preconditions.end(), intrinsic_cost, [](const auto &lhs, const auto &prec)
-                               { return lhs + prec.get().get_estimated_cost(); });
+                               { return lhs + prec->get_estimated_cost(); });
 #endif
 #ifdef H_MAX
         if (preconditions.empty())
             return intrinsic_cost;
         // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
-        return intrinsic_cost + std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
-                                                 { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); })
-                                    ->get()
-                                    .get_estimated_cost();
+        return intrinsic_cost + (*std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
+                                                   { return lhs->get_estimated_cost() < rhs->get_estimated_cost(); }))
+                                    ->get_estimated_cost();
 #endif
     }
 
@@ -216,7 +215,7 @@ namespace ratio
         {
             json::json j_preconditions(json::json_type::array);
             for (const auto &p : preconditions)
-                j_preconditions.push_back(static_cast<uint64_t>(p.get().get_id()));
+                j_preconditions.push_back(static_cast<uint64_t>(p->get_id()));
             j_resolver["preconditions"] = std::move(j_preconditions);
         }
         return j_resolver;

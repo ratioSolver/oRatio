@@ -4,17 +4,17 @@
 
 namespace ratio
 {
-    z3flaw::z3flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept : flaw(slv, std::move(causes)), phi(compute_phi(slv, get_causes())), pos(slv.ctx.real_const(("p" + std::to_string(slv.position_count++)).c_str()))
+    z3flaw::z3flaw(z3solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes) noexcept : flaw(slv, std::move(causes)), phi(compute_phi(slv, get_causes())), pos(slv.ctx.real_const(("p" + std::to_string(slv.position_count++)).c_str()))
     {
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
-            slv.slv.add(z3::implies(phi, pos <= static_cast<z3flaw &>(cause.get().get_flaw()).pos - 1));
+            slv.slv.add(z3::implies(phi, pos <= static_cast<z3flaw &>(cause->get_flaw()).pos - 1));
     }
 
-    z3::expr z3flaw::compute_phi(z3solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept
+    z3::expr z3flaw::compute_phi(z3solver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept
     {
         z3::expr_vector cs(slv.ctx);
         for (const auto &cause : causes)
-            cs.push_back(static_cast<z3resolver &>(cause.get()).get_rho());
+            cs.push_back(static_cast<z3resolver &>(*cause).get_rho());
         return z3::mk_and(cs);
     }
 
@@ -22,7 +22,7 @@ namespace ratio
     {
         z3::expr_vector rs(static_cast<z3solver &>(get_graph()).ctx);
         for (const auto &resolver : get_resolvers())
-            rs.push_back(static_cast<z3resolver &>(resolver.get()).get_rho());
+            rs.push_back(static_cast<z3resolver &>(*resolver).get_rho());
         static_cast<z3solver &>(get_graph()).slv.add(z3::implies(phi, z3::mk_or(rs))); // if the flaw is active, then at least one resolver must be active..
     }
 
@@ -45,13 +45,13 @@ namespace ratio
         return j_resolver;
     }
 
-    z3atom_flaw::z3atom_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::item>, std::less<>> &&args) noexcept : z3flaw(slv, std::move(causes)), atm(std::make_shared<atom>(*this, pred, is_fact, std::move(args))) {}
+    z3atom_flaw::z3atom_flaw(z3solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept : z3flaw(slv, std::move(causes)), atm(utils::make_s_ptr<atom>(*this, pred, is_fact, std::move(args))) {}
 
     void z3atom_flaw::compute_resolvers()
     {
         for (auto unf_atm : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
             if (unf_atm.get() != atm.get() && static_cast<atom *>(unf_atm.get())->get_flaw().is_expanded())
-                new_resolver<z3unify_atom>(*this, std::dynamic_pointer_cast<atom>(unf_atm));
+                new_resolver<z3unify_atom>(*this, utils::s_ptr_cast<atom>(unf_atm));
 
         if (atm->is_fact())
             if (get_resolvers().empty())
@@ -122,7 +122,7 @@ namespace ratio
         return j_resolver;
     }
 
-    z3disjunction_flaw::z3disjunction_flaw(z3solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : z3flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
+    z3disjunction_flaw::z3disjunction_flaw(z3solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept : z3flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 
     void z3disjunction_flaw::compute_resolvers()
     {

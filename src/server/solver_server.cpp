@@ -16,16 +16,16 @@ namespace ratio::server
         add_ws_route("/ratio").on_open(std::bind(&server::on_ws_open, this, network::placeholders::request)).on_close(std::bind(&server::on_ws_close, this, network::placeholders::request)).on_error(std::bind(&server::on_ws_error, this, network::placeholders::request, std::placeholders::_2));
     }
 
-    std::unique_ptr<network::response> server::index(const network::request &)
+    utils::u_ptr<network::response> server::index(const network::request &)
     {
-        return std::make_unique<network::file_response>(assets_dir + "/index.html");
+        return utils::make_u_ptr<network::file_response>(assets_dir + "/index.html");
     }
-    std::unique_ptr<network::response> server::assets(const network::request &req)
+    utils::u_ptr<network::response> server::assets(const network::request &req)
     {
         std::string target = req.get_target();
         if (target.find('?') != std::string::npos)
             target = target.substr(0, target.find('?'));
-        return std::make_unique<network::file_response>(assets_dir + target);
+        return utils::make_u_ptr<network::file_response>(assets_dir + target);
     }
 
     void server::on_ws_open(network::ws_session &ws)
@@ -87,7 +87,7 @@ namespace ratio::server
         for (auto client : clients)
             client->send(msg);
     }
-    void server::current_flaw(std::optional<std::reference_wrapper<ratio::flaw>> f)
+    void server::current_flaw(std::optional<utils::ref_wrapper<ratio::flaw>> f)
     {
         auto j_msg = json::json{{"type", "current_flaw"}};
         if (f)
@@ -112,7 +112,7 @@ namespace ratio::server
         for (auto client : clients)
             client->send(msg);
     }
-    void server::current_resolver(std::optional<std::reference_wrapper<ratio::resolver>> r)
+    void server::current_resolver(std::optional<utils::ref_wrapper<ratio::resolver>> r)
     {
         auto j_msg = json::json{{"type", "current_resolver"}};
         if (r)
