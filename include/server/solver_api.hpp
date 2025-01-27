@@ -1,6 +1,7 @@
 #pragma once
 
 #include "json.hpp"
+#include "memory.hpp"
 
 namespace ratio
 {

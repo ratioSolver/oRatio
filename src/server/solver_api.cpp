@@ -14,7 +14,7 @@ namespace ratio::server
     {
         json::json j{{"type", "solvers"}};
         for (const auto &g : gs)
-            j[std::to_string(g.get().get_id())] = g.get().to_json();
+            j[std::to_string(g->get_id())] = g->to_json();
         return j;
     }
 } // namespace ratio::server
