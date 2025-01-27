@@ -10,11 +10,9 @@ namespace ratio
   public:
     z3flaw(z3solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes) noexcept;
 
-    [[nodiscard]] z3::expr &get_phi() noexcept { return phi; }
-    [[nodiscard]] const z3::expr &get_phi() const noexcept { return phi; }
+    [[nodiscard]] z3::expr get_phi() const noexcept { return phi; }
 
-    [[nodiscard]] z3::expr &get_pos() noexcept { return pos; }
-    [[nodiscard]] const z3::expr &get_pos() const noexcept { return pos; }
+    [[nodiscard]] z3::expr get_pos() const noexcept { return pos; }
 
   private:
     [[nodiscard]] static z3::expr compute_phi(z3solver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept;
@@ -35,8 +33,7 @@ namespace ratio
     z3resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;
     z3resolver(flaw &f, utils::rational &&intrinsic_cost, z3::expr rho) noexcept;
 
-    [[nodiscard]] z3::expr &get_rho() noexcept { return rho; }
-    [[nodiscard]] const z3::expr &get_rho() const noexcept { return rho; }
+    [[nodiscard]] z3::expr get_rho() const noexcept { return rho; }
 
   protected:
     void add(const z3::expr &e);
@@ -52,8 +49,7 @@ namespace ratio
   public:
     z3atom_flaw(z3solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept;
 
-    [[nodiscard]] atom_expr &get_atom() noexcept { return atm; }
-    [[nodiscard]] const atom_expr &get_atom() const noexcept { return atm; }
+    [[nodiscard]] atom_expr get_atom() const noexcept { return atm; }
 
   private:
     void compute_resolvers() override;

@@ -162,7 +162,7 @@ namespace ratio
         else
         {
             auto it = std::find_if(get_values().begin(), get_values().end(), [&rhs](const auto &v)
-                                   { return v.operator->() == rhs.get(); });
+                                   { return &*v == rhs.get(); });
             if (it != get_values().end())
                 return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type()), expr == ctx.int_val(static_cast<uint64_t>(std::distance(get_values().begin(), it))));
             else
@@ -201,7 +201,7 @@ namespace ratio
                     eqs.push_back(utils::s_ptr_cast<bool_item>(get_core().new_eq(items.at(arg->get_name()), a->items.at(arg->get_name())))->get_expr());
 
                 for (const auto &p : pred->get_parents())
-                    q.push(p.operator->());
+                    q.push(&*p);
             }
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type()), z3::mk_and(eqs));
         }
@@ -479,7 +479,7 @@ namespace ratio
                                 inconsistencies = true;
                         if (auto ctp = dynamic_cast<riddle::component_type *>(tp))
                             for (const auto &p : ctp->get_parents())
-                                q.push(p.operator->());
+                                q.push(&*p);
                     }
                     if (!inconsistencies)
                     { // solution found..
