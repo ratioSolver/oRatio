@@ -56,7 +56,7 @@ target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SO
 
 if(${CONSTRAINT_REASONER_TYPE} STREQUAL "Z3")
     include(FetchContent)
-    FetchContent_Declare(z3 GIT_REPOSITORY https://github.com/Z3Prover/z3 GIT_TAG z3-4.13.4)
+    FetchContent_Declare(z3 GIT_REPOSITORY https://github.com/Z3Prover/z3 GIT_TAG z3-4.13.0)
     FetchContent_MakeAvailable(z3)
     set(z3_SOURCE_DIR_VALUE "${z3_SOURCE_DIR}")
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CTestCustom.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/CTestCustom.cmake @ONLY)
