@@ -6,6 +6,9 @@
 #if defined(SEMITONE)
 #include "semitonesolver.hpp"
 #define SOLVER_CLASS ratio::semitonesolver
+#elif defined(MathSAT)
+#include "msatsolver.hpp"
+#define SOLVER_CLASS ratio::msatsolver
 #elif defined(Z3)
 #include "z3solver.hpp"
 #define SOLVER_CLASS ratio::z3solver

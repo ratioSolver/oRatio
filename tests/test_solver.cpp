@@ -1,5 +1,7 @@
 #if defined(SEMITONE)
 #include "semitonesolver.hpp"
+#elif defined(MathSAT)
+#include "msatsolver.hpp"
 #elif defined(Z3)
 #include "z3solver.hpp"
 #endif
@@ -33,6 +35,8 @@ int main(int argc, char const *argv[])
         auto start = std::chrono::high_resolution_clock::now();
 #if defined(SEMITONE)
         ratio::semitonesolver s;
+#elif defined(MathSAT)
+        ratio::msatsolver s;
 #elif defined(Z3)
         ratio::z3solver s;
 #endif
