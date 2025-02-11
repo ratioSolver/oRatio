@@ -60,4 +60,23 @@ namespace ratio
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
         }
     }
+
+    riddle::bool_expr stsolver::new_or(std::vector<riddle::bool_expr> &&exprs)
+    {
+        assert(!exprs.empty());
+        std::vector<utils::lit> lits;
+        for (const riddle::bool_expr &expr : exprs)
+            lits.push_back(static_cast<const bool_item &>(*expr).get_expr());
+        if (get_current_resolver())
+        { // activating the resolver will activate the disjunction..
+            lits.push_back(!static_cast<const stresolver &>(*get_current_resolver().value()).get_rho());
+            net.add_clause(std::move(lits));
+            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const stresolver &>(*get_current_resolver().value()).get_rho());
+        }
+        else
+        { // the disjunction must be activated independently..
+            net.add_clause(std::move(lits));
+            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
+        }
+    }
 } // namespace ratio

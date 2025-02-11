@@ -42,4 +42,56 @@ namespace ratio
   private:
     const utils::lit rho; // the literal indicating whether the resolver is active or not..
   };
+
+  class stclause final : public stflaw
+  {
+  public:
+    stclause(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&disjuncts) noexcept;
+
+    [[nodiscard]] const std::vector<utils::lit> &get_disjuncts() const noexcept { return disjuncts; }
+
+  private:
+    void compute_resolvers() override;
+
+  private:
+    std::vector<utils::lit> disjuncts;
+  };
+
+  class stchoose_lit final : public stresolver
+  {
+  public:
+    stchoose_lit(stclause &f, const utils::lit &conj) noexcept;
+
+  private:
+    void apply() override;
+
+  private:
+    const utils::lit conj;
+  };
+
+  class stdisjunction_flaw final : public stflaw
+  {
+  public:
+    stdisjunction_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+
+    [[nodiscard]] const std::vector<utils::u_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
+
+  private:
+    void compute_resolvers() override;
+
+  private:
+    std::vector<utils::u_ptr<riddle::conjunction>> disjuncts;
+  };
+
+  class stchoose_conjunction final : public stresolver
+  {
+  public:
+    stchoose_conjunction(stdisjunction_flaw &f, riddle::conjunction &conj) noexcept;
+
+  private:
+    void apply() override;
+
+  private:
+    riddle::conjunction &conj;
+  };
 } // namespace ratio
