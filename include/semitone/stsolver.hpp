@@ -105,5 +105,31 @@ namespace ratio
   public:
     stsolver(std::string_view name = "oRatio") noexcept;
     virtual ~stsolver() = default;
+
+    [[nodiscard]] riddle::bool_expr new_bool() override;
+    [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
+    [[nodiscard]] utils::lbool bool_value(const riddle::bool_item &expr) const noexcept override;
+
+    [[nodiscard]] riddle::arith_expr new_int() override;
+    [[nodiscard]] riddle::arith_expr new_int(const INT_TYPE value) override;
+    [[nodiscard]] riddle::arith_expr new_int(const INT_TYPE lb, const INT_TYPE ub) override;
+    [[nodiscard]] riddle::arith_expr new_uncertain_int(const INT_TYPE lb, const INT_TYPE ub) override;
+
+    [[nodiscard]] riddle::arith_expr new_real() override;
+    [[nodiscard]] riddle::arith_expr new_real(utils::rational &&value) override;
+    [[nodiscard]] riddle::arith_expr new_real(utils::rational &&lb, utils::rational &&ub) override;
+    [[nodiscard]] riddle::arith_expr new_uncertain_real(utils::rational &&lb, utils::rational &&ub) override;
+
+    [[nodiscard]] riddle::arith_expr new_time() override;
+    [[nodiscard]] riddle::arith_expr new_time(utils::rational &&value) override;
+
+    [[nodiscard]] utils::inf_rational arith_value(const riddle::arith_item &expr) const noexcept override;
+
+    [[nodiscard]] riddle::string_expr new_string() override;
+    [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
+    [[nodiscard]] std::string string_value(const riddle::string_item &expr) const noexcept override;
+
+  private:
+    semitone::network net;
   };
 } // namespace ratio

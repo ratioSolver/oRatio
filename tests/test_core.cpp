@@ -1,5 +1,5 @@
 #if defined(SEMITONE)
-#include "semitonesolver.hpp"
+#include "stsolver.hpp"
 #elif defined(MathSAT)
 #include "msatsolver.hpp"
 #elif defined(Z3)
@@ -10,7 +10,7 @@
 void test_basic_core()
 {
 #if defined(SEMITONE)
-    ratio::semitonesolver slv;
+    ratio::stsolver slv;
 #elif defined(MathSAT)
     ratio::msatsolver slv;
 #elif defined(Z3)
