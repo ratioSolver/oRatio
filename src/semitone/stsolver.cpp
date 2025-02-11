@@ -1,4 +1,6 @@
 #include "stsolver.hpp"
+#include "stflaws.hpp"
+#include "sttypes.hpp"
 #include "logging.hpp"
 #include <cassert>
 
@@ -41,4 +43,21 @@ namespace ratio
         return utils::make_s_ptr<enum_item>(static_cast<riddle::enum_type &>(tp), net.new_int(utils::rational::zero, utils::rational(values.size() - 1)), std::move(values));
     }
     std::vector<utils::ref_wrapper<utils::enum_val>> stsolver::enum_value(const riddle::enum_item &expr) const noexcept { return {static_cast<utils::enum_val &>(*expr.get_values()[net.arith_value(static_cast<const enum_item &>(expr).get_expr()).get_rational().numerator()])}; }
+
+    riddle::bool_expr stsolver::new_and(std::vector<riddle::bool_expr> &&exprs)
+    {
+        assert(!exprs.empty());
+        if (get_current_resolver())
+        { // activating the resolver will activate the conjunction..
+            for (const riddle::bool_expr &expr : exprs)
+                net.add_clause({!static_cast<const stresolver &>(*get_current_resolver().value()).get_rho(), static_cast<const bool_item &>(*expr).get_expr()});
+            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const stresolver &>(*get_current_resolver().value()).get_rho());
+        }
+        else
+        { // the conjunction must be activated independently..
+            for (const riddle::bool_expr &expr : exprs)
+                net.add_clause({static_cast<const bool_item &>(*expr).get_expr()});
+            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
+        }
+    }
 } // namespace ratio

@@ -132,6 +132,10 @@ namespace ratio
     [[nodiscard]] riddle::enum_expr new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) override;
     [[nodiscard]] std::vector<utils::ref_wrapper<utils::enum_val>> enum_value(const riddle::enum_item &expr) const noexcept override;
 
+    [[nodiscard]] riddle::bool_expr new_and(std::vector<riddle::bool_expr> &&exprs) override;
+    [[nodiscard]] riddle::bool_expr new_or(std::vector<riddle::bool_expr> &&exprs) override;
+    [[nodiscard]] riddle::bool_expr new_xor(std::vector<riddle::bool_expr> &&exprs) override;
+
   private:
     semitone::network net;
   };
