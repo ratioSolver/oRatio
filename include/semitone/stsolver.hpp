@@ -129,6 +129,9 @@ namespace ratio
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
     [[nodiscard]] std::string string_value(const riddle::string_item &expr) const noexcept override;
 
+    [[nodiscard]] riddle::enum_expr new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) override;
+    [[nodiscard]] std::vector<utils::ref_wrapper<utils::enum_val>> enum_value(const riddle::enum_item &expr) const noexcept override;
+
   private:
     semitone::network net;
   };

@@ -1,4 +1,6 @@
 #include "stsolver.hpp"
+#include "logging.hpp"
+#include <cassert>
 
 namespace ratio
 {
@@ -32,4 +34,11 @@ namespace ratio
     riddle::string_expr stsolver::new_string() { return utils::make_s_ptr<string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ""); }
     riddle::string_expr stsolver::new_string(std::string &&value) { return utils::make_s_ptr<string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
     std::string stsolver::string_value(const riddle::string_item &expr) const noexcept { return static_cast<const string_item &>(expr).get_expr(); }
+
+    riddle::enum_expr stsolver::new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
+    {
+        assert(!values.empty());
+        return utils::make_s_ptr<enum_item>(static_cast<riddle::enum_type &>(tp), net.new_int(utils::rational::zero, utils::rational(values.size() - 1)), std::move(values));
+    }
+    std::vector<utils::ref_wrapper<utils::enum_val>> stsolver::enum_value(const riddle::enum_item &expr) const noexcept { return {static_cast<utils::enum_val &>(*expr.get_values()[net.arith_value(static_cast<const enum_item &>(expr).get_expr()).get_rational().numerator()])}; }
 } // namespace ratio
