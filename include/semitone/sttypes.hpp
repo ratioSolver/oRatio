@@ -1,6 +1,6 @@
 #pragma once
 
-#include "semitonesolver.hpp"
+#include "stsolver.hpp"
 
 namespace ratio
 {

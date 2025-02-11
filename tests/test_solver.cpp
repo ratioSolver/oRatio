@@ -1,5 +1,5 @@
 #if defined(SEMITONE)
-#include "semitonesolver.hpp"
+#include "stsolver.hpp"
 #elif defined(MathSAT)
 #include "msatsolver.hpp"
 #elif defined(Z3)
@@ -34,7 +34,7 @@ int main(int argc, char const *argv[])
         LOG_INFO("running test " + std::to_string(i + 1) + " of " + std::to_string(NUM_TESTS));
         auto start = std::chrono::high_resolution_clock::now();
 #if defined(SEMITONE)
-        ratio::semitonesolver s;
+        ratio::stsolver s;
 #elif defined(MathSAT)
         ratio::msatsolver s;
 #elif defined(Z3)

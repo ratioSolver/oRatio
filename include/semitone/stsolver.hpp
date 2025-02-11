@@ -1,11 +1,16 @@
 #pragma once
 
-#include "lit.hpp"
-#include "lin.hpp"
 #include "graph.hpp"
+#include "network.hpp"
 
 namespace ratio
 {
+  class stflaw;
+  class statom_flaw;
+  class stresolver;
+  class stcomponent_type;
+  class stunify_atom;
+
   class bool_item : public riddle::bool_item
   {
   public:
@@ -68,10 +73,37 @@ namespace ratio
     const utils::var expr;
   };
 
-  class solver : public graph
+  class atom : public riddle::atom
   {
   public:
-    solver(std::string_view name = "oRatio") noexcept;
-    virtual ~solver() = default;
+    atom(statom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args);
+
+    [[nodiscard]] statom_flaw &get_flaw() noexcept { return flaw; }
+
+    [[nodiscard]] const utils::lit &get_sigma() const noexcept { return sigma; }
+
+    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
+
+    [[nodiscard]] riddle::atom_state get_state() const override;
+
+    [[nodiscard]] json::json to_json() const override;
+
+  private:
+    statom_flaw &flaw;      // the flaw associated with this atom..
+    const utils::lit sigma; // the activation status of the atom (i.e., False if inactive, True if active, Undefined if unified)....
+  };
+
+  class stsolver : public graph
+  {
+    friend class bool_item;
+    friend class arith_item;
+    friend class string_item;
+    friend class enum_item;
+    friend class atom;
+    friend class stflaw;
+
+  public:
+    stsolver(std::string_view name = "oRatio") noexcept;
+    virtual ~stsolver() = default;
   };
 } // namespace ratio

@@ -4,8 +4,8 @@
 #define SOLVER_CLASS ratio::server::server
 #else
 #if defined(SEMITONE)
-#include "semitonesolver.hpp"
-#define SOLVER_CLASS ratio::semitonesolver
+#include "stsolver.hpp"
+#define SOLVER_CLASS ratio::stsolver
 #elif defined(MathSAT)
 #include "msatsolver.hpp"
 #define SOLVER_CLASS ratio::msatsolver
