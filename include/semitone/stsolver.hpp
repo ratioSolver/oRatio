@@ -93,6 +93,8 @@ namespace ratio
     const utils::lit sigma; // the activation status of the atom (i.e., False if inactive, True if active, Undefined if unified)....
   };
 
+  using atom_expr = utils::s_ptr<atom>;
+
   class stsolver : public graph
   {
     friend class bool_item;

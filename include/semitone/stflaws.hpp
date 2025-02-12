@@ -92,4 +92,58 @@ namespace ratio
   private:
     riddle::conjunction &conj;
   };
+
+  class statom_flaw final : public stflaw
+  {
+  public:
+    statom_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept;
+
+    [[nodiscard]] atom_expr get_atom() const noexcept { return atm; }
+
+  private:
+    void compute_resolvers() override;
+
+    json::json to_json() const override;
+
+  private:
+    atom_expr atm; // the atom that is the subject of the flaw..
+  };
+
+  class stactivate_fact final : public stresolver
+  {
+  public:
+    stactivate_fact(statom_flaw &f) noexcept;
+    stactivate_fact(statom_flaw &f, const utils::lit &rho) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+  };
+
+  class stactivate_goal final : public stresolver
+  {
+  public:
+    stactivate_goal(statom_flaw &f) noexcept;
+    stactivate_goal(statom_flaw &f, const utils::lit &rho) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+  };
+
+  class stunify_atom final : public stresolver
+  {
+  public:
+    stunify_atom(statom_flaw &f, atom_expr atm) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+
+  private:
+    atom_expr atm; // the atom to unify with..
+  };
 } // namespace ratio
