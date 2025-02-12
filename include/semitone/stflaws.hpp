@@ -7,7 +7,7 @@ namespace ratio
   class stflaw : public flaw
   {
   public:
-    stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes) noexcept;
+    stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
 
     [[nodiscard]] const utils::lit &get_phi() const noexcept { return phi; }
 
@@ -46,15 +46,15 @@ namespace ratio
   class stclause final : public stflaw
   {
   public:
-    stclause(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&disjuncts) noexcept;
+    stclause(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
 
-    [[nodiscard]] const std::vector<utils::lit> &get_disjuncts() const noexcept { return disjuncts; }
+    [[nodiscard]] const std::vector<utils::lit> &get_disjuncts() const noexcept { return clause; }
 
   private:
     void compute_resolvers() override;
 
   private:
-    std::vector<utils::lit> disjuncts;
+    std::vector<utils::lit> clause;
   };
 
   class stchoose_lit final : public stresolver

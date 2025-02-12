@@ -101,6 +101,7 @@ namespace ratio
     friend class enum_item;
     friend class atom;
     friend class stflaw;
+    friend class stresolver;
 
   public:
     stsolver(std::string_view name = "oRatio") noexcept;
@@ -135,6 +136,20 @@ namespace ratio
     [[nodiscard]] riddle::bool_expr new_and(std::vector<riddle::bool_expr> &&exprs) override;
     [[nodiscard]] riddle::bool_expr new_or(std::vector<riddle::bool_expr> &&exprs) override;
     [[nodiscard]] riddle::bool_expr new_xor(std::vector<riddle::bool_expr> &&exprs) override;
+
+    [[nodiscard]] riddle::bool_expr new_not(riddle::bool_expr expr) override;
+
+    [[nodiscard]] riddle::arith_expr new_negation(riddle::arith_expr xpr) override;
+
+    [[nodiscard]] riddle::arith_expr new_sum(std::vector<riddle::arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_subtraction(std::vector<riddle::arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::arith_expr> &&xprs) override;
+
+    [[nodiscard]] riddle::bool_expr new_lt(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
+    [[nodiscard]] riddle::bool_expr new_le(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
+    [[nodiscard]] riddle::bool_expr new_gt(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
+    [[nodiscard]] riddle::bool_expr new_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
 
   private:
     semitone::network net;

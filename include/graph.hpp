@@ -238,20 +238,18 @@ namespace ratio
     friend class resolver;
 
   public:
-    flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes);
+    flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false);
     flaw(const flaw &) = delete;
     virtual ~flaw() = default;
+
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
     [[nodiscard]] graph &get_graph() noexcept { return gr; }
     [[nodiscard]] const graph &get_graph() const noexcept { return gr; }
 
-    [[nodiscard]] bool is_expanded() const noexcept { return expanded; }
-
-    [[nodiscard]] utils::lbool get_state() const noexcept { return state; }
-
-    [[nodiscard]] size_t get_position() const noexcept { return position; }
-
     [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> get_causes() const noexcept { return causes; }
+
+    [[nodiscard]] bool is_exclusive() const noexcept { return exclusive; }
 
     [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> get_resolvers() const noexcept { return resolvers; }
 
@@ -261,7 +259,11 @@ namespace ratio
 
     [[nodiscard]] virtual json::json to_json() const;
 
-    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+    [[nodiscard]] bool is_expanded() const noexcept { return expanded; }
+
+    [[nodiscard]] utils::lbool get_state() const noexcept { return state; }
+
+    [[nodiscard]] size_t get_position() const noexcept { return position; }
 
   protected:
     template <typename Tp, typename... Args>
@@ -277,13 +279,14 @@ namespace ratio
 
   private:
     graph &gr;                                                     // the graph this flaw belongs to..
-    bool expanded = false;                                         // whether this flaw has been expanded or not..
-    utils::lbool state = utils::Undefined;                         // the current state of the flaw..
-    size_t position = 0;                                           // the position of the flaw in the graph..
     std::vector<utils::ref_wrapper<resolver>> causes;              // the causes of this flaw..
+    const bool exclusive;                                          // whether this flaw is exclusive or not..
     std::vector<utils::ref_wrapper<resolver>> resolvers;           // the resolvers for this flaw..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
     std::vector<utils::ref_wrapper<resolver>> supports;            // the resolvers supported by this flaw (used for propagating cost estimates)..
+    bool expanded = false;                                         // whether this flaw has been expanded or not..
+    utils::lbool state = utils::Undefined;                         // the current state of the flaw..
+    size_t position = 0;                                           // the position of the flaw in the graph..
   };
 
   class resolver
@@ -295,6 +298,8 @@ namespace ratio
     resolver(flaw &f, utils::rational &&intrinsic_cost);
     resolver(const resolver &) = delete;
     virtual ~resolver() = default;
+
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
     [[nodiscard]] flaw &get_flaw() noexcept { return f; }
     [[nodiscard]] const flaw &get_flaw() const noexcept { return f; }
@@ -308,8 +313,6 @@ namespace ratio
     [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
 
     [[nodiscard]] virtual json::json to_json() const;
-
-    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
   private:
     virtual void apply() = 0;

@@ -167,7 +167,7 @@ namespace ratio
         }
     }
 
-    flaw::flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes) : gr(gr), causes(causes)
+    flaw::flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) : gr(gr), causes(causes), exclusive(exclusive)
     {
         for (auto &cause : causes)
         {
