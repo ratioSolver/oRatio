@@ -51,13 +51,13 @@ namespace ratio
         if (get_current_resolver())
         { // activating the resolver will activate the conjunction..
             for (const riddle::bool_expr &expr : exprs)
-                net.add_clause({!static_cast<const stresolver &>(*get_current_resolver().value()).get_rho(), static_cast<const bool_item &>(*expr).get_expr()});
+                net.new_clause({!static_cast<const stresolver &>(*get_current_resolver().value()).get_rho(), static_cast<const bool_item &>(*expr).get_expr()});
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const stresolver &>(*get_current_resolver().value()).get_rho());
         }
         else
         { // the conjunction must be activated independently..
             for (const riddle::bool_expr &expr : exprs)
-                net.add_clause({static_cast<const bool_item &>(*expr).get_expr()});
+                net.new_clause({static_cast<const bool_item &>(*expr).get_expr()});
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
         }
     }
@@ -168,60 +168,60 @@ namespace ratio
 
     riddle::bool_expr stsolver::new_lt(riddle::arith_expr lhs, riddle::arith_expr rhs)
     {
-        assert(!get_current_resolver() || net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) == utils::False);
-        if (get_current_resolver() && net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) == utils::Undefined)
+        assert(!get_current_resolver() || net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) != utils::False);
+        if (get_current_resolver())
         { // activating the resolver will activate the comparison..
-            net.new_lt(utils::lit(static_cast<stresolver &>(*get_current_resolver().value()).get_rho()), utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
-            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const stresolver &>(*get_current_resolver().value()).get_rho());
+            net.new_lt(static_cast<arith_item &>(*lhs).get_expr(), static_cast<arith_item &>(*rhs).get_expr(), static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
         }
         else
         { // the comparison must be activated independently..
-            net.add_lt(utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
+            net.new_lt(static_cast<arith_item &>(*lhs).get_expr(), static_cast<arith_item &>(*rhs).get_expr());
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
         }
     }
 
     riddle::bool_expr stsolver::new_le(riddle::arith_expr lhs, riddle::arith_expr rhs)
     {
-        assert(!get_current_resolver() || net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) == utils::False);
-        if (get_current_resolver() && net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) == utils::Undefined)
+        assert(!get_current_resolver() || net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) != utils::False);
+        if (get_current_resolver())
         { // activating the resolver will activate the comparison..
-            net.new_le(utils::lit(static_cast<stresolver &>(*get_current_resolver().value()).get_rho()), utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
-            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const stresolver &>(*get_current_resolver().value()).get_rho());
+            net.new_le(static_cast<arith_item &>(*lhs).get_expr(), static_cast<arith_item &>(*rhs).get_expr(), static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
         }
         else
         { // the comparison must be activated independently..
-            net.add_le(utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
+            net.new_le(static_cast<arith_item &>(*lhs).get_expr(), static_cast<arith_item &>(*rhs).get_expr());
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
         }
     }
 
     riddle::bool_expr stsolver::new_gt(riddle::arith_expr lhs, riddle::arith_expr rhs)
     {
-        assert(!get_current_resolver() || net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) == utils::False);
-        if (get_current_resolver() && net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) == utils::Undefined)
+        assert(!get_current_resolver() || net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) != utils::False);
+        if (get_current_resolver())
         { // activating the resolver will activate the comparison..
-            net.new_gt(utils::lit(static_cast<stresolver &>(*get_current_resolver().value()).get_rho()), utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
-            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const stresolver &>(*get_current_resolver().value()).get_rho());
+            net.new_gt(static_cast<arith_item &>(*lhs).get_expr(), static_cast<arith_item &>(*rhs).get_expr(), static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
         }
         else
         { // the comparison must be activated independently..
-            net.add_gt(utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
+            net.new_gt(static_cast<arith_item &>(*lhs).get_expr(), static_cast<arith_item &>(*rhs).get_expr());
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
         }
     }
 
     riddle::bool_expr stsolver::new_ge(riddle::arith_expr lhs, riddle::arith_expr rhs)
     {
-        assert(!get_current_resolver() || net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) == utils::False);
-        if (get_current_resolver() && net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) == utils::Undefined)
+        assert(!get_current_resolver() || net.value(static_cast<const stresolver &>(*get_current_resolver().value()).get_rho()) != utils::False);
+        if (get_current_resolver())
         { // activating the resolver will activate the comparison..
-            net.new_ge(utils::lit(static_cast<stresolver &>(*get_current_resolver().value()).get_rho()), utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
-            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<const stresolver &>(*get_current_resolver().value()).get_rho());
+            net.new_ge(static_cast<arith_item &>(*lhs).get_expr(), static_cast<arith_item &>(*rhs).get_expr(), static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+            return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
         }
         else
         { // the comparison must be activated independently..
-            net.add_ge(utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
+            net.new_ge(static_cast<arith_item &>(*lhs).get_expr(), static_cast<arith_item &>(*rhs).get_expr());
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
         }
     }
@@ -238,9 +238,9 @@ namespace ratio
     void stsolver::assert_fact(riddle::bool_expr fact)
     {
         if (get_current_resolver().has_value())
-            net.add_clause({!static_cast<stresolver &>(*get_current_resolver().value()).get_rho(), static_cast<const bool_item &>(*fact).get_expr()});
+            net.new_clause({!static_cast<stresolver &>(*get_current_resolver().value()).get_rho(), static_cast<const bool_item &>(*fact).get_expr()});
         else
-            net.add_clause({static_cast<const bool_item &>(*fact).get_expr()});
+            net.new_clause({static_cast<const bool_item &>(*fact).get_expr()});
     }
 
     riddle::atom_expr stsolver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
@@ -254,14 +254,12 @@ namespace ratio
 
     void stsolver::added_causal_link(flaw &f, resolver &r)
     { // if the resolver is active, then the flaw must be active..
-        net.add_clause({!static_cast<stresolver &>(r).get_rho(), static_cast<stflaw &>(f).get_phi()});
+        net.new_clause({!static_cast<stresolver &>(r).get_rho(), static_cast<stflaw &>(f).get_phi()});
     }
 
     bool stsolver::solve()
     {
-        if (!net.propagate())
-            return false; // no solution..
-
+        net.propagate();
         build(); // we build the causal graph..
 
         while (true)
