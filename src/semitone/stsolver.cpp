@@ -70,7 +70,7 @@ namespace ratio
         std::vector<utils::lit> lits;
         for (const riddle::bool_expr &expr : exprs)
             lits.push_back(static_cast<const bool_item &>(*expr).get_expr());
-        auto &f = new_flaw<stclause>(*this, std::move(causes), std::move(lits), false);
+        auto &f = new_flaw<stclause_flaw>(*this, std::move(causes), std::move(lits), false);
         return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), f.get_phi());
     }
 
@@ -83,7 +83,7 @@ namespace ratio
         std::vector<utils::lit> lits;
         for (const riddle::bool_expr &expr : exprs)
             lits.push_back(static_cast<const bool_item &>(*expr).get_expr());
-        auto &f = new_flaw<stclause>(*this, std::move(causes), std::move(lits), true);
+        auto &f = new_flaw<stclause_flaw>(*this, std::move(causes), std::move(lits), true);
         return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), f.get_phi());
     }
 
@@ -223,5 +223,36 @@ namespace ratio
             net.add_ge(utils::lin(static_cast<arith_item &>(*lhs).get_expr()), utils::lin(static_cast<arith_item &>(*rhs).get_expr()));
             return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::TRUE_lit);
         }
+    }
+
+    void stsolver::new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts)
+    {
+        assert(disjuncts.size() > 1);
+        std::vector<utils::ref_wrapper<resolver>> causes;
+        if (get_current_resolver().has_value())
+            causes.push_back(get_current_resolver().value());
+        new_flaw<stdisjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
+    }
+
+    void stsolver::assert_fact(riddle::bool_expr fact)
+    {
+        if (get_current_resolver().has_value())
+            net.add_clause({!static_cast<stresolver &>(*get_current_resolver().value()).get_rho(), static_cast<const bool_item &>(*fact).get_expr()});
+        else
+            net.add_clause({static_cast<const bool_item &>(*fact).get_expr()});
+    }
+
+    riddle::atom_expr stsolver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
+    {
+        std::vector<utils::ref_wrapper<resolver>> causes;
+        if (get_current_resolver().has_value())
+            causes.push_back(get_current_resolver().value());
+        auto &af = new_flaw<statom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args));
+        return af.get_atom();
+    }
+
+    void stsolver::added_causal_link(flaw &f, resolver &r)
+    { // if the resolver is active, then the flaw must be active..
+        net.add_clause({!static_cast<stresolver &>(r).get_rho(), static_cast<stflaw &>(f).get_phi()});
     }
 } // namespace ratio

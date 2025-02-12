@@ -127,9 +127,8 @@ namespace ratio
         set_current_flaw(f);      // set the current flaw..
 
         f.compute_resolvers(); // compute the resolvers for the current flaw..
-        f.expanded_flaw();     // notify the listeners that the flaw has been expanded..
         f.expanded = true;     // mark the flaw as expanded..
-        expanded_flaw(f);      // notify the listeners that the flaw has been expanded (might be used for enforcing causality constraints)..
+        f.expanded_flaw();     // notify the listeners that the flaw has been expanded (might be used for enforcing causality constraints)..
 
         for (auto &resolver : f.get_resolvers())
         {

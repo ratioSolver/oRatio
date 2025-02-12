@@ -124,8 +124,6 @@ namespace ratio
   private:
     void expand_flaw(flaw &f);
 
-    virtual void expanded_flaw(flaw &) = 0;
-
     virtual void updating_flaw_state(flaw &, const utils::lbool &) {}
     virtual void updating_flaw_position(flaw &, const size_t &) {}
     virtual void updating_flaw_cost(flaw &, const utils::rational &) {}

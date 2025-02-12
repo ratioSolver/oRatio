@@ -151,6 +151,16 @@ namespace ratio
     [[nodiscard]] riddle::bool_expr new_gt(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
     [[nodiscard]] riddle::bool_expr new_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
 
+    void new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) override;
+    void assert_fact(riddle::bool_expr fact) override;
+
+    bool solve();
+
+  private:
+    riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
+
+    void added_causal_link(flaw &f, resolver &r) override;
+
   private:
     semitone::network net;
   };

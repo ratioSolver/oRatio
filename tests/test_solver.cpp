@@ -9,6 +9,7 @@
 #include <chrono>
 #include <numeric>
 #include <algorithm>
+#include <cassert>
 
 int main(int argc, char const *argv[])
 {

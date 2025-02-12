@@ -35,18 +35,16 @@ namespace ratio
     [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
 
   protected:
-    void add(const utils::lit &e);
-
     [[nodiscard]] json::json to_json() const override;
 
   private:
     const utils::lit rho; // the literal indicating whether the resolver is active or not..
   };
 
-  class stclause final : public stflaw
+  class stclause_flaw final : public stflaw
   {
   public:
-    stclause(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
+    stclause_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
 
     [[nodiscard]] const std::vector<utils::lit> &get_disjuncts() const noexcept { return clause; }
 
@@ -60,7 +58,7 @@ namespace ratio
   class stchoose_lit final : public stresolver
   {
   public:
-    stchoose_lit(stclause &f, const utils::lit &conj) noexcept;
+    stchoose_lit(stclause_flaw &f, const utils::lit &conj) noexcept;
 
   private:
     void apply() override;

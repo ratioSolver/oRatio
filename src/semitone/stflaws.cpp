@@ -1,4 +1,5 @@
 #include "stflaws.hpp"
+#include "conjunction.hpp"
 
 namespace ratio
 {
@@ -46,13 +47,23 @@ namespace ratio
     stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(static_cast<stsolver &>(f.get_graph()).net.new_var())) {}
     stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), rho(rho) { static_cast<stsolver &>(f.get_graph()).net.add_clause({!rho, static_cast<stflaw &>(f).get_phi()}); }
 
-    stclause::stclause(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
-    void stclause::compute_resolvers()
+    stclause_flaw::stclause_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
+    void stclause_flaw::compute_resolvers()
     {
         for (const auto &lit : clause)
             new_resolver<stchoose_lit>(*this, lit);
     }
 
-    stchoose_lit::stchoose_lit(stclause &f, const utils::lit &conj) noexcept : stresolver(f, utils::rational(1)), conj(conj) {}
+    stchoose_lit::stchoose_lit(stclause_flaw &f, const utils::lit &conj) noexcept : stresolver(f, utils::rational(1)), conj(conj) {}
     void stchoose_lit::apply() {}
+
+    stdisjunction_flaw::stdisjunction_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept : stflaw(slv, std::move(causes), false), disjuncts(std::move(disjuncts)) {}
+    void stdisjunction_flaw::compute_resolvers()
+    {
+        for (const auto &disjunct : disjuncts)
+            new_resolver<stchoose_conjunction>(*this, *disjunct);
+    }
+
+    stchoose_conjunction::stchoose_conjunction(stdisjunction_flaw &f, riddle::conjunction &conj) noexcept : stresolver(f, utils::rational(1)), conj(conj) {}
+    void stchoose_conjunction::apply() { conj.execute(); }
 } // namespace ratio
