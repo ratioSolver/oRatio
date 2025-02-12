@@ -1,5 +1,11 @@
 import { Connection, ConnectionListener } from "./utils/connection";
 
+/**
+ * The `App` class implements the singleton pattern and manages the state and behavior of the application.
+ * It allows for the selection of components and notifies registered listeners of various events.
+ * 
+ * @implements {AppListener}
+ */
 export class App implements AppListener {
 
   private static instance: App;
@@ -14,10 +20,25 @@ export class App implements AppListener {
     return App.instance;
   }
 
+  /**
+   * Display a toast message.
+   * 
+   * @param {string} info The information to display.
+   */
   toast(info: string): void { for (const listener of this.app_listeners) { listener.toast(info); } }
 
+  /**
+   * Get the selected component.
+   * 
+   * @returns {Component<any, HTMLElement> | null} The selected component.
+   */
   get_selected_component(): Component<any, HTMLElement> | null { return this.selected_comp; }
 
+  /**
+   * Set the selected component.
+   * 
+   * @param {Component<any, HTMLElement> | null} component The component to select.
+   */
   selected_component(component: Component<any, HTMLElement> | null): void {
     if (this.selected_comp)
       this.selected_comp.remove();
@@ -25,22 +46,52 @@ export class App implements AppListener {
     for (const listener of this.app_listeners) { listener.selected_component(component); }
   }
 
+  /**
+   * Add an application listener.
+   * 
+   * @param {AppListener} listener The listener to add.
+   */
   add_app_listener(listener: AppListener): void {
     this.app_listeners.add(listener);
   }
 
+  /**
+   * Remove an application listener.
+   * 
+   * @param {AppListener} listener The listener to remove.
+   */
   remove_app_listener(listener: AppListener): void {
     this.app_listeners.delete(listener);
   }
 }
 
+/**
+ * The `AppListener` interface defines the methods that an object must implement to listen to application events.
+ */
 export interface AppListener {
 
+  /**
+   * Request to display a toast message.
+   *
+   * @param {string} info The information to display.
+   */
   toast(info: string): void;
 
+  /**
+   * Notification that a component has been selected.
+   * 
+   * @param {Component<any, HTMLElement> | null} component The selected component.
+   */
   selected_component(component: Component<any, HTMLElement> | null): void;
 }
 
+/**
+ * The `Component` class represents a component in the application.
+ * It manages the payload and element of the component and its children.
+ * 
+ * @template P The type of the payload.
+ * @template E The type of the element.
+ */
 export abstract class Component<P, E extends HTMLElement> {
 
   payload: P; // The payload of the component
@@ -52,12 +103,23 @@ export abstract class Component<P, E extends HTMLElement> {
     this.element = element;
   }
 
+  /**
+   * Add a child component.
+   * 
+   * @param {Component<any, HTMLElement>} child The child component to add.
+   */
   add_child(child: Component<any, HTMLElement>): void {
     this.child_nodes.add(child);
     this.element.appendChild(child.element);
     child.mounted();
   }
 
+  /**
+   * Remove a child component.
+   * 
+   * @param {Component<any, HTMLElement>} child The child component to remove.
+   * @throws {Error} If the child is not found.
+   */
   remove_child(child: Component<any, HTMLElement>): void {
     if (this.child_nodes.has(child)) {
       this.child_nodes.delete(child);
@@ -66,6 +128,9 @@ export abstract class Component<P, E extends HTMLElement> {
       throw new Error('Child not found');
   }
 
+  /**
+   * Remove the component.
+   */
   remove(): void {
     for (const child of this.child_nodes)
       child.unmounting();
@@ -73,10 +138,27 @@ export abstract class Component<P, E extends HTMLElement> {
     this.element.remove();
   }
 
+  /**
+   * Notify that the component has been mounted.
+   * Override this method to perform actions when the component is mounted.
+   */
   mounted(): void { }
+
+  /**
+   * Notify that the component is being unmounted.
+   * Override this method to perform actions when the component is being unmounted.
+   */
   unmounting(): void { }
 }
 
+/**
+ * The `ListComponent` class represents a list component in the application.
+ * It manages the payload and element of the list component and its children.
+ * 
+ * @template P The type of the payload.
+ * @template E The type of the element.
+ * @template L The type of the list element.
+ */
 export abstract class ListComponent<P, E extends HTMLElement, L extends HTMLElement> extends Component<Component<P, E>[], L> {
 
   compareFn: (a: P, b: P) => number; // The comparison function
@@ -114,6 +196,10 @@ export abstract class ListComponent<P, E extends HTMLElement, L extends HTMLElem
   }
 }
 
+/**
+ * The `AppComponent` class represents the main application component.
+ * It manages the application element and listens to application and connection events.
+ */
 export class AppComponent extends Component<App, HTMLDivElement> implements AppListener, ConnectionListener {
 
   constructor() {
@@ -209,16 +295,34 @@ export class AppComponent extends Component<App, HTMLDivElement> implements AppL
   }
 }
 
+/**
+ * The `AnchorComponent` class represents an anchor component in the application.
+ * It manages the payload and element of the anchor component.
+ *
+ * @template P The type of the payload.
+ */
 export class AnchorComponent<P> extends Component<P, HTMLAnchorElement> {
 
   constructor(payload: P) { super(payload, document.createElement('a')); }
 }
 
+/**
+ * The `ButtonComponent` class represents a button component in the application.
+ * It manages the payload and element of the button component.
+ *
+ * @template P The type of the payload.
+ */
 export class ButtonComponent<P> extends Component<P, HTMLButtonElement> {
 
   constructor(payload: P) { super(payload, document.createElement('button')); }
 }
 
+/**
+ * The `DivComponent` class represents a div component in the application.
+ * It manages the payload and element of the div component.
+ *
+ * @template P The type of the payload.
+ */
 export class UListComponent<P> extends ListComponent<P, HTMLLIElement, HTMLUListElement> {
 
   constructor(payload: Component<P, HTMLLIElement>[], compareFn?: (a: P, b: P) => number) {

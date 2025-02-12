@@ -1,5 +1,8 @@
 import { Settings } from "./settings";
 
+/**
+ * Singleton class that manages the connection to the server.
+ */
 export class Connection {
 
   private static instance: Connection;
@@ -14,6 +17,12 @@ export class Connection {
     return Connection.instance;
   }
 
+  /**
+   * Connects to the server.
+   * 
+   * @param token Token to use for authentication.
+   * @param timeout Timeout in milliseconds to wait before reconnecting.
+   */
   connect(token: string | null = null, timeout = 5000) {
     if (this.socket)
       this.socket.close();
@@ -50,17 +59,49 @@ export class Connection {
     };
   }
 
+  /**
+   * Adds a connection listener.
+   * 
+   * @param listener Connection listener to add.
+   */
   add_connection_listener(listener: ConnectionListener): void { this.connection_listeners.add(listener); }
+
+  /**
+   * Removes a connection listener.
+   * 
+   * @param listener Connection listener to remove.
+   */
   remove_connection_listener(listener: ConnectionListener): void { this.connection_listeners.delete(listener); }
 }
 
+/**
+ * Interface that defines the methods that a connection listener must implement.
+ */
 export interface ConnectionListener {
 
+  /**
+   * Called when the connection to the server is established.
+   *
+   * @param info Information received from the server.
+   */
   connected(info: any): void;
 
+  /**
+   * Called when a message is received from the server.
+   *
+   * @param message Message received from the server.
+   */
   received_message(message: any): void;
 
+  /**
+   * Called when the connection to the server is closed.
+   */
   disconnected(): void;
 
+  /**
+   * Called when an error occurs in the connection to the server.
+   *
+   * @param error Error that occurred.
+   */
   connection_error(error: any): void;
 }

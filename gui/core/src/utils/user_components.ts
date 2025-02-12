@@ -1,6 +1,9 @@
 import { ButtonComponent, Component } from '../app';
 import { CurrentUser } from './user';
 
+/**
+ * Button to log in.
+ */
 export class LogInButton extends ButtonComponent<void> {
 
   constructor() {
@@ -13,6 +16,9 @@ export class LogInButton extends ButtonComponent<void> {
   }
 }
 
+/**
+ * Button to log out.
+ */
 export class LogOutButton extends ButtonComponent<void> {
 
   constructor() {
@@ -24,6 +30,9 @@ export class LogOutButton extends ButtonComponent<void> {
   }
 }
 
+/**
+ * Modal to log in.
+ */
 export class LogInModal extends Component<void, HTMLDivElement> {
 
   private username_input: string = '';
