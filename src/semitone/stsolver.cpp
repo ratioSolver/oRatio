@@ -1,6 +1,7 @@
 #include "stsolver.hpp"
 #include "stflaws.hpp"
 #include "sttypes.hpp"
+#include "conjunction.hpp"
 #include "logging.hpp"
 #include <cassert>
 
@@ -254,5 +255,17 @@ namespace ratio
     void stsolver::added_causal_link(flaw &f, resolver &r)
     { // if the resolver is active, then the flaw must be active..
         net.add_clause({!static_cast<stresolver &>(r).get_rho(), static_cast<stflaw &>(f).get_phi()});
+    }
+
+    bool stsolver::solve()
+    {
+        if (!net.propagate())
+            return false; // no solution..
+
+        build(); // we build the causal graph..
+
+        while (true)
+        { // we try to solve the problem with the current causal graph..
+        }
     }
 } // namespace ratio
