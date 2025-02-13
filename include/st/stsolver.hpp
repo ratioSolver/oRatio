@@ -1,123 +1,93 @@
 #pragma once
 
 #include "graph.hpp"
-#include "c++/z3++.h"
+#include "item.hpp"
+#include "network.hpp"
 
 namespace ratio
 {
-  class z3flaw;
-  class z3atom_flaw;
-  class z3resolver;
-  class z3component_type;
-  class z3unify_atom;
+  class stflaw;
+  class statom_flaw;
+  class stresolver;
+  class stcomponent_type;
+  class stunify_atom;
 
   class bool_item : public riddle::bool_item
   {
   public:
-    bool_item(riddle::bool_type &tp, z3::expr expr) : riddle::bool_item(tp), expr(expr) {}
-
-    [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
-    [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
+    bool_item(riddle::bool_type &tp, utils::lit &&expr) : riddle::bool_item(tp, std::move(expr)) {}
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
     [[nodiscard]] json::json to_json() const override;
-
-  private:
-    z3::expr expr;
   };
 
   class arith_item : public riddle::arith_item
   {
   public:
-    arith_item(riddle::int_type &tp, z3::expr expr) : riddle::arith_item(tp), expr(expr) {}
-    arith_item(riddle::real_type &tp, z3::expr expr) : riddle::arith_item(tp), expr(expr) {}
-    arith_item(riddle::time_type &tp, z3::expr expr) : riddle::arith_item(tp), expr(expr) {}
-
-    [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
-    [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
+    arith_item(riddle::int_type &tp, utils::lin &&expr) : riddle::arith_item(tp, std::move(expr)) {}
+    arith_item(riddle::real_type &tp, utils::lin &&expr) : riddle::arith_item(tp, std::move(expr)) {}
+    arith_item(riddle::time_type &tp, utils::lin &&expr) : riddle::arith_item(tp, std::move(expr)) {}
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
     [[nodiscard]] json::json to_json() const override;
-
-  private:
-    z3::expr expr;
   };
 
   class string_item : public riddle::string_item
   {
   public:
-    string_item(riddle::string_type &tp, z3::expr expr) : riddle::string_item(tp), expr(expr) {}
-
-    [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
-    [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
+    string_item(riddle::string_type &tp, std::string &&expr) : riddle::string_item(tp, std::move(expr)) {}
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
     [[nodiscard]] json::json to_json() const override;
-
-  private:
-    z3::expr expr;
   };
 
   class enum_item : public riddle::enum_item
   {
   public:
-    enum_item(riddle::type &tp, z3::expr expr, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) : riddle::enum_item(tp, std::move(values)), expr(expr) {}
-
-    [[nodiscard]] z3::expr &get_expr() noexcept { return expr; }
-    [[nodiscard]] const z3::expr &get_expr() const noexcept { return expr; }
+    enum_item(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values, utils::var expr) : riddle::enum_item(tp, std::move(values), std::move(expr)) {}
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
     [[nodiscard]] json::json to_json() const override;
-
-  private:
-    z3::expr expr;
   };
 
   class atom : public riddle::atom
   {
   public:
-    atom(z3atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args);
+    atom(statom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args);
 
-    [[nodiscard]] z3atom_flaw &get_flaw() noexcept { return flaw; }
-
-    [[nodiscard]] z3::expr &get_sigma() noexcept { return sigma; }
-    [[nodiscard]] const z3::expr &get_sigma() const noexcept { return sigma; }
+    [[nodiscard]] statom_flaw &get_flaw() noexcept { return flaw; }
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-
-    [[nodiscard]] riddle::atom_state get_state() const override;
 
     [[nodiscard]] json::json to_json() const override;
 
   private:
-    z3atom_flaw &flaw; // the flaw associated with this atom..
-    z3::expr sigma;    // the activation status of the atom (i.e., 0 if inactive, 1 if active, 2 if unified)....
+    statom_flaw &flaw; // the flaw associated with this atom..
   };
 
   using atom_expr = utils::s_ptr<atom>;
 
-  class z3solver : public graph
+  class stsolver : public graph
   {
     friend class bool_item;
     friend class arith_item;
     friend class string_item;
     friend class enum_item;
     friend class atom;
-    friend class z3flaw;
-    friend class z3resolver;
-    friend class z3component_type;
-    friend class z3unify_atom;
+    friend class stflaw;
+    friend class stresolver;
 
   public:
-    z3solver(std::string_view name = "oRatio");
+    stsolver(std::string_view name = "oRatio") noexcept;
+    virtual ~stsolver() = default;
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
-    [[nodiscard]] utils::lbool bool_value(const riddle::bool_item &expr) const noexcept override;
+    [[nodiscard]] utils::lbool bool_value(const riddle::bool_itm &expr) const noexcept override;
 
     [[nodiscard]] riddle::arith_expr new_int() override;
     [[nodiscard]] riddle::arith_expr new_int(const INT_TYPE value) override;
@@ -132,20 +102,14 @@ namespace ratio
     [[nodiscard]] riddle::arith_expr new_time() override;
     [[nodiscard]] riddle::arith_expr new_time(utils::rational &&value) override;
 
-    [[nodiscard]] utils::inf_rational arith_value(const riddle::arith_item &expr) const noexcept override;
+    [[nodiscard]] utils::inf_rational arith_value(const riddle::arith_itm &expr) const noexcept override;
 
     [[nodiscard]] riddle::string_expr new_string() override;
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
-    [[nodiscard]] std::string string_value(const riddle::string_item &expr) const noexcept override;
+    [[nodiscard]] std::string string_value(const riddle::string_itm &expr) const noexcept override;
 
     [[nodiscard]] riddle::enum_expr new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) override;
-    [[nodiscard]] std::vector<utils::ref_wrapper<utils::enum_val>> enum_value(const riddle::enum_item &expr) const noexcept override;
-
-    [[nodiscard]] riddle::bool_expr new_and(std::vector<riddle::bool_expr> &&exprs) override;
-    [[nodiscard]] riddle::bool_expr new_or(std::vector<riddle::bool_expr> &&exprs) override;
-    [[nodiscard]] riddle::bool_expr new_xor(std::vector<riddle::bool_expr> &&exprs) override;
-
-    [[nodiscard]] riddle::bool_expr new_not(riddle::bool_expr expr) override;
+    [[nodiscard]] std::vector<utils::ref_wrapper<utils::enum_val>> enum_value(const riddle::enum_itm &expr) const noexcept override;
 
     [[nodiscard]] riddle::arith_expr new_negation(riddle::arith_expr xpr) override;
 
@@ -160,29 +124,16 @@ namespace ratio
     [[nodiscard]] riddle::bool_expr new_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
 
     void new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) override;
-    void assert_fact(riddle::bool_expr fact) override;
+    void assert_clause(std::vector<riddle::bool_expr> &&exprs) override;
 
     bool solve();
 
-  protected:
-    virtual riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
-
   private:
-    void expanded_flaw(flaw &f) override;
+    riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
 
     void added_causal_link(flaw &f, resolver &r) override;
 
   private:
-    z3::context ctx;
-    z3::solver slv;
-    z3::model mdl;
-    size_t bool_count = 0;
-    size_t int_count = 0;
-    size_t real_count = 0;
-    size_t time_count = 0;
-    size_t string_count = 0;
-    size_t enum_count = 0;
-    size_t atom_count = 0;
-    size_t position_count = 0;
+    semitone::network net;
   };
 } // namespace ratio
