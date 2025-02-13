@@ -15,55 +15,45 @@ namespace ratio
   class bool_item : public riddle::bool_item
   {
   public:
-    bool_item(riddle::bool_type &tp, utils::lit &&expr) : riddle::bool_item(tp, std::move(expr)) {}
+    bool_item(riddle::bool_type &tp, utils::lit &&expr) noexcept;
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-
-    [[nodiscard]] json::json to_json() const override;
   };
 
   class arith_item : public riddle::arith_item
   {
   public:
-    arith_item(riddle::int_type &tp, utils::lin &&expr) : riddle::arith_item(tp, std::move(expr)) {}
-    arith_item(riddle::real_type &tp, utils::lin &&expr) : riddle::arith_item(tp, std::move(expr)) {}
-    arith_item(riddle::time_type &tp, utils::lin &&expr) : riddle::arith_item(tp, std::move(expr)) {}
+    arith_item(riddle::int_type &tp, utils::lin &&expr) noexcept;
+    arith_item(riddle::real_type &tp, utils::lin &&expr) noexcept;
+    arith_item(riddle::time_type &tp, utils::lin &&expr) noexcept;
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-
-    [[nodiscard]] json::json to_json() const override;
   };
 
   class string_item : public riddle::string_item
   {
   public:
-    string_item(riddle::string_type &tp, std::string &&expr) : riddle::string_item(tp, std::move(expr)) {}
+    string_item(riddle::string_type &tp, std::string &&expr) noexcept;
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-
-    [[nodiscard]] json::json to_json() const override;
   };
 
   class enum_item : public riddle::enum_item
   {
   public:
-    enum_item(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values, utils::var expr) : riddle::enum_item(tp, std::move(values), std::move(expr)) {}
+    enum_item(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values, utils::var &&expr) noexcept;
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-
-    [[nodiscard]] json::json to_json() const override;
   };
 
   class atom : public riddle::atom
   {
   public:
-    atom(statom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args);
+    atom(statom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept;
 
     [[nodiscard]] statom_flaw &get_flaw() noexcept { return flaw; }
 
     [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-
-    [[nodiscard]] json::json to_json() const override;
 
   private:
     statom_flaw &flaw; // the flaw associated with this atom..

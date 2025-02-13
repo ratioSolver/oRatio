@@ -7,6 +7,23 @@
 
 namespace ratio
 {
+    bool_item::bool_item(riddle::bool_type &tp, utils::lit &&expr) noexcept : riddle::bool_item(tp, std::move(expr)) {}
+    riddle::bool_expr bool_item::operator==(riddle::expr rhs) const {}
+
+    arith_item::arith_item(riddle::int_type &tp, utils::lin &&expr) noexcept : riddle::arith_item(tp, std::move(expr)) {}
+    arith_item::arith_item(riddle::real_type &tp, utils::lin &&expr) noexcept : riddle::arith_item(tp, std::move(expr)) {}
+    arith_item::arith_item(riddle::time_type &tp, utils::lin &&expr) noexcept : riddle::arith_item(tp, std::move(expr)) {}
+    riddle::bool_expr arith_item::operator==(riddle::expr rhs) const {}
+
+    string_item::string_item(riddle::string_type &tp, std::string &&expr) noexcept : riddle::string_item(tp, std::move(expr)) {}
+    riddle::bool_expr string_item::operator==(riddle::expr rhs) const {}
+
+    enum_item::enum_item(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values, utils::var &&expr) noexcept : riddle::enum_item(tp, std::move(values), std::move(expr)) {}
+    riddle::bool_expr enum_item::operator==(riddle::expr rhs) const {}
+
+    atom::atom(statom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : riddle::atom(pred, is_fact, std::move(args), std::move(sigma)), flaw(flaw) {}
+    riddle::bool_expr atom::operator==(riddle::expr rhs) const {}
+
     stsolver::stsolver(std::string_view name) noexcept : graph(name) {}
 
     riddle::bool_expr stsolver::new_bool() { return utils::make_s_ptr<bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::lit(net.new_var())); }
