@@ -12,48 +12,12 @@ namespace ratio
   class stcomponent_type;
   class stunify_atom;
 
-  class bool_item : public riddle::bool_item
-  {
-  public:
-    bool_item(riddle::bool_type &tp, utils::lit &&expr) noexcept;
-
-    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-  };
-
-  class arith_item : public riddle::arith_item
-  {
-  public:
-    arith_item(riddle::int_type &tp, utils::lin &&expr) noexcept;
-    arith_item(riddle::real_type &tp, utils::lin &&expr) noexcept;
-    arith_item(riddle::time_type &tp, utils::lin &&expr) noexcept;
-
-    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-  };
-
-  class string_item : public riddle::string_item
-  {
-  public:
-    string_item(riddle::string_type &tp, std::string &&expr) noexcept;
-
-    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-  };
-
-  class enum_item : public riddle::enum_item
-  {
-  public:
-    enum_item(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values, utils::var &&expr) noexcept;
-
-    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
-  };
-
   class atom : public riddle::atom
   {
   public:
-    atom(statom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept;
+    atom(statom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : riddle::atom(pred, is_fact, std::move(args), std::move(sigma)), flaw(flaw) {}
 
     [[nodiscard]] statom_flaw &get_flaw() noexcept { return flaw; }
-
-    [[nodiscard]] riddle::bool_expr operator==(riddle::expr rhs) const override;
 
   private:
     statom_flaw &flaw; // the flaw associated with this atom..
@@ -77,7 +41,7 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
-    [[nodiscard]] utils::lbool bool_value(const riddle::bool_itm &expr) const noexcept override;
+    [[nodiscard]] utils::lbool bool_value(const riddle::bool_term &expr) const noexcept override;
 
     [[nodiscard]] riddle::arith_expr new_int() override;
     [[nodiscard]] riddle::arith_expr new_int(const INT_TYPE value) override;
@@ -92,14 +56,14 @@ namespace ratio
     [[nodiscard]] riddle::arith_expr new_time() override;
     [[nodiscard]] riddle::arith_expr new_time(utils::rational &&value) override;
 
-    [[nodiscard]] utils::inf_rational arith_value(const riddle::arith_itm &expr) const noexcept override;
+    [[nodiscard]] utils::inf_rational arith_value(const riddle::arith_term &expr) const noexcept override;
 
     [[nodiscard]] riddle::string_expr new_string() override;
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
-    [[nodiscard]] std::string string_value(const riddle::string_itm &expr) const noexcept override;
+    [[nodiscard]] std::string string_value(const riddle::string_term &expr) const noexcept override;
 
     [[nodiscard]] riddle::enum_expr new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) override;
-    [[nodiscard]] std::vector<utils::ref_wrapper<utils::enum_val>> enum_value(const riddle::enum_itm &expr) const noexcept override;
+    [[nodiscard]] std::vector<utils::ref_wrapper<utils::enum_val>> enum_value(const riddle::enum_term &expr) const noexcept override;
 
     [[nodiscard]] riddle::arith_expr new_negation(riddle::arith_expr xpr) override;
 
@@ -108,13 +72,8 @@ namespace ratio
     [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::arith_expr> &&xprs) override;
     [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::arith_expr> &&xprs) override;
 
-    [[nodiscard]] riddle::bool_expr new_lt(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
-    [[nodiscard]] riddle::bool_expr new_le(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
-    [[nodiscard]] riddle::bool_expr new_gt(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
-    [[nodiscard]] riddle::bool_expr new_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) override;
-
+    void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
     void new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) override;
-    void assert_clause(std::vector<riddle::bool_expr> &&exprs) override;
 
     bool solve();
 

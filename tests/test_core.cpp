@@ -21,8 +21,8 @@ void test_basic_core()
     auto i1 = slv.new_int();
     auto i2 = slv.new_int();
 
-    slv.assert_clause({slv.new_eq(i0, i1)});
-    slv.assert_clause({slv.new_ge(i1, slv.new_int(10))});
+    slv.new_clause({slv.new_eq(i0, i1)});
+    slv.new_clause({slv.new_ge(i1, slv.new_int(10))});
 
     slv.solve();
 
