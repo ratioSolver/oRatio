@@ -139,8 +139,77 @@ namespace ratio
         assert(!exprs.empty());
         std::vector<utils::lit> clause;
         for (const riddle::bool_expr &expr : exprs)
-            clause.push_back(static_cast<const riddle::bool_item &>(*expr).get_lit());
-        if (get_current_resolver().has_value())
+            if (auto b_xpr = utils::s_ptr_cast<riddle::bool_item>(expr))
+                clause.push_back(b_xpr->get_lit());
+            else if (auto n_xpr = utils::s_ptr_cast<riddle::bool_not>(expr))
+                clause.push_back(!static_cast<riddle::bool_item &>(*n_xpr->get_arg()).get_lit());
+            else if (auto lt_xpr = utils::s_ptr_cast<riddle::lt_term>(expr))
+            {
+                auto &lhs = static_cast<riddle::arith_item &>(*lt_xpr->get_lhs()).get_lin();
+                auto &rhs = static_cast<riddle::arith_item &>(*lt_xpr->get_rhs()).get_lin();
+                if (exprs.size() > 1)
+                { // we create a new variable for the constraint..
+                    auto p = utils::lit(net.new_var());
+                    net.new_lt(lhs, rhs, p);
+                    clause.push_back(p);
+                }
+                else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
+                    net.new_lt(lhs, rhs, static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+                else // we enforce the constraint..
+                    net.new_lt(lhs, rhs);
+            }
+            else if (auto le_xpr = utils::s_ptr_cast<riddle::le_term>(expr))
+            {
+                auto &lhs = static_cast<riddle::arith_item &>(*le_xpr->get_lhs()).get_lin();
+                auto &rhs = static_cast<riddle::arith_item &>(*le_xpr->get_rhs()).get_lin();
+                if (exprs.size() > 1)
+                { // we create a new variable for the constraint..
+                    auto p = utils::lit(net.new_var());
+                    net.new_le(lhs, rhs, p);
+                    clause.push_back(p);
+                }
+                else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
+                    net.new_le(lhs, rhs, static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+                else // we enforce the constraint..
+                    net.new_le(lhs, rhs);
+            }
+            else if (auto eq_xpr = utils::s_ptr_cast<riddle::eq_term>(expr))
+            {
+            }
+            else if (auto ge_xpr = utils::s_ptr_cast<riddle::ge_term>(expr))
+            {
+                auto &lhs = static_cast<riddle::arith_item &>(*ge_xpr->get_lhs()).get_lin();
+                auto &rhs = static_cast<riddle::arith_item &>(*ge_xpr->get_rhs()).get_lin();
+                if (exprs.size() > 1)
+                { // we create a new variable for the constraint..
+                    auto p = utils::lit(net.new_var());
+                    net.new_ge(lhs, rhs, p);
+                    clause.push_back(p);
+                }
+                else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
+                    net.new_ge(lhs, rhs, static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+                else // we enforce the constraint..
+                    net.new_ge(lhs, rhs);
+            }
+            else if (auto gt_xpr = utils::s_ptr_cast<riddle::gt_term>(expr))
+            {
+                auto &lhs = static_cast<riddle::arith_item &>(*gt_xpr->get_lhs()).get_lin();
+                auto &rhs = static_cast<riddle::arith_item &>(*gt_xpr->get_rhs()).get_lin();
+                if (exprs.size() > 1)
+                { // we create a new variable for the constraint..
+                    auto p = utils::lit(net.new_var());
+                    net.new_gt(lhs, rhs, p);
+                    clause.push_back(p);
+                }
+                else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
+                    net.new_gt(lhs, rhs, static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+                else // we enforce the constraint..
+                    net.new_gt(lhs, rhs);
+            }
+            else
+                throw std::runtime_error("Invalid type");
+
+        if (!clause.empty() && get_current_resolver().has_value())
             clause.push_back(!static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
         net.new_clause(std::move(clause));
     }
