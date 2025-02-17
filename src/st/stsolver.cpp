@@ -45,9 +45,22 @@ namespace ratio
     riddle::enum_expr stsolver::new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
     {
         assert(!values.empty());
-        return utils::make_s_ptr<riddle::enum_item>(static_cast<riddle::enum_type &>(tp), std::move(values), net.new_int(utils::rational::zero, utils::rational(values.size() - 1)));
+        std::vector<utils::lit> lits;
+        if (values.size() == 1)
+            lits.push_back(utils::TRUE_lit);
+        else
+            for (size_t i = 0; i < values.size(); i++)
+                lits.push_back(utils::lit(net.new_var()));
+        return utils::make_s_ptr<riddle::enum_item>(static_cast<riddle::enum_type &>(tp), std::move(values), std::move(lits));
     }
-    std::vector<utils::ref_wrapper<utils::enum_val>> stsolver::enum_value(const riddle::enum_term &expr) const noexcept { return {static_cast<utils::enum_val &>(*expr.get_values()[net.arith_value(static_cast<const riddle::enum_item &>(expr).get_var()).get_rational().numerator()])}; }
+    std::vector<utils::ref_wrapper<utils::enum_val>> stsolver::enum_value(const riddle::enum_term &expr) const noexcept
+    {
+        std::vector<utils::ref_wrapper<utils::enum_val>> dom;
+        for (const auto &val : static_cast<const riddle::enum_item &>(expr).get_values())
+            if (net.value(static_cast<const riddle::enum_item &>(expr).get_lit(*val)) != utils::False)
+                dom.push_back(*val);
+        return dom;
+    }
 
     riddle::arith_expr stsolver::new_negation(riddle::arith_expr xpr)
     {
@@ -172,9 +185,9 @@ namespace ratio
                     else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
                     {
                         auto rhs_xpr = static_cast<riddle::bool_item *>(&rhs);
-                        net.new_clause({lhs_xpr->get_lit(), !rhs_xpr->get_lit(), !p});
-                        net.new_clause({!lhs_xpr->get_lit(), rhs_xpr->get_lit(), !p});
-                        net.new_clause({lhs_xpr->get_lit(), rhs_xpr->get_lit(), p});
+                        net.new_clause({!p, lhs_xpr->get_lit(), !rhs_xpr->get_lit()});
+                        net.new_clause({!p, !lhs_xpr->get_lit(), rhs_xpr->get_lit()});
+                        net.new_clause({p, lhs_xpr->get_lit(), rhs_xpr->get_lit()});
                     }
                     else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
                     {
@@ -183,9 +196,41 @@ namespace ratio
                     }
                     else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with an enumeration constraint..
                     {
-                        auto rhs_xpr = static_cast<riddle::enum_item *>(&rhs);
-                        if (lhs_xpr->get_var() != rhs_xpr->get_var())
-                            continue; // we ignore the constraint..
+                        if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
+                        {
+                            // we compute the intersection of the two domains
+                            std::unordered_set<utils::enum_val *> intersection;
+                            for (const auto &v : lhs_xpr->get_values())
+                                for (const auto &w : rhs_xpr->get_values())
+                                    if (v == w)
+                                    {
+                                        intersection.insert(&*v);
+                                        break;
+                                    }
+                            if (intersection.empty())
+                                net.new_clause({!p}); // the domains are disjoint, so the constraint is always false..
+
+                            // the values outside the intersection are pruned if the equality control variable becomes true..
+                            for (const auto &v : lhs_xpr->get_values())
+                                if (!intersection.count(&*v))
+                                    net.new_clause({!lhs_xpr->get_lit(*v), !p});
+                            for (const auto &v : rhs_xpr->get_values())
+                                if (!intersection.count(&*v))
+                                    net.new_clause({!rhs_xpr->get_lit(*v), !p});
+
+                            for (const auto &v : intersection)
+                            {
+                                net.new_clause({!p, lhs_xpr->get_lit(*v), !rhs_xpr->get_lit(*v)});
+                                net.new_clause({!p, !lhs_xpr->get_lit(*v), rhs_xpr->get_lit(*v)});
+                            }
+                        }
+                        else
+                        {
+                            net.new_clause({!p, lhs_xpr->get_lit(*static_cast<utils::enum_val *>(&rhs))});
+                            for (const auto &v : lhs_xpr->get_values())
+                                if (&*v != &*static_cast<utils::enum_val *>(&rhs))
+                                    net.new_clause({!p, !lhs_xpr->get_lit(*v)});
+                        }
                     }
                     else
                         throw std::runtime_error("Invalid type");
