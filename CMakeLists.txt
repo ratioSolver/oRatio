@@ -28,14 +28,14 @@ if(${HEURISTIC_TYPE_INDEX} EQUAL -1)
     message(FATAL_ERROR "Invalid heuristic type ${HEURISTIC_TYPE}")
 endif()
 
+set(BUILD_LISTENERS ON CACHE BOOL "Builds listeners" FORCE)
+
 option(BUILD_EXECUTABLE "Build the oRatio executable" ON)
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
-option(BUILD_LISTENERS "Builds oRatio listeners" OFF)
 option(BUILD_ORATIO_SERVER "Build the oRatio server" OFF)
 
 if(BUILD_ORATIO_SERVER)
     set(BUILD_EXECUTABLE ON CACHE BOOL "Build the oRatio executable" FORCE)
-    set(BUILD_LISTENERS ON CACHE BOOL "Builds oRatio listeners" FORCE)
     set(COMPUTE_NAMES ON CACHE BOOL "Compute RiDDLe names" FORCE)
 endif()
 
@@ -43,7 +43,6 @@ message(STATUS "Constraint reasoner type: ${CONSTRAINT_REASONER_TYPE}")
 message(STATUS "Temporal network type: ${TEMPORAL_NETWORK_TYPE}")
 message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 message(STATUS "Check inconsistencies at each step: ${CHECK_INCONSISTENCIES}")
-message(STATUS "Build oRatio listeners: ${BUILD_LISTENERS}")
 message(STATUS "Build the oRatio server: ${BUILD_ORATIO_SERVER}")
 
 add_subdirectory(extern/riddle)
@@ -97,10 +96,6 @@ endif()
 
 if(CHECK_INCONSISTENCIES)
     target_compile_definitions(oRatioLib PRIVATE CHECK_INCONSISTENCIES)
-endif()
-
-if(BUILD_LISTENERS)
-    target_compile_definitions(oRatioLib PUBLIC BUILD_LISTENERS)
 endif()
 
 if (BUILD_EXECUTABLE)
