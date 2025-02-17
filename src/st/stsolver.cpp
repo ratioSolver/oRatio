@@ -3,6 +3,7 @@
 #include "sttypes.hpp"
 #include "conjunction.hpp"
 #include "logging.hpp"
+#include <algorithm>
 #include <cassert>
 
 namespace ratio
@@ -301,6 +302,16 @@ namespace ratio
 
         while (true)
         { // we try to solve the problem with the current causal graph..
+
+            // we get the most expensive flaw..
+            auto f = *std::max_element(active_flaws.begin(), active_flaws.end(), [](const auto &a, const auto &b)
+                                       { return a->get_estimated_cost() < b->get_estimated_cost(); });
+            // we get the least expensive resolver..
+            auto r = *std::min_element(f->get_resolvers().begin(), f->get_resolvers().end(), [](const auto &a, const auto &b)
+                                       { return a->get_estimated_cost() < b->get_estimated_cost(); });
+
+            // we apply the resolver..
+            net.assume(static_cast<stresolver &>(*r).get_rho());
         }
     }
 } // namespace ratio

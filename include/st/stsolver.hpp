@@ -89,5 +89,6 @@ namespace ratio
 
   private:
     semitone::network net;
+    std::unordered_set<flaw *> active_flaws; // the currently active flaws..
   };
 } // namespace ratio

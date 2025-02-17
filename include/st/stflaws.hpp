@@ -4,7 +4,7 @@
 
 namespace ratio
 {
-  class stflaw : public flaw
+  class stflaw : public flaw, private semitone::listener
   {
   public:
     stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
@@ -18,6 +18,8 @@ namespace ratio
 
     void expanded_flaw() override;
 
+    void on_change(const utils::var &v) noexcept override;
+
   protected:
     [[nodiscard]] json::json to_json() const override;
 
@@ -26,7 +28,7 @@ namespace ratio
     const utils::var pos; // the position variable associated to this flaw (for avoiding causality loops)..
   };
 
-  class stresolver : public resolver
+  class stresolver : public resolver, private semitone::listener
   {
   public:
     stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;
@@ -36,6 +38,9 @@ namespace ratio
 
   protected:
     [[nodiscard]] json::json to_json() const override;
+
+  private:
+    void on_change(const utils::var &v) noexcept override;
 
   private:
     const utils::lit rho; // the literal indicating whether the resolver is active or not..

@@ -2,7 +2,7 @@
 
 #include "server.hpp"
 #if defined(SEMITONE)
-#include "semitonesolver.hpp"
+#include "stsolver.hpp"
 #elif defined(Z3)
 #include "z3solver.hpp"
 #endif
@@ -10,7 +10,7 @@
 namespace ratio::server
 {
 #if defined(SEMITONE)
-  class server : public network::server, public ratio::semitonesolver
+  class server : public network::server, public ratio::stsolver
 #elif defined(Z3)
   class server : public network::server, public ratio::z3solver
 #endif
