@@ -1,5 +1,6 @@
 #include "stflaws.hpp"
 #include "conjunction.hpp"
+#include <cassert>
 
 namespace ratio
 {
@@ -47,6 +48,26 @@ namespace ratio
     stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(static_cast<stsolver &>(f.get_graph()).net.new_var())) {}
     stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), rho(rho) { static_cast<stsolver &>(f.get_graph()).net.new_clause({!rho, static_cast<stflaw &>(f).get_phi()}); }
 
+    stenum_flaw::stenum_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept : stflaw(slv, std::move(causes), true), var(create_var(tp, std::move(values))) {}
+    utils::s_ptr<riddle::enum_item> stenum_flaw::create_var(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
+    {
+        assert(!values.empty());
+        std::vector<utils::lit> lits;
+        if (values.size() == 1)
+            lits.push_back(utils::TRUE_lit);
+        else
+            for (size_t i = 0; i < values.size(); i++)
+                lits.push_back(utils::lit(static_cast<stsolver &>(tp.get_scope().get_core()).net.new_var()));
+        return utils::make_s_ptr<riddle::enum_item>(tp, std::move(values), std::move(lits));
+    }
+    void stenum_flaw::compute_resolvers()
+    {
+        for (const auto &val : var->get_values())
+            new_resolver<stchoose_val>(*this, *val);
+    }
+
+    stchoose_val::stchoose_val(stenum_flaw &f, const utils::enum_val &val) noexcept : stresolver(f, utils::rational(1), f.get_var()->get_lit(val)), val(val) {}
+
     stclause_flaw::stclause_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
     void stclause_flaw::compute_resolvers()
     {
@@ -54,10 +75,10 @@ namespace ratio
             new_resolver<stchoose_lit>(*this, lit);
     }
 
-    stchoose_lit::stchoose_lit(stclause_flaw &f, const utils::lit &conj) noexcept : stresolver(f, utils::rational(1)), conj(conj) {}
+    stchoose_lit::stchoose_lit(stclause_flaw &f, const utils::lit &conj) noexcept : stresolver(f, utils::rational(1), conj) {}
     void stchoose_lit::apply() {}
 
-    stdisjunction_flaw::stdisjunction_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept : stflaw(slv, std::move(causes), false), disjuncts(std::move(disjuncts)) {}
+    stdisjunction_flaw::stdisjunction_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept : stflaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
     void stdisjunction_flaw::compute_resolvers()
     {
         for (const auto &disjunct : disjuncts)

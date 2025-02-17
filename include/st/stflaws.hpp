@@ -62,9 +62,34 @@ namespace ratio
 
   private:
     void apply() override;
+  };
+
+  class stenum_flaw final : public stflaw
+  {
+  public:
+    stenum_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept;
+
+    [[nodiscard]] const utils::s_ptr<riddle::enum_item> &get_var() const noexcept { return var; }
 
   private:
-    const utils::lit conj;
+    void compute_resolvers() override;
+
+    static utils::s_ptr<riddle::enum_item> create_var(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values);
+
+  private:
+    utils::s_ptr<riddle::enum_item> var;
+  };
+
+  class stchoose_val final : public stresolver
+  {
+  public:
+    stchoose_val(stenum_flaw &f, const utils::enum_val &val) noexcept;
+
+  private:
+    void apply() override;
+
+  private:
+    const utils::enum_val &val;
   };
 
   class stdisjunction_flaw final : public stflaw

@@ -10,6 +10,7 @@ namespace ratio
   class statom_flaw;
   class stresolver;
   class stcomponent_type;
+  class stenum_flaw;
   class stunify_atom;
 
   class atom : public riddle::atom
@@ -34,6 +35,7 @@ namespace ratio
     friend class atom;
     friend class stflaw;
     friend class stresolver;
+    friend class stenum_flaw;
 
   public:
     stsolver(std::string_view name = "oRatio") noexcept;

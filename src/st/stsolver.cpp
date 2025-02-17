@@ -44,14 +44,11 @@ namespace ratio
 
     riddle::enum_expr stsolver::new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
     {
-        assert(!values.empty());
-        std::vector<utils::lit> lits;
-        if (values.size() == 1)
-            lits.push_back(utils::TRUE_lit);
-        else
-            for (size_t i = 0; i < values.size(); i++)
-                lits.push_back(utils::lit(net.new_var()));
-        return utils::make_s_ptr<riddle::enum_item>(static_cast<riddle::enum_type &>(tp), std::move(values), std::move(lits));
+        std::vector<utils::ref_wrapper<resolver>> causes;
+        if (get_current_resolver().has_value())
+            causes.push_back(get_current_resolver().value());
+        auto &af = new_flaw<stenum_flaw>(*this, std::move(causes), tp, std::move(values));
+        return af.get_var();
     }
     std::vector<utils::ref_wrapper<utils::enum_val>> stsolver::enum_value(const riddle::enum_term &expr) const noexcept
     {
