@@ -78,7 +78,7 @@ namespace ratio
     void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
     void new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) override;
 
-    bool solve();
+    void solve();
 
   private:
     riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;

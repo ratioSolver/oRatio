@@ -295,12 +295,12 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    bool stsolver::solve()
+    void stsolver::solve()
     {
         net.propagate();
         build(); // we build the causal graph..
 
-        while (true)
+        while (!active_flaws.empty())
         { // we try to solve the problem with the current causal graph..
 
             // we get the most expensive flaw..

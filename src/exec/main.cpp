@@ -45,8 +45,9 @@ int main(int argc, char const *argv[])
 
     solver.read(prob_names);
 
-    if (solver.solve())
+    try
     {
+        solver.solve();
         LOG_INFO("hurray!! we have found a solution..");
 
         std::ofstream sol_file;
@@ -54,8 +55,11 @@ int main(int argc, char const *argv[])
         sol_file << solver.to_json().dump();
         sol_file.close();
     }
-    else
-        LOG_INFO("the problem is unsolvable..");
+    catch (const std::exception &ex)
+    {
+        LOG_FATAL("the problem is unsolvable: " + std::string(ex.what()));
+        return -1;
+    }
 
     return 0;
 }

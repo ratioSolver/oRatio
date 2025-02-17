@@ -44,26 +44,18 @@ int main(int argc, char const *argv[])
         try
         {
             s.read(prob_names);
-
-            if (s.solve())
-            {
-                LOG_INFO("hurray!! we have found a solution..");
-                results.push_back(true);
-            }
-            else
-            {
-                LOG_INFO("the problem is unsolvable..");
-                results.push_back(false);
-            }
-            auto dur = std::chrono::high_resolution_clock::now() - start;
-            LOG_INFO("running time: " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count()) + " ms");
-            times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(dur));
+            s.solve();
+            LOG_INFO("hurray!! we have found a solution..");
+            results.push_back(true);
         }
         catch (const std::exception &ex)
         {
-            LOG_FATAL("exception: " + std::string(ex.what()));
-            return 1;
+            LOG_FATAL("the problem is unsolvable: " + std::string(ex.what()));
+            results.push_back(false);
         }
+        auto dur = std::chrono::high_resolution_clock::now() - start;
+        LOG_INFO("running time: " + std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(dur).count()) + " ms");
+        times.push_back(std::chrono::duration_cast<std::chrono::nanoseconds>(dur));
     }
     LOG_INFO("average running time: " + std::to_string(std::accumulate(times.begin(), times.end(), std::chrono::nanoseconds(0)).count() / NUM_TESTS / 1000000) + " ms");
     assert(std::all_of(results.begin(), results.end(), [](bool b)
@@ -74,5 +66,5 @@ int main(int argc, char const *argv[])
     return std::all_of(results.begin(), results.end(), [](bool b)
                        { return b; })
                ? 0
-               : 1;
+               : -1;
 }
