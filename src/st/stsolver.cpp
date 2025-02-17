@@ -155,6 +155,8 @@ namespace ratio
             {
                 if (auto b_xpr = utils::s_ptr_cast<riddle::bool_item>(n_xpr->get_arg()))
                     clause.push_back(!b_xpr->get_lit());
+                else
+                    throw std::runtime_error("Invalid type");
             }
             else
             {
@@ -172,66 +174,7 @@ namespace ratio
                 else if (auto le_xpr = utils::s_ptr_cast<riddle::le_term>(expr))
                     net.new_le(static_cast<riddle::arith_item &>(*le_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*le_xpr->get_rhs()).get_lin(), p);
                 else if (auto eq_xpr = utils::s_ptr_cast<riddle::eq_term>(expr))
-                {
-                    auto &lhs = static_cast<riddle::term &>(*eq_xpr->get_lhs());
-                    auto &rhs = static_cast<riddle::term &>(*eq_xpr->get_rhs());
-                    if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always false..
-                        net.new_clause({!p});
-                    else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with an arithmetic constraint..
-                        net.new_eq(lhs_xpr->get_lin(), static_cast<riddle::arith_item *>(&rhs)->get_lin(), p);
-                    else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
-                    {
-                        auto rhs_xpr = static_cast<riddle::bool_item *>(&rhs);
-                        net.new_clause({!p, lhs_xpr->get_lit(), !rhs_xpr->get_lit()});
-                        net.new_clause({!p, !lhs_xpr->get_lit(), rhs_xpr->get_lit()});
-                        net.new_clause({p, lhs_xpr->get_lit(), rhs_xpr->get_lit()});
-                    }
-                    else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
-                    {
-                        if (lhs_xpr->get_string() != static_cast<riddle::string_item *>(&rhs)->get_string()) // the strings are different, so the constraint is always false..
-                            net.new_clause({!p});
-                    }
-                    else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with an enumeration constraint..
-                    {
-                        if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
-                        {
-                            // we compute the intersection of the two domains
-                            std::unordered_set<utils::enum_val *> intersection;
-                            for (const auto &v : lhs_xpr->get_values())
-                                for (const auto &w : rhs_xpr->get_values())
-                                    if (v == w)
-                                    {
-                                        intersection.insert(&*v);
-                                        break;
-                                    }
-                            if (intersection.empty())
-                                net.new_clause({!p}); // the domains are disjoint, so the constraint is always false..
-
-                            // the values outside the intersection are pruned if the equality control variable becomes true..
-                            for (const auto &v : lhs_xpr->get_values())
-                                if (!intersection.count(&*v))
-                                    net.new_clause({!lhs_xpr->get_lit(*v), !p});
-                            for (const auto &v : rhs_xpr->get_values())
-                                if (!intersection.count(&*v))
-                                    net.new_clause({!rhs_xpr->get_lit(*v), !p});
-
-                            for (const auto &v : intersection)
-                            {
-                                net.new_clause({!p, lhs_xpr->get_lit(*v), !rhs_xpr->get_lit(*v)});
-                                net.new_clause({!p, !lhs_xpr->get_lit(*v), rhs_xpr->get_lit(*v)});
-                            }
-                        }
-                        else
-                        {
-                            net.new_clause({!p, lhs_xpr->get_lit(*static_cast<utils::enum_val *>(&rhs))});
-                            for (const auto &v : lhs_xpr->get_values())
-                                if (&*v != &*static_cast<utils::enum_val *>(&rhs))
-                                    net.new_clause({!p, !lhs_xpr->get_lit(*v)});
-                        }
-                    }
-                    else
-                        throw std::runtime_error("Invalid type");
-                }
+                    make_eq(*eq_xpr->get_lhs(), *eq_xpr->get_rhs(), p);
                 else if (auto ge_xpr = utils::s_ptr_cast<riddle::ge_term>(expr))
                     net.new_ge(static_cast<riddle::arith_item &>(*ge_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*ge_xpr->get_rhs()).get_lin(), p);
                 else if (auto gt_xpr = utils::s_ptr_cast<riddle::gt_term>(expr))
@@ -257,6 +200,98 @@ namespace ratio
     void stsolver::added_causal_link(flaw &f, resolver &r)
     { // if the resolver is active, then the flaw must be active..
         net.new_clause({!static_cast<stresolver &>(r).get_rho(), static_cast<stflaw &>(f).get_phi()});
+    }
+
+    void stsolver::make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
+    {
+        if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always false..
+            net.new_clause({!p});
+        else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with an arithmetic constraint..
+            net.new_eq(lhs_xpr->get_lin(), static_cast<riddle::arith_item *>(&rhs)->get_lin(), p);
+        else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
+        {
+            auto rhs_xpr = static_cast<riddle::bool_item *>(&rhs);
+            net.new_clause({!p, lhs_xpr->get_lit(), !rhs_xpr->get_lit()});
+            net.new_clause({!p, !lhs_xpr->get_lit(), rhs_xpr->get_lit()});
+            net.new_clause({p, lhs_xpr->get_lit(), rhs_xpr->get_lit()});
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
+        {
+            if (lhs_xpr->get_string() != static_cast<riddle::string_item *>(&rhs)->get_string()) // the strings are different, so the constraint is always false..
+                net.new_clause({!p});
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with an enumeration constraint..
+        {
+            if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
+            {
+                // we compute the intersection of the two domains
+                std::unordered_set<utils::enum_val *> intersection;
+                for (const auto &v : lhs_xpr->get_values())
+                    for (const auto &w : rhs_xpr->get_values())
+                        if (v == w)
+                        {
+                            intersection.insert(&*v);
+                            break;
+                        }
+                if (intersection.empty())
+                    net.new_clause({!p}); // the domains are disjoint, so the constraint is always false..
+
+                // the values outside the intersection are pruned if the equality control variable becomes true..
+                for (const auto &v : lhs_xpr->get_values())
+                    if (!intersection.count(&*v))
+                        net.new_clause({!lhs_xpr->get_lit(*v), !p});
+                for (const auto &v : rhs_xpr->get_values())
+                    if (!intersection.count(&*v))
+                        net.new_clause({!rhs_xpr->get_lit(*v), !p});
+
+                for (const auto &v : intersection)
+                {
+                    net.new_clause({!p, lhs_xpr->get_lit(*v), !rhs_xpr->get_lit(*v)});
+                    net.new_clause({!p, !lhs_xpr->get_lit(*v), rhs_xpr->get_lit(*v)});
+                }
+            }
+            else
+            {
+                net.new_clause({!p, lhs_xpr->get_lit(*static_cast<utils::enum_val *>(&rhs))});
+                for (const auto &v : lhs_xpr->get_values())
+                    if (&*v != &*static_cast<utils::enum_val *>(&rhs))
+                        net.new_clause({!p, !lhs_xpr->get_lit(*v)});
+            }
+        }
+        else if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with an enumeration constraint..
+            make_eq(*rhs_xpr, lhs, p);
+        else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs)) // we are dealing with atoms..
+        {
+            auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
+            std::queue<riddle::predicate *> q;
+            q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
+            while (!q.empty())
+            {
+                for (const auto &[f_name, f] : q.front()->get_fields())
+                    if (!f->is_synthetic())
+                        make_eq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), p);
+                for (const auto &pp : q.front()->get_parents())
+                    q.push(&*pp);
+                q.pop();
+            }
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs)) // we are dealing with components..
+        {
+            auto rhs_xpr = static_cast<riddle::component *>(&rhs);
+            std::queue<riddle::component_type *> q;
+            q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
+            while (!q.empty())
+            {
+                for (const auto &[f_name, f] : q.front()->get_fields())
+                    if (!f->is_synthetic())
+                        make_eq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), p);
+                for (const auto &pp : q.front()->get_parents())
+                    q.push(&*pp);
+                q.pop();
+            }
+        }
+        else
+            throw std::runtime_error("Invalid type");
     }
 
     bool stsolver::solve()
