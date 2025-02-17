@@ -45,8 +45,23 @@ namespace ratio
         }
     }
 
+    json::json stflaw::to_json() const
+    {
+        json::json j = flaw::to_json();
+        j["phi"] = to_string(phi).c_str();
+        j["pos"] = pos;
+        return j;
+    }
+
     stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(static_cast<stsolver &>(f.get_graph()).net.new_var())) {}
     stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), rho(rho) { static_cast<stsolver &>(f.get_graph()).net.new_clause({!rho, static_cast<stflaw &>(f).get_phi()}); }
+
+    [[nodiscard]] json::json stresolver::to_json() const
+    {
+        json::json j = resolver::to_json();
+        j["rho"] = to_string(rho).c_str();
+        return j;
+    }
 
     stenum_flaw::stenum_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept : stflaw(slv, std::move(causes), true), var(create_var(tp, std::move(values))) {}
     utils::s_ptr<riddle::enum_item> stenum_flaw::create_var(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
@@ -67,6 +82,7 @@ namespace ratio
     }
 
     stchoose_val::stchoose_val(stenum_flaw &f, const utils::enum_val &val) noexcept : stresolver(f, utils::rational(1), f.get_var()->get_lit(val)), val(val) {}
+    void stchoose_val::apply() {}
 
     stclause_flaw::stclause_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
     void stclause_flaw::compute_resolvers()
@@ -87,4 +103,51 @@ namespace ratio
 
     stchoose_conjunction::stchoose_conjunction(stdisjunction_flaw &f, riddle::conjunction &conj) noexcept : stresolver(f, utils::rational(1)), conj(conj) {}
     void stchoose_conjunction::apply() { conj.execute(); }
+
+    statom_flaw::statom_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept : stflaw(slv, std::move(causes)), atm(utils::make_s_ptr<atom>(*this, pred, is_fact, std::move(args), utils::lit(slv.net.new_var()))) {}
+    void statom_flaw::compute_resolvers() {}
+
+    json::json statom_flaw::to_json() const
+    {
+        auto j = stflaw::to_json();
+        j["type"] = "atom";
+        j["atom"] = {{"id", static_cast<uint64_t>(atm->get_id())}, {"is_fact", atm->is_fact()}, {"pred", atm->get_type().get_name().c_str()}, {"sigma", static_cast<uint64_t>(variable(atm->get_sigma()))}};
+        return j;
+    }
+
+    stactivate_fact::stactivate_fact(statom_flaw &f) noexcept : stresolver(f, utils::rational(1)) {}
+    stactivate_fact::stactivate_fact(statom_flaw &f, const utils::lit &rho) noexcept : stresolver(f, utils::rational(1), rho) {}
+
+    void stactivate_fact::apply() {}
+
+    json::json stactivate_fact::to_json() const
+    {
+        auto j = stresolver::to_json();
+        j["type"] = "activate_fact";
+        return j;
+    }
+
+    stactivate_goal::stactivate_goal(statom_flaw &f) noexcept : stresolver(f, utils::rational(1)) {}
+    stactivate_goal::stactivate_goal(statom_flaw &f, const utils::lit &rho) noexcept : stresolver(f, utils::rational(1), rho) {}
+
+    void stactivate_goal::apply() {}
+
+    json::json stactivate_goal::to_json() const
+    {
+        auto j = stresolver::to_json();
+        j["type"] = "activate_goal";
+        return j;
+    }
+
+    stunify_atom::stunify_atom(statom_flaw &f, atom_expr atm) noexcept : stresolver(f, utils::rational(1)), atm(atm) {}
+
+    void stunify_atom::apply() {}
+
+    json::json stunify_atom::to_json() const
+    {
+        auto j = stresolver::to_json();
+        j["type"] = "unify_atom";
+        j["target"] = static_cast<uint64_t>(atm->get_id());
+        return j;
+    }
 } // namespace ratio
