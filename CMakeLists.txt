@@ -30,12 +30,14 @@ endif()
 
 set(BUILD_LISTENERS ON CACHE BOOL "Builds listeners" FORCE)
 
-option(BUILD_EXECUTABLE "Build the oRatio executable" ON)
 option(CHECK_INCONSISTENCIES "Check inconsistencies at each step" OFF)
+option(ENABLE_API "Enable the oRatio API" OFF)
+option(BUILD_EXECUTABLE "Build the oRatio executable" ON)
 option(BUILD_ORATIO_SERVER "Build the oRatio server" OFF)
 
 if(BUILD_ORATIO_SERVER)
     set(BUILD_EXECUTABLE ON CACHE BOOL "Build the oRatio executable" FORCE)
+    set(ENABLE_API ON CACHE BOOL "Enable the oRatio API" FORCE)
     set(COMPUTE_NAMES ON CACHE BOOL "Compute RiDDLe names" FORCE)
 endif()
 
@@ -43,6 +45,8 @@ message(STATUS "Constraint reasoner type: ${CONSTRAINT_REASONER_TYPE}")
 message(STATUS "Temporal network type: ${TEMPORAL_NETWORK_TYPE}")
 message(STATUS "Heuristic type: ${HEURISTIC_TYPE}")
 message(STATUS "Check inconsistencies at each step: ${CHECK_INCONSISTENCIES}")
+message(STATUS "Enable the oRatio API: ${ENABLE_API}")
+message(STATUS "Build the oRatio executable: ${BUILD_EXECUTABLE}")
 message(STATUS "Build the oRatio server: ${BUILD_ORATIO_SERVER}")
 
 add_subdirectory(extern/riddle)
@@ -96,6 +100,10 @@ endif()
 
 if(CHECK_INCONSISTENCIES)
     target_compile_definitions(oRatioLib PRIVATE CHECK_INCONSISTENCIES)
+endif()
+
+if(ENABLE_API)
+    target_compile_definitions(oRatioLib PRIVATE ENABLE_API)
 endif()
 
 if (BUILD_EXECUTABLE)

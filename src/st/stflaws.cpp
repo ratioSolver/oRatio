@@ -60,6 +60,7 @@ namespace ratio
 
     void stflaw::on_change(const utils::var &v) noexcept
     {
+        set_state(static_cast<stsolver &>(get_graph()).net.value(v));
         if (static_cast<stsolver &>(get_graph()).net.value(v) == utils::True && std::none_of(get_resolvers().begin(), get_resolvers().end(), [this](const auto &resolver)
                                                                                              { return static_cast<stsolver &>(get_graph()).net.value(static_cast<stresolver &>(*resolver).get_rho()) == utils::True; }))
             static_cast<stsolver &>(get_graph()).active_flaws.emplace(this);
@@ -85,6 +86,7 @@ namespace ratio
 
     void stresolver::on_change(const utils::var &v) noexcept
     {
+        set_state(static_cast<stsolver &>(get_flaw().get_graph()).net.value(v));
         if (static_cast<stsolver &>(get_flaw().get_graph()).net.value(v) == utils::True)
             static_cast<stsolver &>(get_flaw().get_graph()).active_flaws.erase(&get_flaw());
     }

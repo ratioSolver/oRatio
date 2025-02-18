@@ -4,7 +4,7 @@
 #include <deque>
 #include <unordered_set>
 
-#ifdef BUILD_LISTENERS
+#ifdef ENABLE_API
 #define NEW_FLAW(f) flaw_created(f)
 #define FLAW_STATE_CHANGED(f) flaw_state_changed(f)
 #define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
@@ -37,6 +37,7 @@ namespace ratio
   class graph : public riddle::core
   {
     friend class flaw;
+    friend class resolver;
 
   public:
     graph(std::string_view name = "oRatio");
@@ -271,6 +272,8 @@ namespace ratio
       return gr.new_resolver<Tp>(std::forward<Args>(args)...);
     }
 
+    void set_state(utils::lbool state) noexcept;
+
   private:
     virtual void compute_resolvers() = 0;
     virtual void expanded_flaw() {}
@@ -311,6 +314,9 @@ namespace ratio
     [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
 
     [[nodiscard]] virtual json::json to_json() const;
+
+  protected:
+    void set_state(utils::lbool state) noexcept;
 
   private:
     virtual void apply() = 0;

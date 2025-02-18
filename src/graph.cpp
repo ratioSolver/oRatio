@@ -175,6 +175,8 @@ namespace ratio
         }
     }
 
+    void flaw::set_state(utils::lbool state) noexcept { gr.set_flaw_state(*this, state); }
+
     json::json flaw::to_json() const
     {
         json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}};
@@ -206,6 +208,8 @@ namespace ratio
                                     ->get_estimated_cost();
 #endif
     }
+
+    void resolver::set_state(utils::lbool state) noexcept { f.get_graph().set_resolver_state(*this, state); }
 
     json::json resolver::to_json() const
     {

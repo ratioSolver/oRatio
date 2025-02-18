@@ -416,12 +416,16 @@ namespace ratio
             // we get the most expensive flaw..
             auto f = *std::max_element(active_flaws.begin(), active_flaws.end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
+            set_current_flaw(*f);
             // we get the least expensive resolver..
             auto r = *std::min_element(f->get_resolvers().begin(), f->get_resolvers().end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
-
+            set_current_resolver(*r);
             // we apply the resolver..
             net.assume(static_cast<stresolver &>(*r).get_rho());
+
+            set_current_resolver(std::nullopt);
+            set_current_flaw(std::nullopt);
         }
     }
 } // namespace ratio
