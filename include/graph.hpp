@@ -246,15 +246,15 @@ namespace ratio
     [[nodiscard]] graph &get_graph() noexcept { return gr; }
     [[nodiscard]] const graph &get_graph() const noexcept { return gr; }
 
-    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> get_causes() const noexcept { return causes; }
+    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> &get_causes() const noexcept { return causes; }
 
     [[nodiscard]] bool is_exclusive() const noexcept { return exclusive; }
 
-    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> get_resolvers() const noexcept { return resolvers; }
+    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> &get_resolvers() const noexcept { return resolvers; }
 
     [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
 
-    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> get_supports() const noexcept { return supports; }
+    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> &get_supports() const noexcept { return supports; }
 
     [[nodiscard]] virtual json::json to_json() const;
 

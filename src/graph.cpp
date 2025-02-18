@@ -194,14 +194,16 @@ namespace ratio
 
     utils::rational resolver::resolver::get_estimated_cost() const noexcept
     {
+        if (state == utils::False)
+            return utils::rational::positive_infinite;
+        else if (preconditions.empty())
+            return intrinsic_cost;
 #ifdef H_ADD
         // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
         return std::accumulate(preconditions.begin(), preconditions.end(), intrinsic_cost, [](const auto &lhs, const auto &prec)
                                { return lhs + prec->get_estimated_cost(); });
 #endif
 #ifdef H_MAX
-        if (preconditions.empty())
-            return intrinsic_cost;
         // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
         return intrinsic_cost + (*std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
                                                    { return lhs->get_estimated_cost() < rhs->get_estimated_cost(); }))
