@@ -157,7 +157,29 @@ namespace ratio
                 if (auto b_xpr = utils::s_ptr_cast<riddle::bool_item>(n_xpr->get_arg()))
                     clause.push_back(!b_xpr->get_lit());
                 else
-                    throw std::runtime_error("Invalid type");
+                {
+                    utils::lit p;
+                    if (exprs.size() > 1) // we create a new variable for the constraint..
+                        p = utils::lit(net.new_var());
+                    else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
+                        p = static_cast<stresolver &>(*get_current_resolver().value()).get_rho();
+                    else // we enforce the constraint directly..
+                        p = utils::TRUE_lit;
+                    clause.push_back(p);
+
+                    if (auto lt_xpr = utils::s_ptr_cast<riddle::lt_term>(n_xpr->get_arg()))
+                        net.new_ge(static_cast<riddle::arith_item &>(*lt_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*lt_xpr->get_rhs()).get_lin(), p);
+                    else if (auto le_xpr = utils::s_ptr_cast<riddle::le_term>(n_xpr->get_arg()))
+                        net.new_gt(static_cast<riddle::arith_item &>(*le_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*le_xpr->get_rhs()).get_lin(), p);
+                    else if (auto eq_xpr = utils::s_ptr_cast<riddle::eq_term>(n_xpr->get_arg()))
+                        make_neq(*eq_xpr->get_lhs(), *eq_xpr->get_rhs(), p);
+                    else if (auto ge_xpr = utils::s_ptr_cast<riddle::ge_term>(n_xpr->get_arg()))
+                        net.new_lt(static_cast<riddle::arith_item &>(*ge_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*ge_xpr->get_rhs()).get_lin(), p);
+                    else if (auto gt_xpr = utils::s_ptr_cast<riddle::gt_term>(n_xpr->get_arg()))
+                        net.new_le(static_cast<riddle::arith_item &>(*gt_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*gt_xpr->get_rhs()).get_lin(), p);
+                    else
+                        throw std::runtime_error("Invalid type");
+                }
             }
             else
             {
@@ -209,20 +231,19 @@ namespace ratio
             net.new_clause({!p});
         else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with an arithmetic constraint..
             net.new_eq(lhs_xpr->get_lin(), static_cast<riddle::arith_item *>(&rhs)->get_lin(), p);
-        else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
-        {
+        else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs))
+        { // we are dealing with a boolean constraint..
             auto rhs_xpr = static_cast<riddle::bool_item *>(&rhs);
             net.new_clause({!p, lhs_xpr->get_lit(), !rhs_xpr->get_lit()});
             net.new_clause({!p, !lhs_xpr->get_lit(), rhs_xpr->get_lit()});
-            net.new_clause({p, lhs_xpr->get_lit(), rhs_xpr->get_lit()});
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
-        {
-            if (lhs_xpr->get_string() != static_cast<riddle::string_item *>(&rhs)->get_string()) // the strings are different, so the constraint is always false..
-                net.new_clause({!p});
+        else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs))
+        { // we are dealing with a string constraint..
+            if (lhs_xpr->get_string() != static_cast<riddle::string_item *>(&rhs)->get_string())
+                net.new_clause({!p}); // the strings are different, so the constraint is always false..
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with an enumeration constraint..
-        {
+        else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs))
+        { // we are dealing with an enumeration constraint..
             if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
             {
                 // we compute the intersection of the two domains
@@ -261,8 +282,8 @@ namespace ratio
         }
         else if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with an enumeration constraint..
             make_eq(*rhs_xpr, lhs, p);
-        else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs)) // we are dealing with atoms..
-        {
+        else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
+        { // we are dealing with atoms..
             auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
             std::queue<riddle::predicate *> q;
             q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
@@ -276,8 +297,8 @@ namespace ratio
                 q.pop();
             }
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs)) // we are dealing with components..
-        {
+        else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs))
+        { // we are dealing with components..
             auto rhs_xpr = static_cast<riddle::component *>(&rhs);
             std::queue<riddle::component_type *> q;
             q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
@@ -290,6 +311,95 @@ namespace ratio
                     q.push(&*pp);
                 q.pop();
             }
+        }
+        else
+            throw std::runtime_error("Invalid type");
+    }
+
+    void stsolver::make_neq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
+    {
+        if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always true..
+            return;
+        else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs))
+        { // we are dealing with an arithmetic constraint..
+            auto rhs_xpr = static_cast<riddle::arith_item *>(&rhs);
+            auto lt = utils::lit(net.new_var());
+            net.new_lt(lhs_xpr->get_lin(), rhs_xpr->get_lin(), lt);
+            auto gt = utils::lit(net.new_var());
+            net.new_lt(rhs_xpr->get_lin(), lhs_xpr->get_lin(), gt);
+            net.new_clause({!p, lt, gt});
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
+        {
+            auto rhs_xpr = static_cast<riddle::bool_item *>(&rhs);
+            net.new_clause({!p, lhs_xpr->get_lit(), rhs_xpr->get_lit()});
+            net.new_clause({!p, !lhs_xpr->get_lit(), !rhs_xpr->get_lit()});
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
+        {
+            if (lhs_xpr->get_string() == static_cast<riddle::string_item *>(&rhs)->get_string()) // the strings are equal, so the constraint is always false..
+                net.new_clause({!p});
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with an enumeration constraint..
+        {
+            if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
+            {
+                for (const auto &v : lhs_xpr->get_values())
+                    for (const auto &w : rhs_xpr->get_values())
+                        if (v == w)
+                        { // choosing a value from one domain excludes the corresponding value from the other domain..
+                            net.new_clause({!p, !lhs_xpr->get_lit(*v), !rhs_xpr->get_lit(*v)});
+                            break;
+                        }
+            }
+            else if (lhs_xpr->has_lit(*static_cast<utils::enum_val *>(&rhs)))
+                net.new_clause({!p, !lhs_xpr->get_lit(*static_cast<utils::enum_val *>(&rhs))}); // the value is excluded from the domain..
+        }
+        else if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with an enumeration constraint..
+            make_neq(*rhs_xpr, lhs, p);
+        else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
+        { // we are dealing with atoms..
+            std::vector<utils::lit> clause;
+            clause.push_back(!p);
+            auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
+            std::queue<riddle::predicate *> q;
+            q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
+            while (!q.empty())
+            {
+                for (const auto &[f_name, f] : q.front()->get_fields())
+                    if (!f->is_synthetic())
+                    {
+                        auto neq = utils::lit(net.new_var());
+                        make_neq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), neq);
+                        clause.push_back(neq);
+                    }
+                for (const auto &pp : q.front()->get_parents())
+                    q.push(&*pp);
+                q.pop();
+            }
+            net.new_clause(std::move(clause));
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs))
+        { // we are dealing with components..
+            std::vector<utils::lit> clause;
+            clause.push_back(!p);
+            auto rhs_xpr = static_cast<riddle::component *>(&rhs);
+            std::queue<riddle::component_type *> q;
+            q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
+            while (!q.empty())
+            {
+                for (const auto &[f_name, f] : q.front()->get_fields())
+                    if (!f->is_synthetic())
+                    {
+                        auto neq = utils::lit(net.new_var());
+                        make_neq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), neq);
+                        clause.push_back(neq);
+                    }
+                for (const auto &pp : q.front()->get_parents())
+                    q.push(&*pp);
+                q.pop();
+            }
+            net.new_clause(std::move(clause));
         }
         else
             throw std::runtime_error("Invalid type");

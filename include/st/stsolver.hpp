@@ -86,6 +86,7 @@ namespace ratio
     void added_causal_link(flaw &f, resolver &r) override;
 
     void make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p);
+    void make_neq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p);
 
   private:
     semitone::network net;
