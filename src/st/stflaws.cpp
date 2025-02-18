@@ -17,12 +17,20 @@ namespace ratio
 
     utils::lit stflaw::compute_phi(stsolver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept
     {
-        auto phi = utils::lit(slv.net.new_var());
-        std::vector<utils::lit> ls;
-        for (const auto &cause : causes)
-            ls.push_back(!static_cast<stresolver &>(*cause).get_rho());
-        ls.push_back(phi);
-        slv.net.new_clause(std::move(ls));
+        utils::lit phi;
+        if (causes.empty()) // if the flaw has no causes, it is always active..
+            phi = utils::TRUE_lit;
+        else if (causes.size() == 1) // if the flaw has a single cause, we use its activation literal..
+            phi = static_cast<stresolver &>(*causes.front()).get_rho();
+        else
+        { // we create a new variable for the flaw..
+            phi = utils::lit(slv.net.new_var());
+            std::vector<utils::lit> ls;
+            for (const auto &cause : causes)
+                ls.push_back(!static_cast<stresolver &>(*cause).get_rho());
+            ls.push_back(phi);
+            slv.net.new_clause(std::move(ls));
+        }
         return phi;
     }
 
