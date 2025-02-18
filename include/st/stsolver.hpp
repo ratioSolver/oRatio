@@ -11,6 +11,7 @@ namespace ratio
   class stresolver;
   class stcomponent_type;
   class stenum_flaw;
+  class stclause_flaw;
   class statom_flaw;
 
   class atom : public riddle::atom
@@ -36,6 +37,7 @@ namespace ratio
     friend class stflaw;
     friend class stresolver;
     friend class stenum_flaw;
+    friend class stclause_flaw;
     friend class statom_flaw;
 
   public:

@@ -9,8 +9,11 @@ namespace ratio
     {
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
             slv.net.new_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
-        if (static_cast<stsolver &>(get_graph()).net.value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
+        if (static_cast<stsolver &>(get_graph()).net.value(phi) == utils::True)
+        { // if the flaw is active, we add it to the set of active flaws..
+            set_state(utils::True);
             static_cast<stsolver &>(get_graph()).active_flaws.emplace(this);
+        }
         else // otherwise, we listen to the activation literal..
             listen(variable(phi));
     }
@@ -77,9 +80,13 @@ namespace ratio
     stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(static_cast<stsolver &>(f.get_graph()).net.new_var())) {}
     stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), listener(static_cast<stsolver &>(f.get_graph()).net), rho(rho)
     {
+        assert(static_cast<stsolver &>(f.get_graph()).net.value(rho) != utils::False);
         static_cast<stsolver &>(f.get_graph()).net.new_clause({!rho, static_cast<stflaw &>(f).get_phi()});
-        if (static_cast<stsolver &>(f.get_graph()).net.value(rho) == utils::True) // if the resolver is active, the flaw is solved..
+        if (static_cast<stsolver &>(f.get_graph()).net.value(rho) == utils::True)
+        { // if the resolver is active, the flaw is solved..
+            set_state(utils::True);
             static_cast<stsolver &>(f.get_graph()).active_flaws.erase(&f);
+        }
         else // otherwise, we listen to the activation literal..
             listen(variable(rho));
     }
@@ -113,7 +120,8 @@ namespace ratio
     void stenum_flaw::compute_resolvers()
     {
         for (const auto &val : var->get_values())
-            new_resolver<stchoose_val>(*this, *val);
+            if (static_cast<stsolver &>(get_graph()).net.value(var->get_lit(*val)) != utils::False)
+                new_resolver<stchoose_val>(*this, *val);
     }
 
     stchoose_val::stchoose_val(stenum_flaw &f, const utils::enum_val &val) noexcept : stresolver(f, utils::rational(1), f.get_var()->get_lit(val)), val(val) {}
@@ -123,7 +131,8 @@ namespace ratio
     void stclause_flaw::compute_resolvers()
     {
         for (const auto &lit : clause)
-            new_resolver<stchoose_lit>(*this, lit);
+            if (static_cast<stsolver &>(get_graph()).net.value(lit) != utils::True)
+                new_resolver<stchoose_lit>(*this, lit);
     }
 
     stchoose_lit::stchoose_lit(stclause_flaw &f, const utils::lit &conj) noexcept : stresolver(f, utils::rational(1), conj) {}
