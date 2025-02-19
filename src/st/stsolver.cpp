@@ -410,11 +410,11 @@ namespace ratio
         net.propagate();
         build(); // we build the causal graph..
 
-        while (!active_flaws.empty())
+        while (!get_active_flaws().empty())
         { // we try to solve the problem with the current causal graph..
 
             // we get the most expensive flaw..
-            auto f = *std::max_element(active_flaws.begin(), active_flaws.end(), [](const auto &a, const auto &b)
+            auto f = *std::max_element(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
             set_current_flaw(*f);
             // we get the least expensive resolver..

@@ -1,10 +1,11 @@
 #pragma once
 
 #include "stsolver.hpp"
+#include "dl_theory.hpp"
 
 namespace ratio
 {
-  class stflaw : public flaw, private semitone::listener
+  class stflaw : public flaw, private semitone::listener, private semitone::dl_listener
   {
   public:
     stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
@@ -19,6 +20,7 @@ namespace ratio
     void expanded_flaw() override;
 
     void on_change(const utils::var &v) noexcept override;
+    void on_tp_change(const utils::var &v) noexcept override;
 
   protected:
     [[nodiscard]] json::json to_json() const override;

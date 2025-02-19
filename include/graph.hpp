@@ -63,7 +63,7 @@ namespace ratio
       flaws.emplace_back(std::move(f));
       flaw_q.push_back(f_ref); // add to the flaw queue..
       if (f_ref.get_causes().empty())
-        root_flaws.push_back(f_ref); // add to the root-level flaws..
+        active_flaws.emplace(&f_ref); // add to the active flaws..
       return f_ref;
     }
 
@@ -109,7 +109,7 @@ namespace ratio
 
     [[nodiscard]] std::vector<utils::ref_wrapper<flaw>> get_queued_flaws() const noexcept;
 
-    [[nodiscard]] const std::vector<utils::ref_wrapper<flaw>> &get_root_flaws() const noexcept { return root_flaws; }
+    [[nodiscard]] const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
 
     /**
      * @brief Builds the graph.
@@ -124,11 +124,6 @@ namespace ratio
 
   private:
     void expand_flaw(flaw &f);
-
-    virtual void updating_flaw_state(flaw &, const utils::lbool &) {}
-    virtual void updating_flaw_position(flaw &, const size_t &) {}
-    virtual void updating_flaw_cost(flaw &, const utils::rational &) {}
-    virtual void updating_resolver_state(resolver &, const utils::lbool &) {}
 
     void compute_flaw_cost(flaw &f);
 
@@ -227,8 +222,16 @@ namespace ratio
     std::optional<utils::ref_wrapper<flaw>> c_flaw;    // the current flaw..
     std::optional<utils::ref_wrapper<resolver>> c_res; // the current resolver..
     std::deque<utils::ref_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..
-    std::vector<utils::ref_wrapper<flaw>> root_flaws;  // the root-level flaws..
+    std::unordered_set<flaw *> active_flaws;           // the currently active flaws..
     std::unordered_set<flaw *> visited;                // the visited flaws, for graph cost propagation (and deferrable flaws check)..
+
+    struct layer
+    {
+      std::unordered_map<flaw *, utils::rational> old_f_costs; // the old estimated flaws` costs..
+      std::unordered_set<flaw *> new_flaws;                    // the just activated flaws..
+      std::unordered_set<flaw *> solved_flaws;                 // the just solved flaws..
+    };
+    std::vector<layer> trail; // the list of taken decisions, with the associated changes made, in chronological order..
   };
 
   class flaw
@@ -272,8 +275,6 @@ namespace ratio
       return gr.new_resolver<Tp>(std::forward<Args>(args)...);
     }
 
-    void set_state(utils::lbool state) noexcept;
-
   private:
     virtual void compute_resolvers() = 0;
     virtual void expanded_flaw() {}
@@ -314,9 +315,6 @@ namespace ratio
     [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
 
     [[nodiscard]] virtual json::json to_json() const;
-
-  protected:
-    void set_state(utils::lbool state) noexcept;
 
   private:
     virtual void apply() = 0;

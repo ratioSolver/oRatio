@@ -5,17 +5,15 @@
 
 namespace ratio
 {
-    stflaw::stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), listener(slv.net), phi(compute_phi(slv, get_causes())), pos(slv.net.new_tp())
+    stflaw::stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), listener(slv.net), dl_listener(slv.net.get_difference_logic_theory()), phi(compute_phi(slv, get_causes())), pos(slv.net.new_tp())
     {
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
             slv.net.new_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
-        if (static_cast<stsolver &>(get_graph()).net.value(phi) == utils::True)
-        { // if the flaw is active, we add it to the set of active flaws..
-            set_state(utils::True);
-            static_cast<stsolver &>(get_graph()).active_flaws.emplace(this);
-        }
+        if (static_cast<stsolver &>(get_graph()).net.value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
+            static_cast<stsolver &>(get_graph()).set_flaw_state(*this, utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(phi));
+        listen_tp(pos);
     }
 
     utils::lit stflaw::compute_phi(stsolver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept
@@ -61,13 +59,8 @@ namespace ratio
         }
     }
 
-    void stflaw::on_change(const utils::var &v) noexcept
-    {
-        set_state(static_cast<stsolver &>(get_graph()).net.value(v));
-        if (static_cast<stsolver &>(get_graph()).net.value(v) == utils::True && std::none_of(get_resolvers().begin(), get_resolvers().end(), [this](const auto &resolver)
-                                                                                             { return static_cast<stsolver &>(get_graph()).net.value(static_cast<stresolver &>(*resolver).get_rho()) == utils::True; }))
-            static_cast<stsolver &>(get_graph()).active_flaws.emplace(this);
-    }
+    void stflaw::on_change(const utils::var &v) noexcept { static_cast<stsolver &>(get_graph()).set_flaw_state(*this, static_cast<stsolver &>(get_graph()).net.value(v)); }
+    void stflaw::on_tp_change(const utils::var &v) noexcept { static_cast<stsolver &>(get_graph()).set_flaw_position(*this, static_cast<stsolver &>(get_graph()).net.tp_bounds(v).first.numerator()); }
 
     json::json stflaw::to_json() const
     {
@@ -82,21 +75,13 @@ namespace ratio
     {
         assert(static_cast<stsolver &>(f.get_graph()).net.value(rho) != utils::False);
         static_cast<stsolver &>(f.get_graph()).net.new_clause({!rho, static_cast<stflaw &>(f).get_phi()});
-        if (static_cast<stsolver &>(f.get_graph()).net.value(rho) == utils::True)
-        { // if the resolver is active, the flaw is solved..
-            set_state(utils::True);
-            static_cast<stsolver &>(f.get_graph()).active_flaws.erase(&f);
-        }
+        if (static_cast<stsolver &>(f.get_graph()).net.value(rho) == utils::True) // if the resolver is active, the flaw is solved..
+            static_cast<stsolver &>(f.get_graph()).set_resolver_state(*this, utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(rho));
     }
 
-    void stresolver::on_change(const utils::var &v) noexcept
-    {
-        set_state(static_cast<stsolver &>(get_flaw().get_graph()).net.value(v));
-        if (static_cast<stsolver &>(get_flaw().get_graph()).net.value(v) == utils::True)
-            static_cast<stsolver &>(get_flaw().get_graph()).active_flaws.erase(&get_flaw());
-    }
+    void stresolver::on_change(const utils::var &v) noexcept { static_cast<stsolver &>(get_flaw().get_graph()).set_resolver_state(*this, static_cast<stsolver &>(get_flaw().get_graph()).net.value(v)); }
 
     [[nodiscard]] json::json stresolver::to_json() const
     {

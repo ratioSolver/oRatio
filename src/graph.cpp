@@ -51,9 +51,13 @@ namespace ratio
     {
         if (f.state != state)
         {
-            auto old_state = f.state;
-            updating_flaw_state(f, old_state);
-            f.state = state;
+            if (state == utils::True && std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [this](const auto &resolver)
+                                                     { return resolver->get_state() == utils::True; }))
+            {
+                active_flaws.emplace(&f);
+                if (!trail.empty()) // we store the current flaw as a new flaw, if not already stored, for allowing backtracking..
+                    trail.back().new_flaws.emplace(&f);
+            }
             FLAW_STATE_CHANGED(f);
             compute_flaw_cost(f);
         }
@@ -62,9 +66,6 @@ namespace ratio
     {
         if (f.position != pos)
         {
-            auto old_pos = f.position;
-            updating_flaw_position(f, old_pos);
-            f.position = pos;
             FLAW_POSITION_CHANGED(f);
         }
     }
@@ -72,9 +73,12 @@ namespace ratio
     {
         if (r.state != state)
         {
-            auto old_state = r.state;
-            updating_resolver_state(r, old_state);
-            r.state = state;
+            if (state == utils::True)
+            {
+                active_flaws.erase(&r.get_flaw());
+                if (!trail.empty()) // we store the resolver's flaw as a solved flaw, if not already stored, for allowing backtracking..
+                    trail.back().solved_flaws.emplace(&r.get_flaw());
+            }
             RESOLVER_STATE_CHANGED(r);
             compute_flaw_cost(r.get_flaw());
         }
@@ -90,7 +94,7 @@ namespace ratio
 
     void graph::build()
     {
-        while (std::any_of(root_flaws.begin(), root_flaws.end(), [](const auto &flaw)
+        while (std::any_of(active_flaws.begin(), active_flaws.end(), [](const auto &flaw)
                            { return is_infinite(flaw->est_cost); }))
         { // while there are infinite cost flaws..
             if (flaw_q.empty())
@@ -152,10 +156,9 @@ namespace ratio
                     c_cost = std::min(c_cost, res->get_estimated_cost());
 
         if (f.est_cost != c_cost)
-        { // we update the cost of the flaw..
-            auto old_cost = f.est_cost;
-            f.est_cost = c_cost;
-            updating_flaw_cost(f, old_cost);
+        {                       // we update the cost of the flaw..
+            if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
+                trail.back().old_f_costs.emplace(&f, f.est_cost);
             FLAW_COST_CHANGED(f);
 
             // we propagate the cost to the supported resolvers..
@@ -174,8 +177,6 @@ namespace ratio
             supports.push_back(cause);             // .. and it also supports the `cause` cause..
         }
     }
-
-    void flaw::set_state(utils::lbool state) noexcept { gr.set_flaw_state(*this, state); }
 
     json::json flaw::to_json() const
     {
@@ -210,8 +211,6 @@ namespace ratio
                                     ->get_estimated_cost();
 #endif
     }
-
-    void resolver::set_state(utils::lbool state) noexcept { f.get_graph().set_resolver_state(*this, state); }
 
     json::json resolver::to_json() const
     {
