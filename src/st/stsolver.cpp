@@ -500,7 +500,4 @@ namespace ratio
             set_current_flaw(std::nullopt);
         }
     }
-
-    void stsolver::pushed() noexcept {}
-    void stsolver::popped() noexcept {}
 } // namespace ratio

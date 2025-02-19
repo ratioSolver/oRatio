@@ -52,6 +52,7 @@ namespace ratio
     {
         if (f.state != state)
         {
+            f.state = state;
             if (state == utils::True && std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [this](const auto &resolver)
                                                      { return resolver->get_state() == utils::True; }))
             {
@@ -67,6 +68,7 @@ namespace ratio
     {
         if (f.position != pos)
         {
+            f.position = pos;
             FLAW_POSITION_CHANGED(f);
         }
     }
@@ -74,6 +76,7 @@ namespace ratio
     {
         if (r.state != state)
         {
+            r.state = state;
             if (state == utils::True)
             {
                 active_flaws.erase(&r.get_flaw());
@@ -137,7 +140,7 @@ namespace ratio
         f.expanded_flaw();     // notify the listeners that the flaw has been expanded (might be used for enforcing causality constraints)..
 
         assert(std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [](const auto &resolver)
-                            { return resolver->get_state() != utils::False; })); // none of the resolvers should be infeasible..
+                            { return resolver->get_state() == utils::False; })); // all the resolvers should be feasible..
         for (auto &resolver : f.get_resolvers())
         {
             set_current_resolver(resolver); // set the current resolver..
@@ -160,7 +163,8 @@ namespace ratio
                     c_cost = std::min(c_cost, res->get_estimated_cost());
 
         if (f.est_cost != c_cost)
-        {                       // we update the cost of the flaw..
+        { // we update the cost of the flaw..
+            f.est_cost = c_cost;
             if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
                 trail.back().old_f_costs.emplace(&f, f.est_cost);
             FLAW_COST_CHANGED(f);
@@ -176,13 +180,11 @@ namespace ratio
     void graph::push() noexcept
     {
         LOG_DEBUG("[" << get_name() << "] " << std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
-        LOG_TRACE("[" << get_name() << "] Pushing a new trail");
         trail.push_back({}); // we push a new trail..
     }
 
     void graph::pop() noexcept
     {
-        LOG_TRACE("[" << get_name() << "] Popping the current trail");
         assert(!trail.empty());
         auto &t = trail.back();
         // we restore the previous state of the graph..

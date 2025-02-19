@@ -89,7 +89,7 @@ namespace ratio
     void make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p);
     void make_neq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p);
 
-    void pushed() noexcept override;
-    void popped() noexcept override;
+    void pushed() noexcept override { graph::push(); } // we push the solver..
+    void popped() noexcept override { graph::pop(); }  // we pop the solver..
   };
 } // namespace ratio
