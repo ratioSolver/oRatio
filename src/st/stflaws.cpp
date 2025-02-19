@@ -9,8 +9,8 @@ namespace ratio
     {
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
             slv.net.new_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
-        if (static_cast<stsolver &>(get_graph()).net.value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
-            static_cast<stsolver &>(get_graph()).set_flaw_state(*this, utils::True);
+        if (get_solver().net.value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
+            get_solver().set_flaw_state(*this, utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(phi));
         listen_tp(pos);
@@ -40,27 +40,27 @@ namespace ratio
         std::vector<utils::lit> ls;
         for (const auto &resolver : get_resolvers())
             ls.push_back(static_cast<stresolver &>(*resolver).get_rho());
-        if (static_cast<stsolver &>(get_graph()).net.value(phi) == utils::True)
+        if (get_solver().net.value(phi) == utils::True)
         {
             if (is_exclusive())
                 for (size_t i = 0; i < ls.size(); ++i)
                     for (size_t j = i + 1; j < ls.size(); ++j)
-                        static_cast<stsolver &>(get_graph()).net.new_clause({!ls[i], !ls[j]});
-            static_cast<stsolver &>(get_graph()).net.new_clause(std::move(ls));
+                        get_solver().net.new_clause({!ls[i], !ls[j]});
+            get_solver().net.new_clause(std::move(ls));
         }
         else
         {
             if (is_exclusive())
                 for (size_t i = 0; i < ls.size(); ++i)
                     for (size_t j = i + 1; j < ls.size(); ++j)
-                        static_cast<stsolver &>(get_graph()).net.new_clause({!phi, !ls[i], !ls[j]});
+                        get_solver().net.new_clause({!phi, !ls[i], !ls[j]});
             ls.push_back(!phi);
-            static_cast<stsolver &>(get_graph()).net.new_clause(std::move(ls));
+            get_solver().net.new_clause(std::move(ls));
         }
     }
 
-    void stflaw::on_change(const utils::var &v) noexcept { static_cast<stsolver &>(get_graph()).set_flaw_state(*this, static_cast<stsolver &>(get_graph()).net.value(v)); }
-    void stflaw::on_tp_change(const utils::var &v) noexcept { static_cast<stsolver &>(get_graph()).set_flaw_position(*this, static_cast<stsolver &>(get_graph()).net.tp_bounds(v).first.numerator()); }
+    void stflaw::on_change(const utils::var &v) noexcept { get_solver().set_flaw_state(*this, get_solver().net.value(v)); }
+    void stflaw::on_tp_change(const utils::var &v) noexcept { get_solver().set_flaw_position(*this, get_solver().net.tp_bounds(v).first.numerator()); }
 
     json::json stflaw::to_json() const
     {
@@ -70,18 +70,18 @@ namespace ratio
         return j;
     }
 
-    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(static_cast<stsolver &>(f.get_graph()).net.new_var())) {}
-    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), listener(static_cast<stsolver &>(f.get_graph()).net), rho(rho)
+    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(get_solver().net.new_var())) {}
+    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), listener(get_solver().net), rho(rho)
     {
-        assert(static_cast<stsolver &>(f.get_graph()).net.value(rho) != utils::False);
-        static_cast<stsolver &>(f.get_graph()).net.new_clause({!rho, static_cast<stflaw &>(f).get_phi()});
-        if (static_cast<stsolver &>(f.get_graph()).net.value(rho) == utils::True) // if the resolver is active, the flaw is solved..
-            static_cast<stsolver &>(f.get_graph()).set_resolver_state(*this, utils::True);
+        assert(get_solver().net.value(rho) != utils::False);
+        get_solver().net.new_clause({!rho, static_cast<stflaw &>(f).get_phi()});
+        if (get_solver().net.value(rho) == utils::True) // if the resolver is active, the flaw is solved..
+            get_solver().set_resolver_state(*this, utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(rho));
     }
 
-    void stresolver::on_change(const utils::var &v) noexcept { static_cast<stsolver &>(get_flaw().get_graph()).set_resolver_state(*this, static_cast<stsolver &>(get_flaw().get_graph()).net.value(v)); }
+    void stresolver::on_change(const utils::var &v) noexcept { get_solver().set_resolver_state(*this, get_solver().net.value(v)); }
 
     [[nodiscard]] json::json stresolver::to_json() const
     {
@@ -99,13 +99,13 @@ namespace ratio
             lits.push_back(utils::TRUE_lit);
         else
             for (size_t i = 0; i < values.size(); i++)
-                lits.push_back(utils::lit(static_cast<stsolver &>(tp.get_scope().get_core()).net.new_var()));
+                lits.push_back(utils::lit(static_cast<stsolver &>(tp.get_scope().get_core()).get_network().new_var()));
         return utils::make_s_ptr<riddle::enum_item>(tp, std::move(values), std::move(lits));
     }
     void stenum_flaw::compute_resolvers()
     {
         for (const auto &val : var->get_values())
-            if (static_cast<stsolver &>(get_graph()).net.value(var->get_lit(*val)) != utils::False)
+            if (get_solver().get_network().value(var->get_lit(*val)) != utils::False)
                 new_resolver<stchoose_val>(*this, *val);
     }
 
@@ -116,7 +116,7 @@ namespace ratio
     void stclause_flaw::compute_resolvers()
     {
         for (const auto &lit : clause)
-            if (static_cast<stsolver &>(get_graph()).net.value(lit) != utils::True)
+            if (get_solver().get_network().value(lit) != utils::True)
                 new_resolver<stchoose_lit>(*this, lit);
     }
 
@@ -133,7 +133,7 @@ namespace ratio
     stchoose_conjunction::stchoose_conjunction(stdisjunction_flaw &f, riddle::conjunction &conj) noexcept : stresolver(f, utils::rational(1)), conj(conj) {}
     void stchoose_conjunction::apply() { conj.execute(); }
 
-    statom_flaw::statom_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept : stflaw(slv, std::move(causes)), atm(utils::make_s_ptr<atom>(*this, pred, is_fact, std::move(args), utils::lit(slv.net.new_var()))) {}
+    statom_flaw::statom_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept : stflaw(slv, std::move(causes)), atm(utils::make_s_ptr<atom>(*this, pred, is_fact, std::move(args), utils::lit(slv.get_network().new_var()))) {}
     void statom_flaw::compute_resolvers() {}
 
     json::json statom_flaw::to_json() const

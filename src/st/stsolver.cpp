@@ -225,6 +225,78 @@ namespace ratio
         net.new_clause({!static_cast<stresolver &>(r).get_rho(), static_cast<stflaw &>(f).get_phi()});
     }
 
+    bool stsolver::match(riddle::term &lhs, riddle::term &rhs) const
+    {
+        if (&lhs == &rhs) // the terms are the same, so they match..
+            return true;
+        else if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the terms cannot match..
+            return false;
+        else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with an arithmetic constraint..
+            return net.arith_lb(lhs_xpr->get_lin()) <= net.arith_ub(static_cast<riddle::arith_item &>(rhs).get_lin()) && net.arith_ub(lhs_xpr->get_lin()) >= net.arith_lb(static_cast<riddle::arith_item &>(rhs).get_lin());
+        else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
+            return net.value(lhs_xpr->get_lit()) == net.value(static_cast<riddle::bool_item &>(rhs).get_lit()) || net.value(lhs_xpr->get_lit()) == utils::Undefined || net.value(static_cast<riddle::bool_item &>(rhs).get_lit()) == utils::Undefined;
+        else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
+            return lhs_xpr->get_string() == static_cast<riddle::string_item &>(rhs).get_string();
+        else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs))
+        { // we are dealing with an enumeration constraint..
+            if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
+            {
+                // we compute the intersection of the two domains
+                std::unordered_set<utils::enum_val *> intersection;
+                for (const auto &v : lhs_xpr->get_values())
+                    for (const auto &w : rhs_xpr->get_values())
+                        if (v == w)
+                        {
+                            intersection.insert(&*v);
+                            break;
+                        }
+                return std::any_of(intersection.begin(), intersection.end(), [&](const utils::enum_val *v)
+                                   { return net.value(lhs_xpr->get_lit(*v)) == net.value(rhs_xpr->get_lit(*v)) || net.value(lhs_xpr->get_lit(*v)) == utils::Undefined || net.value(rhs_xpr->get_lit(*v)) == utils::Undefined; });
+            }
+            else
+            {
+                for (const auto &v : lhs_xpr->get_values())
+                    if (match(*lhs_xpr, static_cast<riddle::term &>(*v)))
+                        return true;
+                return false;
+            }
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
+        { // we are dealing with atoms..
+            auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
+            std::queue<riddle::predicate *> q;
+            q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
+            while (!q.empty())
+            {
+                for (const auto &[f_name, f] : q.front()->get_fields())
+                    if (!f->is_synthetic() && !match(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name)))
+                        return false;
+                for (const auto &pp : q.front()->get_parents())
+                    q.push(&*pp);
+                q.pop();
+            }
+            return true;
+        }
+        else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs))
+        { // we are dealing with components..
+            auto rhs_xpr = static_cast<riddle::component *>(&rhs);
+            std::queue<riddle::component_type *> q;
+            q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
+            while (!q.empty())
+            {
+                for (const auto &[f_name, f] : q.front()->get_fields())
+                    if (!f->is_synthetic() && !match(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name)))
+                        return false;
+                for (const auto &pp : q.front()->get_parents())
+                    q.push(&*pp);
+                q.pop();
+            }
+            return true;
+        }
+        else
+            throw std::runtime_error("Invalid type");
+    }
+
     void stsolver::make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
     {
         if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always false..

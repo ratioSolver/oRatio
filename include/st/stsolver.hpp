@@ -10,9 +10,6 @@ namespace ratio
   class statom_flaw;
   class stresolver;
   class stcomponent_type;
-  class stenum_flaw;
-  class stclause_flaw;
-  class statom_flaw;
 
   class atom : public riddle::atom
   {
@@ -36,13 +33,12 @@ namespace ratio
     friend class atom;
     friend class stflaw;
     friend class stresolver;
-    friend class stenum_flaw;
-    friend class stclause_flaw;
-    friend class statom_flaw;
 
   public:
     stsolver(std::string_view name = "oRatio") noexcept;
     virtual ~stsolver() = default;
+
+    [[nodiscard]] semitone::network &get_network() noexcept { return net; }
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
@@ -81,6 +77,8 @@ namespace ratio
     void new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) override;
 
     void solve();
+
+    [[nodiscard]] bool match(riddle::term &lhs, riddle::term &rhs) const;
 
   private:
     riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
