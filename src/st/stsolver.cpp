@@ -223,6 +223,9 @@ namespace ratio
     void stsolver::added_causal_link(flaw &f, resolver &r)
     { // if the resolver is active, then the flaw must be active..
         add_clause({!static_cast<stresolver &>(r).get_rho(), static_cast<stflaw &>(f).get_phi()});
+
+        // the activation of the resolver enforces the activation of a distance constraint to avoid the creation of cycles..
+        add_distance(static_cast<stflaw &>(f).get_pos(), static_cast<stflaw &>(r.get_flaw()).get_pos(), -utils::rational::one, static_cast<stresolver &>(r).get_rho());
     }
 
     bool stsolver::match(riddle::term &lhs, riddle::term &rhs) const
@@ -479,8 +482,13 @@ namespace ratio
 
     void stsolver::solve()
     {
-        propagate();
-        build(); // we build the causal graph..
+        propagate(); // we propagate the constraints..
+        do
+        {
+            build();     // we build the causal graph..
+            propagate(); // we propagate the constraints..
+        } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
+                             { return is_infinite(f->get_estimated_cost()); }));
 
         while (!get_active_flaws().empty())
         { // we try to solve the problem with the current causal graph..

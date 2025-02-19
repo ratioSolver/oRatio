@@ -98,8 +98,8 @@ namespace ratio
 
     void graph::build()
     {
-        while (std::any_of(active_flaws.begin(), active_flaws.end(), [](const auto &flaw)
-                           { return is_infinite(flaw->est_cost); }))
+        while (std::any_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
+                           { return is_infinite(f->est_cost); }))
         { // while there are infinite cost flaws..
             if (flaw_q.empty())
                 throw riddle::unsolvable_exception(); // if the flaw queue is empty, then the problem is unsolvable..

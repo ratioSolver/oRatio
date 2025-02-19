@@ -159,13 +159,13 @@ namespace ratio
                 if (a == atm)
                     continue; // the current atom cannot unify with itself..
                 if (!static_cast<atom &>(*a).get_flaw().is_expanded())
-                    continue; // the atom is not expanded yet, so we cannot unify it
-                if (get_solver().tp_distance(get_position(), static_cast<atom &>(*a).get_flaw().get_position()).first > 0)
-                    continue; // the unification would introduce a causal loop
+                    continue; // the atom is not expanded yet, so we cannot unify it..
+                if (get_solver().tp_distance(get_pos(), static_cast<atom &>(*a).get_flaw().get_pos()).first > 0)
+                    continue; // the unification would introduce a causal loop..
                 if (get_solver().value(static_cast<atom &>(*a).get_sigma()) == utils::False)
-                    continue; // the atom is unified with another atom
+                    continue; // the atom is unified with another atom..
                 if (get_solver().value(static_cast<atom &>(*a).get_flaw().get_phi()) == utils::False)
-                    continue; // the atom cannot be activated
+                    continue; // the atom cannot be activated..
                 if (get_solver().match(*atm, *a))
                     new_resolver<stunify_atom>(*this, utils::s_ptr_cast<atom>(a));
             }
@@ -242,7 +242,7 @@ namespace ratio
         get_solver().make_eq(static_cast<atom &>(*static_cast<statom_flaw &>(get_flaw()).get_atom()), *atm, get_rho());
 
         // we add a causal link from the target atom's flaw to this resolver..
-        get_solver().add_causal_link(get_flaw(), *this);
+        get_solver().add_causal_link(atm->get_flaw(), *this);
 
         // as a consequence of the activation of this resolver:
         //  - we make the current atom's sigma false (unified atom)..
