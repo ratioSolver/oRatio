@@ -127,13 +127,16 @@ namespace ratio
 
     void graph::expand_flaw(flaw &f)
     {
-        assert(!f.is_expanded()); // the flaw should not be expanded..
-        set_current_flaw(f);      // set the current flaw..
+        assert(!f.is_expanded());              // the flaw should not be expanded..
+        assert(f.get_state() != utils::False); // the flaw should not be infeasible..
+        set_current_flaw(f);                   // set the current flaw..
 
         f.compute_resolvers(); // compute the resolvers for the current flaw..
         f.expanded = true;     // mark the flaw as expanded..
         f.expanded_flaw();     // notify the listeners that the flaw has been expanded (might be used for enforcing causality constraints)..
 
+        assert(std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [](const auto &resolver)
+                            { return resolver->get_state() != utils::False; })); // none of the resolvers should be infeasible..
         for (auto &resolver : f.get_resolvers())
         {
             set_current_resolver(resolver); // set the current resolver..
