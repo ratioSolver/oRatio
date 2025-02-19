@@ -2,7 +2,7 @@
 
 #include "graph.hpp"
 #include "item.hpp"
-#include "network.hpp"
+#include "semitone.hpp"
 
 namespace ratio
 {
@@ -25,8 +25,9 @@ namespace ratio
 
   using atom_expr = utils::s_ptr<atom>;
 
-  class stsolver : public graph, private semitone::listener
+  class stsolver : public graph, public smt::semitone
   {
+    friend class stnetwork;
     friend class bool_item;
     friend class arith_item;
     friend class string_item;
@@ -39,8 +40,6 @@ namespace ratio
   public:
     stsolver(std::string_view name = "oRatio") noexcept;
     virtual ~stsolver() = default;
-
-    [[nodiscard]] semitone::network &get_network() noexcept { return net; }
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
@@ -90,10 +89,7 @@ namespace ratio
     void make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p);
     void make_neq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p);
 
-    void push() override;
-    void pop() override;
-
-  private:
-    semitone::network net;
+    void pushed() noexcept override;
+    void popped() noexcept override;
   };
 } // namespace ratio

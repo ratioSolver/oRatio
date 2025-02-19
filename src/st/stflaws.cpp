@@ -6,11 +6,11 @@
 
 namespace ratio
 {
-    stflaw::stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), prop_listener(slv.net), dl_listener(slv.net.get_difference_logic_theory()), phi(compute_phi(slv, get_causes())), pos(slv.net.new_tp())
+    stflaw::stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), prop_listener(slv), dl_listener(slv.get_difference_logic_theory()), phi(compute_phi(slv, get_causes())), pos(slv.mk_tp())
     {
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
-            slv.net.new_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
-        if (get_solver().net.value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
+            slv.add_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
+        if (get_solver().value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
             get_solver().set_flaw_state(*this, utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(phi));
@@ -26,12 +26,12 @@ namespace ratio
             phi = static_cast<stresolver &>(*causes.front()).get_rho();
         else
         { // we create a new variable for the flaw..
-            phi = utils::lit(slv.net.new_var());
+            phi = utils::lit(slv.mk_var());
             std::vector<utils::lit> ls;
             for (const auto &cause : causes)
                 ls.push_back(!static_cast<stresolver &>(*cause).get_rho());
             ls.push_back(phi);
-            slv.net.new_clause(std::move(ls));
+            slv.add_clause(std::move(ls));
         }
         return phi;
     }
@@ -41,27 +41,27 @@ namespace ratio
         std::vector<utils::lit> ls;
         for (const auto &resolver : get_resolvers())
             ls.push_back(static_cast<stresolver &>(*resolver).get_rho());
-        if (get_solver().net.value(phi) == utils::True)
+        if (get_solver().value(phi) == utils::True)
         {
             if (is_exclusive())
                 for (size_t i = 0; i < ls.size(); ++i)
                     for (size_t j = i + 1; j < ls.size(); ++j)
-                        get_solver().net.new_clause({!ls[i], !ls[j]});
-            get_solver().net.new_clause(std::move(ls));
+                        get_solver().add_clause({!ls[i], !ls[j]});
+            get_solver().add_clause(std::move(ls));
         }
         else
         {
             if (is_exclusive())
                 for (size_t i = 0; i < ls.size(); ++i)
                     for (size_t j = i + 1; j < ls.size(); ++j)
-                        get_solver().net.new_clause({!phi, !ls[i], !ls[j]});
+                        get_solver().add_clause({!phi, !ls[i], !ls[j]});
             ls.push_back(!phi);
-            get_solver().net.new_clause(std::move(ls));
+            get_solver().add_clause(std::move(ls));
         }
     }
 
-    void stflaw::on_change(const utils::var &v) noexcept { get_solver().set_flaw_state(*this, get_solver().net.value(v)); }
-    void stflaw::on_tp_change(const utils::var &v) noexcept { get_solver().set_flaw_position(*this, get_solver().net.tp_bounds(v).first.numerator()); }
+    void stflaw::on_change(const utils::var &v) noexcept { get_solver().set_flaw_state(*this, get_solver().value(v)); }
+    void stflaw::on_tp_change(const utils::var &v) noexcept { get_solver().set_flaw_position(*this, get_solver().tp_bounds(v).first.numerator()); }
 
     json::json stflaw::to_json() const
     {
@@ -71,18 +71,18 @@ namespace ratio
         return j;
     }
 
-    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(get_solver().net.new_var())) {}
-    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), prop_listener(get_solver().net), rho(rho)
+    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(get_solver().mk_var())) {}
+    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), prop_listener(get_solver()), rho(rho)
     {
-        assert(get_solver().net.value(rho) != utils::False);
-        get_solver().net.new_clause({!rho, static_cast<stflaw &>(f).get_phi()});
-        if (get_solver().net.value(rho) == utils::True) // if the resolver is active, the flaw is solved..
+        assert(get_solver().value(rho) != utils::False);
+        get_solver().add_clause({!rho, static_cast<stflaw &>(f).get_phi()});
+        if (get_solver().value(rho) == utils::True) // if the resolver is active, the flaw is solved..
             get_solver().set_resolver_state(*this, utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(rho));
     }
 
-    void stresolver::on_change(const utils::var &v) noexcept { get_solver().set_resolver_state(*this, get_solver().net.value(v)); }
+    void stresolver::on_change(const utils::var &v) noexcept { get_solver().set_resolver_state(*this, get_solver().value(v)); }
 
     [[nodiscard]] json::json stresolver::to_json() const
     {
@@ -100,42 +100,42 @@ namespace ratio
             lits.push_back(utils::TRUE_lit);
         else
             for (size_t i = 0; i < values.size(); i++)
-                lits.push_back(utils::lit(static_cast<stsolver &>(tp.get_scope().get_core()).get_network().new_var()));
+                lits.push_back(utils::lit(static_cast<stsolver &>(tp.get_scope().get_core()).mk_var()));
         return utils::make_s_ptr<riddle::enum_item>(tp, std::move(values), std::move(lits));
     }
     void stenum_flaw::compute_resolvers()
     {
-        assert(get_solver().get_network().value(get_phi()) == get_state());
+        assert(get_solver().value(get_phi()) == get_state());
         for (const auto &val : var->get_values())
-            if (get_solver().get_network().value(var->get_lit(*val)) != utils::False)
+            if (get_solver().value(var->get_lit(*val)) != utils::False)
                 new_resolver<stchoose_val>(*this, *val);
     }
 
     stchoose_val::stchoose_val(stenum_flaw &f, const utils::enum_val &val) noexcept : stresolver(f, utils::rational(1), f.get_var()->get_lit(val)), val(val) {}
     void stchoose_val::apply()
     {
-        assert(get_solver().get_network().value(get_rho()) == get_state());
+        assert(get_solver().value(get_rho()) == get_state());
     }
 
     stclause_flaw::stclause_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
     void stclause_flaw::compute_resolvers()
     {
-        assert(get_solver().get_network().value(get_phi()) == get_state());
+        assert(get_solver().value(get_phi()) == get_state());
         for (const auto &lit : clause)
-            if (get_solver().get_network().value(lit) != utils::True)
+            if (get_solver().value(lit) != utils::True)
                 new_resolver<stchoose_lit>(*this, lit);
     }
 
     stchoose_lit::stchoose_lit(stclause_flaw &f, const utils::lit &conj) noexcept : stresolver(f, utils::rational(1), conj) {}
     void stchoose_lit::apply()
     {
-        assert(get_solver().get_network().value(get_rho()) == get_state());
+        assert(get_solver().value(get_rho()) == get_state());
     }
 
     stdisjunction_flaw::stdisjunction_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept : stflaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
     void stdisjunction_flaw::compute_resolvers()
     {
-        assert(get_solver().get_network().value(get_phi()) == get_state());
+        assert(get_solver().value(get_phi()) == get_state());
         for (const auto &disjunct : disjuncts)
             new_resolver<stchoose_conjunction>(*this, *disjunct);
     }
@@ -143,28 +143,28 @@ namespace ratio
     stchoose_conjunction::stchoose_conjunction(stdisjunction_flaw &f, riddle::conjunction &conj) noexcept : stresolver(f, utils::rational(1)), conj(conj) {}
     void stchoose_conjunction::apply()
     {
-        assert(get_solver().get_network().value(get_rho()) == get_state());
+        assert(get_solver().value(get_rho()) == get_state());
         conj.execute();
     }
 
-    statom_flaw::statom_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept : stflaw(slv, std::move(causes)), atm(utils::make_s_ptr<atom>(*this, pred, is_fact, std::move(args), utils::lit(slv.get_network().new_var()))) {}
+    statom_flaw::statom_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept : stflaw(slv, std::move(causes)), atm(utils::make_s_ptr<atom>(*this, pred, is_fact, std::move(args), utils::lit(slv.mk_var()))) {}
     void statom_flaw::compute_resolvers()
     {
-        assert(get_solver().get_network().value(get_phi()) == get_state());
-        assert(get_solver().get_network().value(atm->get_sigma()) != utils::False); // The atom is not necessarily inactive
+        assert(get_solver().value(get_phi()) == get_state());
+        assert(get_solver().value(atm->get_sigma()) != utils::False); // The atom is not necessarily inactive
         LOG_TRACE("Computing resolvers for " << to_json());
-        if (get_solver().get_network().value(atm->get_sigma()) == utils::Undefined)
+        if (get_solver().value(atm->get_sigma()) == utils::Undefined)
             for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
             {
                 if (a == atm)
                     continue; // the current atom cannot unify with itself..
                 if (!static_cast<atom &>(*a).get_flaw().is_expanded())
                     continue; // the atom is not expanded yet, so we cannot unify it
-                if (get_solver().get_network().tp_distance(get_position(), static_cast<atom &>(*a).get_flaw().get_position()).first > 0)
+                if (get_solver().tp_distance(get_position(), static_cast<atom &>(*a).get_flaw().get_position()).first > 0)
                     continue; // the unification would introduce a causal loop
-                if (get_solver().get_network().value(static_cast<atom &>(*a).get_sigma()) == utils::False)
+                if (get_solver().value(static_cast<atom &>(*a).get_sigma()) == utils::False)
                     continue; // the atom is unified with another atom
-                if (get_solver().get_network().value(static_cast<atom &>(*a).get_flaw().get_phi()) == utils::False)
+                if (get_solver().value(static_cast<atom &>(*a).get_flaw().get_phi()) == utils::False)
                     continue; // the atom cannot be activated
                 if (get_solver().match(*atm, *a))
                     new_resolver<stunify_atom>(*this, utils::s_ptr_cast<atom>(a));
@@ -184,11 +184,11 @@ namespace ratio
 
     void stactivate_fact::apply()
     {
-        assert(get_solver().get_network().value(get_rho()) == get_state());
-        assert(get_solver().get_network().value(static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::False); // The atom is not necessarily inactive..
+        assert(get_solver().value(get_rho()) == get_state());
+        assert(get_solver().value(static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::False); // The atom is not necessarily inactive..
 
         // activating this resolver activates the goal..
-        get_solver().get_network().new_clause({!get_rho(), static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()});
+        get_solver().add_clause({!get_rho(), static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()});
     }
 
     json::json stactivate_fact::to_json() const
@@ -203,11 +203,11 @@ namespace ratio
 
     void stactivate_goal::apply()
     {
-        assert(get_solver().get_network().value(get_rho()) == get_state());
-        assert(get_solver().get_network().value(static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::False); // The atom is not necessarily inactive..
+        assert(get_solver().value(get_rho()) == get_state());
+        assert(get_solver().value(static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::False); // The atom is not necessarily inactive..
 
         // activating this resolver activates the goal..
-        get_solver().get_network().new_clause({!get_rho(), static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()});
+        get_solver().add_clause({!get_rho(), static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()});
 
         // we call the corresponding rule..
         static_cast<riddle::predicate &>(static_cast<statom_flaw &>(get_flaw()).get_atom()->get_type()).call(static_cast<statom_flaw &>(get_flaw()).get_atom());
@@ -224,9 +224,9 @@ namespace ratio
 
     void stunify_atom::apply()
     {
-        assert(get_solver().get_network().value(get_rho()) == get_state());
-        assert(get_solver().get_network().value(static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::True); // The atom must be unifiable
-        assert(get_solver().get_network().value(atm->get_sigma()) != utils::False);                                              // The target atom must be activable..
+        assert(get_solver().value(get_rho()) == get_state());
+        assert(get_solver().value(static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::True); // The atom must be unifiable
+        assert(get_solver().value(atm->get_sigma()) != utils::False);                                              // The target atom must be activable..
 
         // we associate the unification constraints with the rho literal..
         get_solver().make_eq(static_cast<atom &>(*static_cast<statom_flaw &>(get_flaw()).get_atom()), *atm, get_rho());
@@ -236,9 +236,9 @@ namespace ratio
 
         // as a consequence of the activation of this resolver:
         //  - we make the current atom's sigma false (unified atom)..
-        get_solver().get_network().new_clause({!get_rho(), !static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()});
+        get_solver().add_clause({!get_rho(), !static_cast<statom_flaw &>(get_flaw()).get_atom()->get_sigma()});
         //  - and we make the target atom's sigma true (active atom)..
-        get_solver().get_network().new_clause({!get_rho(), atm->get_sigma()});
+        get_solver().add_clause({!get_rho(), atm->get_sigma()});
     }
 
     json::json stunify_atom::to_json() const
