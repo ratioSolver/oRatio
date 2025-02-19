@@ -25,7 +25,7 @@ namespace ratio
 
   using atom_expr = utils::s_ptr<atom>;
 
-  class stsolver : public graph, public smt::semitone
+  class stsolver : public smt::semitone, public graph
   {
     friend class stnetwork;
     friend class bool_item;

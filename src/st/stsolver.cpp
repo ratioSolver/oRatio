@@ -18,15 +18,15 @@ namespace ratio
     }
     utils::lbool stsolver::bool_value(const riddle::bool_term &expr) const noexcept { return value(static_cast<const riddle::bool_item &>(expr).get_lit()); }
 
-    riddle::arith_expr stsolver::new_int() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(new_int(), utils::rational::one)); }
+    riddle::arith_expr stsolver::new_int() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(), utils::rational::one)); }
     riddle::arith_expr stsolver::new_int(const INT_TYPE value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(utils::rational(value))); }
     riddle::arith_expr stsolver::new_int(const INT_TYPE lb, const INT_TYPE ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
     riddle::arith_expr stsolver::new_uncertain_int(const INT_TYPE lb, const INT_TYPE ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
 
-    riddle::arith_expr stsolver::new_real() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(new_real(), utils::rational::one)); }
+    riddle::arith_expr stsolver::new_real() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(), utils::rational::one)); }
     riddle::arith_expr stsolver::new_real(utils::rational &&value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(std::move(value))); }
-    riddle::arith_expr stsolver::new_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(new_real(std::move(lb), std::move(ub)), utils::rational::one)); }
-    riddle::arith_expr stsolver::new_uncertain_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(new_real(std::move(lb), std::move(ub)), utils::rational::one)); }
+    riddle::arith_expr stsolver::new_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
+    riddle::arith_expr stsolver::new_uncertain_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
 
     riddle::arith_expr stsolver::new_time() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(mk_tp(), utils::rational::one)); }
     riddle::arith_expr stsolver::new_time(utils::rational &&value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(std::move(value))); }
