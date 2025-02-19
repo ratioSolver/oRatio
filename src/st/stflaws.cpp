@@ -71,8 +71,8 @@ namespace ratio
         return j;
     }
 
-    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(get_solver().mk_var())) {}
-    stresolver::stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), prop_listener(get_solver()), rho(rho)
+    stresolver::stresolver(stflaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(f.get_solver().mk_var())) {}
+    stresolver::stresolver(stflaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), prop_listener(get_solver()), rho(rho)
     {
         assert(get_solver().value(rho) != utils::False);
         get_solver().add_clause({!rho, static_cast<stflaw &>(f).get_phi()});
@@ -169,6 +169,16 @@ namespace ratio
                 if (get_solver().match(*atm, *a))
                     new_resolver<stunify_atom>(*this, utils::s_ptr_cast<atom>(a));
             }
+
+        if (atm->is_fact())
+            if (get_resolvers().empty())
+                new_resolver<stactivate_fact>(*this, get_phi());
+            else
+                new_resolver<stactivate_fact>(*this);
+        else if (get_resolvers().empty())
+            new_resolver<stactivate_goal>(*this, get_phi());
+        else
+            new_resolver<stactivate_goal>(*this);
     }
 
     json::json statom_flaw::to_json() const

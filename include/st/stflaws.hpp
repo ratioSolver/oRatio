@@ -36,8 +36,8 @@ namespace ratio
   class stresolver : public resolver, private smt::prop_listener
   {
   public:
-    stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;
-    stresolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept;
+    stresolver(stflaw &f, utils::rational &&intrinsic_cost) noexcept;
+    stresolver(stflaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept;
 
     [[nodiscard]] inline stsolver &get_solver() noexcept { return static_cast<stsolver &>(get_flaw().get_graph()); }
     [[nodiscard]] inline const stsolver &get_solver() const noexcept { return static_cast<const stsolver &>(get_flaw().get_graph()); }
