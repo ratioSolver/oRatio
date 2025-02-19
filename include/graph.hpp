@@ -122,6 +122,10 @@ namespace ratio
 
     void add_causal_link(flaw &f, resolver &r) noexcept;
 
+    void push() noexcept;
+
+    void pop() noexcept;
+
   private:
     void expand_flaw(flaw &f);
 

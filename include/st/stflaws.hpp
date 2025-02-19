@@ -5,7 +5,7 @@
 
 namespace ratio
 {
-  class stflaw : public flaw, private semitone::listener, private semitone::dl_listener
+  class stflaw : public flaw, private semitone::prop_listener, private semitone::dl_listener
   {
   public:
     stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
@@ -33,7 +33,7 @@ namespace ratio
     const utils::var pos; // the position variable associated to this flaw (for avoiding causality loops)..
   };
 
-  class stresolver : public resolver, private semitone::listener
+  class stresolver : public resolver, private semitone::prop_listener
   {
   public:
     stresolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;

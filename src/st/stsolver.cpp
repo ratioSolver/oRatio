@@ -8,7 +8,7 @@
 
 namespace ratio
 {
-    stsolver::stsolver(std::string_view name) noexcept : graph(name) {}
+    stsolver::stsolver(std::string_view name) noexcept : graph(name), listener(net) {}
 
     riddle::bool_expr stsolver::new_bool() { return utils::make_s_ptr<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::lit(net.new_var())); }
     riddle::bool_expr stsolver::new_bool(const bool value)
@@ -476,6 +476,9 @@ namespace ratio
         else
             throw std::runtime_error("Invalid type");
     }
+
+    void stsolver::push() { graph::push(); }
+    void stsolver::pop() { graph::pop(); }
 
     void stsolver::solve()
     {

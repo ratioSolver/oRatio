@@ -25,7 +25,7 @@ namespace ratio
 
   using atom_expr = utils::s_ptr<atom>;
 
-  class stsolver : public graph
+  class stsolver : public graph, private semitone::listener
   {
     friend class bool_item;
     friend class arith_item;
@@ -89,6 +89,9 @@ namespace ratio
 
     void make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p);
     void make_neq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p);
+
+    void push() override;
+    void pop() override;
 
   private:
     semitone::network net;

@@ -1,5 +1,6 @@
 #include "graph.hpp"
 #include "exceptions.hpp"
+#include "logging.hpp"
 #include <algorithm>
 #include <cassert>
 
@@ -170,6 +171,32 @@ namespace ratio
                 compute_flaw_cost(support->f);
             visited.erase(&f);
         }
+    }
+
+    void graph::push() noexcept
+    {
+        LOG_DEBUG("[" << get_name() << "] " << std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
+        LOG_TRACE("[" << get_name() << "] Pushing a new trail");
+        trail.push_back({}); // we push a new trail..
+    }
+
+    void graph::pop() noexcept
+    {
+        LOG_TRACE("[" << get_name() << "] Popping the current trail");
+        assert(!trail.empty());
+        auto &t = trail.back();
+        // we restore the previous state of the graph..
+        for (const auto &f : t.solved_flaws)
+            active_flaws.insert(f); // we restore the solved flaws..
+        for (const auto &f : t.new_flaws)
+            active_flaws.erase(f); // we remove the new flaws..
+        for (const auto &[f, c] : t.old_f_costs)
+        { // we restore the flaws' costs..
+            f->est_cost = c;
+            FLAW_COST_CHANGED(*f);
+        }
+        trail.pop_back();
+        LOG_DEBUG("[" << get_name() << "] " << std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
     }
 
     flaw::flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) : gr(gr), causes(causes), exclusive(exclusive)
