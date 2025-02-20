@@ -53,7 +53,7 @@ namespace ratio
             for (const auto &atm : pred.get().get_atoms())
                 all_atoms.insert(static_cast<atom *>(atm.get()));
 
-        json::json j_solver{{"name", rhs.get_name()}};
+        json::json j_solver{{"name", rhs.get_name().c_str()}};
         if (all_items.size())
         {
             json::json j_items(json::json_type::array);
@@ -105,7 +105,7 @@ namespace ratio
                 }
         if (!starting_atoms.empty())
         { // we have some root atoms in the solver timeline..
-            json::json slv_tl{{"id", static_cast<uint64_t>(get_id(rhs))}, {"type", "Solver"}, {"name", rhs.get_name()}};
+            json::json slv_tl{{"id", static_cast<uint64_t>(get_id(rhs))}, {"type", "Solver"}, {"name", rhs.get_name().c_str()}};
             json::json j_atms(json::json_type::array);
             for (const auto &p : pulses)
                 for (const auto &atm : starting_atoms.at(p))
@@ -139,7 +139,7 @@ namespace ratio
     {
         json::json j_itm{{"id", static_cast<uint64_t>(get_id(itm))}};
 #ifdef COMPUTE_NAMES
-        j_itm["name"] = itm.get_type().get_scope().get_core().guess_name(itm);
+        j_itm["name"] = itm.get_type().get_scope().get_core().guess_name(itm).c_str();
 #endif
         // we add the full name of the type of the item..
         std::string tp_name = itm.get_type().get_name();
@@ -188,12 +188,12 @@ namespace ratio
 
     [[nodiscard]] json::json value(const riddle::item &itm) noexcept
     {
-        json::json j_val{{"type", itm.get_type().get_name()}}; // we add the type of the item..
+        json::json j_val{{"type", itm.get_type().get_name().c_str()}}; // we add the type of the item..
         if (is_bool(itm))
         {
             j_val["type"] = itm.get_type().get_name();
             auto &b_itm = static_cast<const riddle::bool_item &>(itm);
-            j_val["lit"] = (sign(b_itm.get_value()) ? "b" : "!b") + std::to_string(variable(b_itm.get_value()));
+            j_val["lit"] = ((sign(b_itm.get_value()) ? "b" : "!b") + std::to_string(variable(b_itm.get_value()))).c_str();
             switch (itm.get_type().get_scope().get_core().bool_value(b_itm))
             {
             case utils::True:
@@ -212,7 +212,7 @@ namespace ratio
         {
             j_val["type"] = itm.get_type().get_name();
             auto &a_itm = static_cast<const riddle::arith_item &>(itm);
-            j_val["lin"] = to_string(a_itm.get_value());
+            j_val["lin"] = to_string(a_itm.get_value()).c_str();
             j_val["val"] = to_json(itm.get_type().get_scope().get_core().arithmetic_value(a_itm));
             auto [lb, ub] = itm.get_type().get_scope().get_core().bounds(a_itm);
             if (!is_negative_infinite(lb))
@@ -231,7 +231,7 @@ namespace ratio
         {
             j_val["type"] = "enum";
             auto &e_itm = static_cast<const riddle::enum_item &>(itm);
-            j_val["var"] = std::to_string(e_itm.get_value());
+            j_val["var"] = std::to_string(e_itm.get_value()).c_str();
             json::json vals(json::json_type::array);
             for (auto &val : itm.get_type().get_scope().get_core().domain(e_itm))
                 vals.push_back(static_cast<uint64_t>(get_id(dynamic_cast<riddle::item &>(val.get()))));
@@ -332,7 +332,7 @@ namespace ratio
         j["type"] = "flaw_state_changed";
         j["solver_id"] = static_cast<uint64_t>(get_id(f.get_solver()));
         j["id"] = static_cast<uint64_t>(get_id(f));
-        j["state"] = to_state(f);
+        j["state"] = to_state(f).c_str();
         return j;
     }
 
@@ -379,7 +379,7 @@ namespace ratio
         j["type"] = "resolver_state_changed";
         j["solver_id"] = static_cast<uint64_t>(get_id(r.get_flaw().get_solver()));
         j["id"] = static_cast<uint64_t>(get_id(r));
-        j["state"] = to_state(r);
+        j["state"] = to_state(r).c_str();
         return j;
     }
 

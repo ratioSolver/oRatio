@@ -43,7 +43,7 @@ namespace ratio
         {
             json::json tl{{"id", static_cast<uint64_t>(get_id(*agnt))}, {"type", AGENT_TYPE_NAME}};
 #ifdef COMPUTE_NAMES
-            tl["name"] = get_solver().guess_name(*agnt);
+            tl["name"] = get_solver().guess_name(*agnt).c_str();
 #endif
 
             // for each pulse, the atoms starting at that pulse..

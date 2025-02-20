@@ -269,7 +269,7 @@ namespace ratio
         {
             json::json tl{{"id", static_cast<uint64_t>(get_id(*rr))}, {"type", REUSABLE_RESOURCE_TYPE_NAME}};
 #ifdef COMPUTE_NAMES
-            tl["name"] = get_solver().guess_name(*rr);
+            tl["name"] = get_solver().guess_name(*rr).c_str();
 #endif
 
             const auto c_capacity = get_solver().arithmetic_value(*std::static_pointer_cast<riddle::arith_item>(rr->get(REUSABLE_RESOURCE_CAPACITY_NAME)));
