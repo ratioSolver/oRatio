@@ -3,6 +3,7 @@
 #include "core.hpp"
 #include <deque>
 #include <unordered_set>
+#include <unordered_map>
 
 #ifdef ENABLE_API
 #define NEW_FLAW(f) flaw_created(f)
