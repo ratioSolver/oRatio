@@ -272,6 +272,8 @@ namespace ratio
     [[nodiscard]] size_t get_position() const noexcept { return position; }
 
   protected:
+    void set_state(utils::lbool state) noexcept;
+
     template <typename Tp, typename... Args>
     Tp &new_resolver(Args &&...args) noexcept
     {
@@ -319,6 +321,9 @@ namespace ratio
     [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
 
     [[nodiscard]] virtual json::json to_json() const;
+
+  protected:
+    void set_state(utils::lbool state) noexcept;
 
   private:
     virtual void apply() = 0;

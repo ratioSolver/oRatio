@@ -3,8 +3,8 @@ import { solver } from "./solver";
 import cytoscape from 'cytoscape';
 import { interpolateRgb } from 'd3-interpolate';
 
-const costColorScale = interpolateRgb("green", "red");
 const infiniteColor = "black";
+const forbiddenColor = "lightgray";
 
 export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implements solver.SolverListener {
 
@@ -20,6 +20,8 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   private c_flaw: solver.graph.Flaw | null = null;
   private c_resolver: solver.graph.Resolver | null = null
   private tooltip_style = "position: absolute; top: 0; left: 0; background-color: #444; color: white; border-radius: 4px; opacity: 0.8;";
+  private costColorScale = interpolateRgb("green", "red");
+  private max_cost = 5;
 
   constructor(solver: solver.Solver) {
     super(solver, document.createElement('div'));
@@ -104,16 +106,30 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   flaw_created(flaw: solver.graph.Flaw): void {
     this.create_flaw_node(flaw);
 
-    for (const cause of flaw.get_causes())
+    for (const cause of flaw.get_causes()) {
       this.cy!.add({ group: 'edges', data: { id: `${flaw.get_id()}-${cause.get_id()}`, source: flaw.get_id(), target: cause.get_id(), stroke: stroke_style(flaw) } });
+      this.cy!.$id(cause.get_id().toString()).data('color', this.color(cause));
+    }
     this.cy!.layout(this.layout).run();
   }
 
-  flaw_state_changed(flaw: solver.graph.Flaw): void { this.cy!.$id(flaw.get_id().toString()).data({ color: color(flaw), stroke: stroke_style(flaw) }); }
+  flaw_state_changed(flaw: solver.graph.Flaw): void { this.cy!.$id(flaw.get_id().toString()).data({ color: this.color(flaw), stroke: stroke_style(flaw) }); }
 
   flaw_position_changed(flaw: solver.graph.Flaw): void { this.cy!.$id(flaw.get_id().toString()).data('label', flaw.to_string()); }
 
-  flaw_cost_changed(flaw: solver.graph.Flaw): void { this.cy!.$id(flaw.get_id().toString()).data('color', color(flaw)); }
+  flaw_cost_changed(flaw: solver.graph.Flaw): void {
+    if (flaw.get_cost() > this.max_cost && flaw.get_cost() !== Infinity) {
+      this.max_cost = flaw.get_cost();
+      for (const [_, f] of this.payload.get_flaws())
+        this.cy!.$id(f.get_id().toString()).data('color', this.color(f));
+      for (const [_, r] of this.payload.get_resolvers())
+        this.cy!.$id(r.get_id().toString()).data('color', this.color(r));
+    } else {
+      this.cy!.$id(flaw.get_id().toString()).data('color', this.color(flaw));
+      for (const cause of flaw.get_causes())
+        this.cy!.$id(cause.get_id().toString()).data('color', this.color(cause));
+    }
+  }
 
   current_flaw(flaw: solver.graph.Flaw | null): void {
     if (this.c_flaw)
@@ -133,7 +149,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   }
 
   resolver_state_changed(resolver: solver.graph.Resolver): void {
-    this.cy!.$id(resolver.get_id().toString()).data({ color: color(resolver), stroke: stroke_style(resolver) });
+    this.cy!.$id(resolver.get_id().toString()).data({ color: this.color(resolver), stroke: stroke_style(resolver) });
     this.cy!.$id(`${resolver.get_id()}-${resolver.get_flaw().get_id()}`).data('stroke', stroke_style(resolver));
     for (const pre of resolver.get_preconditions())
       this.cy!.$id(`${pre.get_id()}-${resolver.get_id()}`).data('stroke', stroke_style(resolver));
@@ -166,7 +182,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   }
 
   private create_flaw_node(flaw: solver.graph.Flaw): cytoscape.CollectionReturnValue {
-    const fn = this.cy!.add({ group: 'nodes', data: { id: flaw.get_id().toString(), type: 'flaw', label: flaw.to_string(), color: color(flaw), stroke: stroke_style(flaw) } });
+    const fn = this.cy!.add({ group: 'nodes', data: { id: flaw.get_id().toString(), type: 'flaw', label: flaw.to_string(), color: this.color(flaw), stroke: stroke_style(flaw) } });
     fn.on('mouseover', () => {
       const popper = fn.popper({
         content: () => {
@@ -195,7 +211,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   }
 
   private create_resolver_node(resolver: solver.graph.Resolver): cytoscape.CollectionReturnValue {
-    const rn = this.cy!.add({ group: 'nodes', data: { id: resolver.get_id().toString(), type: 'resolver', label: resolver.to_string(), color: color(resolver), stroke: stroke_style(resolver) } });
+    const rn = this.cy!.add({ group: 'nodes', data: { id: resolver.get_id().toString(), type: 'resolver', label: resolver.to_string(), color: this.color(resolver), stroke: stroke_style(resolver) } });
     rn.on('mouseover', () => {
       const popper = rn.popper({
         content: () => {
@@ -222,16 +238,16 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     });
     return rn;
   }
-}
 
-function color(node: solver.graph.Flaw | solver.graph.Resolver): string {
-  const cost = node.get_cost();
-  if (cost === Infinity)
-    return infiniteColor; // We use black for infinite cost
-  else if (cost > 100)
-    return costColorScale(1); // We use red for high costs
-  else
-    return costColorScale(cost / 100); // We use a gradient from green to red for costs between 0 and 100
+  private color(node: solver.graph.Flaw | solver.graph.Resolver): string {
+    if (node.get_state() === solver.graph.State.forbidden)
+      return forbiddenColor;
+    const cost = node.get_cost();
+    if (cost === Infinity)
+      return infiniteColor; // We use black for infinite cost
+    else
+      return this.costColorScale(cost / this.max_cost); // We use a gradient from green to red for costs between 0 and 100
+  }
 }
 
 function stroke_style(node: solver.graph.Flaw | solver.graph.Resolver): string {

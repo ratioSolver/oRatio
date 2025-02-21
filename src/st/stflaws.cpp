@@ -11,7 +11,7 @@ namespace ratio
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
             slv.add_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
         if (get_solver().value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
-            get_solver().set_flaw_state(*this, utils::True);
+            set_state(utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(phi));
         listen_tp(pos);
@@ -77,7 +77,7 @@ namespace ratio
         assert(get_solver().value(rho) != utils::False);
         get_solver().add_clause({!rho, static_cast<stflaw &>(f).get_phi()});
         if (get_solver().value(rho) == utils::True) // if the resolver is active, the flaw is solved..
-            get_solver().set_resolver_state(*this, utils::True);
+            set_state(utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(rho));
     }

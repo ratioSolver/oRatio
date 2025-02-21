@@ -212,9 +212,21 @@ namespace ratio
         }
     }
 
+    void flaw::set_state(utils::lbool state) noexcept
+    {
+        assert(gr.trail.empty());
+        if (this->state != state)
+        {
+            this->state = state;
+            if (state == utils::True && std::none_of(resolvers.begin(), resolvers.end(), [this](const auto &resolver)
+                                                     { return resolver->get_state() == utils::True; }))
+                gr.active_flaws.emplace(this);
+        }
+    }
+
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}};
+        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}, {"position", position}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);
@@ -244,6 +256,17 @@ namespace ratio
                                                    { return lhs->get_estimated_cost() < rhs->get_estimated_cost(); }))
                                     ->get_estimated_cost();
 #endif
+    }
+
+    void resolver::set_state(utils::lbool state) noexcept
+    {
+        assert(get_flaw().gr.trail.empty());
+        if (this->state != state)
+        {
+            this->state = state;
+            if (state == utils::True)
+                get_flaw().gr.active_flaws.erase(&f);
+        }
     }
 
     json::json resolver::to_json() const
