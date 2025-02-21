@@ -226,7 +226,7 @@ namespace ratio
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}, {"position", position}};
+        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}, {"position", static_cast<uint64_t>(position)}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);
