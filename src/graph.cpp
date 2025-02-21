@@ -53,6 +53,7 @@ namespace ratio
         if (f.state != state)
         {
             f.state = state;
+            FLAW_STATE_CHANGED(f);
             if (state == utils::True && std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [this](const auto &resolver)
                                                      { return resolver->get_state() == utils::True; }))
             {
@@ -60,7 +61,6 @@ namespace ratio
                 if (!trail.empty()) // we store the current flaw as a new flaw, if not already stored, for allowing backtracking..
                     trail.back().new_flaws.emplace(&f);
             }
-            FLAW_STATE_CHANGED(f);
             compute_flaw_cost(f);
         }
     }
@@ -77,13 +77,13 @@ namespace ratio
         if (r.state != state)
         {
             r.state = state;
+            RESOLVER_STATE_CHANGED(r);
             if (state == utils::True)
             {
                 active_flaws.erase(&r.get_flaw());
                 if (!trail.empty()) // we store the resolver's flaw as a solved flaw, if not already stored, for allowing backtracking..
                     trail.back().solved_flaws.emplace(&r.get_flaw());
             }
-            RESOLVER_STATE_CHANGED(r);
             compute_flaw_cost(r.get_flaw());
         }
     }
@@ -189,16 +189,18 @@ namespace ratio
         auto &t = trail.back();
         // we restore the previous state of the graph..
         for (const auto &f : t.solved_flaws)
-            active_flaws.insert(f); // we restore the solved flaws..
+            if (f->get_state() == utils::True)
+                active_flaws.emplace(f); // we restore the solved flaws..
         for (const auto &f : t.new_flaws)
             active_flaws.erase(f); // we remove the new flaws..
+        assert(std::all_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
+                           { return f->get_state() == utils::True; })); // all the active flaws should be active..
         for (const auto &[f, c] : t.old_f_costs)
         { // we restore the flaws' costs..
             f->est_cost = c;
             FLAW_COST_CHANGED(*f);
         }
         trail.pop_back();
-        LOG_DEBUG("[" << get_name() << "] " << std::to_string(trail.size()) << " (" << std::to_string(active_flaws.size()) << ")");
     }
 
     flaw::flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) : gr(gr), causes(causes), exclusive(exclusive)
