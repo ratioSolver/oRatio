@@ -67,12 +67,12 @@ namespace ratio
     {
         json::json j = flaw::to_json();
         j["phi"] = to_string(phi).c_str();
-        j["pos"] = pos;
+        j["pos"] = static_cast<uint64_t>(pos);
         return j;
     }
 
     stresolver::stresolver(stflaw &f, utils::rational &&intrinsic_cost) noexcept : stresolver(f, std::move(intrinsic_cost), utils::lit(f.get_solver().mk_var())) {}
-    stresolver::stresolver(stflaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), prop_listener(get_solver()), rho(rho)
+    stresolver::stresolver(stflaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : resolver(f, std::move(intrinsic_cost)), prop_listener(f.get_solver()), rho(rho)
     {
         assert(get_solver().value(rho) != utils::False);
         get_solver().add_clause({!rho, static_cast<stflaw &>(f).get_phi()});

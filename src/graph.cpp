@@ -54,7 +54,7 @@ namespace ratio
         {
             f.state = state;
             FLAW_STATE_CHANGED(f);
-            if (state == utils::True && std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [this](const auto &resolver)
+            if (state == utils::True && std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [](const auto &resolver)
                                                      { return resolver->get_state() == utils::True; }))
             {
                 active_flaws.emplace(&f);
@@ -218,7 +218,7 @@ namespace ratio
         if (this->state != state)
         {
             this->state = state;
-            if (state == utils::True && std::none_of(resolvers.begin(), resolvers.end(), [this](const auto &resolver)
+            if (state == utils::True && std::none_of(resolvers.begin(), resolvers.end(), [](const auto &resolver)
                                                      { return resolver->get_state() == utils::True; }))
                 gr.active_flaws.emplace(this);
         }
