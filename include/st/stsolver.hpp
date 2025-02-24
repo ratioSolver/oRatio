@@ -91,5 +91,11 @@ namespace ratio
 
     void pushed() noexcept override { graph::push(); } // we push the solver..
     void popped() noexcept override { graph::pop(); }  // we pop the solver..
+
+    void check_graph();
+
+  private:
+    utils::var gamma{0};                       // The variable representing the validity of this graph..
+    std::unordered_set<flaw *> already_closed; // already closed flaws (for avoiding duplicating graph pruning constraints)..
   };
 } // namespace ratio

@@ -482,30 +482,65 @@ namespace ratio
 
     void stsolver::solve()
     {
-        propagate(); // we propagate the constraints..
-        do
-        {
-            build();     // we build the causal graph..
-            propagate(); // we propagate the constraints..
-        } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
-                             { return is_infinite(f->get_estimated_cost()); }));
-
+        check_graph();
         while (!get_active_flaws().empty())
         { // we try to solve the problem with the current causal graph..
-
             // we get the most expensive flaw..
             auto f = *std::max_element(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
             set_current_flaw(*f);
+
+            if (is_infinite(f->get_estimated_cost()))
+            { // we don't know how to solve this flaw :(
+                do
+                { // we have to search..
+                    next();
+                } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
+                                     { return is_infinite(f->get_estimated_cost()); }));
+                continue;
+            }
+
             // we get the least expensive resolver..
             auto r = *std::min_element(f->get_resolvers().begin(), f->get_resolvers().end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
             set_current_resolver(*r);
+
             // we apply the resolver..
             assume(static_cast<stresolver &>(*r).get_rho());
 
             set_current_resolver(std::nullopt);
             set_current_flaw(std::nullopt);
+
+            check_graph();
+        }
+    }
+
+    void stsolver::check_graph()
+    {
+        if (get_active_flaws().empty())
+            return; // the causal graph is empty..
+
+        if (value(gamma) == utils::False) // we are building the initial causal graph (or we have explored the entire causal graph)..
+        {
+            assert(decision_level() == 0); // we must be at the root level..
+            gamma = mk_var();              // we create a new gamma variable for pruning the causal graph..
+            already_closed.clear();
+
+            propagate(); // we perform an initial propagation..
+            do
+            {
+                build();     // we build the causal graph..
+                propagate(); // we propagate the constraints..
+            } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
+                                 { return is_infinite(f->get_estimated_cost()); }));
+
+            // we prune the causal graph..
+            for (const auto &f : get_queued_flaws())
+                if (already_closed.insert(&*f).second) // we prune the flaw..
+                    add_clause({utils::lit(gamma, false), !static_cast<stflaw &>(*f).get_phi()});
+            propagate(); // we propagate the pruning constraints..
+
+            assume(utils::lit(gamma)); // we enforce the pruning constraints..
         }
     }
 } // namespace ratio
