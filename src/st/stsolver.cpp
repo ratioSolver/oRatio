@@ -498,6 +498,7 @@ namespace ratio
                 do
                 { // we have to search..
                     next();
+                    check_graph();
                 } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
                                      { return is_infinite(f->get_estimated_cost()); }));
                 continue;
