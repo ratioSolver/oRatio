@@ -482,7 +482,10 @@ namespace ratio
 
     void stsolver::solve()
     {
+        propagate(); // we perform an initial propagation..
+
         check_graph();
+
         while (!get_active_flaws().empty())
         { // we try to solve the problem with the current causal graph..
             // we get the most expensive flaw..
@@ -526,7 +529,6 @@ namespace ratio
             gamma = mk_var();              // we create a new gamma variable for pruning the causal graph..
             already_closed.clear();
 
-            propagate(); // we perform an initial propagation..
             do
             {
                 build();     // we build the causal graph..
