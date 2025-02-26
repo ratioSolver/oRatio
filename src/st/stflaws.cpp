@@ -8,8 +8,11 @@ namespace ratio
 {
     stflaw::stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), prop_listener(slv), dl_listener(slv.get_difference_logic_theory()), phi(compute_phi(slv, get_causes())), pos(slv.mk_tp())
     {
+        // this flaw's position must be greater than 0..
+        slv.add_distance(pos, 0, utils::rational::zero);
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
             slv.add_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
+
         if (get_solver().value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
             set_state(utils::True);
         else // otherwise, we listen to the activation literal..
