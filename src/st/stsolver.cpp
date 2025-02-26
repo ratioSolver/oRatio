@@ -1,4 +1,5 @@
 #include "stsolver.hpp"
+#include "init.hpp"
 #include "stflaws.hpp"
 #include "sttypes.hpp"
 #include "conjunction.hpp"
@@ -10,6 +11,7 @@ namespace ratio
 {
     stsolver::stsolver(std::string_view name) noexcept : graph(name)
     {
+        read(INIT_STRING);
         add_type(utils::make_u_ptr<ststate_variable>(*this));
         add_type(utils::make_u_ptr<streusable_resource>(*this));
         add_type(utils::make_u_ptr<stconsumable_resource>(*this));
