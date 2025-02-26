@@ -104,9 +104,9 @@ namespace ratio
       CURRENT_RESOLVER(resolver);
     }
 
-    void set_flaw_state(flaw &f, utils::lbool state) noexcept;
+    void set_flaw_state(flaw &f, utils::lbool state, bool resetting = false) noexcept;
     void set_flaw_position(flaw &f, size_t pos) noexcept;
-    void set_resolver_state(resolver &r, utils::lbool state) noexcept;
+    void set_resolver_state(resolver &r, utils::lbool state, bool resetting = false) noexcept;
 
     [[nodiscard]] std::vector<utils::ref_wrapper<flaw>> get_queued_flaws() const noexcept;
 

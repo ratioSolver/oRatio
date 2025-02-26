@@ -48,12 +48,14 @@ namespace ratio
         return rs;
     }
 
-    void graph::set_flaw_state(flaw &f, utils::lbool state) noexcept
+    void graph::set_flaw_state(flaw &f, utils::lbool state, bool resetting) noexcept
     {
         if (f.state != state)
         {
             f.state = state;
             FLAW_STATE_CHANGED(f);
+            if (resetting) // if we are resetting, active flaws and cost estimates will be updated in the `pop` function..
+                return;
             if (state == utils::True && std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [](const auto &resolver)
                                                      { return resolver->get_state() == utils::True; }))
             {
@@ -72,12 +74,14 @@ namespace ratio
             FLAW_POSITION_CHANGED(f);
         }
     }
-    void graph::set_resolver_state(resolver &r, utils::lbool state) noexcept
+    void graph::set_resolver_state(resolver &r, utils::lbool state, bool resetting) noexcept
     {
         if (r.state != state)
         {
             r.state = state;
             RESOLVER_STATE_CHANGED(r);
+            if (resetting) // if we are resetting, active flaws and cost estimates will be updated in the `pop` function..
+                return;
             if (state == utils::True)
             {
                 if (!trail.empty()) // we store the resolver's flaw as a solved flaw, if not already stored, for allowing backtracking..
@@ -199,7 +203,6 @@ namespace ratio
                            { return f->get_state() == utils::True; })); // all the active flaws should be active..
         for (const auto &[f, c] : t.old_f_costs)
         { // we restore the flaws' costs..
-            CURRENT_FLAW(*f);
             assert(f->est_cost != c);
             f->est_cost = c;
             FLAW_COST_CHANGED(*f);
