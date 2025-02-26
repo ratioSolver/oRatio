@@ -32,6 +32,8 @@ namespace ratio
   class flaw;
   class resolver;
 
+  constexpr const char *origin_kw = "origin";
+  constexpr const char *horizon_kw = "horizon";
   constexpr const char *impulse_kw = "Impulse";
   constexpr const char *interval_kw = "Interval";
 
