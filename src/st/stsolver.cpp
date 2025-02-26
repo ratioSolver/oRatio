@@ -402,57 +402,57 @@ namespace ratio
     {
         if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always true..
             return;
-        else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs))
+        else if (auto lhs_ai_xpr = dynamic_cast<riddle::arith_item *>(&lhs))
         { // we are dealing with an arithmetic constraint..
-            auto rhs_xpr = static_cast<riddle::arith_item *>(&rhs);
+            auto rhs_ai_xpr = static_cast<riddle::arith_item *>(&rhs);
             auto lt = utils::lit(mk_var());
-            add_lt(lhs_xpr->get_lin(), rhs_xpr->get_lin(), lt);
+            add_lt(lhs_ai_xpr->get_lin(), rhs_ai_xpr->get_lin(), lt);
             auto gt = utils::lit(mk_var());
-            add_lt(rhs_xpr->get_lin(), lhs_xpr->get_lin(), gt);
+            add_lt(rhs_ai_xpr->get_lin(), lhs_ai_xpr->get_lin(), gt);
             add_clause({!p, lt, gt});
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
+        else if (auto lhs_bi_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
         {
-            auto rhs_xpr = static_cast<riddle::bool_item *>(&rhs);
-            add_clause({!p, lhs_xpr->get_lit(), rhs_xpr->get_lit()});
-            add_clause({!p, !lhs_xpr->get_lit(), !rhs_xpr->get_lit()});
+            auto rhs_bi_xpr = static_cast<riddle::bool_item *>(&rhs);
+            add_clause({!p, lhs_bi_xpr->get_lit(), rhs_bi_xpr->get_lit()});
+            add_clause({!p, !lhs_bi_xpr->get_lit(), !rhs_bi_xpr->get_lit()});
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
+        else if (auto lhs_si_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
         {
-            if (lhs_xpr->get_string() == static_cast<riddle::string_item *>(&rhs)->get_string()) // the strings are equal, so the constraint is always false..
+            if (lhs_si_xpr->get_string() == static_cast<riddle::string_item *>(&rhs)->get_string()) // the strings are equal, so the constraint is always false..
                 add_clause({!p});
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with an enumeration constraint..
+        else if (auto lhs_ei_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with an enumeration constraint..
         {
-            if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
+            if (auto rhs_ei_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
             {
-                for (const auto &v : lhs_xpr->get_values())
-                    for (const auto &w : rhs_xpr->get_values())
+                for (const auto &v : lhs_ei_xpr->get_values())
+                    for (const auto &w : rhs_ei_xpr->get_values())
                         if (v == w)
                         { // choosing a value from one domain excludes the corresponding value from the other domain..
-                            add_clause({!p, !lhs_xpr->get_lit(*v), !rhs_xpr->get_lit(*v)});
+                            add_clause({!p, !lhs_ei_xpr->get_lit(*v), !rhs_ei_xpr->get_lit(*v)});
                             break;
                         }
             }
-            else if (lhs_xpr->has_lit(*static_cast<utils::enum_val *>(&rhs)))
-                add_clause({!p, !lhs_xpr->get_lit(*static_cast<utils::enum_val *>(&rhs))}); // the value is excluded from the domain..
+            else if (lhs_ei_xpr->has_lit(*static_cast<utils::enum_val *>(&rhs)))
+                add_clause({!p, !lhs_ei_xpr->get_lit(*static_cast<utils::enum_val *>(&rhs))}); // the value is excluded from the domain..
         }
-        else if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with an enumeration constraint..
-            make_neq(*rhs_xpr, lhs, p);
-        else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
+        else if (auto tmp_rhs_ei_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with an enumeration constraint..
+            make_neq(*tmp_rhs_ei_xpr, lhs, p);
+        else if (auto lhs_at_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
         { // we are dealing with atoms..
             std::vector<utils::lit> clause;
             clause.push_back(!p);
-            auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
+            auto rhs_at_xpr = static_cast<riddle::atom_term *>(&rhs);
             std::queue<riddle::predicate *> q;
-            q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
+            q.push(static_cast<riddle::predicate *>(&lhs_at_xpr->get_type()));
             while (!q.empty())
             {
                 for (const auto &[f_name, f] : q.front()->get_fields())
                     if (!f->is_synthetic())
                     {
                         auto neq = utils::lit(mk_var());
-                        make_neq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), neq);
+                        make_neq(*lhs_at_xpr->get(f_name), *rhs_at_xpr->get(f_name), neq);
                         clause.push_back(neq);
                     }
                 for (const auto &pp : q.front()->get_parents())
@@ -461,20 +461,20 @@ namespace ratio
             }
             add_clause(std::move(clause));
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs))
+        else if (auto lhs_c_xpr = dynamic_cast<riddle::component *>(&lhs))
         { // we are dealing with components..
             std::vector<utils::lit> clause;
             clause.push_back(!p);
-            auto rhs_xpr = static_cast<riddle::component *>(&rhs);
+            auto rhs_c_xpr = static_cast<riddle::component *>(&rhs);
             std::queue<riddle::component_type *> q;
-            q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
+            q.push(static_cast<riddle::component_type *>(&lhs_c_xpr->get_type()));
             while (!q.empty())
             {
                 for (const auto &[f_name, f] : q.front()->get_fields())
                     if (!f->is_synthetic())
                     {
                         auto neq = utils::lit(mk_var());
-                        make_neq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), neq);
+                        make_neq(*lhs_c_xpr->get(f_name), *rhs_c_xpr->get(f_name), neq);
                         clause.push_back(neq);
                     }
                 for (const auto &pp : q.front()->get_parents())

@@ -6,13 +6,13 @@ namespace ratio
 {
     ststate_variable::ststate_variable(stsolver &slv) noexcept : state_variable(slv) {}
 
-    bool ststate_variable::solve_inconsistencies() {}
+    bool ststate_variable::solve_inconsistencies() { return false; }
 
     streusable_resource::streusable_resource(stsolver &slv) noexcept : reusable_resource(slv) {}
 
-    bool streusable_resource::solve_inconsistencies() {}
+    bool streusable_resource::solve_inconsistencies() { return false; }
 
     stconsumable_resource::stconsumable_resource(stsolver &slv) noexcept : consumable_resource(slv) {}
 
-    bool stconsumable_resource::solve_inconsistencies() {}
+    bool stconsumable_resource::solve_inconsistencies() { return false; }
 } // namespace ratio
