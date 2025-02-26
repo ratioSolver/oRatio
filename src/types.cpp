@@ -5,6 +5,8 @@ namespace ratio
 {
     state_variable::state_variable(graph &gr) noexcept : component_type(gr, state_variable_kw) { add_constructor(utils::make_u_ptr<riddle::constructor>(*this)); }
 
+    void state_variable::created_predicate(riddle::predicate &pred) { add_parent(pred, get_core().get_predicate(interval_kw)); }
+
     json::json state_variable::extract() const {}
 
     reusable_resource::reusable_resource(graph &gr) noexcept : component_type(gr, reusable_resource_kw)

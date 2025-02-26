@@ -28,6 +28,9 @@ namespace ratio
     state_variable(graph &slv) noexcept;
 
     [[nodiscard]] virtual json::json extract() const override;
+
+  private:
+    void created_predicate(riddle::predicate &pred) override;
   };
 
   class reusable_resource : public riddle::component_type, public timeline
