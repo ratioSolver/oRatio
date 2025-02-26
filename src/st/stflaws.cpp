@@ -61,6 +61,7 @@ namespace ratio
     }
 
     void stflaw::on_change(const utils::var &v) noexcept { get_solver().set_flaw_state(*this, get_solver().value(v)); }
+    void stflaw::on_reset(const utils::var &v) noexcept { get_solver().set_flaw_state(*this, get_solver().value(v)); }
     void stflaw::on_tp_change(const utils::var &v) noexcept { get_solver().set_flaw_position(*this, get_solver().tp_bounds(v).first.numerator()); }
 
     json::json stflaw::to_json() const
@@ -83,6 +84,7 @@ namespace ratio
     }
 
     void stresolver::on_change(const utils::var &v) noexcept { get_solver().set_resolver_state(*this, get_solver().value(v)); }
+    void stresolver::on_reset(const utils::var &v) noexcept { get_solver().set_resolver_state(*this, get_solver().value(v)); }
 
     [[nodiscard]] json::json stresolver::to_json() const
     {

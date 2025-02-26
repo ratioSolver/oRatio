@@ -486,6 +486,11 @@ namespace ratio
 
         check_graph();
 
+        assume(utils::lit(11));
+        assume(utils::lit(5));
+        assume(utils::lit(31));
+        assume(utils::lit(29));
+
         while (!get_active_flaws().empty())
         { // we try to solve the problem with the current causal graph..
             // we get the most expensive flaw..

@@ -23,6 +23,7 @@ namespace ratio
     void expanded_flaw() override;
 
     void on_change(const utils::var &v) noexcept override;
+    void on_reset(const utils::var &v) noexcept override;
     void on_tp_change(const utils::var &v) noexcept override;
 
   protected:
@@ -49,6 +50,7 @@ namespace ratio
 
   private:
     void on_change(const utils::var &v) noexcept override;
+    void on_reset(const utils::var &v) noexcept override;
 
   private:
     const utils::lit rho; // the literal indicating whether the resolver is active or not..
