@@ -8,7 +8,12 @@
 
 namespace ratio
 {
-    stsolver::stsolver(std::string_view name) noexcept : graph(name) {}
+    stsolver::stsolver(std::string_view name) noexcept : graph(name)
+    {
+        add_type(utils::make_u_ptr<ststate_variable>(*this));
+        add_type(utils::make_u_ptr<streusable_resource>(*this));
+        add_type(utils::make_u_ptr<stconsumable_resource>(*this));
+    }
 
     riddle::bool_expr stsolver::new_bool() { return utils::make_s_ptr<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::lit(mk_var())); }
     riddle::bool_expr stsolver::new_bool(const bool value)
