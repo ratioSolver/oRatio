@@ -57,9 +57,9 @@ namespace ratio
             if (state == utils::True && std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [](const auto &resolver)
                                                      { return resolver->get_state() == utils::True; }))
             {
-                active_flaws.emplace(&f);
                 if (!trail.empty()) // we store the current flaw as a new flaw, if not already stored, for allowing backtracking..
                     trail.back().new_flaws.emplace(&f);
+                active_flaws.emplace(&f);
             }
             compute_flaw_cost(f);
         }
@@ -80,9 +80,9 @@ namespace ratio
             RESOLVER_STATE_CHANGED(r);
             if (state == utils::True)
             {
-                active_flaws.erase(&r.get_flaw());
                 if (!trail.empty()) // we store the resolver's flaw as a solved flaw, if not already stored, for allowing backtracking..
                     trail.back().solved_flaws.emplace(&r.get_flaw());
+                active_flaws.erase(&r.get_flaw());
             }
             compute_flaw_cost(r.get_flaw());
         }
@@ -163,10 +163,12 @@ namespace ratio
                     c_cost = std::min(c_cost, res->get_estimated_cost());
 
         if (f.est_cost != c_cost)
-        { // we update the cost of the flaw..
-            f.est_cost = c_cost;
+        {
             if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
                 trail.back().old_f_costs.emplace(&f, f.est_cost);
+
+            // we update the cost of the flaw..
+            f.est_cost = c_cost;
             FLAW_COST_CHANGED(f);
 
             // we propagate the cost to the supported resolvers..
@@ -197,6 +199,8 @@ namespace ratio
                            { return f->get_state() == utils::True; })); // all the active flaws should be active..
         for (const auto &[f, c] : t.old_f_costs)
         { // we restore the flaws' costs..
+            CURRENT_FLAW(*f);
+            assert(f->est_cost != c);
             f->est_cost = c;
             FLAW_COST_CHANGED(*f);
         }
@@ -233,6 +237,13 @@ namespace ratio
             for (const auto &c : causes)
                 j_causes.push_back(static_cast<uint64_t>(c->get_id()));
             j_flaw["causes"] = std::move(j_causes);
+        }
+        if (!supports.empty())
+        {
+            json::json j_supports(json::json_type::array);
+            for (const auto &s : supports)
+                j_supports.push_back(static_cast<uint64_t>(s->get_id()));
+            j_flaw["supports"] = std::move(j_supports);
         }
         return j_flaw;
     }

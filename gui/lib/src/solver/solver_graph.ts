@@ -106,7 +106,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   flaw_created(flaw: solver.graph.Flaw): void {
     this.create_flaw_node(flaw);
 
-    for (const cause of flaw.get_causes()) {
+    for (const cause of flaw.get_supports()) {
       this.cy!.add({ group: 'edges', data: { id: `${flaw.get_id()}-${cause.get_id()}`, source: flaw.get_id(), target: cause.get_id(), stroke: stroke_style(flaw) } });
       this.cy!.$id(cause.get_id().toString()).data('color', this.color(cause));
     }
@@ -126,7 +126,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
         this.cy!.$id(r.get_id().toString()).data('color', this.color(r));
     } else {
       this.cy!.$id(flaw.get_id().toString()).data('color', this.color(flaw));
-      for (const cause of flaw.get_causes())
+      for (const cause of flaw.get_supports())
         this.cy!.$id(cause.get_id().toString()).data('color', this.color(cause));
     }
   }
@@ -138,7 +138,6 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
       this.cy!.$id(flaw.get_id().toString()).addClass('current');
       this.c_flaw = flaw;
     }
-    this.cy!.layout(this.layout).run();
   }
 
   resolver_created(resolver: solver.graph.Resolver): void {

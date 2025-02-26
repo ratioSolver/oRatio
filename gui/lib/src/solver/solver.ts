@@ -82,6 +82,7 @@ export namespace solver {
       for (const listener of this.solver_listeners) listener.current_resolver(resolver);
     }
     causal_link_added(flaw: graph.Flaw, resolver: graph.Resolver): void {
+      flaw._supports.push(resolver);
       resolver._preconditions.push(flaw);
       for (const listener of this.solver_listeners) listener.causal_link_added(flaw, resolver);
     }
@@ -139,7 +140,7 @@ export namespace solver {
     _set_graph(solver_message: SolverMessage) {
       if (solver_message.flaws) // we create the flaws..
         for (const [id, fm] of Object.entries(solver_message.flaws))
-          this.flaws.set(Number(id), new graph.Flaw(Number(id), fm.phi, [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
+          this.flaws.set(Number(id), new graph.Flaw(Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
 
       if (solver_message.resolvers) // we create the resolvers..
         for (const [id, rm] of Object.entries(solver_message.resolvers))
@@ -147,10 +148,14 @@ export namespace solver {
             this.resolvers.set(Number(id), new graph.Resolver(Number(id), rm.rho, rm.preconditions.map((id: number) => this.get_flaw(id)), this.get_flaw(rm.flaw), graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
 
       if (solver_message.flaws)
-        for (const [id, fm] of Object.entries(solver_message.flaws))
+        for (const [id, fm] of Object.entries(solver_message.flaws)) {
           if (fm.causes)
             for (const cause of fm.causes) // we set the causes for the flaws..
               this.flaws.get(Number(id))!.get_causes().push(this.get_resolver(cause));
+          if (fm.supports)
+            for (const support of fm.supports) // we set the supports for the flaws..
+              this.flaws.get(Number(id))!._supports.push(this.get_resolver(support));
+        }
     }
   }
 
@@ -233,7 +238,8 @@ export namespace solver {
         case 'flaw_created':
           const fcm = message as FlawCreatedMessage;
           const causes: graph.Resolver[] = fcm.causes ? fcm.causes.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
-          this.solvers.get(get_id(fcm.solver_id))!.flaw_created(new graph.Flaw(fcm.id, fcm.phi, causes, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
+          const supports: graph.Resolver[] = fcm.supports ? fcm.supports.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
+          this.solvers.get(get_id(fcm.solver_id))!.flaw_created(new graph.Flaw(fcm.id, fcm.phi, causes, supports, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
           break;
         case 'flaw_state_changed':
           const fscm = message as FlawStateChangedMessage;
@@ -334,15 +340,17 @@ export namespace solver {
       private id: number;
       private phi: string;
       _causes: Resolver[];
+      _supports: Resolver[];
       _state: State;
       _cost: RationalMessage;
       _position: number;
       private data: FlawData | undefined;
 
-      constructor(id: number, phi: string, causes: Resolver[], state: State, cost: RationalMessage, position: number, data: FlawData | undefined) {
+      constructor(id: number, phi: string, causes: Resolver[], supports: Resolver[], state: State, cost: RationalMessage, position: number, data: FlawData | undefined) {
         this.id = id;
         this.phi = phi;
         this._causes = causes;
+        this._supports = supports;
         this._state = state;
         this._cost = cost;
         this._position = position;
@@ -354,6 +362,7 @@ export namespace solver {
       get_id(): number { return this.id; }
       get_phi(): string { return this.phi; }
       get_causes(): Resolver[] { return this._causes; }
+      get_supports(): Resolver[] { return this._supports; }
       get_state(): State { return this._state; }
       get_position(): number { return this._position; }
       get_cost(): number { return this._cost.num / this._cost.den; }
@@ -1134,6 +1143,7 @@ interface FlawMessage {
   id?: number;
   phi: string;
   causes?: number[];
+  supports?: number[];
   state: string;
   cost: RationalMessage;
   position: number;
