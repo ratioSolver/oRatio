@@ -64,7 +64,9 @@ namespace ratio
             json::json j_vals(json::json_type::array);
             for (p = std::next(p); p != pulses.end(); ++p)
             {
-                json::json j_val{{"from", {{"num", static_cast<int64_t>(std::prev(p)->get_rational().numerator())}, {"den", static_cast<int64_t>(std::prev(p)->get_rational().denominator())}}}, {"to", {{"num", static_cast<int64_t>(p->get_rational().numerator())}, {"den", static_cast<int64_t>(p->get_rational().denominator())}}}};
+                json::json j_val;
+                j_val[riddle::start_kw] = {{"num", static_cast<int64_t>(std::prev(p)->get_rational().numerator())}, {"den", static_cast<int64_t>(std::prev(p)->get_rational().denominator())}};
+                j_val[riddle::end_kw] = {{"num", static_cast<int64_t>(p->get_rational().numerator())}, {"den", static_cast<int64_t>(p->get_rational().denominator())}};
 
                 json::json j_atms(json::json_type::array);
                 for (const auto &atm : overlapping_atoms)
@@ -106,7 +108,7 @@ namespace ratio
     {
         json::json tls(json::json_type::array);
         // we partition atoms for each state-variable they might insist on..
-        std::unordered_map<const riddle::component *, std::vector<riddle::atom_term *>> rr_instances;
+        std::unordered_map<riddle::component *, std::vector<riddle::atom_term *>> rr_instances;
         for (const auto &rr : get_instances())
             rr_instances.emplace(static_cast<riddle::component *>(&*rr), std::vector<riddle::atom_term *>());
         for (const auto &atm : get_atoms())
@@ -126,6 +128,8 @@ namespace ratio
 #ifdef COMPUTE_NAMES
             tl["name"] = guess_name(*rr).c_str();
 #endif
+            const auto c_capacity = get_core().arith_value(static_cast<riddle::arith_term &>(*rr->get(reusable_resource_capacity_kw)));
+            tl[reusable_resource_capacity_kw] = {{"num", static_cast<int64_t>(c_capacity.get_rational().numerator())}, {"den", static_cast<int64_t>(c_capacity.get_rational().denominator())}};
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<riddle::atom_term *>> starting_atoms;
@@ -157,11 +161,18 @@ namespace ratio
             json::json j_vals(json::json_type::array);
             for (p = std::next(p); p != pulses.end(); ++p)
             {
-                json::json j_val{{"from", {{"num", static_cast<int64_t>(std::prev(p)->get_rational().numerator())}, {"den", static_cast<int64_t>(std::prev(p)->get_rational().denominator())}}}, {"to", {{"num", static_cast<int64_t>(p->get_rational().numerator())}, {"den", static_cast<int64_t>(p->get_rational().denominator())}}}};
+                json::json j_val;
+                j_val[riddle::start_kw] = {{"num", static_cast<int64_t>(std::prev(p)->get_rational().numerator())}, {"den", static_cast<int64_t>(std::prev(p)->get_rational().denominator())}};
+                j_val[riddle::end_kw] = {{"num", static_cast<int64_t>(p->get_rational().numerator())}, {"den", static_cast<int64_t>(p->get_rational().denominator())}};
 
                 json::json j_atms(json::json_type::array);
+                utils::inf_rational c_usage; // the concurrent resource usage..
                 for (const auto &atm : overlapping_atoms)
+                {
+                    c_usage += get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(reusable_resource_amount_kw)));
                     j_atms.push_back(static_cast<uint64_t>(atm->get_id()));
+                }
+                j_val[reusable_resource_amount_kw] = {{"num", static_cast<int64_t>(c_usage.get_rational().numerator())}, {"den", static_cast<int64_t>(c_usage.get_rational().denominator())}};
                 j_val["atoms"] = std::move(j_atms);
                 j_vals.push_back(std::move(j_val));
 
@@ -205,7 +216,7 @@ namespace ratio
     {
         json::json tls(json::json_type::array);
         // we partition atoms for each state-variable they might insist on..
-        std::unordered_map<const riddle::component *, std::vector<riddle::atom_term *>> cr_instances;
+        std::unordered_map<riddle::component *, std::vector<riddle::atom_term *>> cr_instances;
         for (const auto &cr : get_instances())
             cr_instances.emplace(static_cast<riddle::component *>(&*cr), std::vector<riddle::atom_term *>());
         for (const auto &atm : get_atoms())
@@ -225,6 +236,10 @@ namespace ratio
 #ifdef COMPUTE_NAMES
             tl["name"] = guess_name(*cr).c_str();
 #endif
+            const auto c_capacity = get_core().arith_value(static_cast<riddle::arith_term &>(*cr->get(consumable_resource_capacity_kw)));
+            tl[consumable_resource_capacity_kw] = {{"num", static_cast<int64_t>(c_capacity.get_rational().numerator())}, {"den", static_cast<int64_t>(c_capacity.get_rational().denominator())}};
+            const auto c_initial_amount = get_core().arith_value(static_cast<riddle::arith_term &>(*cr->get(consumable_resource_initial_amount_kw)));
+            tl[consumable_resource_initial_amount_kw] = {{"num", static_cast<int64_t>(c_initial_amount.get_rational().numerator())}, {"den", static_cast<int64_t>(c_initial_amount.get_rational().denominator())}};
 
             // for each pulse, the atoms starting at that pulse..
             std::map<utils::inf_rational, std::set<riddle::atom_term *>> starting_atoms;
@@ -254,13 +269,26 @@ namespace ratio
                     overlapping_atoms.erase(a);
 
             json::json j_vals(json::json_type::array);
+            utils::inf_rational c_val = c_initial_amount;
             for (p = std::next(p); p != pulses.end(); ++p)
             {
-                json::json j_val{{"from", {{"num", static_cast<int64_t>(std::prev(p)->get_rational().numerator())}, {"den", static_cast<int64_t>(std::prev(p)->get_rational().denominator())}}}, {"to", {{"num", static_cast<int64_t>(p->get_rational().numerator())}, {"den", static_cast<int64_t>(p->get_rational().denominator())}}}};
+                json::json j_val;
+                j_val[riddle::start_kw] = {{"num", static_cast<int64_t>(std::prev(p)->get_rational().numerator())}, {"den", static_cast<int64_t>(std::prev(p)->get_rational().denominator())}};
+                j_val[riddle::end_kw] = {{"num", static_cast<int64_t>(p->get_rational().numerator())}, {"den", static_cast<int64_t>(p->get_rational().denominator())}};
 
                 json::json j_atms(json::json_type::array);
+                utils::inf_rational c_angular_coefficient; // the concurrent resource update..
                 for (const auto &atm : overlapping_atoms)
+                {
+                    const auto c_amount = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(consumable_resource_amount_kw)));
+                    auto c_coeff = get_predicate(consumable_resource_produce_predicate_kw).is_assignable_from(atm->get_type()) ? c_amount : -c_amount;
+                    c_coeff /= (get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::start_kw))) - get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::end_kw)))).get_rational();
+                    c_angular_coefficient += c_coeff;
                     j_atms.push_back(static_cast<uint64_t>(atm->get_id()));
+                }
+                j_val["from"] = {{"num", static_cast<int64_t>(c_val.get_rational().numerator())}, {"den", static_cast<int64_t>(c_val.get_rational().denominator())}};
+                c_val += (c_angular_coefficient * (*p - *std::prev(p)).get_rational());
+                j_val["to"] = {{"num", static_cast<int64_t>(c_val.get_rational().numerator())}, {"den", static_cast<int64_t>(c_val.get_rational().denominator())}};
                 j_val["atoms"] = std::move(j_atms);
                 j_vals.push_back(std::move(j_val));
 

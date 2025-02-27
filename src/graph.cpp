@@ -1,7 +1,10 @@
 #include "graph.hpp"
 #include "exceptions.hpp"
+#include "types.hpp"
 #include "logging.hpp"
 #include <algorithm>
+#include <set>
+#include <queue>
 #include <cassert>
 
 namespace ratio
@@ -29,6 +32,60 @@ namespace ratio
             j_graph["current_flaw"] = static_cast<uint64_t>(get_current_flaw().value()->get_id());
         if (get_current_resolver().has_value())
             j_graph["current_resolver"] = static_cast<uint64_t>(get_current_resolver().value()->get_id());
+
+        json::json j_timelines(json::json_type::array);
+        // for each pulse, the root atoms starting at that pulse..
+        std::map<utils::inf_rational, std::set<riddle::atom_term *>> starting_atoms;
+        // all the pulses of the solver timeline..
+        std::set<utils::inf_rational> pulses;
+        for (const auto &[_, pred] : get_predicates())
+            for (const auto &atm : pred->get_atoms())
+                if (atm->get_state() == riddle::atom_state::active)
+                { // we get only the active atoms..
+                    if (get_predicate(impulse_kw).is_assignable_from(atm->get_type()))
+                    { // we have an impulse atom..
+                        const auto start = arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::at_kw)));
+                        starting_atoms[start].insert(static_cast<riddle::atom_term *>(&*atm));
+                        pulses.insert(start);
+                    }
+                    else if (get_predicate(interval_kw).is_assignable_from(atm->get_type()))
+                    { // we have an interval atom..
+                        const auto start = arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::start_kw)));
+                        starting_atoms[start].insert(static_cast<riddle::atom_term *>(&*atm));
+                        pulses.insert(start);
+                    }
+                }
+        if (!starting_atoms.empty())
+        { // we have some root atoms in the solver timeline..
+            json::json slv_tl{{"id", static_cast<uint64_t>(get_id())}, {"type", "Solver"}, {"name", get_name().c_str()}};
+            json::json j_atms(json::json_type::array);
+            for (const auto &p : pulses)
+                for (const auto &atm : starting_atoms.at(p))
+                    j_atms.push_back(static_cast<uint64_t>(atm->get_id()));
+            slv_tl["values"] = std::move(j_atms);
+            j_timelines.push_back(std::move(slv_tl));
+        }
+
+        std::queue<riddle::component_type *> q;
+        for (const auto &[_, tp] : get_types())
+            if (auto ct = dynamic_cast<riddle::component_type *>(&*tp))
+                q.push(ct);
+        while (!q.empty())
+        {
+            if (auto tl_tp = dynamic_cast<timeline *>(q.front())) // we have a timeline type..
+            {                                                     // we extract the timeline..
+                json::json j_tls = tl_tp->extract();
+                for (size_t i = 0; i < j_tls.size(); ++i)
+                    j_timelines.push_back(std::move(j_tls[i]));
+            }
+            for (const auto &[_, tp] : q.front()->get_types())
+                if (auto ct = dynamic_cast<riddle::component_type *>(&*tp))
+                    q.push(ct);
+            q.pop();
+        }
+
+        j_graph["timelines"] = std::move(j_timelines);
+
         return j_graph;
     }
 
