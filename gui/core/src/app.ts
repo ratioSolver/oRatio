@@ -368,7 +368,7 @@ export class Sidebar extends Component<App, HTMLDivElement> {
       this.element.appendChild(hr);
 
       const footer_ul = document.createElement('ul');
-      footer_ul.classList.add('nav', 'flex-column', 'mb-0');
+      footer_ul.classList.add('nav', 'nav-pills', 'flex-column', 'mb-0');
 
       for (const [a, comp] of bottom) {
         const li = document.createElement('li');
