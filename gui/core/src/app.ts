@@ -378,9 +378,8 @@ export class Sidebar extends Component<App, HTMLDivElement> {
         a.onclick = () => {
           for (const oa of top.keys())
             oa.classList.remove('active');
-          if (bottom)
-            for (const oa of bottom.keys())
-              oa.classList.remove('active');
+          for (const oa of bottom.keys())
+            oa.classList.remove('active');
           a.classList.add('active');
           App.get_instance().selected_component(comp);
         };
