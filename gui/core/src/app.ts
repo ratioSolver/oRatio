@@ -332,7 +332,7 @@ export class UListComponent<P> extends ListComponent<P, HTMLLIElement, HTMLUList
 
 export class Sidebar extends Component<App, HTMLDivElement> {
 
-  constructor(top: Map<HTMLAnchorElement, Component<any, HTMLElement>>, bottom: Map<HTMLAnchorElement, Component<any, HTMLElement>> = new Map()) {
+  constructor(top: Map<HTMLAnchorElement, Component<any, HTMLElement>>, bottom?: Map<HTMLAnchorElement, Component<any, HTMLElement>>) {
     super(App.get_instance(), document.createElement('div'));
 
     this.element.classList.add('d-flex', 'flex-column', 'flex-shrink-0', 'p-3', 'bg-light');
@@ -348,13 +348,12 @@ export class Sidebar extends Component<App, HTMLDivElement> {
 
       a.classList.add('nav-link');
       a.onclick = () => {
-        a.classList.add('active');
         for (const oa of top.keys())
-          if (a != oa)
-            a.classList.remove('active');
-        for (const oa of bottom.keys())
-          if (a != oa)
-            a.classList.remove('active');
+          oa.classList.remove('active');
+        if (bottom)
+          for (const oa of bottom.keys())
+            oa.classList.remove('active');
+        a.classList.add('active');
         App.get_instance().selected_component(comp);
       };
 
@@ -364,7 +363,7 @@ export class Sidebar extends Component<App, HTMLDivElement> {
 
     this.element.appendChild(ul);
 
-    if (bottom.size > 0) {
+    if (bottom) {
       const hr = document.createElement('hr');
       this.element.appendChild(hr);
 
@@ -377,13 +376,12 @@ export class Sidebar extends Component<App, HTMLDivElement> {
 
         a.classList.add('nav-link');
         a.onclick = () => {
-          a.classList.add('active');
           for (const oa of top.keys())
-            if (a != oa)
-              a.classList.remove('active');
-          for (const oa of bottom.keys())
-            if (a != oa)
-              a.classList.remove('active');
+            oa.classList.remove('active');
+          if (bottom)
+            for (const oa of bottom.keys())
+              oa.classList.remove('active');
+          a.classList.add('active');
           App.get_instance().selected_component(comp);
         };
 
