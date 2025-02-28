@@ -10,7 +10,7 @@
 namespace ratio::server
 {
 #if defined(SEMITONE)
-  class server : public network::server, public ratio::stsolver
+  class server : public network::server, public ratio::solver
 #elif defined(Z3)
   class server : public network::server, public ratio::z3solver
 #endif

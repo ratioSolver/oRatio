@@ -8,17 +8,17 @@ namespace ratio
   class stflaw : public flaw, private smt::prop_listener, private smt::dl_listener
   {
   public:
-    stflaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
+    stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
 
-    [[nodiscard]] inline stsolver &get_solver() noexcept { return static_cast<stsolver &>(get_graph()); }
-    [[nodiscard]] inline const stsolver &get_solver() const noexcept { return static_cast<const stsolver &>(get_graph()); }
+    [[nodiscard]] inline solver &get_solver() noexcept { return static_cast<solver &>(get_graph()); }
+    [[nodiscard]] inline const solver &get_solver() const noexcept { return static_cast<const solver &>(get_graph()); }
 
     [[nodiscard]] const utils::lit &get_phi() const noexcept { return phi; }
 
     [[nodiscard]] const utils::var &get_pos() const noexcept { return pos; }
 
   private:
-    [[nodiscard]] static utils::lit compute_phi(stsolver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept;
+    [[nodiscard]] static utils::lit compute_phi(solver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept;
 
     void expanded_flaw() override;
 
@@ -40,8 +40,8 @@ namespace ratio
     stresolver(stflaw &f, utils::rational &&intrinsic_cost) noexcept;
     stresolver(stflaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept;
 
-    [[nodiscard]] inline stsolver &get_solver() noexcept { return static_cast<stsolver &>(get_flaw().get_graph()); }
-    [[nodiscard]] inline const stsolver &get_solver() const noexcept { return static_cast<const stsolver &>(get_flaw().get_graph()); }
+    [[nodiscard]] inline solver &get_solver() noexcept { return static_cast<solver &>(get_flaw().get_graph()); }
+    [[nodiscard]] inline const solver &get_solver() const noexcept { return static_cast<const solver &>(get_flaw().get_graph()); }
 
     [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
 
@@ -56,10 +56,10 @@ namespace ratio
     const utils::lit rho; // the literal indicating whether the resolver is active or not..
   };
 
-  class stclause_flaw final : public stflaw
+  class clause_flaw final : public stflaw
   {
   public:
-    stclause_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
+    clause_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
 
     [[nodiscard]] const std::vector<utils::lit> &get_disjuncts() const noexcept { return clause; }
 
@@ -70,19 +70,19 @@ namespace ratio
     std::vector<utils::lit> clause;
   };
 
-  class stchoose_lit final : public stresolver
+  class choose_lit final : public stresolver
   {
   public:
-    stchoose_lit(stclause_flaw &f, const utils::lit &conj) noexcept;
+    choose_lit(clause_flaw &f, const utils::lit &conj) noexcept;
 
   private:
     void apply() override;
   };
 
-  class stenum_flaw final : public stflaw
+  class enum_flaw final : public stflaw
   {
   public:
-    stenum_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept;
+    enum_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept;
 
     [[nodiscard]] const utils::s_ptr<riddle::enum_item> &get_var() const noexcept { return var; }
 
@@ -95,10 +95,10 @@ namespace ratio
     utils::s_ptr<riddle::enum_item> var;
   };
 
-  class stchoose_val final : public stresolver
+  class choose_val final : public stresolver
   {
   public:
-    stchoose_val(stenum_flaw &f, const utils::enum_val &val) noexcept;
+    choose_val(enum_flaw &f, const utils::enum_val &val) noexcept;
 
   private:
     void apply() override;
@@ -107,10 +107,10 @@ namespace ratio
     const utils::enum_val &val;
   };
 
-  class stdisjunction_flaw final : public stflaw
+  class disjunction_flaw final : public stflaw
   {
   public:
-    stdisjunction_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+    disjunction_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept;
 
     [[nodiscard]] const std::vector<utils::u_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
 
@@ -121,10 +121,10 @@ namespace ratio
     std::vector<utils::u_ptr<riddle::conjunction>> disjuncts;
   };
 
-  class stchoose_conjunction final : public stresolver
+  class choose_conjunction final : public stresolver
   {
   public:
-    stchoose_conjunction(stdisjunction_flaw &f, riddle::conjunction &conj) noexcept;
+    choose_conjunction(disjunction_flaw &f, riddle::conjunction &conj) noexcept;
 
   private:
     void apply() override;
@@ -133,10 +133,10 @@ namespace ratio
     riddle::conjunction &conj;
   };
 
-  class statom_flaw final : public stflaw
+  class atom_flaw final : public stflaw
   {
   public:
-    statom_flaw(stsolver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept;
+    atom_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept;
 
     [[nodiscard]] atom_expr get_atom() const noexcept { return atm; }
 
@@ -149,11 +149,11 @@ namespace ratio
     atom_expr atm; // the atom that is the subject of the flaw..
   };
 
-  class stactivate_fact final : public stresolver
+  class activate_fact final : public stresolver
   {
   public:
-    stactivate_fact(statom_flaw &f) noexcept;
-    stactivate_fact(statom_flaw &f, const utils::lit &rho) noexcept;
+    activate_fact(atom_flaw &f) noexcept;
+    activate_fact(atom_flaw &f, const utils::lit &rho) noexcept;
 
   private:
     void apply() override;
@@ -161,11 +161,11 @@ namespace ratio
     json::json to_json() const override;
   };
 
-  class stactivate_goal final : public stresolver
+  class activate_goal final : public stresolver
   {
   public:
-    stactivate_goal(statom_flaw &f) noexcept;
-    stactivate_goal(statom_flaw &f, const utils::lit &rho) noexcept;
+    activate_goal(atom_flaw &f) noexcept;
+    activate_goal(atom_flaw &f, const utils::lit &rho) noexcept;
 
   private:
     void apply() override;
@@ -173,10 +173,10 @@ namespace ratio
     json::json to_json() const override;
   };
 
-  class stunify_atom final : public stresolver
+  class unify_atom final : public stresolver
   {
   public:
-    stunify_atom(statom_flaw &f, atom_expr atm) noexcept;
+    unify_atom(atom_flaw &f, atom_expr atm) noexcept;
 
   private:
     void apply() override;

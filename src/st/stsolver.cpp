@@ -9,7 +9,7 @@
 
 namespace ratio
 {
-    stsolver::stsolver(std::string_view name) noexcept : graph(name)
+    solver::solver(std::string_view name) noexcept : graph(name)
     {
         read(INIT_STRING);
         add_type(utils::make_u_ptr<ststate_variable>(*this));
@@ -17,28 +17,28 @@ namespace ratio
         add_type(utils::make_u_ptr<stconsumable_resource>(*this));
     }
 
-    riddle::bool_expr stsolver::new_bool() { return utils::make_s_ptr<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::lit(mk_var())); }
-    riddle::bool_expr stsolver::new_bool(const bool value)
+    riddle::bool_expr solver::new_bool() { return utils::make_s_ptr<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::lit(mk_var())); }
+    riddle::bool_expr solver::new_bool(const bool value)
     {
         auto l = value ? utils::TRUE_lit : utils::FALSE_lit;
         return utils::make_s_ptr<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), std::move(l));
     }
-    utils::lbool stsolver::bool_value(const riddle::bool_term &expr) const noexcept { return value(static_cast<const riddle::bool_item &>(expr).get_lit()); }
+    utils::lbool solver::bool_value(const riddle::bool_term &expr) const noexcept { return value(static_cast<const riddle::bool_item &>(expr).get_lit()); }
 
-    riddle::arith_expr stsolver::new_int() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(), utils::rational::one)); }
-    riddle::arith_expr stsolver::new_int(const INT_TYPE value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(utils::rational(value))); }
-    riddle::arith_expr stsolver::new_int(const INT_TYPE lb, const INT_TYPE ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
-    riddle::arith_expr stsolver::new_uncertain_int(const INT_TYPE lb, const INT_TYPE ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
+    riddle::arith_expr solver::new_int() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(), utils::rational::one)); }
+    riddle::arith_expr solver::new_int(const INT_TYPE value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(utils::rational(value))); }
+    riddle::arith_expr solver::new_int(const INT_TYPE lb, const INT_TYPE ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
+    riddle::arith_expr solver::new_uncertain_int(const INT_TYPE lb, const INT_TYPE ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
 
-    riddle::arith_expr stsolver::new_real() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(), utils::rational::one)); }
-    riddle::arith_expr stsolver::new_real(utils::rational &&value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(std::move(value))); }
-    riddle::arith_expr stsolver::new_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
-    riddle::arith_expr stsolver::new_uncertain_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
+    riddle::arith_expr solver::new_real() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(), utils::rational::one)); }
+    riddle::arith_expr solver::new_real(utils::rational &&value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(std::move(value))); }
+    riddle::arith_expr solver::new_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
+    riddle::arith_expr solver::new_uncertain_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
 
-    riddle::arith_expr stsolver::new_time() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(mk_tp(), utils::rational::one)); }
-    riddle::arith_expr stsolver::new_time(utils::rational &&value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(std::move(value))); }
+    riddle::arith_expr solver::new_time() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(mk_tp(), utils::rational::one)); }
+    riddle::arith_expr solver::new_time(utils::rational &&value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(std::move(value))); }
 
-    utils::inf_rational stsolver::arith_value(const riddle::arith_term &expr) const noexcept
+    utils::inf_rational solver::arith_value(const riddle::arith_term &expr) const noexcept
     {
         if (expr.get_type().get_name() == riddle::int_kw || expr.get_type().get_name() == riddle::real_kw)
             return arith_val(static_cast<const riddle::arith_item &>(expr).get_lin());
@@ -46,19 +46,19 @@ namespace ratio
             return utils::inf_rational(tp_bounds(static_cast<const riddle::arith_item &>(expr).get_lin().vars.begin()->first).first);
     }
 
-    riddle::string_expr stsolver::new_string() { return utils::make_s_ptr<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ""); }
-    riddle::string_expr stsolver::new_string(std::string &&value) { return utils::make_s_ptr<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
-    std::string stsolver::string_value(const riddle::string_term &expr) const noexcept { return static_cast<const riddle::string_item &>(expr).get_string(); }
+    riddle::string_expr solver::new_string() { return utils::make_s_ptr<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ""); }
+    riddle::string_expr solver::new_string(std::string &&value) { return utils::make_s_ptr<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
+    std::string solver::string_value(const riddle::string_term &expr) const noexcept { return static_cast<const riddle::string_item &>(expr).get_string(); }
 
-    riddle::enum_expr stsolver::new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
+    riddle::enum_expr solver::new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
     {
         std::vector<utils::ref_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())
             causes.push_back(get_current_resolver().value());
-        auto &af = new_flaw<stenum_flaw>(*this, std::move(causes), tp, std::move(values));
+        auto &af = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values));
         return af.get_var();
     }
-    std::vector<utils::ref_wrapper<utils::enum_val>> stsolver::enum_value(const riddle::enum_term &expr) const noexcept
+    std::vector<utils::ref_wrapper<utils::enum_val>> solver::enum_value(const riddle::enum_term &expr) const noexcept
     {
         std::vector<utils::ref_wrapper<utils::enum_val>> dom;
         for (const auto &val : static_cast<const riddle::enum_item &>(expr).get_values())
@@ -67,7 +67,7 @@ namespace ratio
         return dom;
     }
 
-    riddle::arith_expr stsolver::new_negation(riddle::arith_expr xpr)
+    riddle::arith_expr solver::new_negation(riddle::arith_expr xpr)
     {
         if (xpr->get_type().get_name() == riddle::int_kw)
             return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), -static_cast<const riddle::arith_item &>(*xpr).get_lin());
@@ -77,7 +77,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    riddle::arith_expr stsolver::new_sum(std::vector<riddle::arith_expr> &&xprs)
+    riddle::arith_expr solver::new_sum(std::vector<riddle::arith_expr> &&xprs)
     {
         assert(xprs.size() > 1);
         utils::lin sum;
@@ -92,7 +92,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    riddle::arith_expr stsolver::new_subtraction(std::vector<riddle::arith_expr> &&xprs)
+    riddle::arith_expr solver::new_subtraction(std::vector<riddle::arith_expr> &&xprs)
     {
         assert(xprs.size() > 1);
         utils::lin sub = static_cast<const riddle::arith_item &>(*xprs[0]).get_lin();
@@ -107,7 +107,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    riddle::arith_expr stsolver::new_product(std::vector<riddle::arith_expr> &&xprs)
+    riddle::arith_expr solver::new_product(std::vector<riddle::arith_expr> &&xprs)
     {
         assert(xprs.size() > 1);
         utils::lin prod;
@@ -125,7 +125,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    riddle::arith_expr stsolver::new_division(std::vector<riddle::arith_expr> &&xprs)
+    riddle::arith_expr solver::new_division(std::vector<riddle::arith_expr> &&xprs)
     {
         assert(xprs.size() > 1);
         utils::lin div = static_cast<const riddle::arith_item &>(*xprs[0]).get_lin();
@@ -143,16 +143,16 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    void stsolver::new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts)
+    void solver::new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
         std::vector<utils::ref_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())
             causes.push_back(get_current_resolver().value());
-        new_flaw<stdisjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
+        new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
     }
 
-    void stsolver::new_clause(std::vector<riddle::bool_expr> &&exprs)
+    void solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
     {
         assert(!exprs.empty());
         std::vector<utils::lit> clause;
@@ -218,16 +218,16 @@ namespace ratio
         add_clause(std::move(clause));
     }
 
-    riddle::atom_expr stsolver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
+    riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
         std::vector<utils::ref_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())
             causes.push_back(get_current_resolver().value());
-        auto &af = new_flaw<statom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args));
+        auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args));
         return af.get_atom();
     }
 
-    void stsolver::added_causal_link(flaw &f, resolver &r)
+    void solver::added_causal_link(flaw &f, resolver &r)
     { // if the resolver is active, then the flaw must be active..
         add_clause({!static_cast<stresolver &>(r).get_rho(), static_cast<stflaw &>(f).get_phi()});
 
@@ -235,7 +235,7 @@ namespace ratio
         add_distance(static_cast<stflaw &>(f).get_pos(), static_cast<stflaw &>(r.get_flaw()).get_pos(), -utils::rational::one, static_cast<stresolver &>(r).get_rho());
     }
 
-    bool stsolver::match(riddle::term &lhs, riddle::term &rhs) const
+    bool solver::match(riddle::term &lhs, riddle::term &rhs) const
     {
         if (&lhs == &rhs) // the terms are the same, so they match..
             return true;
@@ -307,7 +307,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    void stsolver::make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
+    void solver::make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
     {
         if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always false..
             add_clause({!p});
@@ -398,7 +398,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    void stsolver::make_neq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
+    void solver::make_neq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
     {
         if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always true..
             return;
@@ -487,7 +487,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    void stsolver::solve()
+    void solver::solve()
     {
         propagate(); // we perform an initial propagation..
 
@@ -526,7 +526,7 @@ namespace ratio
         }
     }
 
-    void stsolver::check_graph()
+    void solver::check_graph()
     {
         if (get_active_flaws().empty())
             return; // the causal graph is empty..

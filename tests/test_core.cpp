@@ -10,7 +10,7 @@
 void test_basic_core()
 {
 #if defined(SEMITONE)
-    ratio::stsolver slv;
+    ratio::solver slv;
 #elif defined(MathSAT)
     ratio::msatsolver slv;
 #elif defined(Z3)

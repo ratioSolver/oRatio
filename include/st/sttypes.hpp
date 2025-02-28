@@ -1,10 +1,24 @@
 #pragma once
 
 #include "types.hpp"
+#include "semitone.hpp"
+#include "la_theory.hpp"
 
 namespace ratio
 {
-  class stsolver;
+  class solver;
+  class atom;
+
+  class statom_listener : smt::prop_listener, smt::la_listener
+  {
+  public:
+    statom_listener(atom &atm) noexcept;
+
+  private:
+    void on_change(const utils::var &v) noexcept override;
+    void on_reset(const utils::var &v) noexcept override {}
+    void on_arith_change(const utils::var &v) noexcept override;
+  };
 
   class stcomponent_type
   {
@@ -12,12 +26,15 @@ namespace ratio
     virtual ~stcomponent_type() = default;
 
     virtual bool solve_inconsistencies() = 0;
+
+  private:
+    std::set<const riddle::component *> to_check; // the components whose atoms have changed..
   };
 
   class ststate_variable final : public riddle::state_variable, public stcomponent_type
   {
   public:
-    ststate_variable(stsolver &slv) noexcept;
+    ststate_variable(solver &slv) noexcept;
 
     bool solve_inconsistencies() override;
   };
@@ -25,7 +42,7 @@ namespace ratio
   class streusable_resource final : public riddle::reusable_resource, public stcomponent_type
   {
   public:
-    streusable_resource(stsolver &slv) noexcept;
+    streusable_resource(solver &slv) noexcept;
 
     bool solve_inconsistencies() override;
   };
@@ -33,7 +50,7 @@ namespace ratio
   class stconsumable_resource final : public riddle::consumable_resource, public stcomponent_type
   {
   public:
-    stconsumable_resource(stsolver &slv) noexcept;
+    stconsumable_resource(solver &slv) noexcept;
 
     bool solve_inconsistencies() override;
   };

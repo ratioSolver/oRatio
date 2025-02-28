@@ -7,25 +7,25 @@
 namespace ratio
 {
   class stflaw;
-  class statom_flaw;
+  class atom_flaw;
   class stresolver;
   class stcomponent_type;
-  class stunify_atom;
+  class unify_atom;
 
   class atom : public riddle::atom
   {
   public:
-    atom(statom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : riddle::atom(pred, is_fact, std::move(args), std::move(sigma)), flaw(flaw) {}
+    atom(atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : riddle::atom(pred, is_fact, std::move(args), std::move(sigma)), flaw(flaw) {}
 
-    [[nodiscard]] statom_flaw &get_flaw() noexcept { return flaw; }
+    [[nodiscard]] atom_flaw &get_flaw() noexcept { return flaw; }
 
   private:
-    statom_flaw &flaw; // the flaw associated with this atom..
+    atom_flaw &flaw; // the flaw associated with this atom..
   };
 
   using atom_expr = utils::s_ptr<atom>;
 
-  class stsolver : public smt::semitone, public graph
+  class solver : public smt::semitone, public graph
   {
     friend class stnetwork;
     friend class bool_item;
@@ -35,11 +35,11 @@ namespace ratio
     friend class atom;
     friend class stflaw;
     friend class stresolver;
-    friend class stunify_atom;
+    friend class unify_atom;
 
   public:
-    stsolver(std::string_view name = "oRatio") noexcept;
-    virtual ~stsolver() = default;
+    solver(std::string_view name = "oRatio") noexcept;
+    virtual ~solver() = default;
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;

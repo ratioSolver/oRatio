@@ -5,7 +5,7 @@
 namespace ratio::server
 {
 #if defined(SEMITONE)
-    server::server(std::string_view assets_dir) : network::server(SERVER_HOST, SERVER_PORT, 1), ratio::stsolver(), assets_dir(assets_dir)
+    server::server(std::string_view assets_dir) : network::server(SERVER_HOST, SERVER_PORT, 1), ratio::solver(), assets_dir(assets_dir)
 #elif defined(Z3)
     server::server(std::string_view assets_dir) : network::server(SERVER_HOST, SERVER_PORT, 1), ratio::z3solver(), assets_dir(assets_dir)
 #endif
