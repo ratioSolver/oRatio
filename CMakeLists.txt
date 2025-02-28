@@ -51,7 +51,7 @@ message(STATUS "Build the oRatio server: ${BUILD_ORATIO_SERVER}")
 
 add_subdirectory(extern/riddle)
 
-add_library(oRatioLib src/graph.cpp src/types.cpp)
+add_library(oRatioLib src/graph.cpp)
 target_compile_features(oRatioLib PUBLIC cxx_std_17)
 add_dependencies(oRatioLib RiDDLe)
 target_link_libraries(oRatioLib PUBLIC RiDDLe)
