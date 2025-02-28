@@ -10,10 +10,13 @@ namespace ratio
   class atom_flaw;
   class stresolver;
   class stcomponent_type;
+  class statom_listener;
   class unify_atom;
 
   class atom : public riddle::atom
   {
+    friend class statom_listener;
+
   public:
     atom(atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : riddle::atom(pred, is_fact, std::move(args), std::move(sigma)), flaw(flaw) {}
 

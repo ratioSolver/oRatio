@@ -8,20 +8,27 @@ namespace ratio
 {
   class solver;
   class atom;
+  class stcomponent_type;
 
   class statom_listener : smt::prop_listener, smt::la_listener
   {
   public:
-    statom_listener(atom &atm) noexcept;
+    statom_listener(stcomponent_type &ct, atom &atm) noexcept;
 
   private:
     void on_change(const utils::var &v) noexcept override;
-    void on_reset(const utils::var &v) noexcept override {}
+    void on_reset(const utils::var &) noexcept override {}
     void on_arith_change(const utils::var &v) noexcept override;
+
+  private:
+    stcomponent_type &ct;
+    atom &atm;
   };
 
   class stcomponent_type
   {
+    friend class statom_listener;
+
   public:
     virtual ~stcomponent_type() = default;
 
