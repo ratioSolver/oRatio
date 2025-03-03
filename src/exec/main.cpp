@@ -1,17 +1,13 @@
 #ifdef BUILD_SERVER
 #include "solver_server.hpp"
 #include <thread>
-#define SOLVER_CLASS ratio::server::server
 #else
 #if defined(SEMITONE)
 #include "stsolver.hpp"
-#define SOLVER_CLASS ratio::stsolver
 #elif defined(MathSAT)
 #include "msatsolver.hpp"
-#define SOLVER_CLASS ratio::msatsolver
 #elif defined(Z3)
 #include "z3solver.hpp"
-#define SOLVER_CLASS ratio::z3solver
 #endif
 #include <fstream>
 #endif
@@ -33,14 +29,14 @@ int main(int argc, char const *argv[])
     // the solution file..
     std::string sol_name = argv[argc - 1];
 
-    LOG_INFO("starting oRatio server");
-
-    SOLVER_CLASS solver;
-
 #ifdef BUILD_SERVER
+    ratio::server::server solver;
+    LOG_INFO("starting oRatio server");
     auto srv_ft = std::async(std::launch::async, [&solver]
                              { solver.start(); });
     std::this_thread::sleep_for(std::chrono::seconds(1));
+#else
+    ratio::solver solver;
 #endif
 
     solver.read(prob_names);

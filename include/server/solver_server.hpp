@@ -3,17 +3,15 @@
 #include "server.hpp"
 #if defined(SEMITONE)
 #include "stsolver.hpp"
+#elif defined(MathSAT)
+#include "msatsolver.hpp"
 #elif defined(Z3)
 #include "z3solver.hpp"
 #endif
 
 namespace ratio::server
 {
-#if defined(SEMITONE)
   class server : public network::server, public ratio::solver
-#elif defined(Z3)
-  class server : public network::server, public ratio::z3solver
-#endif
   {
   public:
     server(std::string_view assets_dir = "./gui/app/dist");
