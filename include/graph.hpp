@@ -121,6 +121,13 @@ namespace ratio
      */
     void build();
 
+    /**
+     * @brief Adds a layer to the graph.
+     *
+     * This function adds a layer to the graph by expanding the fringe flaws and applying the resolvers.
+     */
+    void add_layer();
+
     void expand_flaws(const std::vector<utils::ref_wrapper<flaw>> &flaws);
 
     void add_causal_link(flaw &f, resolver &r) noexcept;
@@ -135,6 +142,8 @@ namespace ratio
     void compute_flaw_cost(flaw &f);
 
     virtual void added_causal_link(flaw &, resolver &) {}
+
+    bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..
 
   private:
 #ifdef BUILD_LISTENERS

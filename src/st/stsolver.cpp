@@ -531,18 +531,19 @@ namespace ratio
         if (get_active_flaws().empty())
             return; // the causal graph is empty..
 
-        if (value(gamma) == utils::False) // we are building the initial causal graph (or we have explored the entire causal graph)..
+        while (value(gamma) == utils::False) // we are building the initial causal graph (or we have explored the entire causal graph)..
         {
             assert(decision_level() == 0); // we must be at the root level..
             gamma = mk_var();              // we create a new gamma variable for pruning the causal graph..
             already_closed.clear();
 
-            do
-            {
-                build();     // we build the causal graph..
-                propagate(); // we propagate the constraints..
-            } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
-                                 { return is_infinite(f->get_estimated_cost()); }));
+            if (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
+                            { return is_infinite(f->get_estimated_cost()); }))
+                build(); // we build the causal graph..
+            else
+                add_layer(); // we add a layer to the graph..
+
+            propagate(); // we propagate the constraints..
 
             // we prune the causal graph..
             for (const auto &f : get_queued_flaws())

@@ -104,6 +104,7 @@ namespace ratio
 
     void graph::build()
     {
+        LOG_DEBUG("Building the causal graph..");
         while (std::any_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
                            { return is_infinite(f->est_cost); }))
         { // while there are infinite cost flaws..
@@ -112,7 +113,36 @@ namespace ratio
 
             auto &flaw = *flaw_q.front();
             flaw_q.pop_front();
-            expand_flaw(flaw);
+            if (flaw.get_state() != utils::False)
+            {
+                if (is_deferrable(flaw))
+                    flaw_q.push_back(flaw);
+                else
+                    expand_flaw(flaw);
+            }
+        }
+    }
+
+    void graph::add_layer()
+    {
+        LOG_DEBUG("Expanding the causal graph..");
+        assert(std::none_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
+                            { return is_infinite(f->est_cost); })); // none of the active flaw should cost infinite (otherwise the build procedure should have been called)..
+        assert(std::all_of(flaw_q.cbegin(), flaw_q.cend(), [this](auto f)
+                           { return is_deferrable(*f); })); // all the flaws in the flaw queue should be deferrable..
+
+        if (flaw_q.empty())                       // we have no flaws to expand..
+            throw riddle::unsolvable_exception(); // if the flaw queue is empty, then the problem is unsolvable..
+
+        // we expand all the flaws in the queue..
+        auto q_size = flaw_q.size();
+        for (size_t i = 0; i < q_size; ++i)
+        {
+            auto &flaw = *flaw_q.front();
+            flaw_q.pop_front();
+            assert(!flaw.is_expanded());
+            if (flaw.get_state() != utils::False)
+                expand_flaw(flaw);
         }
     }
 
@@ -210,6 +240,21 @@ namespace ratio
             FLAW_COST_CHANGED(*f);
         }
         trail.pop_back();
+    }
+
+    bool graph::is_deferrable(flaw &f)
+    {
+        if (f.get_estimated_cost() < utils::rational::positive_infinite || std::any_of(f.get_resolvers().cbegin(), f.get_resolvers().cend(), [this](auto &r)
+                                                                                       { return r->get_state() == utils::True; }))
+            return true; // we already have a possible solution for this flaw, thus we defer..
+        if (f.get_state() == utils::True || visited.count(&f))
+            return false; // we necessarily have to solve this flaw: it cannot be deferred..
+        // we recursively check the flaw's supports..
+        visited.insert(&f);
+        bool def = std::all_of(f.get_supports().cbegin(), f.get_supports().cend(), [this](auto &r)
+                               { return is_deferrable(r->get_flaw()); });
+        visited.erase(&f);
+        return def;
     }
 
     flaw::flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) : gr(gr), causes(causes), exclusive(exclusive)
