@@ -15,7 +15,7 @@ export class SolverAnchor extends AnchorComponent<solver.Solver> implements solv
     this.element.addEventListener('click', () => { App.get_instance().selected_component(this); });
   }
 
-  state_changed(_state: solver.ExecutionState): void { this.render(); }
+  state_changed(): void { this.render(); }
   flaw_created(_flaw: solver.graph.Flaw): void { }
   flaw_state_changed(_flaw: solver.graph.Flaw): void { }
   flaw_position_changed(_flaw: solver.graph.Flaw): void { }

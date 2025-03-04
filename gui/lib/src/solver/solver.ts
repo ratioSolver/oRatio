@@ -6,8 +6,8 @@ export namespace solver {
 
     get_exprs(): Map<string, values.Value> { return this.exprs; }
 
-    to_string(items: Map<number, values.Value>, expressive: boolean): string {
-      return `{${Array.from(this.exprs.entries()).map(([name, value]) => `${name}: ${value.to_string(items, expressive)}`).join(', ')}}`;
+    to_string(slv: Solver, expressive: boolean): string {
+      return `{${Array.from(this.exprs.entries()).map(([name, value]) => `${name}: ${value.to_string(slv, expressive)}`).join(', ')}}`;
     }
   }
 
@@ -27,7 +27,7 @@ export namespace solver {
     private execution_state: ExecutionState;
     private current_time: values.Rational;
 
-    private items: Map<number, values.Item> = new Map();
+    _items: Map<number, values.Item> = new Map();
     _atoms: Map<number, values.Atom> = new Map();
     private timelines: Map<number, timelines.Timeline<timelines.TimelineValue>> = new Map();
     private flaws: Map<number, graph.Flaw> = new Map();
@@ -47,6 +47,7 @@ export namespace solver {
     get_id(): number { return this.id; }
     get_name(): string { return this.name; }
     get_state(): ExecutionState { return this.execution_state; }
+    get_timelines(): Map<number, timelines.Timeline<timelines.TimelineValue>> { return this.timelines; }
     get_current_time(): values.Rational { return this.current_time; }
 
     get_flaws(): Map<number, graph.Flaw> { return this.flaws; }
@@ -56,9 +57,8 @@ export namespace solver {
     get_current_flaw(): graph.Flaw | null { return this.c_flaw; }
     get_current_resolver(): graph.Resolver | null { return this.c_resolver; }
 
-    state_changed(state: ExecutionState): void {
-      this.execution_state = state;
-      for (const listener of this.solver_listeners) listener.state_changed(state);
+    state_changed(): void {
+      for (const listener of this.solver_listeners) listener.state_changed();
     }
     flaw_created(flaw: graph.Flaw): void {
       this.flaws.set(flaw.get_id(), flaw);
@@ -116,10 +116,10 @@ export namespace solver {
 
     _set_state(state_message: StateMessage) {
       if (state_message.items) {
-        this.items.clear();
+        this._items.clear();
         // we create the items..
         for (const [id, im] of Object.entries(state_message.items))
-          this.items.set(Number(id), new values.Item(Number(id), im.type, im.name));
+          this._items.set(Number(id), new values.Item(Number(id), im.type, im.name));
       }
       if (state_message.atoms) {
         this._atoms.clear();
@@ -132,23 +132,25 @@ export namespace solver {
         for (const [id, im] of Object.entries(state_message.items))
           if (im.exprs)
             for (const [name, expr] of Object.entries(im.exprs))
-              this.items.get(Number(id))!.exprs.set(name, values.make_value(expr, this.items, this._atoms));
+              this._items.get(Number(id))!.exprs.set(name, values.make_value(this, expr));
       if (state_message.atoms) // we set the exprs for the atoms..
         for (const [id, am] of Object.entries(state_message.atoms))
           if (am.exprs)
             for (const [name, expr] of Object.entries(am.exprs))
-              this._atoms.get(Number(id))!.exprs.set(name, values.make_value(expr, this.items, this._atoms));
+              this._atoms.get(Number(id))!.exprs.set(name, values.make_value(this, expr));
 
       if (state_message.exprs) // we set the exprs for the solver..
         for (const [name, expr] of Object.entries(state_message.exprs))
-          this.exprs.set(name, values.make_value(expr, this.items, this._atoms));
+          this.exprs.set(name, values.make_value(this, expr));
 
       if (state_message.timelines) {
         this.timelines.clear();
         // we create the timelines..
         for (const [id, tl] of Object.entries(state_message.timelines))
-          this.timelines.set(Number(id), timelines.make_timeline(tl, this._atoms));
+          this.timelines.set(Number(id), timelines.make_timeline(tl, this));
       }
+
+      this.state_changed();
     }
 
     _set_graph(solver_message: SolverMessage) {
@@ -175,7 +177,7 @@ export namespace solver {
 
   export interface SolverListener {
 
-    state_changed(state: ExecutionState): void;
+    state_changed(): void;
 
     flaw_created(flaw: graph.Flaw): void;
     flaw_state_changed(flaw: graph.Flaw): void;
@@ -520,7 +522,7 @@ export namespace solver {
 
     export interface Value {
 
-      to_string(items: Map<number, Value>, expressive: boolean): string;
+      to_string(slv: Solver, expressive: boolean): string;
     }
 
     export enum LBool {
@@ -540,7 +542,7 @@ export namespace solver {
         this.val = val;
       }
 
-      to_string(_items: Map<number, Value>, expressive = false): string {
+      to_string(_: Solver, expressive = false): string {
         switch (this.val) {
           case LBool.True:
             return expressive ? 'true' : '⊤';
@@ -568,7 +570,7 @@ export namespace solver {
         this.ub = ub;
       }
 
-      to_string(_items: Map<number, Value>, expressive = false): string {
+      to_string(_: Solver, expressive = false): string {
         if (expressive) {
           let res = `${this.val}`;
           if (this.lb || this.ub)
@@ -595,7 +597,7 @@ export namespace solver {
         this.ub = ub;
       }
 
-      to_string(_items: Map<number, Value>, expressive = false): string {
+      to_string(_: Solver, expressive = false): string {
         if (expressive) {
           let res = `${this.val.to_string()}`;
           if (this.lb || this.ub)
@@ -622,7 +624,7 @@ export namespace solver {
         this.ub = ub;
       }
 
-      to_string(_items: Map<number, Value>, expressive = false): string {
+      to_string(_: Solver, expressive = false): string {
         if (expressive) {
           let res = `${this.val.to_string()}`;
           if (this.lb || this.ub)
@@ -643,10 +645,10 @@ export namespace solver {
         this.val = val;
       }
 
-      to_string(items: Map<number, Value>, expressive = false): string {
+      to_string(slv: Solver, expressive = false): string {
         const num = Number(this.val);
-        if (typeof num === "number" && !isNaN(num) && items.has(num))
-          return items.get(num)!.to_string(items, expressive);
+        if (typeof num === "number" && !isNaN(num) && slv._items.has(num))
+          return slv._items.get(num)!.to_string(slv, expressive);
         else
           return `'${this.val}'`;
       }
@@ -664,14 +666,14 @@ export namespace solver {
         this.vals = vals;
       }
 
-      to_string(items: Map<number, Value>, expressive = false): string {
+      to_string(slv: Solver, expressive = false): string {
         if (expressive)
-          return (this.vals.length == 1 ? this.vals[0].to_string(items, expressive) : `{${this.vals.map((item: Item) => item.to_string(items, expressive)).join(', ')}}`) + ` (${this.var})`;
+          return (this.vals.length == 1 ? this.vals[0].to_string(slv, expressive) : `{${this.vals.map((item: Item) => item.to_string(slv, expressive)).join(', ')}}`) + ` (${this.var})`;
         else
-          return this.vals.length == 1 ? this.vals[0].to_string(items, expressive) : `{${this.vals.map((item: Item) => item.to_string(items, expressive)).join(', ')}}`;
+          return this.vals.length == 1 ? this.vals[0].to_string(slv, expressive) : `{${this.vals.map((item: Item) => item.to_string(slv, expressive)).join(', ')}}`;
       }
 
-      static make_enum(val: EnumMessage, items: Map<number, Value>): Enum { return new Enum(val.var, val.vals.map((item: number) => items.get(item) as Item)); }
+      static make_enum(slv: Solver, val: EnumMessage): Enum { return new Enum(val.var, val.vals.map((item: number) => slv._items.get(item) as Item)); }
     }
 
     export class Item extends Env implements Value {
@@ -691,9 +693,9 @@ export namespace solver {
       get_type(): string { return this.type; }
       get_name(): string { return this.name; }
 
-      override to_string(items: Map<number, Value>, expressive = false): string {
+      override to_string(slv: Solver, expressive = false): string {
         if (expressive)
-          return this.type.split(':').pop() + ' ' + this.name + super.to_string(items, expressive);
+          return this.type.split(':').pop() + ' ' + this.name + super.to_string(slv, expressive);
         else
           return this.name;
       }
@@ -722,11 +724,11 @@ export namespace solver {
       get_sigma(): string { return this.sigma; }
       get_state(): AtomState { return this.state; }
 
-      override to_string(items: Map<number, Value>, expressive = false): string {
+      override to_string(slv: Solver, expressive = false): string {
         let pars = Array.from(this.exprs.entries());
         if (!expressive)
           pars = pars.filter(([name, _]) => name !== 'start' && name !== 'end' && name !== 'duration' && name !== 'tau');
-        const pars_str = pars.map(([name, value]) => `${name}: ${value.to_string(items, expressive)}`).join(', ');
+        const pars_str = pars.map(([name, value]) => `${name}: ${value.to_string(slv, expressive)}`).join(', ');
         if (expressive)
           return this.sigma + ' ' + this.type.split(':').pop() + `(${pars_str})`;
         else
@@ -734,7 +736,7 @@ export namespace solver {
       }
     }
 
-    export function make_value(value_message: ValueMessage, items: Map<number, Value>, atoms: Map<number, Atom>): Value {
+    export function make_value(slv: Solver, value_message: ValueMessage): Value {
       switch (value_message.type) {
         case 'bool':
           return Bool.make_bool(value_message as BoolMessage);
@@ -747,11 +749,11 @@ export namespace solver {
         case 'string':
           return String.make_string(value_message as StringMessage);
         case 'enum':
-          return Enum.make_enum(value_message as EnumMessage, items);
+          return Enum.make_enum(slv, value_message as EnumMessage);
         case 'item':
-          return items.get((value_message as ItemValueMessage).val)!;
+          return slv._items.get((value_message as ItemValueMessage).val)!;
         case 'atom':
-          return atoms.get((value_message as AtomValueMessage).val)!;
+          return slv._atoms.get((value_message as AtomValueMessage).val)!;
         default:
           throw new Error(`Unknown type: ${value_message.type}`);
       }
@@ -781,6 +783,10 @@ export namespace solver {
       public get_name(): string { return this.name; }
 
       public get_values(): V[] { return this.values; }
+
+      static timeline_name(_: Solver, tl: Timeline<TimelineValue>): string {
+        return tl.name;
+      }
     }
 
     type SolverTimelineValue = values.Atom & (Impulse | Interval);
@@ -789,6 +795,10 @@ export namespace solver {
 
       constructor(id: number, name: string, values: SolverTimelineValue[]) {
         super(id, name, values);
+      }
+
+      static to_string(slv: Solver, value: SolverTimelineValue, expressive = false): string {
+        return value.to_string(slv, expressive);
       }
     }
 
@@ -800,24 +810,24 @@ export namespace solver {
         super(id, name, values);
       }
 
-      static to_string(items: Map<number, values.Value>, value: StateVariableTimelineValue, expressive = false): string {
+      static to_string(slv: Solver, value: StateVariableTimelineValue, expressive = false): string {
         if (expressive)
           switch (value.atoms.length) {
             case 0:
               return `[] (${value.start.to_string()} - ${value.end.to_string()})`;
             case 1:
-              return value.atoms[0].to_string(items, expressive);
+              return value.atoms[0].to_string(slv, expressive);
             default:
-              return `[${value.atoms.map(atom => atom.to_string(items, expressive)).join(', ')}] (${value.start.to_string()} - ${value.end.to_string()})`;
+              return `[${value.atoms.map(atom => atom.to_string(slv, expressive)).join(', ')}] (${value.start.to_string()} - ${value.end.to_string()})`;
           }
         else
           switch (value.atoms.length) {
             case 0:
               return '[]';
             case 1:
-              return value.atoms[0].to_string(items, expressive);
+              return value.atoms[0].to_string(slv, expressive);
             default:
-              return `[${value.atoms.map(atom => atom.to_string(items, expressive)).join(', ')}]`;
+              return `[${value.atoms.map(atom => atom.to_string(slv, expressive)).join(', ')}]`;
           }
       }
     }
@@ -833,15 +843,15 @@ export namespace solver {
         this.capacity = capacity;
       }
 
-      static to_string(items: Map<number, values.Value>, value: ReusableResourceTimelineValue, expressive = false): string {
+      static to_string(slv: Solver, value: ReusableResourceTimelineValue, expressive = false): string {
         if (expressive)
           switch (value.atoms.length) {
             case 0:
               return `0 (${value.start.to_string()} - ${value.end.to_string()})`;
             case 1:
-              return value.usage.to_string() + ' ' + value.atoms[0].to_string(items, expressive);
+              return value.usage.to_string() + ' ' + value.atoms[0].to_string(slv, expressive);
             default:
-              return value.usage.to_string() + ` {${value.atoms.map(atom => atom.to_string(items, expressive)).join(', ')}} (${value.start.to_string()} - ${value.end.to_string()})`;
+              return value.usage.to_string() + ` {${value.atoms.map(atom => atom.to_string(slv, expressive)).join(', ')}} (${value.start.to_string()} - ${value.end.to_string()})`;
           }
         else
           return value.usage.to_string();
@@ -861,15 +871,15 @@ export namespace solver {
         this.initial_amount = initial_amount;
       }
 
-      static to_string(items: Map<number, values.Value>, value: ConsumableResourceTimelineValue, expressive = false): string {
+      static to_string(slv: Solver, value: ConsumableResourceTimelineValue, expressive = false): string {
         if (expressive)
           switch (value.atoms.length) {
             case 0:
               return `- (${value.start.to_string()} - ${value.end.to_string()})`;
             case 1:
-              return `${value.start.to_string()} - ${value.end.to_string()} ${value.atoms[0].to_string(items, expressive)}`;
+              return `${value.start.to_string()} - ${value.end.to_string()} ${value.atoms[0].to_string(slv, expressive)}`;
             default:
-              return `${value.start.to_string()} - ${value.end.to_string()} {${value.atoms.map(atom => atom.to_string(items, expressive)).join(', ')}} (${value.start.to_string()} - ${value.end.to_string()})`;
+              return `${value.start.to_string()} - ${value.end.to_string()} {${value.atoms.map(atom => atom.to_string(slv, expressive)).join(', ')}} (${value.start.to_string()} - ${value.end.to_string()})`;
           }
         else
           switch (value.atoms.length) {
@@ -881,12 +891,12 @@ export namespace solver {
       }
     }
 
-    export function make_timeline(tml: TimelineMessage, atoms: Map<number, values.Atom>): Timeline<TimelineValue> {
+    export function make_timeline(tml: TimelineMessage, slv: Solver): Timeline<TimelineValue> {
       switch (tml.type) {
         case 'Solver':
           const stm = tml as SolverTimelineMessage;
           const slv_vals = stm.values.map(v => {
-            const atm = atoms.get(v.atom)!;
+            const atm = slv._atoms.get(v.atom)!;
             if ('at' in v)
               return { ...atm, at: values.Rational.make_rational(v.at) } as SolverTimelineValue;
             else if ('start' in v && 'end' in v)
@@ -898,21 +908,21 @@ export namespace solver {
         case 'StateVariable':
           const svm = tml as StateVariableTimelineMessage;
           const sv_vals = svm.values.map(v => {
-            const atms = v.atoms.map(atm => atoms.get(atm)!);
+            const atms = v.atoms.map(atm => slv._atoms.get(atm)!);
             return { atoms: atms, start: values.Rational.make_rational(v.start), end: values.Rational.make_rational(v.end) };
           });
           return new StateVariableTimeline(tml.id, tml.name, sv_vals);
         case 'ReusableResource':
           const rrm = tml as ReusableResourceTimelineMessage;
           const rr_vals = rrm.values.map(v => {
-            const atms = v.atoms.map(atm => atoms.get(atm)!);
+            const atms = v.atoms.map(atm => slv._atoms.get(atm)!);
             return { atoms: atms, usage: values.Rational.make_rational(v.usage), start: values.Rational.make_rational(v.start), end: values.Rational.make_rational(v.end) };
           });
           return new ReusableResourceTimeline(tml.id, tml.name, values.Rational.make_rational(rrm.capacity), rr_vals);
         case 'ConsumableResource':
           const crm = tml as ConsumableResourceTimelineMessage;
           const cr_vals = crm.values.map(v => {
-            const atms = v.atoms.map(atm => atoms.get(atm)!);
+            const atms = v.atoms.map(atm => slv._atoms.get(atm)!);
             return { atoms: atms, from: values.Rational.make_rational(v.from), to: values.Rational.make_rational(v.to), start: values.Rational.make_rational(v.start), end: values.Rational.make_rational(v.end) };
           });
           return new ConsumableResourceTimeline(tml.id, tml.name, values.Rational.make_rational(crm.capacity), values.Rational.make_rational(crm.initial_amount), cr_vals);

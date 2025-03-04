@@ -101,7 +101,7 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
     this.payload.add_solver_listener(this);
   }
 
-  state_changed(_state: solver.ExecutionState): void { }
+  state_changed(): void { }
 
   flaw_created(flaw: solver.graph.Flaw): void {
     this.create_flaw_node(flaw);
