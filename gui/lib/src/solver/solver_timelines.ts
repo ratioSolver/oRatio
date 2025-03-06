@@ -36,8 +36,6 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
   }
 
   override mounted(): void {
-    Plotly.react(this.element, [], this.layout, this.config);
-
     this.payload.add_solver_listener(this);
   }
 
@@ -79,7 +77,7 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
       if (tl instanceof solver.timelines.StateVariableTimeline) {
         for (const val of tl.get_values()) {
           const text = solver.timelines.StateVariableTimeline.to_string(this.payload, val);
-          this.traces.get(id)!.push({ x: [val.start, val.end], y: [i, i], name: text, text: [text], type: 'scatter', opacity: 0.7, mode: 'lines+text', line: { width: 30 }, textposition: 'middle right', yaxis: this.y_axes.get(id) });
+          this.traces.get(id)!.push({ x: [val.start.to_number(), val.end.to_number()], y: [i, i], name: text, text: [text], type: 'scatter', opacity: 0.7, mode: 'lines+text', line: { width: 30 }, textposition: 'middle right', yaxis: this.y_axes.get(id) });
         }
         if (i == 1)
           this.layout['yaxis'] = { title: solver.timelines.Timeline.timeline_name(this.payload, tl), domain: [start_domain + domain_separator, start_domain + domain_size - domain_separator], zeroline: false, showticklabels: false, showgrid: false };
@@ -131,6 +129,8 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
       start_domain += domain_size;
       i++;
     }
+
+    Plotly.react(this.element, Array.from(this.traces.values()).flat(), this.layout, this.config);
   }
   flaw_created(_flaw: solver.graph.Flaw): void { }
   flaw_state_changed(_flaw: solver.graph.Flaw): void { }

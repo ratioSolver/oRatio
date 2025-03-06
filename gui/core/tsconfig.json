@@ -6,6 +6,7 @@
     "incremental": true,
     "outDir": "./dist",
     "moduleResolution": "node",
+    "sourceMap": true,
     "esModuleInterop": true,
     "strict": true,
     "resolveJsonModule": true,

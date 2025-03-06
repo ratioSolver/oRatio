@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #ifdef ENABLE_API
+#define STATE_CHANGED() state_changed()
 #define NEW_FLAW(f) flaw_created(f)
 #define FLAW_STATE_CHANGED(f) flaw_state_changed(f)
 #define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
@@ -16,6 +17,7 @@
 #define CURRENT_FLAW(f) current_flaw(f)
 #define CURRENT_RESOLVER(r) current_resolver(r)
 #else
+#define STATE_CHANGED()
 #define NEW_FLAW(f)
 #define FLAW_STATE_CHANGED(f)
 #define FLAW_COST_CHANGED(f)
@@ -145,8 +147,8 @@ namespace ratio
 
     bool is_deferrable(flaw &f); // checks whether the given flaw is deferrable..
 
-  private:
 #ifdef BUILD_LISTENERS
+  protected:
     /**
      * @brief This function is called when the state of the solver changes.
      *
@@ -155,6 +157,8 @@ namespace ratio
      * @note This is a virtual function and can be overridden by derived classes.
      */
     virtual void state_changed() {}
+
+  private:
     /**
      * @brief Notifies when a flaw has been created.
      *

@@ -518,6 +518,7 @@ namespace ratio
 
             // we apply the resolver..
             assume(static_cast<stresolver &>(*r).get_rho());
+            STATE_CHANGED();
 
             set_current_resolver(std::nullopt);
             set_current_flaw(std::nullopt);
@@ -552,6 +553,7 @@ namespace ratio
             propagate(); // we propagate the pruning constraints..
 
             assume(utils::lit(gamma)); // we enforce the pruning constraints..
+            STATE_CHANGED();
         }
     }
 } // namespace ratio
