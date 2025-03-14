@@ -1,6 +1,6 @@
 {
   "name": "ratio-core",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,7 +17,7 @@
   "devDependencies": {
     "typescript": "^5.7.3"
   },
-  "dependencies": {
+  "peerDependencies": {
     "bootstrap": "^5.3.3"
   }
 }
