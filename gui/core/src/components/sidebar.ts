@@ -1,8 +1,9 @@
 import { App, Component } from "../app";
+import { Selector, SelectorGroup } from "../utils/selector";
 
 export class Sidebar extends Component<App, HTMLDivElement> {
 
-  constructor(top: Map<HTMLAnchorElement, Component<any, HTMLElement>>, bottom?: Map<HTMLAnchorElement, Component<any, HTMLElement>>) {
+  constructor(group: SelectorGroup, top: Map<HTMLAnchorElement, Selector>, bottom?: Map<HTMLAnchorElement, Selector>) {
     super(App.get_instance(), document.createElement('div'));
 
     this.element.classList.add('d-flex', 'flex-column', 'flex-shrink-0', 'p-3', 'bg-light');
@@ -12,20 +13,12 @@ export class Sidebar extends Component<App, HTMLDivElement> {
     const ul = document.createElement('ul');
     ul.classList.add('nav', 'nav-pills', 'flex-column', 'mb-auto');
 
-    for (const [a, comp] of top) {
+    for (const [a, sel] of top) {
       const li = document.createElement('li');
       li.classList.add('nav-item');
 
       a.classList.add('nav-link');
-      a.onclick = () => {
-        for (const oa of top.keys())
-          oa.classList.remove('active');
-        if (bottom)
-          for (const oa of bottom.keys())
-            oa.classList.remove('active');
-        a.classList.add('active');
-        App.get_instance().selected_component(comp);
-      };
+      group.add_selector(sel);
 
       li.appendChild(a);
       ul.appendChild(li);
@@ -40,19 +33,12 @@ export class Sidebar extends Component<App, HTMLDivElement> {
       const footer_ul = document.createElement('ul');
       footer_ul.classList.add('nav', 'nav-pills', 'flex-column', 'mb-0');
 
-      for (const [a, comp] of bottom) {
+      for (const [a, sel] of bottom) {
         const li = document.createElement('li');
         li.classList.add('nav-item');
 
         a.classList.add('nav-link');
-        a.onclick = () => {
-          for (const oa of top.keys())
-            oa.classList.remove('active');
-          for (const oa of bottom.keys())
-            oa.classList.remove('active');
-          a.classList.add('active');
-          App.get_instance().selected_component(comp);
-        };
+        group.add_selector(sel);
 
         li.appendChild(a);
         footer_ul.appendChild(li);
