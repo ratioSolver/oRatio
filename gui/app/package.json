@@ -14,6 +14,6 @@
   },
   "dependencies": {
     "ratio-core": "^0.0.12",
-    "ratio-lib": "^0.0.25"
+    "ratio-lib": "^0.0.26"
   }
 }
