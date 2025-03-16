@@ -210,7 +210,7 @@ export class AppComponent extends Component<App, HTMLDivElement> implements AppL
 
     // Add the Navbar..
     const navbar = document.createElement('nav');
-    navbar.classList.add('navbar', 'navbar-expand-lg', 'bg-body-tertiary');
+    navbar.classList.add('navbar', 'navbar-expand-lg');
     const nav_container = document.createElement('div');
     nav_container.classList.add('container-fluid');
 
