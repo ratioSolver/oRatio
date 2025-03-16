@@ -51,7 +51,7 @@ namespace ratio::server
     void server::state_changed()
     {
         auto j_msg = riddle::core::to_json();
-        j_msg["type"] = "state_changed";
+        j_msg["msg_type"] = "state_changed";
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
@@ -60,14 +60,14 @@ namespace ratio::server
     {
         auto j_msg = f.to_json();
         j_msg["id"] = static_cast<uint64_t>(f.get_id());
-        j_msg["type"] = "flaw_created";
+        j_msg["msg_type"] = "flaw_created";
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
     void server::flaw_state_changed(const ratio::flaw &f)
     {
-        auto j_msg = json::json{{"type", "flaw_state_changed"}, {"id", f.get_id()}, {"state", to_string(f.get_state())}};
+        auto j_msg = json::json{{"msg_type", "flaw_state_changed"}, {"id", f.get_id()}, {"state", to_string(f.get_state())}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
@@ -75,21 +75,21 @@ namespace ratio::server
     void server::flaw_cost_changed(const ratio::flaw &f)
     {
         auto cost = f.get_estimated_cost();
-        auto j_msg = json::json{{"type", "flaw_cost_changed"}, {"id", f.get_id()}, {"cost", {{"num", cost.numerator()}, {"den", cost.denominator()}}}};
+        auto j_msg = json::json{{"msg_type", "flaw_cost_changed"}, {"id", f.get_id()}, {"cost", {{"num", cost.numerator()}, {"den", cost.denominator()}}}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
     void server::flaw_position_changed(const ratio::flaw &f)
     {
-        auto j_msg = json::json{{"type", "flaw_position_changed"}, {"id", f.get_id()}, {"position", f.get_position()}};
+        auto j_msg = json::json{{"msg_type", "flaw_position_changed"}, {"id", f.get_id()}, {"position", f.get_position()}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
     void server::current_flaw(std::optional<utils::ref_wrapper<ratio::flaw>> f)
     {
-        auto j_msg = json::json{{"type", "current_flaw"}};
+        auto j_msg = json::json{{"msg_type", "current_flaw"}};
         if (f)
             j_msg["id"] = static_cast<uint64_t>(f.value()->get_id());
         auto msg = j_msg.dump();
@@ -100,21 +100,21 @@ namespace ratio::server
     {
         auto j_msg = r.to_json();
         j_msg["id"] = static_cast<uint64_t>(r.get_id());
-        j_msg["type"] = "resolver_created";
+        j_msg["msg_type"] = "resolver_created";
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
     void server::resolver_state_changed(const ratio::resolver &r)
     {
-        auto j_msg = json::json{{"type", "resolver_state_changed"}, {"id", r.get_id()}, {"state", to_string(r.get_state())}};
+        auto j_msg = json::json{{"msg_type", "resolver_state_changed"}, {"id", r.get_id()}, {"state", to_string(r.get_state())}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
     void server::current_resolver(std::optional<utils::ref_wrapper<ratio::resolver>> r)
     {
-        auto j_msg = json::json{{"type", "current_resolver"}};
+        auto j_msg = json::json{{"msg_type", "current_resolver"}};
         if (r)
             j_msg["id"] = static_cast<uint64_t>(r.value()->get_id());
         auto msg = j_msg.dump();
@@ -123,7 +123,7 @@ namespace ratio::server
     }
     void server::causal_link_added(const ratio::flaw &f, const ratio::resolver &r)
     {
-        auto j_msg = json::json{{"type", "causal_link_added"}, {"flaw", f.get_id()}, {"resolver", r.get_id()}};
+        auto j_msg = json::json{{"msg_type", "causal_link_added"}, {"flaw", f.get_id()}, {"resolver", r.get_id()}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

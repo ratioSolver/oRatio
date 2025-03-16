@@ -33,7 +33,7 @@ export class Connection {
     this.socket.onopen = () => {
       console.debug('Connected to server');
       if (token)
-        this.socket!.send(JSON.stringify({ type: 'login', token: token }));
+        this.socket!.send(JSON.stringify({ msg_type: 'login', token: token }));
       else
         for (const listener of this.connection_listeners) { listener.connected({}); }
     };
@@ -41,7 +41,7 @@ export class Connection {
     this.socket.onmessage = (event) => {
       console.debug('Received message from server: ', event.data);
       const message = JSON.parse(event.data);
-      if (message.type === 'login')
+      if (message.msg_type === 'login')
         for (const listener of this.connection_listeners) { listener.connected(message.info); }
       else
         for (const listener of this.connection_listeners) { listener.received_message(message); }

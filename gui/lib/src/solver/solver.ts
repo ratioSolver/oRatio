@@ -230,102 +230,103 @@ export namespace solver {
     }
 
     update_solvers(message: SolversUpdateMessage | any): void {
-      switch (message.type) {
-        case 'solver':
-          const csm = message as CurrentSolverMessage;
-          this.init(new Map<number, Solver>([[0, Solver.make_solver(csm)]]));
-          break;
-        case 'solvers':
-          const ssm = message as SolversMessage;
-          this.init(new Map(ssm.solvers.map((solver_message: SolverMessage) => [solver_message.solver_id!, Solver.make_solver(solver_message)])));
-          break;
-        case 'new_solver':
-          const nsm = message as NewSolverMessage;
-          this.solver_created(Solver.make_solver(nsm.solver));
-          break;
-        case 'deleted_solver':
-          const dsm = message as DeletedSolverMessage;
-          this.solver_deleted(get_id(dsm.solver_id));
-          break;
-        case 'state_changed':
-          const scm = message as StateChangedMessage;
-          this.solvers.get(get_id(scm.solver_id))!._set_state(scm);
-          break;
-        case 'flaw_created':
-          const fcm = message as FlawCreatedMessage;
-          const causes: graph.Resolver[] = fcm.causes ? fcm.causes.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
-          const supports: graph.Resolver[] = fcm.supports ? fcm.supports.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
-          this.solvers.get(get_id(fcm.solver_id))!.flaw_created(new graph.Flaw(fcm.id, fcm.phi, causes, supports, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
-          break;
-        case 'flaw_state_changed':
-          const fscm = message as FlawStateChangedMessage;
-          const fsc = this.solvers.get(get_id(fscm.solver_id))!.get_flaw(fscm.id);
-          fsc._state = graph.State[fscm.state as keyof typeof graph.State];
-          this.solvers.get(get_id(fscm.solver_id))!.flaw_state_changed(fsc);
-          break;
-        case 'flaw_cost_changed':
-          const fccm = message as FlawCostChangedMessage;
-          const fcc = this.solvers.get(get_id(fccm.solver_id))!.get_flaw(fccm.id);
-          fcc._cost = fccm.cost;
-          this.solvers.get(get_id(fccm.solver_id))!.flaw_cost_changed(fcc);
-          break;
-        case 'flaw_position_changed':
-          const fpcm = message as FlawPositionChangedMessage;
-          const fpc = this.solvers.get(get_id(fpcm.solver_id))!.get_flaw(fpcm.id);
-          fpc._position = fpcm.position;
-          this.solvers.get(get_id(fpcm.solver_id))!.flaw_position_changed(fpc);
-          break;
-        case 'current_flaw':
-          const cfm = message as CurrentFlawMessage;
-          this.solvers.get(get_id(cfm.solver_id))!.current_flaw(cfm.id ? this.solvers.get(get_id(cfm.solver_id))!.get_flaw(cfm.id) : null);
-          break;
-        case 'resolver_created':
-          const rcm = message as ResolverCreatedMessage;
-          const preconditions: graph.Flaw[] = rcm.preconditions ? rcm.preconditions.map((id: number) => this.solvers.get(get_id(rcm.solver_id))!.get_flaw(id)) : [];
-          const flaw = this.solvers.get(get_id(rcm.solver_id))!.get_flaw(rcm.flaw);
-          this.solvers.get(get_id(rcm.solver_id))!.resolver_created(new graph.Resolver(rcm.id, rcm.rho, preconditions, flaw, graph.State[rcm.state as keyof typeof graph.State], rcm.intrinsic_cost, rcm.data));
-          break;
-        case 'resolver_state_changed':
-          const rscm = message as ResolverStateChangedMessage;
-          const rsc = this.solvers.get(get_id(rscm.solver_id))!.get_resolver(rscm.id);
-          rsc._state = graph.State[rscm.state as keyof typeof graph.State];
-          this.solvers.get(get_id(rscm.solver_id))!.resolver_state_changed(rsc);
-          break;
-        case 'current_resolver':
-          const crm = message as CurrentResolverMessage;
-          this.solvers.get(get_id(crm.solver_id))!.current_resolver(crm.id ? this.solvers.get(get_id(crm.solver_id))!.get_resolver(crm.id) : null);
-          break;
-        case 'causal_link_added':
-          const clam = message as CausalLinkAddedMessage;
-          const from = this.solvers.get(get_id(clam.solver_id))!.get_flaw(clam.flaw);
-          const to = this.solvers.get(get_id(clam.solver_id))!.get_resolver(clam.resolver);
-          this.solvers.get(get_id(clam.solver_id))!.causal_link_added(from, to);
-          break;
-        case 'execution_state_changed':
-          const sescm = message as ExecutionStateChangedMessage;
-          this.solvers.get(get_id(sescm.solver_id))!.execution_state_changed(ExecutionState[sescm.state as keyof typeof ExecutionState]);
-          break;
-        case 'tick':
-          const tm = message as TickMessage;
-          this.solvers.get(get_id(tm.solver_id))!.tick(values.Rational.make_rational(tm.time));
-          break;
-        case 'starting':
-          const stm = message as StartingMessage;
-          this.solvers.get(get_id(stm.solver_id))!.starting(stm.atoms.map((id: number) => this.solvers.get(get_id(stm.solver_id))!._atoms.get(id)!));
-          break;
-        case 'ending':
-          const etm = message as EndingMessage;
-          this.solvers.get(get_id(etm.solver_id))!.ending(etm.atoms.map((id: number) => this.solvers.get(get_id(etm.solver_id))!._atoms.get(id)!));
-          break;
-        case 'start':
-          const sm = message as StartMessage;
-          this.solvers.get(get_id(sm.solver_id))!.start(sm.atoms.map((id: number) => this.solvers.get(get_id(sm.solver_id))!._atoms.get(id)!));
-          break;
-        case 'end':
-          const em = message as EndMessage;
-          this.solvers.get(get_id(em.solver_id))!.end(em.atoms.map((id: number) => this.solvers.get(get_id(em.solver_id))!._atoms.get(id)!));
-          break;
-      }
+      if ('msg_type' in message)
+        switch (message.msg_type) {
+          case 'solver':
+            const csm = message as CurrentSolverMessage;
+            this.init(new Map<number, Solver>([[0, Solver.make_solver(csm)]]));
+            break;
+          case 'solvers':
+            const ssm = message as SolversMessage;
+            this.init(new Map(ssm.solvers.map((solver_message: SolverMessage) => [solver_message.solver_id!, Solver.make_solver(solver_message)])));
+            break;
+          case 'new_solver':
+            const nsm = message as NewSolverMessage;
+            this.solver_created(Solver.make_solver(nsm.solver));
+            break;
+          case 'deleted_solver':
+            const dsm = message as DeletedSolverMessage;
+            this.solver_deleted(get_id(dsm.solver_id));
+            break;
+          case 'state_changed':
+            const scm = message as StateChangedMessage;
+            this.solvers.get(get_id(scm.solver_id))!._set_state(scm);
+            break;
+          case 'flaw_created':
+            const fcm = message as FlawCreatedMessage;
+            const causes: graph.Resolver[] = fcm.causes ? fcm.causes.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
+            const supports: graph.Resolver[] = fcm.supports ? fcm.supports.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
+            this.solvers.get(get_id(fcm.solver_id))!.flaw_created(new graph.Flaw(fcm.id, fcm.phi, causes, supports, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
+            break;
+          case 'flaw_state_changed':
+            const fscm = message as FlawStateChangedMessage;
+            const fsc = this.solvers.get(get_id(fscm.solver_id))!.get_flaw(fscm.id);
+            fsc._state = graph.State[fscm.state as keyof typeof graph.State];
+            this.solvers.get(get_id(fscm.solver_id))!.flaw_state_changed(fsc);
+            break;
+          case 'flaw_cost_changed':
+            const fccm = message as FlawCostChangedMessage;
+            const fcc = this.solvers.get(get_id(fccm.solver_id))!.get_flaw(fccm.id);
+            fcc._cost = fccm.cost;
+            this.solvers.get(get_id(fccm.solver_id))!.flaw_cost_changed(fcc);
+            break;
+          case 'flaw_position_changed':
+            const fpcm = message as FlawPositionChangedMessage;
+            const fpc = this.solvers.get(get_id(fpcm.solver_id))!.get_flaw(fpcm.id);
+            fpc._position = fpcm.position;
+            this.solvers.get(get_id(fpcm.solver_id))!.flaw_position_changed(fpc);
+            break;
+          case 'current_flaw':
+            const cfm = message as CurrentFlawMessage;
+            this.solvers.get(get_id(cfm.solver_id))!.current_flaw(cfm.id ? this.solvers.get(get_id(cfm.solver_id))!.get_flaw(cfm.id) : null);
+            break;
+          case 'resolver_created':
+            const rcm = message as ResolverCreatedMessage;
+            const preconditions: graph.Flaw[] = rcm.preconditions ? rcm.preconditions.map((id: number) => this.solvers.get(get_id(rcm.solver_id))!.get_flaw(id)) : [];
+            const flaw = this.solvers.get(get_id(rcm.solver_id))!.get_flaw(rcm.flaw);
+            this.solvers.get(get_id(rcm.solver_id))!.resolver_created(new graph.Resolver(rcm.id, rcm.rho, preconditions, flaw, graph.State[rcm.state as keyof typeof graph.State], rcm.intrinsic_cost, rcm.data));
+            break;
+          case 'resolver_state_changed':
+            const rscm = message as ResolverStateChangedMessage;
+            const rsc = this.solvers.get(get_id(rscm.solver_id))!.get_resolver(rscm.id);
+            rsc._state = graph.State[rscm.state as keyof typeof graph.State];
+            this.solvers.get(get_id(rscm.solver_id))!.resolver_state_changed(rsc);
+            break;
+          case 'current_resolver':
+            const crm = message as CurrentResolverMessage;
+            this.solvers.get(get_id(crm.solver_id))!.current_resolver(crm.id ? this.solvers.get(get_id(crm.solver_id))!.get_resolver(crm.id) : null);
+            break;
+          case 'causal_link_added':
+            const clam = message as CausalLinkAddedMessage;
+            const from = this.solvers.get(get_id(clam.solver_id))!.get_flaw(clam.flaw);
+            const to = this.solvers.get(get_id(clam.solver_id))!.get_resolver(clam.resolver);
+            this.solvers.get(get_id(clam.solver_id))!.causal_link_added(from, to);
+            break;
+          case 'execution_state_changed':
+            const sescm = message as ExecutionStateChangedMessage;
+            this.solvers.get(get_id(sescm.solver_id))!.execution_state_changed(ExecutionState[sescm.state as keyof typeof ExecutionState]);
+            break;
+          case 'tick':
+            const tm = message as TickMessage;
+            this.solvers.get(get_id(tm.solver_id))!.tick(values.Rational.make_rational(tm.time));
+            break;
+          case 'starting':
+            const stm = message as StartingMessage;
+            this.solvers.get(get_id(stm.solver_id))!.starting(stm.atoms.map((id: number) => this.solvers.get(get_id(stm.solver_id))!._atoms.get(id)!));
+            break;
+          case 'ending':
+            const etm = message as EndingMessage;
+            this.solvers.get(get_id(etm.solver_id))!.ending(etm.atoms.map((id: number) => this.solvers.get(get_id(etm.solver_id))!._atoms.get(id)!));
+            break;
+          case 'start':
+            const sm = message as StartMessage;
+            this.solvers.get(get_id(sm.solver_id))!.start(sm.atoms.map((id: number) => this.solvers.get(get_id(sm.solver_id))!._atoms.get(id)!));
+            break;
+          case 'end':
+            const em = message as EndMessage;
+            this.solvers.get(get_id(em.solver_id))!.end(em.atoms.map((id: number) => this.solvers.get(get_id(em.solver_id))!._atoms.get(id)!));
+            break;
+        }
     }
 
     add_solver_set_listener(listener: SolverSetListener) { this.solver_set_listeners.add(listener); }
@@ -1119,7 +1120,7 @@ interface ConsumableResourceTimelineMessage extends TimelineMsg<{ atoms: number[
 
 type TimelineMessage = SolverTimelineMessage | StateVariableTimelineMessage | ReusableResourceTimelineMessage | ConsumableResourceTimelineMessage;
 
-type SolversUpdateMessage = CurrentSolverMessage | SolversMessage | NewSolverMessage | DeletedSolverMessage | StateChangedMessage | FlawCreatedMessage | FlawStateChangedMessage | FlawCostChangedMessage | FlawPositionChangedMessage | CurrentFlawMessage | ResolverCreatedMessage | ResolverStateChangedMessage | CurrentResolverMessage | CausalLinkAddedMessage | ExecutionStateChangedMessage | TickMessage | StartingMessage | StartMessage | EndingMessage | EndMessage;
+type SolversUpdateMessage = { msg_type: string } & (CurrentSolverMessage | SolversMessage | NewSolverMessage | DeletedSolverMessage | StateChangedMessage | FlawCreatedMessage | FlawStateChangedMessage | FlawCostChangedMessage | FlawPositionChangedMessage | CurrentFlawMessage | ResolverCreatedMessage | ResolverStateChangedMessage | CurrentResolverMessage | CausalLinkAddedMessage | ExecutionStateChangedMessage | TickMessage | StartingMessage | StartMessage | EndingMessage | EndMessage);
 
 interface RationalMessage {
 
