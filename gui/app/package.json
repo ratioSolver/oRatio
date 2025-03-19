@@ -13,7 +13,7 @@
     "vite": "^6.0.5"
   },
   "dependencies": {
-    "ratio-core": "^0.0.14",
-    "ratio-lib": "^0.0.28"
+    "ratio-core": "file:../core",
+    "ratio-lib": "file:../lib"
   }
 }
