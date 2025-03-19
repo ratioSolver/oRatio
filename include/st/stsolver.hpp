@@ -42,7 +42,6 @@ namespace ratio
 
   public:
     solver(std::string_view name = "oRatio") noexcept;
-    virtual ~solver() = default;
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
