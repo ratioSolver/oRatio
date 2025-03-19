@@ -9,6 +9,8 @@ on:
 
 jobs:
   ratio-core-lib:
+    name: Publish Core Library
+    if: false # Disable this job
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,6 +36,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   ratio-gui-lib:
+    name: Publish GUI Library
+    if: false # Disable this job
     runs-on: ubuntu-latest
     defaults:
       run:
