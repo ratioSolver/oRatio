@@ -33,7 +33,7 @@ namespace ratio
     stcomponent_type(solver &slv) noexcept;
     virtual ~stcomponent_type() = default;
 
-    virtual bool solve_inconsistencies() = 0;
+    virtual std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() const noexcept = 0;
 
     solver &get_solver() const { return slv; }
 
@@ -50,7 +50,7 @@ namespace ratio
   public:
     ststate_variable(solver &slv) noexcept;
 
-    bool solve_inconsistencies() override;
+    std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() const noexcept override;
 
     void created_atom(riddle::atom_expr atm) noexcept override;
 
@@ -64,7 +64,7 @@ namespace ratio
   public:
     streusable_resource(solver &slv) noexcept;
 
-    bool solve_inconsistencies() override;
+    std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() const noexcept override;
 
     void created_atom(riddle::atom_expr atm) noexcept override;
 
@@ -78,7 +78,7 @@ namespace ratio
   public:
     stconsumable_resource(solver &slv) noexcept;
 
-    bool solve_inconsistencies() override;
+    std::vector<std::vector<std::pair<utils::lit, double>>> get_current_incs() const noexcept override;
 
     void created_atom(riddle::atom_expr atm) noexcept override;
 

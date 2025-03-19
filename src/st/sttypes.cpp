@@ -93,7 +93,11 @@ namespace ratio
 
     ststate_variable::ststate_variable(solver &slv) noexcept : state_variable(slv), stcomponent_type(slv) {}
 
-    bool ststate_variable::solve_inconsistencies() { return false; }
+    std::vector<std::vector<std::pair<utils::lit, double>>> ststate_variable::get_current_incs() const noexcept
+    {
+        std::vector<std::vector<std::pair<utils::lit, double>>> incs; // the inconsistencies..
+        return incs;
+    }
 
     void ststate_variable::created_atom(riddle::atom_expr atm) noexcept
     {
@@ -177,7 +181,11 @@ namespace ratio
 
     streusable_resource::streusable_resource(solver &slv) noexcept : reusable_resource(slv), stcomponent_type(slv) {}
 
-    bool streusable_resource::solve_inconsistencies() { return false; }
+    std::vector<std::vector<std::pair<utils::lit, double>>> streusable_resource::get_current_incs() const noexcept
+    {
+        std::vector<std::vector<std::pair<utils::lit, double>>> incs; // the inconsistencies..
+        return incs;
+    }
 
     void streusable_resource::created_atom(riddle::atom_expr atm) noexcept
     {
@@ -230,7 +238,11 @@ namespace ratio
 
     stconsumable_resource::stconsumable_resource(solver &slv) noexcept : consumable_resource(slv), stcomponent_type(slv) {}
 
-    bool stconsumable_resource::solve_inconsistencies() { return false; }
+    std::vector<std::vector<std::pair<utils::lit, double>>> stconsumable_resource::get_current_incs() const noexcept
+    {
+        std::vector<std::vector<std::pair<utils::lit, double>>> incs; // the inconsistencies..
+        return incs;
+    }
 
     void stconsumable_resource::created_atom(riddle::atom_expr atm) noexcept
     {
