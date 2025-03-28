@@ -39,6 +39,7 @@ namespace ratio
     friend class stflaw;
     friend class stresolver;
     friend class unify_atom;
+    friend class stcomponent_type;
 
   public:
     solver(std::string_view name = "oRatio") noexcept;
@@ -95,6 +96,8 @@ namespace ratio
     void popped() noexcept override { graph::pop(); }  // we pop the solver..
 
     void check_graph();
+
+    void solve_inconsistencies();
 
   private:
     utils::var gamma{0};                       // The variable representing the validity of this graph..

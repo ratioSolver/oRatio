@@ -493,6 +493,10 @@ namespace ratio
 
         check_graph();
 
+#ifdef CHECK_INCONSISTENCIES
+        // we solve all the current inconsistencies..
+        solve_inconsistencies();
+
         while (!get_active_flaws().empty())
         { // we try to solve the problem with the current causal graph..
             // we get the most expensive flaw..
@@ -524,7 +528,49 @@ namespace ratio
             set_current_flaw(std::nullopt);
 
             check_graph();
+
+            // we solve all the current inconsistencies..
+            solve_inconsistencies();
         }
+#else
+        do
+        {
+            while (!get_active_flaws().empty())
+            { // we try to solve the problem with the current causal graph..
+                // we get the most expensive flaw..
+                auto f = *std::max_element(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &a, const auto &b)
+                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
+                set_current_flaw(*f);
+
+                if (is_infinite(f->get_estimated_cost()))
+                { // we don't know how to solve this flaw :(
+                    do
+                    { // we have to search..
+                        next();
+                        check_graph();
+                    } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
+                                         { return is_infinite(f->get_estimated_cost()); }));
+                    continue;
+                }
+
+                // we get the least expensive resolver..
+                auto r = *std::min_element(f->get_resolvers().begin(), f->get_resolvers().end(), [](const auto &a, const auto &b)
+                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
+                set_current_resolver(*r);
+
+                // we apply the resolver..
+                assume(static_cast<stresolver &>(*r).get_rho());
+                STATE_CHANGED();
+
+                set_current_resolver(std::nullopt);
+                set_current_flaw(std::nullopt);
+
+                check_graph();
+            }
+            // we solve all the current inconsistencies..
+            solve_inconsistencies();
+        } while (!get_active_flaws().empty());
+#endif
     }
 
     void solver::check_graph()
@@ -554,6 +600,102 @@ namespace ratio
 
             assume(utils::lit(gamma)); // we enforce the pruning constraints..
             STATE_CHANGED();
+        }
+    }
+
+    void solver::solve_inconsistencies()
+    {
+        LOG_DEBUG("[" << get_name() << "] Solving inconsistencies");
+
+        std::vector<std::vector<std::pair<utils::lit, double>>> incs;
+        std::queue<riddle::component_type *> q;
+        for (const auto &tp : get_types())
+            if (auto ct = dynamic_cast<riddle::component_type *>(tp.second.get()))
+                q.push(ct);
+        while (!q.empty())
+        {
+            auto tp = q.front();
+            q.pop();
+            for (const auto &etp : tp->get_types())
+                if (auto ct = dynamic_cast<riddle::component_type *>(etp.second.get()))
+                    q.push(ct);
+
+            if (auto st_ct = dynamic_cast<stcomponent_type *>(tp)) // we have a timeline type..
+            {                                                      // we extract the timeline..
+                auto st_incs = st_ct->get_current_incs();
+                incs.insert(incs.end(), st_incs.begin(), st_incs.end());
+            }
+        };
+        while (!incs.empty())
+        {
+            if (const auto &uns_inc = std::find_if(incs.cbegin(), incs.cend(), [](const auto &v)
+                                                   { return v.empty(); });
+                uns_inc != incs.cend())
+            { // we have an unsolvable inconsistency..
+                LOG_DEBUG("[" << get_name() << "] Unsatisfiable inconsistency");
+                next(); // we move to the next state..
+            }
+            else
+            { // we check if we have a trivial inconsistencies..
+                std::vector<utils::lit> trivial;
+                for (const auto &inc : incs)
+                    if (inc.size() == 1)
+                        trivial.push_back(inc.front().first);
+                if (!trivial.empty()) // we have trivial inconsistencies..
+                    for (const auto &l : trivial)
+                    {
+                        LOG_DEBUG("[" << get_name() << "] Trivial inconsistency: " << to_string(l));
+                        assume(l);
+                        STATE_CHANGED();
+                    }
+                else
+                { // we have a non-trivial inconsistencies, so we have to take a decision..
+                    std::vector<std::pair<utils::lit, double>> bst_inc;
+                    double k_inv = std::numeric_limits<double>::infinity();
+                    for (const auto &inc : incs)
+                    {
+                        double bst_commit = std::numeric_limits<double>::infinity();
+                        for ([[maybe_unused]] const auto &[choice, commit] : inc)
+                            if (commit < bst_commit)
+                                bst_commit = commit;
+                        double c_k_inv = 0;
+                        for ([[maybe_unused]] const auto &[choice, commit] : inc)
+                            c_k_inv += 1l / (1l + (commit - bst_commit));
+                        if (c_k_inv < k_inv)
+                        {
+                            k_inv = c_k_inv;
+                            bst_inc = inc;
+                        }
+                    }
+
+                    // we select the best choice (i.e. the least committing one) from those available for the best flaw..
+                    auto l = std::min_element(bst_inc.cbegin(), bst_inc.cend(), [](const auto &ch0, const auto &ch1)
+                                              { return ch0.second < ch1.second; })
+                                 ->first;
+                    LOG_DEBUG("[" << get_name() << "] Non-trivial inconsistency: " << to_string(l));
+                    assume(l);
+                    STATE_CHANGED();
+                }
+            }
+
+            incs.clear();
+            for (const auto &tp : get_types())
+                if (auto ct = dynamic_cast<riddle::component_type *>(tp.second.get()))
+                    q.push(ct);
+            while (!q.empty())
+            {
+                auto tp = q.front();
+                q.pop();
+                for (const auto &etp : tp->get_types())
+                    if (auto ct = dynamic_cast<riddle::component_type *>(etp.second.get()))
+                        q.push(ct);
+
+                if (auto st_ct = dynamic_cast<stcomponent_type *>(tp)) // we have a timeline type..
+                {                                                      // we extract the timeline..
+                    auto st_incs = st_ct->get_current_incs();
+                    incs.insert(incs.end(), st_incs.begin(), st_incs.end());
+                }
+            };
         }
     }
 } // namespace ratio

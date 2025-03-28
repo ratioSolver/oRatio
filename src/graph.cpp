@@ -104,7 +104,7 @@ namespace ratio
 
     void graph::build()
     {
-        LOG_DEBUG("Building the causal graph..");
+        LOG_DEBUG("[" << get_name() << "] Building the causal graph..");
         while (std::any_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
                            { return is_infinite(f->est_cost); }))
         { // while there are infinite cost flaws..
@@ -125,7 +125,7 @@ namespace ratio
 
     void graph::add_layer()
     {
-        LOG_DEBUG("Expanding the causal graph..");
+        LOG_DEBUG("[" << get_name() << "] Expanding the causal graph..");
         assert(std::none_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
                             { return is_infinite(f->est_cost); })); // none of the active flaw should cost infinite (otherwise the build procedure should have been called)..
         assert(std::all_of(flaw_q.cbegin(), flaw_q.cend(), [this](auto f)
