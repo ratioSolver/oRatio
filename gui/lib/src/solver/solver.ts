@@ -1,7 +1,4 @@
 import { PlotData } from "plotly.js-dist-min";
-import { consumable_resource } from "./consumable_resource";
-import { reusable_resource } from "./reusable_resource";
-import { state_variable } from "./state_variable";
 
 export namespace solver {
 
@@ -775,9 +772,6 @@ export namespace solver {
 
       private constructor() {
         this.add_timeline_generator(new SolverTimelineGenerator());
-        this.add_timeline_generator(new state_variable.StateVariableTimelineGenerator());
-        this.add_timeline_generator(new reusable_resource.ReusableResourceTimelineGenerator());
-        this.add_timeline_generator(new consumable_resource.ConsumableResourceTimelineGenerator());
       }
 
       public static get_instance(): TimelineManager {
@@ -875,9 +869,6 @@ export namespace solver {
 
       private constructor() {
         this.add_chart_generator(new SolverChartGenerator());
-        this.add_chart_generator(new state_variable.StateVariableChartGenerator());
-        this.add_chart_generator(new reusable_resource.ReusableResourceChartGenerator());
-        this.add_chart_generator(new consumable_resource.ConsumableResourceChartGenerator());
       }
 
       public static get_instance(): ChartManager {

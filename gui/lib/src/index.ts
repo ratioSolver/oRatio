@@ -48,3 +48,16 @@ function popperFactory(ref: RefElement, content: HTMLElement, options?: PopperOp
 
 cytoscape.use(dagre);
 cytoscape.use(cytoscapePopper(popperFactory));
+
+import { state_variable } from "./solver/state_variable";
+import { reusable_resource } from "./solver/reusable_resource";
+import { consumable_resource } from "./solver/consumable_resource";
+import { solver } from './solver/solver';
+
+solver.timeline.TimelineManager.get_instance().add_timeline_generator(new state_variable.StateVariableTimelineGenerator());
+solver.timeline.TimelineManager.get_instance().add_timeline_generator(new reusable_resource.ReusableResourceTimelineGenerator());
+solver.timeline.TimelineManager.get_instance().add_timeline_generator(new consumable_resource.ConsumableResourceTimelineGenerator());
+
+solver.chart.ChartManager.get_instance().add_chart_generator(new state_variable.StateVariableChartGenerator());
+solver.chart.ChartManager.get_instance().add_chart_generator(new reusable_resource.ReusableResourceChartGenerator());
+solver.chart.ChartManager.get_instance().add_chart_generator(new consumable_resource.ConsumableResourceChartGenerator());
