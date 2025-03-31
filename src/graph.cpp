@@ -193,7 +193,7 @@ namespace ratio
     void graph::compute_flaw_cost(flaw &f)
     {
         utils::rational c_cost = utils::rational::positive_infinite;
-        if (f.state != utils::False)
+        if (visited.find(&f) == visited.end() && f.state != utils::False)
             for (const auto &res : f.resolvers)
                 if (res->state != utils::False)
                     c_cost = std::min(c_cost, res->get_estimated_cost());
