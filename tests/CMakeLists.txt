@@ -5,7 +5,7 @@ setup_sanitizers(core_tests)
 
 add_executable(solver_tests test_solver.cpp)
 add_dependencies(solver_tests oRatioLib)
-target_compile_definitions(solver_tests PRIVATE NUM_TESTS=1)
+target_compile_definitions(solver_tests PRIVATE NUM_TESTS=5)
 target_link_libraries(solver_tests PRIVATE oRatioLib)
 setup_sanitizers(solver_tests)
 

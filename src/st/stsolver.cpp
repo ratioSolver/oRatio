@@ -509,6 +509,7 @@ namespace ratio
 #ifdef CHECK_INCONSISTENCIES
         // we solve all the current inconsistencies..
         solve_inconsistencies();
+        check_graph();
 
         while (!get_active_flaws().empty())
         { // we try to solve the problem with the current causal graph..
@@ -545,6 +546,7 @@ namespace ratio
 
             // we solve all the current inconsistencies..
             solve_inconsistencies();
+            check_graph();
         }
 #else
         do
@@ -584,6 +586,7 @@ namespace ratio
             }
             // we solve all the current inconsistencies..
             solve_inconsistencies();
+            check_graph();
         } while (!get_active_flaws().empty());
 #endif
     }
@@ -591,30 +594,40 @@ namespace ratio
     void solver::check_graph()
     {
         if (get_active_flaws().empty())
-            return; // the causal graph is empty..
+            return; // there are no more flaws to be solved..
 
-        while (value(gamma) == utils::False) // we are building the initial causal graph (or we have explored the entire causal graph)..
+        while (value(gamma) != utils::True) // we are building the initial causal graph (or we have explored the entire causal graph)..
         {
-            assert(decision_level() == 0); // we must be at the root level..
-            gamma = mk_var();              // we create a new gamma variable for pruning the causal graph..
-            already_closed.clear();
+            switch (value(gamma))
+            {
+            case utils::Undefined:
+                assume(utils::lit(gamma)); // (re)we enforce the pruning constraints..
+                STATE_CHANGED();
+                break;
+            default:
+                assert(decision_level() == 0); // we must be at the root level..
+                gamma = mk_var();              // we create a new gamma variable for pruning the causal graph..
+                LOG_DEBUG("γ: " + std::to_string(gamma));
+                already_closed.clear();
 
-            if (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
-                            { return is_infinite(f->get_estimated_cost()); }))
-                build(); // we build the causal graph..
-            else
-                add_layer(); // we add a layer to the graph..
+                if (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
+                                { return is_infinite(f->get_estimated_cost()); }))
+                    build(); // we build the causal graph..
+                else
+                    add_layer(); // we add a layer to the graph..
 
-            propagate(); // we propagate the constraints..
+                propagate(); // we propagate the constraints..
 
-            // we prune the causal graph..
-            for (const auto &f : get_queued_flaws())
-                if (already_closed.insert(&*f).second) // we prune the flaw..
-                    add_clause({utils::lit(gamma, false), !static_cast<stflaw &>(*f).get_phi()});
-            propagate(); // we propagate the pruning constraints..
+                // we prune the causal graph..
+                for (const auto &f : get_queued_flaws())
+                    if (already_closed.insert(&*f).second) // we prune the flaw..
+                        add_clause({utils::lit(gamma, false), !static_cast<stflaw &>(*f).get_phi()});
+                propagate(); // we propagate the pruning constraints..
 
-            assume(utils::lit(gamma)); // we enforce the pruning constraints..
-            STATE_CHANGED();
+                assume(utils::lit(gamma)); // we enforce the pruning constraints..
+                STATE_CHANGED();
+                break;
+            }
         }
     }
 
@@ -650,6 +663,8 @@ namespace ratio
                 LOG_DEBUG("[" << get_name() << "] Dead end..");
                 next(); // we move to the next state..
                 STATE_CHANGED();
+                if (value(gamma) != utils::True)
+                    return; // we have to re-check the graph..
             }
             else
             { // we check if we have a trivial inconsistencies..
@@ -663,6 +678,8 @@ namespace ratio
                         LOG_DEBUG("[" << get_name() << "] Trivial inconsistency: " << to_string(l));
                         assume(l);
                         STATE_CHANGED();
+                        if (value(gamma) != utils::True)
+                            return; // we have to re-check the graph..
                     }
                 else
                 { // we have a non-trivial inconsistencies, so we have to take a decision..
@@ -691,6 +708,8 @@ namespace ratio
                     LOG_DEBUG("[" << get_name() << "] Non-trivial inconsistency: " << to_string(l));
                     assume(l);
                     STATE_CHANGED();
+                    if (value(gamma) != utils::True)
+                        return; // we have to re-check the graph..
                 }
             }
 
