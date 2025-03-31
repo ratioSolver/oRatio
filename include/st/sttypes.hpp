@@ -77,6 +77,7 @@ namespace ratio
     void created_atom(riddle::atom_expr atm) noexcept override;
 
   private:
+    std::set<std::set<riddle::atom_term *>> rr_flaws;                              // the reusable-resource flaws found so far..
     std::map<riddle::atom_term *, std::map<riddle::atom_term *, utils::lit>> leqs; // all the possible ordering constraints..
     std::map<riddle::atom_term *, std::map<utils::enum_val *, utils::lit>> frbs;   // all the possible forbidding constraints..
   };

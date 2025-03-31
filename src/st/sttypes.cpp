@@ -30,7 +30,7 @@ namespace ratio
                         listen_arith(l.first);
             }
 
-        if (static_cast<solver &>(atm.get_core()).value(atm.get_sigma()) == utils::True)
+        if (atm.get_state() == riddle::active)
         {
             auto tau = atm.get(riddle::tau_kw);
             if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
@@ -42,7 +42,7 @@ namespace ratio
     }
     void atom_listener::on_change(const utils::var &) noexcept
     {
-        if (static_cast<solver &>(atm.get_core()).value(atm.get_sigma()) == utils::True)
+        if (atm.get_state() == riddle::active)
         {
             auto tau = atm.get(riddle::tau_kw);
             if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
@@ -54,7 +54,7 @@ namespace ratio
     }
     void atom_listener::on_arith_change(const utils::var &) noexcept
     {
-        if (static_cast<solver &>(atm.get_core()).value(atm.get_sigma()) == utils::True)
+        if (atm.get_state() == riddle::active)
         {
             auto tau = atm.get(riddle::tau_kw);
             if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
@@ -322,6 +322,135 @@ namespace ratio
     std::vector<std::vector<std::pair<utils::lit, double>>> streusable_resource::get_current_incs() noexcept
     {
         std::vector<std::vector<std::pair<utils::lit, double>>> incs; // the inconsistencies..
+        // we assign the atoms to the state-variables that need to be checked..
+        std::unordered_map<riddle::component *, std::vector<riddle::atom_term *>> rr_instances;
+        for (const auto &atm : get_atoms())
+            if (get_solver().value(utils::s_ptr_cast<atom>(atm)->get_sigma()) == utils::True)
+            { // the atom is active..
+                const auto tau = atm->get(riddle::tau_kw);
+                if (auto c_svs = dynamic_cast<riddle::enum_item *>(&*tau)) // the `tau` parameter is a variable..
+                    for (const auto &c_sv : get_core().enum_value(*c_svs))
+                        rr_instances[static_cast<riddle::component *>(&*c_sv)].push_back(&*atm);
+                else // the `tau` parameter is a constant..
+                    rr_instances[static_cast<riddle::component *>(tau.get())].push_back(&*atm);
+            }
+
+        for (const auto &[rr, atms] : rr_instances)
+            if (to_check.count(rr))
+            {
+                // for each pulse, the atoms starting at that pulse..
+                std::map<utils::inf_rational, std::set<riddle::atom_term *>> starting_atoms;
+                // for each pulse, the atoms ending at that pulse..
+                std::map<utils::inf_rational, std::set<riddle::atom_term *>> ending_atoms;
+                // all the pulses of the timeline..
+                std::set<utils::inf_rational> pulses;
+                // the resource capacity..
+                const auto c_capacity = get_core().arith_value(static_cast<riddle::arith_term &>(*rr->get(riddle::reusable_resource_capacity_kw)));
+
+                for (const auto &atm : atms)
+                {
+                    const auto start = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::start_kw)));
+                    const auto end = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::end_kw)));
+                    starting_atoms[start].insert(atm);
+                    ending_atoms[end].insert(atm);
+                    pulses.insert(start);
+                    pulses.insert(end);
+                }
+                pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(origin_kw))));
+                pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(horizon_kw))));
+
+                // we scroll through the timeline looking for inconsistencies..
+                bool has_conflict = false;
+                std::set<riddle::atom_term *> overlapping_atoms;
+                std::set<utils::inf_rational>::iterator p = pulses.begin();
+                if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                    overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                    for (const auto &a : at_end_p->second)
+                        overlapping_atoms.erase(a);
+
+                for (p = std::next(p); p != pulses.end(); ++p)
+                {
+                    utils::inf_rational c_usage; // the concurrent resource usage..
+                    for (const auto &a : overlapping_atoms)
+                        c_usage += get_core().arith_value(static_cast<riddle::arith_term &>(*a->get(riddle::reusable_resource_amount_kw)));
+
+                    if (c_usage > c_capacity) // if the resource usage exceeds the resource capacity, we have a conflict..
+                    {
+                        has_conflict = true;
+                        // we compute the possible resolvers..
+                        std::vector<std::pair<utils::lit, double>> choices;
+                        std::unordered_set<utils::var> vars;
+                        // we consider all the pairs of atoms in the Minimal Conflict Sets (MCSs)..
+                        for (const auto &as : utils::combinations(std::vector<riddle::atom_term *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
+                        {
+                            const auto a0_start = static_cast<riddle::arith_item &>(*as[0]->get(riddle::start_kw)).get_lin();
+                            const auto a0_end = static_cast<riddle::arith_item &>(*as[0]->get(riddle::end_kw)).get_lin();
+                            const auto a1_start = static_cast<riddle::arith_item &>(*as[1]->get(riddle::start_kw)).get_lin();
+                            const auto a1_end = static_cast<riddle::arith_item &>(*as[1]->get(riddle::end_kw)).get_lin();
+
+                            std::vector<utils::lit> cs;
+                            if (auto a0_it = leqs.find(as[0]); a0_it != leqs.end())
+                                if (auto a1_it = a0_it->second.find(as[1]); a1_it != a0_it->second.end())
+                                    if (get_solver().value(a1_it->second) == utils::Undefined && vars.insert(variable(a1_it->second)).second)
+                                    {
+                                        cs.push_back(a1_it->second);
+                                        auto work = (get_solver().arith_val(a1_end).get_rational() - get_solver().arith_val(a1_start).get_rational()) * (get_solver().arith_val(a0_end).get_rational() - get_solver().arith_val(a1_start).get_rational());
+                                        choices.push_back({a1_it->second, 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator())});
+                                    }
+                            if (auto a1_it = leqs.find(as[1]); a1_it != leqs.end())
+                                if (auto a0_it = a1_it->second.find(as[0]); a0_it != a1_it->second.end())
+                                    if (get_solver().value(a0_it->second) == utils::Undefined && vars.insert(variable(a0_it->second)).second)
+                                    {
+                                        cs.push_back(a0_it->second);
+                                        auto work = (get_solver().arith_val(a0_end).get_rational() - get_solver().arith_val(a0_start).get_rational()) * (get_solver().arith_val(a1_end).get_rational() - get_solver().arith_val(a0_start).get_rational());
+                                        choices.push_back({a0_it->second, 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator())});
+                                    }
+                            for (const auto atm : as)
+                                if (auto frb_it = frbs.find(atm); frb_it != frbs.end())
+                                {
+                                    auto nr_frbs = std::count_if(frb_it->second.cbegin(), frb_it->second.cend(), [this](const auto &frb)
+                                                                 { return get_solver().value(frb.second) == utils::Undefined; });
+                                    for (const auto &frb : frb_it->second)
+                                        if (get_solver().value(frb.second) == utils::Undefined && vars.insert(variable(frb.second)).second)
+                                        {
+                                            cs.push_back(frb.second);
+                                            choices.push_back({frb.second, 1. - 1. / nr_frbs});
+                                        }
+                                }
+
+                            std::set<riddle::atom_term *> mcs(as.cbegin(), as.cend()); // the MCS..
+                            if (rr_flaws.insert(mcs).second && get_solver().decision_level())
+                            {
+                                std::vector<utils::ref_wrapper<resolver>> causes;
+                                for (const auto &a : as)
+                                    for (const auto &r : static_cast<atom *>(a)->get_flaw().get_resolvers())
+                                        if (auto act = dynamic_cast<activate_fact *>(&*r))
+                                        {
+                                            causes.emplace_back(*act);
+                                            break;
+                                        }
+                                        else if (auto act = dynamic_cast<activate_goal *>(&*r))
+                                        {
+                                            causes.emplace_back(*act);
+                                            break;
+                                        }
+                                new_flaw(std::move(causes), std::move(cs));
+                            }
+                        }
+                        incs.push_back(std::move(choices));
+                    }
+
+                    if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                        overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                    if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                        for (const auto &a : at_end_p->second)
+                            overlapping_atoms.erase(a);
+                }
+
+                if (!has_conflict) // the state-variable instance is consistent..
+                    to_check.erase(rr);
+            }
         return incs;
     }
 
@@ -339,39 +468,72 @@ namespace ratio
         const auto start = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::start_kw));
         const auto end = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::end_kw));
         for (const auto &c_atm : get_atoms())
-            if (atm != c_atm && share_component(atm, c_atm) != utils::False)
-            { // the atoms might be on the same reusable-resource..
-                const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
-                const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+            if (atm != c_atm)
+            {
+                switch (share_component(atm, c_atm))
+                {
+                case utils::True:
+                { // the atoms are on the same state-variable..
+                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
 
-                if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
-                { // the atoms might temporally overlap..
-                    if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
-                    {
-                        auto before = utils::lit(get_solver().mk_var());
-                        get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
-                        assert(get_solver().value(before) == utils::Undefined);
-                        leqs[&*atm][&*c_atm] = before;
-                    }
-                    else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
-                    {
-                        auto after = utils::lit(get_solver().mk_var());
-                        get_solver().add_le(c_end->get_lin(), start->get_lin(), after); // `c_atm` before `atm`..
-                        assert(get_solver().value(after) == utils::Undefined);
-                        leqs[&*c_atm][&*atm] = after;
-                    }
-                    else
-                    { // the ordering constraints between the atoms are stored in the leqs map..
-                        auto before = utils::lit(get_solver().mk_var());
-                        auto after = utils::lit(get_solver().mk_var());
-                        get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
-                        get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
-                        assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
-                        leqs[&*atm][&*c_atm] = before;
-                        leqs[&*c_atm][&*atm] = after;
+                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    { // the atoms might temporally overlap..
+                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                            get_solver().add_le(end->get_lin(), c_start->get_lin()); // `atm` must be before `c_atm`..
+                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                            get_solver().add_le(c_end->get_lin(), start->get_lin()); // `c_atm` must be before `atm`..
+                        else
+                        { // the ordering constraints between the atoms are stored in the leqs map..
+                            auto before = utils::lit(get_solver().mk_var());
+                            auto after = utils::lit(get_solver().mk_var());
+                            get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
+                            get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
+                            assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
+                            leqs[&*atm][&*c_atm] = before;
+                            leqs[&*c_atm][&*atm] = after;
+                        }
                     }
                 }
+                break;
+                case utils::Undefined:
+                { // the atoms might be on the same state-variable..
+                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+
+                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    { // the atoms might temporally overlap..
+                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                        {
+                            auto before = utils::lit(get_solver().mk_var());
+                            get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
+                            assert(get_solver().value(before) == utils::Undefined);
+                            leqs[&*atm][&*c_atm] = before;
+                        }
+                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                        {
+                            auto after = utils::lit(get_solver().mk_var());
+                            get_solver().add_le(c_end->get_lin(), start->get_lin(), after); // `c_atm` before `atm`..
+                            assert(get_solver().value(after) == utils::Undefined);
+                            leqs[&*c_atm][&*atm] = after;
+                        }
+                        else
+                        { // the ordering constraints between the atoms are stored in the leqs map..
+                            auto before = utils::lit(get_solver().mk_var());
+                            auto after = utils::lit(get_solver().mk_var());
+                            get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
+                            get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
+                            assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
+                            leqs[&*atm][&*c_atm] = before;
+                            leqs[&*c_atm][&*atm] = after;
+                        }
+                    }
+                }
+                break;
+                }
             }
+
+        listeners.emplace_back(*this, static_cast<ratio::atom &>(*atm));
     }
 
     stconsumable_resource::stconsumable_resource(solver &slv) noexcept : consumable_resource(slv), stcomponent_type(slv) {}
@@ -396,38 +558,71 @@ namespace ratio
         const auto start = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::start_kw));
         const auto end = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::end_kw));
         for (const auto &c_atm : get_atoms())
-            if (atm != c_atm && share_component(atm, c_atm) != utils::False)
-            { // the atoms might be on the same consumable-resource..
-                const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
-                const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+            if (atm != c_atm)
+            {
+                switch (share_component(atm, c_atm))
+                {
+                case utils::True:
+                { // the atoms are on the same state-variable..
+                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
 
-                if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
-                { // the atoms might temporally overlap..
-                    if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
-                    {
-                        auto before = utils::lit(get_solver().mk_var());
-                        get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
-                        assert(get_solver().value(before) == utils::Undefined);
-                        leqs[&*atm][&*c_atm] = before;
-                    }
-                    else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
-                    {
-                        auto after = utils::lit(get_solver().mk_var());
-                        get_solver().add_le(c_end->get_lin(), start->get_lin(), after); // `c_atm` before `atm`..
-                        assert(get_solver().value(after) == utils::Undefined);
-                        leqs[&*c_atm][&*atm] = after;
-                    }
-                    else
-                    { // the ordering constraints between the atoms are stored in the leqs map..
-                        auto before = utils::lit(get_solver().mk_var());
-                        auto after = utils::lit(get_solver().mk_var());
-                        get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
-                        get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
-                        assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
-                        leqs[&*atm][&*c_atm] = before;
-                        leqs[&*c_atm][&*atm] = after;
+                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    { // the atoms might temporally overlap..
+                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                            get_solver().add_le(end->get_lin(), c_start->get_lin()); // `atm` must be before `c_atm`..
+                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                            get_solver().add_le(c_end->get_lin(), start->get_lin()); // `c_atm` must be before `atm`..
+                        else
+                        { // the ordering constraints between the atoms are stored in the leqs map..
+                            auto before = utils::lit(get_solver().mk_var());
+                            auto after = utils::lit(get_solver().mk_var());
+                            get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
+                            get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
+                            assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
+                            leqs[&*atm][&*c_atm] = before;
+                            leqs[&*c_atm][&*atm] = after;
+                        }
                     }
                 }
+                break;
+                case utils::Undefined:
+                { // the atoms might be on the same state-variable..
+                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+
+                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    { // the atoms might temporally overlap..
+                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                        {
+                            auto before = utils::lit(get_solver().mk_var());
+                            get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
+                            assert(get_solver().value(before) == utils::Undefined);
+                            leqs[&*atm][&*c_atm] = before;
+                        }
+                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                        {
+                            auto after = utils::lit(get_solver().mk_var());
+                            get_solver().add_le(c_end->get_lin(), start->get_lin(), after); // `c_atm` before `atm`..
+                            assert(get_solver().value(after) == utils::Undefined);
+                            leqs[&*c_atm][&*atm] = after;
+                        }
+                        else
+                        { // the ordering constraints between the atoms are stored in the leqs map..
+                            auto before = utils::lit(get_solver().mk_var());
+                            auto after = utils::lit(get_solver().mk_var());
+                            get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
+                            get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
+                            assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
+                            leqs[&*atm][&*c_atm] = before;
+                            leqs[&*c_atm][&*atm] = after;
+                        }
+                    }
+                }
+                break;
+                }
             }
+
+        listeners.emplace_back(*this, static_cast<ratio::atom &>(*atm));
     }
 } // namespace ratio

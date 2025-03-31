@@ -14,11 +14,11 @@ namespace ratio
         switch (static_cast<solver &>(flaw.get_graph()).value(get_sigma()))
         {
         case utils::True:
-            return riddle::atom_state::active;
+            return riddle::active;
         case utils::False:
-            return riddle::atom_state::unified;
+            return riddle::unified;
         default:
-            return riddle::atom_state::inactive;
+            return riddle::inactive;
         }
     }
 
