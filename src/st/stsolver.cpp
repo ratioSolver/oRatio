@@ -9,6 +9,19 @@
 
 namespace ratio
 {
+    riddle::atom_state atom::get_state() const noexcept
+    {
+        switch (static_cast<solver &>(flaw.get_graph()).value(get_sigma()))
+        {
+        case utils::True:
+            return riddle::atom_state::active;
+        case utils::False:
+            return riddle::atom_state::unified;
+        default:
+            return riddle::atom_state::inactive;
+        }
+    }
+
     solver::solver(std::string_view name) noexcept : graph(name)
     {
         read(INIT_STRING);
@@ -509,6 +522,7 @@ namespace ratio
                 do
                 { // we have to search..
                     next();
+                    STATE_CHANGED();
                     check_graph();
                 } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
                                      { return is_infinite(f->get_estimated_cost()); }));
@@ -547,6 +561,7 @@ namespace ratio
                     do
                     { // we have to search..
                         next();
+                        STATE_CHANGED();
                         check_graph();
                     } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
                                          { return is_infinite(f->get_estimated_cost()); }));
@@ -632,8 +647,9 @@ namespace ratio
                                                    { return v.empty(); });
                 uns_inc != incs.cend())
             { // we have an unsolvable inconsistency..
-                LOG_DEBUG("[" << get_name() << "] Unsatisfiable inconsistency");
+                LOG_DEBUG("[" << get_name() << "] Dead end..");
                 next(); // we move to the next state..
+                STATE_CHANGED();
             }
             else
             { // we check if we have a trivial inconsistencies..

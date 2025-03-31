@@ -48,6 +48,7 @@ namespace ratio
 
   protected:
     std::set<const riddle::component *> to_check;                                                             // the components whose atoms have changed..
+    std::vector<atom_listener> listeners;                                                                     // the atom listeners..
     std::vector<std::pair<std::vector<utils::ref_wrapper<resolver>>, std::vector<utils::lit>>> pending_flaws; // the pending flaws..
   };
 

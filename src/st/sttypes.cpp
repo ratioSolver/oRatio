@@ -40,9 +40,9 @@ namespace ratio
                 ct.to_check.emplace(static_cast<riddle::component *>(tau.get()));
         }
     }
-    void atom_listener::on_change(const utils::var &v) noexcept
+    void atom_listener::on_change(const utils::var &) noexcept
     {
-        if (static_cast<solver &>(atm.get_core()).value(v) == utils::True)
+        if (static_cast<solver &>(atm.get_core()).value(atm.get_sigma()) == utils::True)
         {
             auto tau = atm.get(riddle::tau_kw);
             if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
@@ -54,12 +54,15 @@ namespace ratio
     }
     void atom_listener::on_arith_change(const utils::var &) noexcept
     {
-        auto tau = atm.get(riddle::tau_kw);
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
-            for (const auto &v : atm.get_core().enum_value(*ov))
-                ct.to_check.emplace(static_cast<riddle::component *>(&*v));
-        else
-            ct.to_check.emplace(static_cast<riddle::component *>(tau.get()));
+        if (static_cast<solver &>(atm.get_core()).value(atm.get_sigma()) == utils::True)
+        {
+            auto tau = atm.get(riddle::tau_kw);
+            if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+                for (const auto &v : atm.get_core().enum_value(*ov))
+                    ct.to_check.emplace(static_cast<riddle::component *>(&*v));
+            else
+                ct.to_check.emplace(static_cast<riddle::component *>(tau.get()));
+        }
     }
 
     stcomponent_type::stcomponent_type(solver &slv) noexcept : slv(slv) {}
@@ -120,114 +123,115 @@ namespace ratio
             }
 
         for (const auto &[sv, atms] : sv_instances)
-        {
-            // for each pulse, the atoms starting at that pulse..
-            std::map<utils::inf_rational, std::set<riddle::atom_term *>> starting_atoms;
-            // for each pulse, the atoms ending at that pulse..
-            std::map<utils::inf_rational, std::set<riddle::atom_term *>> ending_atoms;
-            // all the pulses of the timeline..
-            std::set<utils::inf_rational> pulses;
-
-            for (const auto &atm : atms)
+            if (to_check.count(sv))
             {
-                const auto start = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::start_kw)));
-                const auto end = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::end_kw)));
-                starting_atoms[start].insert(atm);
-                ending_atoms[end].insert(atm);
-                pulses.insert(start);
-                pulses.insert(end);
-            }
-            pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(origin_kw))));
-            pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(horizon_kw))));
+                // for each pulse, the atoms starting at that pulse..
+                std::map<utils::inf_rational, std::set<riddle::atom_term *>> starting_atoms;
+                // for each pulse, the atoms ending at that pulse..
+                std::map<utils::inf_rational, std::set<riddle::atom_term *>> ending_atoms;
+                // all the pulses of the timeline..
+                std::set<utils::inf_rational> pulses;
 
-            // we scroll through the timeline looking for inconsistencies..
-            bool has_conflict = false;
-            std::set<riddle::atom_term *> overlapping_atoms;
-            std::set<utils::inf_rational>::iterator p = pulses.begin();
-            if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
-                overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
-            if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
-                for (const auto &a : at_end_p->second)
-                    overlapping_atoms.erase(a);
-
-            for (p = std::next(p); p != pulses.end(); ++p)
-            {
-                if (overlapping_atoms.size() > 1) // if there are more than one atom in the set of overlapping atoms, we have an inconsistency..
+                for (const auto &atm : atms)
                 {
-                    has_conflict = true;
-                    // we compute the possible resolvers..
-                    std::vector<std::pair<utils::lit, double>> choices;
-                    std::unordered_set<utils::var> vars;
-                    // we consider all the pairs of atoms in the Minimal Conflict Sets (MCSs)..
-                    for (const auto &as : utils::combinations(std::vector<riddle::atom_term *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
-                    {
-                        const auto a0_start = static_cast<riddle::arith_item &>(*as[0]->get(riddle::start_kw)).get_lin();
-                        const auto a0_end = static_cast<riddle::arith_item &>(*as[0]->get(riddle::end_kw)).get_lin();
-                        const auto a1_start = static_cast<riddle::arith_item &>(*as[1]->get(riddle::start_kw)).get_lin();
-                        const auto a1_end = static_cast<riddle::arith_item &>(*as[1]->get(riddle::end_kw)).get_lin();
-
-                        std::vector<utils::lit> cs;
-                        if (auto a0_it = leqs.find(as[0]); a0_it != leqs.end())
-                            if (auto a1_it = a0_it->second.find(as[1]); a1_it != a0_it->second.end())
-                                if (get_solver().value(a1_it->second) == utils::Undefined && vars.insert(variable(a1_it->second)).second)
-                                {
-                                    cs.push_back(a1_it->second);
-                                    auto work = (get_solver().arith_val(a1_end).get_rational() - get_solver().arith_val(a1_start).get_rational()) * (get_solver().arith_val(a0_end).get_rational() - get_solver().arith_val(a1_start).get_rational());
-                                    choices.push_back({a1_it->second, 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator())});
-                                }
-                        if (auto a1_it = leqs.find(as[1]); a1_it != leqs.end())
-                            if (auto a0_it = a1_it->second.find(as[0]); a0_it != a1_it->second.end())
-                                if (get_solver().value(a0_it->second) == utils::Undefined && vars.insert(variable(a0_it->second)).second)
-                                {
-                                    cs.push_back(a0_it->second);
-                                    auto work = (get_solver().arith_val(a0_end).get_rational() - get_solver().arith_val(a0_start).get_rational()) * (get_solver().arith_val(a1_end).get_rational() - get_solver().arith_val(a0_start).get_rational());
-                                    choices.push_back({a0_it->second, 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator())});
-                                }
-                        for (const auto atm : as)
-                            if (auto frb_it = frbs.find(atm); frb_it != frbs.end())
-                            {
-                                auto nr_frbs = std::count_if(frb_it->second.cbegin(), frb_it->second.cend(), [this](const auto &frb)
-                                                             { return get_solver().value(frb.second) == utils::Undefined; });
-                                for (const auto &frb : frb_it->second)
-                                    if (get_solver().value(frb.second) == utils::Undefined && vars.insert(variable(frb.second)).second)
-                                    {
-                                        cs.push_back(frb.second);
-                                        choices.push_back({frb.second, 1. - 1. / nr_frbs});
-                                    }
-                            }
-
-                        std::set<riddle::atom_term *> mcs(as.cbegin(), as.cend()); // the MCS..
-                        if (sv_flaws.insert(mcs).second && get_solver().decision_level())
-                        {
-                            std::vector<utils::ref_wrapper<resolver>> causes;
-                            for (const auto &a : as)
-                                for (const auto &r : static_cast<atom *>(a)->get_flaw().get_resolvers())
-                                    if (auto act = dynamic_cast<activate_fact *>(&*r))
-                                    {
-                                        causes.emplace_back(*act);
-                                        break;
-                                    }
-                                    else if (auto act = dynamic_cast<activate_goal *>(&*r))
-                                    {
-                                        causes.emplace_back(*act);
-                                        break;
-                                    }
-                            new_flaw(std::move(causes), std::move(cs));
-                        }
-                    }
-                    incs.push_back(std::move(choices));
+                    const auto start = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::start_kw)));
+                    const auto end = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::end_kw)));
+                    starting_atoms[start].insert(atm);
+                    ending_atoms[end].insert(atm);
+                    pulses.insert(start);
+                    pulses.insert(end);
                 }
+                pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(origin_kw))));
+                pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(horizon_kw))));
 
+                // we scroll through the timeline looking for inconsistencies..
+                bool has_conflict = false;
+                std::set<riddle::atom_term *> overlapping_atoms;
+                std::set<utils::inf_rational>::iterator p = pulses.begin();
                 if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
                     overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
                 if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
                     for (const auto &a : at_end_p->second)
                         overlapping_atoms.erase(a);
-            }
 
-            if (!has_conflict) // the state-variable instance is consistent..
-                to_check.erase(sv);
-        }
+                for (p = std::next(p); p != pulses.end(); ++p)
+                {
+                    if (overlapping_atoms.size() > 1) // if there are more than one atom in the set of overlapping atoms, we have an inconsistency..
+                    {
+                        has_conflict = true;
+                        // we compute the possible resolvers..
+                        std::vector<std::pair<utils::lit, double>> choices;
+                        std::unordered_set<utils::var> vars;
+                        // we consider all the pairs of atoms in the Minimal Conflict Sets (MCSs)..
+                        for (const auto &as : utils::combinations(std::vector<riddle::atom_term *>(overlapping_atoms.cbegin(), overlapping_atoms.cend()), 2))
+                        {
+                            const auto a0_start = static_cast<riddle::arith_item &>(*as[0]->get(riddle::start_kw)).get_lin();
+                            const auto a0_end = static_cast<riddle::arith_item &>(*as[0]->get(riddle::end_kw)).get_lin();
+                            const auto a1_start = static_cast<riddle::arith_item &>(*as[1]->get(riddle::start_kw)).get_lin();
+                            const auto a1_end = static_cast<riddle::arith_item &>(*as[1]->get(riddle::end_kw)).get_lin();
+
+                            std::vector<utils::lit> cs;
+                            if (auto a0_it = leqs.find(as[0]); a0_it != leqs.end())
+                                if (auto a1_it = a0_it->second.find(as[1]); a1_it != a0_it->second.end())
+                                    if (get_solver().value(a1_it->second) == utils::Undefined && vars.insert(variable(a1_it->second)).second)
+                                    {
+                                        cs.push_back(a1_it->second);
+                                        auto work = (get_solver().arith_val(a1_end).get_rational() - get_solver().arith_val(a1_start).get_rational()) * (get_solver().arith_val(a0_end).get_rational() - get_solver().arith_val(a1_start).get_rational());
+                                        choices.push_back({a1_it->second, 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator())});
+                                    }
+                            if (auto a1_it = leqs.find(as[1]); a1_it != leqs.end())
+                                if (auto a0_it = a1_it->second.find(as[0]); a0_it != a1_it->second.end())
+                                    if (get_solver().value(a0_it->second) == utils::Undefined && vars.insert(variable(a0_it->second)).second)
+                                    {
+                                        cs.push_back(a0_it->second);
+                                        auto work = (get_solver().arith_val(a0_end).get_rational() - get_solver().arith_val(a0_start).get_rational()) * (get_solver().arith_val(a1_end).get_rational() - get_solver().arith_val(a0_start).get_rational());
+                                        choices.push_back({a0_it->second, 1l - 1l / (static_cast<double>(work.numerator()) / work.denominator())});
+                                    }
+                            for (const auto atm : as)
+                                if (auto frb_it = frbs.find(atm); frb_it != frbs.end())
+                                {
+                                    auto nr_frbs = std::count_if(frb_it->second.cbegin(), frb_it->second.cend(), [this](const auto &frb)
+                                                                 { return get_solver().value(frb.second) == utils::Undefined; });
+                                    for (const auto &frb : frb_it->second)
+                                        if (get_solver().value(frb.second) == utils::Undefined && vars.insert(variable(frb.second)).second)
+                                        {
+                                            cs.push_back(frb.second);
+                                            choices.push_back({frb.second, 1. - 1. / nr_frbs});
+                                        }
+                                }
+
+                            std::set<riddle::atom_term *> mcs(as.cbegin(), as.cend()); // the MCS..
+                            if (sv_flaws.insert(mcs).second && get_solver().decision_level())
+                            {
+                                std::vector<utils::ref_wrapper<resolver>> causes;
+                                for (const auto &a : as)
+                                    for (const auto &r : static_cast<atom *>(a)->get_flaw().get_resolvers())
+                                        if (auto act = dynamic_cast<activate_fact *>(&*r))
+                                        {
+                                            causes.emplace_back(*act);
+                                            break;
+                                        }
+                                        else if (auto act = dynamic_cast<activate_goal *>(&*r))
+                                        {
+                                            causes.emplace_back(*act);
+                                            break;
+                                        }
+                                new_flaw(std::move(causes), std::move(cs));
+                            }
+                        }
+                        incs.push_back(std::move(choices));
+                    }
+
+                    if (const auto at_start_p = starting_atoms.find(*p); at_start_p != starting_atoms.cend())
+                        overlapping_atoms.insert(at_start_p->second.cbegin(), at_start_p->second.cend());
+                    if (const auto at_end_p = ending_atoms.find(*p); at_end_p != ending_atoms.cend())
+                        for (const auto &a : at_end_p->second)
+                            overlapping_atoms.erase(a);
+                }
+
+                if (!has_conflict) // the state-variable instance is consistent..
+                    to_check.erase(sv);
+            }
         return incs;
     }
 
@@ -309,6 +313,8 @@ namespace ratio
                 break;
                 }
             }
+
+        listeners.emplace_back(*this, static_cast<ratio::atom &>(*atm));
     }
 
     streusable_resource::streusable_resource(solver &slv) noexcept : reusable_resource(slv), stcomponent_type(slv) {}
