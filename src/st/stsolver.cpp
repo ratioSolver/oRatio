@@ -68,8 +68,8 @@ namespace ratio
         std::vector<utils::ref_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())
             causes.push_back(get_current_resolver().value());
-        auto &af = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values));
-        return af.get_var();
+        auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values));
+        return ef.get_var();
     }
     std::vector<utils::ref_wrapper<utils::enum_val>> solver::enum_value(const riddle::enum_term &expr) const noexcept
     {
