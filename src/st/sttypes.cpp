@@ -35,9 +35,9 @@ namespace ratio
             auto tau = atm.get(riddle::tau_kw);
             if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
                 for (const auto &v : atm.get_core().enum_value(*ov))
-                    ct.to_check.emplace(static_cast<riddle::component *>(&*v));
+                    ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
             else
-                ct.to_check.emplace(static_cast<riddle::component *>(tau.get()));
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
         }
     }
     void atom_listener::on_change(const utils::var &) noexcept
@@ -47,9 +47,9 @@ namespace ratio
             auto tau = atm.get(riddle::tau_kw);
             if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
                 for (const auto &v : atm.get_core().enum_value(*ov))
-                    ct.to_check.emplace(static_cast<riddle::component *>(&*v));
+                    ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
             else
-                ct.to_check.emplace(static_cast<riddle::component *>(tau.get()));
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
         }
     }
     void atom_listener::on_arith_change(const utils::var &) noexcept
@@ -59,9 +59,9 @@ namespace ratio
             auto tau = atm.get(riddle::tau_kw);
             if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
                 for (const auto &v : atm.get_core().enum_value(*ov))
-                    ct.to_check.emplace(static_cast<riddle::component *>(&*v));
+                    ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
             else
-                ct.to_check.emplace(static_cast<riddle::component *>(tau.get()));
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
         }
     }
 
@@ -76,16 +76,16 @@ namespace ratio
         std::set<const riddle::component *> l_tau_cmps;
         if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*l_tau))
             for (const auto &v : get_solver().enum_value(*ov))
-                l_tau_cmps.emplace(static_cast<riddle::component *>(&*v));
+                l_tau_cmps.emplace(dynamic_cast<riddle::component *>(&*v));
         else
-            l_tau_cmps.emplace(static_cast<riddle::component *>(&*l_tau));
+            l_tau_cmps.emplace(dynamic_cast<riddle::component *>(&*l_tau));
 
         std::set<const riddle::component *> r_tau_cmps;
         if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*r_tau))
             for (const auto &v : get_solver().enum_value(*ov))
-                r_tau_cmps.emplace(static_cast<riddle::component *>(&*v));
+                r_tau_cmps.emplace(dynamic_cast<riddle::component *>(&*v));
         else
-            r_tau_cmps.emplace(static_cast<riddle::component *>(&*r_tau));
+            r_tau_cmps.emplace(dynamic_cast<riddle::component *>(&*r_tau));
 
         if (l_tau_cmps.size() == 1 && r_tau_cmps.size() == 1 && *l_tau_cmps.begin() == *r_tau_cmps.begin())
             return utils::True; // the atoms must be on the same component..
@@ -117,9 +117,9 @@ namespace ratio
                 const auto tau = atm->get(riddle::tau_kw);
                 if (auto c_svs = dynamic_cast<riddle::enum_item *>(&*tau)) // the `tau` parameter is a variable..
                     for (const auto &c_sv : get_core().enum_value(*c_svs))
-                        sv_instances[static_cast<riddle::component *>(&*c_sv)].push_back(&*atm);
+                        sv_instances[dynamic_cast<riddle::component *>(&*c_sv)].push_back(&*atm);
                 else // the `tau` parameter is a constant..
-                    sv_instances[static_cast<riddle::component *>(tau.get())].push_back(&*atm);
+                    sv_instances[dynamic_cast<riddle::component *>(tau.get())].push_back(&*atm);
             }
 
         for (const auto &[sv, atms] : sv_instances)
@@ -330,9 +330,9 @@ namespace ratio
                 const auto tau = atm->get(riddle::tau_kw);
                 if (auto c_svs = dynamic_cast<riddle::enum_item *>(&*tau)) // the `tau` parameter is a variable..
                     for (const auto &c_sv : get_core().enum_value(*c_svs))
-                        rr_instances[static_cast<riddle::component *>(&*c_sv)].push_back(&*atm);
+                        rr_instances[dynamic_cast<riddle::component *>(&*c_sv)].push_back(&*atm);
                 else // the `tau` parameter is a constant..
-                    rr_instances[static_cast<riddle::component *>(tau.get())].push_back(&*atm);
+                    rr_instances[dynamic_cast<riddle::component *>(tau.get())].push_back(&*atm);
             }
 
         for (const auto &[rr, atms] : rr_instances)

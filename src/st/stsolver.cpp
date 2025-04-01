@@ -302,7 +302,7 @@ namespace ratio
         }
         else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs))
         { // we are dealing with components..
-            auto rhs_xpr = static_cast<riddle::component *>(&rhs);
+            auto rhs_xpr = dynamic_cast<riddle::component *>(&rhs);
             std::queue<riddle::component_type *> q;
             q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
             while (!q.empty())
@@ -394,7 +394,7 @@ namespace ratio
         }
         else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs))
         { // we are dealing with components..
-            auto rhs_xpr = static_cast<riddle::component *>(&rhs);
+            auto rhs_xpr = dynamic_cast<riddle::component *>(&rhs);
             std::queue<riddle::component_type *> q;
             q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
             while (!q.empty())
@@ -478,7 +478,7 @@ namespace ratio
         { // we are dealing with components..
             std::vector<utils::lit> clause;
             clause.push_back(!p);
-            auto rhs_c_xpr = static_cast<riddle::component *>(&rhs);
+            auto rhs_c_xpr = dynamic_cast<riddle::component *>(&rhs);
             std::queue<riddle::component_type *> q;
             q.push(static_cast<riddle::component_type *>(&lhs_c_xpr->get_type()));
             while (!q.empty())
