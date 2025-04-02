@@ -82,14 +82,14 @@ namespace ratio
   class enum_flaw final : public stflaw
   {
   public:
-    enum_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept;
+    enum_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept;
 
     [[nodiscard]] const utils::s_ptr<riddle::enum_item> &get_var() const noexcept { return var; }
 
   private:
     void compute_resolvers() override;
 
-    static utils::s_ptr<riddle::enum_item> create_var(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values);
+    static utils::s_ptr<riddle::enum_item> create_var(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values);
 
   private:
     utils::s_ptr<riddle::enum_item> var;

@@ -63,7 +63,7 @@ namespace ratio
     riddle::string_expr solver::new_string(std::string &&value) { return utils::make_s_ptr<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
     std::string solver::string_value(const riddle::string_term &expr) const noexcept { return static_cast<const riddle::string_item &>(expr).get_string(); }
 
-    riddle::enum_expr solver::new_enum(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
+    riddle::enum_expr solver::new_enum(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
     {
         std::vector<utils::ref_wrapper<resolver>> causes;
         if (get_current_resolver().has_value())

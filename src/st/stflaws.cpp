@@ -96,8 +96,8 @@ namespace ratio
         return j;
     }
 
-    enum_flaw::enum_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept : stflaw(slv, std::move(causes), true), var(create_var(tp, std::move(values))) {}
-    utils::s_ptr<riddle::enum_item> enum_flaw::create_var(riddle::type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
+    enum_flaw::enum_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept : stflaw(slv, std::move(causes), true), var(create_var(tp, std::move(values))) {}
+    utils::s_ptr<riddle::enum_item> enum_flaw::create_var(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
     {
         assert(!values.empty());
         std::vector<utils::lit> lits;
