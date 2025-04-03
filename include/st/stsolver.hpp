@@ -13,6 +13,14 @@ namespace ratio
   class atom_listener;
   class unify_atom;
 
+  class enum_item : public riddle::enum_item
+  {
+  public:
+    enum_item(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values, std::vector<utils::lit> &&lits) noexcept;
+
+    riddle::expr get(std::string_view name) override;
+  };
+
   class atom : public riddle::atom
   {
     friend class atom_listener;
