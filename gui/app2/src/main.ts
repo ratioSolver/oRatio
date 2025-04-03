@@ -1,0 +1,83 @@
+import './style.css'
+import { Settings, AppComponent, App, Connection } from 'ratio-core';
+import { solver, timeline, graph } from 'ratio-lib';
+
+Settings.get_instance().load_settings({ port: 8080, ws_path: 'ratio' });
+
+class oRatio extends AppComponent implements solver.SolverSetListener {
+
+  private solver: solver.Solver | null = null;
+
+  constructor() {
+    super();
+
+    solver.SolverSet.get_instance().add_solver_set_listener(this);
+    Connection.get_instance().connect();
+  }
+
+  override populate_navbar(container: HTMLDivElement): void {
+    const brand = document.createElement('a');
+    brand.classList.add('navbar-brand');
+
+    const brand_icon = document.createElement('img');
+    brand_icon.src = 'favicon.ico';
+    brand_icon.alt = 'oRatio';
+    brand_icon.width = 30;
+    brand_icon.height = 30;
+    brand_icon.classList.add('d-inline-block', 'align-text-top', 'mr-2');
+    brand.appendChild(brand_icon);
+    brand.appendChild(document.createTextNode('oRatio'));
+
+    container.appendChild(brand);
+
+    const pills = document.createElement('ul');
+    pills.classList.add('nav', 'nav-pills', 'ml-2');
+
+    const timelines_pill = document.createElement('li');
+    timelines_pill.classList.add('nav-item');
+    timelines_pill.role = 'presentation';
+    const timelines_button = document.createElement('button');
+    timelines_button.classList.add('nav-link', 'active');
+    timelines_button.id = 'timelines-tab';
+    timelines_button.type = 'button';
+    timelines_button.setAttribute('data-bs-toggle', 'pill');
+    timelines_button.setAttribute('role', 'tab');
+    timelines_button.setAttribute('aria-controls', 'timelines');
+    timelines_button.setAttribute('aria-selected', 'true');
+    timelines_button.innerText = 'Timelines';
+    timelines_button.addEventListener('click', () => { App.get_instance().selected_component(new timeline.TimelinesChart(this.solver!)); });
+    timelines_pill.appendChild(timelines_button);
+    pills.appendChild(timelines_pill);
+
+    const graph_pill = document.createElement('li');
+    graph_pill.classList.add('nav-item');
+    graph_pill.role = 'presentation';
+    const graph_button = document.createElement('button');
+    graph_button.classList.add('nav-link');
+    graph_button.id = 'graph-tab';
+    graph_button.type = 'button';
+    graph_button.setAttribute('data-bs-toggle', 'pill');
+    graph_button.setAttribute('role', 'tab');
+    graph_button.setAttribute('aria-controls', 'graph');
+    graph_button.setAttribute('aria-selected', 'false');
+    graph_button.innerText = 'Graph';
+    graph_button.addEventListener('click', () => { App.get_instance().selected_component(new graph.SolverGraph(this.solver!)); });
+    graph_pill.appendChild(graph_button);
+    pills.appendChild(graph_pill);
+
+    container.appendChild(pills);
+  }
+
+  init(solvers: Map<number, solver.Solver>): void {
+    if (solvers.size !== 1)
+      throw new Error('Expected exactly one solver');
+    this.solver = solvers.values().next().value!;
+    App.get_instance().selected_component(new timeline.TimelinesChart(this.solver));
+  }
+  solver_created(_solver: solver.Solver): void { }
+  solver_deleted(_id: number): void { }
+
+  override received_message(message: any): void { solver.SolverSet.get_instance().update_solvers(message); }
+}
+
+new oRatio();
