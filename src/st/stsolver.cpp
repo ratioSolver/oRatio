@@ -288,13 +288,15 @@ namespace ratio
                 else
                 {
                     utils::lit p;
-                    if (exprs.size() > 1) // we create a new variable for the constraint..
+                    if (exprs.size() > 1)
+                    { // we create a new variable for the constraint..
                         p = utils::lit(mk_var());
+                        clause.push_back(p);
+                    }
                     else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
                         p = static_cast<stresolver &>(*get_current_resolver().value()).get_rho();
                     else // we enforce the constraint directly..
                         p = utils::TRUE_lit;
-                    clause.push_back(p);
 
                     if (auto lt_xpr = utils::s_ptr_cast<riddle::lt_term>(n_xpr->get_arg()))
                         add_ge(static_cast<riddle::arith_item &>(*lt_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*lt_xpr->get_rhs()).get_lin(), p);
@@ -313,13 +315,15 @@ namespace ratio
             else
             {
                 utils::lit p;
-                if (exprs.size() > 1) // we create a new variable for the constraint..
+                if (exprs.size() > 1)
+                { // we create a new variable for the constraint..
                     p = utils::lit(mk_var());
+                    clause.push_back(p);
+                }
                 else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
                     p = static_cast<stresolver &>(*get_current_resolver().value()).get_rho();
                 else // we enforce the constraint directly..
                     p = utils::TRUE_lit;
-                clause.push_back(p);
 
                 if (auto lt_xpr = utils::s_ptr_cast<riddle::lt_term>(expr))
                     add_lt(static_cast<riddle::arith_item &>(*lt_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*lt_xpr->get_rhs()).get_lin(), p);
@@ -335,9 +339,19 @@ namespace ratio
                     throw std::runtime_error("Invalid type");
             }
 
-        if (get_current_resolver().has_value())
-            clause.push_back(!static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
-        add_clause(std::move(clause));
+        if (clause.size() == 1)
+        { // we can propagate..
+            if (get_current_resolver().has_value())
+                clause.push_back(!static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+            add_clause(std::move(clause));
+        }
+        else if (clause.size() > 1)
+        { // we have a new flaw..
+            std::vector<utils::ref_wrapper<resolver>> causes;
+            if (get_current_resolver().has_value())
+                causes.emplace_back(get_current_resolver().value());
+            new_flaw<clause_flaw>(*this, std::move(causes), std::move(clause), false);
+        }
     }
 
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)

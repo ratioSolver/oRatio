@@ -112,7 +112,7 @@ namespace ratio
     {
         assert(get_solver().value(get_phi()) == get_state());
         for (const auto &val : var->get_values())
-            if (get_solver().value(var->get_lit(*val)) != utils::False)
+            if (get_solver().value(var->get_lit(*val)) != utils::False) // we prune unassignable values..
                 new_resolver<choose_val>(*this, *val);
     }
 
@@ -127,7 +127,7 @@ namespace ratio
     {
         assert(get_solver().value(get_phi()) == get_state());
         for (const auto &lit : clause)
-            if (get_solver().value(lit) != utils::True)
+            if (get_solver().value(lit) != utils::False) // we prune false literals..
                 new_resolver<choose_lit>(*this, lit);
     }
 
