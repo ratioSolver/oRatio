@@ -106,7 +106,7 @@ namespace ratio
         else
             for (size_t i = 0; i < values.size(); i++)
                 lits.push_back(utils::lit(static_cast<solver &>(tp.get_scope().get_core()).mk_var()));
-        return utils::make_s_ptr<riddle::enum_item>(tp, std::move(values), std::move(lits));
+        return utils::make_s_ptr<enum_item>(tp, std::move(values), std::move(lits));
     }
     void enum_flaw::compute_resolvers()
     {
