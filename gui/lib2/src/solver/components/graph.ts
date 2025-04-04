@@ -4,6 +4,9 @@ import { Component } from 'ratio-core';
 
 export namespace graph {
 
+  const node_width = 80;  // Replace with actual node width
+  const node_height = 30; // Replace with actual node height
+
   interface GraphNode extends d3.SimulationNodeDatum {
     payload: solver.graph.Flaw | solver.graph.Resolver;
     entering: GraphLink[];
@@ -35,7 +38,7 @@ export namespace graph {
       this.container = d3.select('#slv-' + this.payload.get_id() + '-graph').append('svg').attr('viewBox', `0 0 ${this.width} ${this.height}`).attr('width', '100%').attr('height', '100%');
 
       // Draw arrows for directed edges
-      this.container.append('defs').selectAll('marker').data(['end']).enter().append('marker').attr('id', d => d).attr('viewBox', '0 -5 10 10').attr('refX', 15).attr('refY', 0).attr('orient', 'auto').attr('markerWidth', 6).attr('markerHeight', 6).attr('xoverflow', 'visible').append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', 'black');
+      this.container.append('defs').selectAll('marker').data(['end']).enter().append('marker').attr('id', d => d).attr('viewBox', '0 -5 10 10').attr('refX', 0).attr('refY', 0).attr('orient', 'auto').attr('markerWidth', 6).attr('markerHeight', 6).attr('xoverflow', 'visible').append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', 'black');
 
       this.simulation = d3.forceSimulation(Array.from(this.nodes.values()))
         .force('link', d3.forceLink<GraphNode, GraphLink>(this.links).id(d => d.payload.get_id()).distance(100))
@@ -142,10 +145,10 @@ export namespace graph {
 
       // Append rectangle to new nodes
       node_enter.append('rect')
-        .attr('width', 100)
-        .attr('height', 30)
-        .attr('x', -50)
-        .attr('y', -15)
+        .attr('width', node_width)
+        .attr('height', node_height)
+        .attr('x', -node_width / 2)
+        .attr('y', -node_height / 2)
         .attr('rx', 5)
         .attr('ry', 5)
         .attr('fill', '#69b3a2');
@@ -163,10 +166,36 @@ export namespace graph {
         .on('tick', () => {
           // Update link positions
           this.container!.selectAll<SVGLineElement, GraphLink>('.link')
-            .attr('x1', d => d.source.x!)
-            .attr('y1', d => d.source.y!)
-            .attr('x2', d => d.target.x!)
-            .attr('y2', d => d.target.y!);
+            .attr('x1', d => {
+              const dx = d.target.x! - d.source.x!;
+              const dy = d.target.y! - d.source.y!;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              const padding = 10; // Source node padding distance
+              return d.source.x! + (dx / distance) * padding;
+            })
+            .attr('y1', d => {
+              const dx = d.target.x! - d.source.x!;
+              const dy = d.target.y! - d.source.y!;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+              const padding = 10; // Source node padding distance
+              return d.source.y! + (dy / distance) * padding;
+            })
+            .attr('x2', d => {
+              const dx = d.target.x! - d.source.x!;
+              const dy = d.target.y! - d.source.y!;
+              const scale_x = node_width / 2 / Math.abs(dx); // Scale factor for x intersection
+              const scale_y = node_height / 2 / Math.abs(dy); // Scale factor for y intersection
+              const scale = Math.min(scale_x, scale_y); // Choose the smaller scale factor to keep within bounds
+              return d.target.x! - dx * scale * 1.5; // Adjust target x
+            })
+            .attr('y2', d => {
+              const dx = d.target.x! - d.source.x!;
+              const dy = d.target.y! - d.source.y!;
+              const scale_x = node_width / 2 / Math.abs(dx); // Scale factor for x intersection
+              const scale_y = node_height / 2 / Math.abs(dy); // Scale factor for y intersection
+              const scale = Math.min(scale_x, scale_y); // Choose the smaller scale factor to keep within bounds
+              return d.target.y! - dy * scale * 1.5; // Adjust target y
+            });
 
           // Update node positions
           this.container!.selectAll<SVGGElement, GraphNode>('.node')
