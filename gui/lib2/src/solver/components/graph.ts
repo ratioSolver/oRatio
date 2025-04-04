@@ -4,7 +4,7 @@ import { Component } from 'ratio-core';
 
 export namespace graph {
 
-  const node_width = 80;  // Replace with actual node width
+  const node_width = 70;  // Replace with actual node width
   const node_height = 30; // Replace with actual node height
 
   interface GraphNode extends d3.SimulationNodeDatum {
@@ -24,6 +24,8 @@ export namespace graph {
     private readonly height = 600;
     private readonly nodes: Map<number, GraphNode> = new Map();
     private readonly links: GraphLink[] = [];
+
+    private readonly color_scale = d3.scaleLinear<string, string>().domain([0, 20]).range(['green', 'red']);
 
     private container: d3.Selection<SVGSVGElement, unknown, HTMLElement, any> | undefined;
     private simulation: d3.Simulation<GraphNode, GraphLink> | undefined;
@@ -85,7 +87,13 @@ export namespace graph {
     }
     flaw_state_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
     flaw_position_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
-    flaw_cost_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
+    flaw_cost_changed(f: solver.graph.Flaw): void {
+      if (f.get_cost() != Infinity && f.get_cost() > this.color_scale.domain()[1]) {
+        this.color_scale.domain([0, f.get_cost()]);
+        this.update_data(Array.from(this.nodes.values()));
+      } else
+        this.update_data([this.nodes.get(f.get_id())!]);
+    }
     current_flaw(_f: solver.graph.Flaw | null): void {
     }
     resolver_created(r: solver.graph.Resolver): void {
@@ -115,6 +123,8 @@ export namespace graph {
         .attr('stroke-width', 1.5)
         .attr('marker-end', 'url(#end)'); // Add arrowheads to links
 
+      const cs = this.color_scale;
+
       this.container!.selectAll<SVGGElement, GraphNode>('.node') // Select all existing nodes
         .data(Array.from(this.nodes.values()), d => d.payload.get_id())
         .enter()
@@ -138,7 +148,8 @@ export namespace graph {
             })
         )
         .each(function (d) {
-          const node = d3.select(this);
+          const node = d3.select(this)
+            .attr('stroke', 'dimgray')
 
           // Check the node type and append the corresponding shape
           if (d.payload instanceof solver.graph.Flaw) {
@@ -149,15 +160,13 @@ export namespace graph {
               .attr('y', -node_height / 2)
               .attr('rx', 5)
               .attr('ry', 5)
-              .attr('fill', '#69b3a2')
-              .attr('stroke', 'dimgray')
+              .attr('fill', cs(d.payload.get_cost()))
               .style('stroke-dasharray', stroke_dasharray(d));
           } else if (d.payload instanceof solver.graph.Resolver) {
             node.append('ellipse')
               .attr('rx', node_width / 2)
               .attr('ry', node_height / 3)
-              .attr('fill', '#1f77b4')
-              .attr('stroke', 'dimgray')
+              .attr('fill', cs(d.payload.get_cost()))
               .style('stroke-dasharray', stroke_dasharray(d));
           }
         })
@@ -173,33 +182,21 @@ export namespace graph {
         .on('tick', () => {
           // Update link positions
           this.container!.selectAll<SVGLineElement, GraphLink>('.link')
-            .attr('x1', d => {
+            .each(function (d) {
               let src = intersect({ x: d.source.x! - node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x! - node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
               if (!src) src = intersect({ x: d.source.x! - node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x! + node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
               if (!src) src = intersect({ x: d.source.x! + node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x! + node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
               if (!src) src = intersect({ x: d.source.x! + node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x! - node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              return src ? src.x : d.source.x!;
-            })
-            .attr('y1', d => {
-              let src = intersect({ x: d.source.x! - node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x! - node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!src) src = intersect({ x: d.source.x! - node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x! + node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!src) src = intersect({ x: d.source.x! + node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x! + node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!src) src = intersect({ x: d.source.x! + node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x! - node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              return src ? src.y : d.source.y!;
-            })
-            .attr('x2', d => {
               let trgt = intersect({ x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
               if (!trgt) trgt = intersect({ x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
               if (!trgt) trgt = intersect({ x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
               if (!trgt) trgt = intersect({ x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              return trgt ? trgt.x : d.target.x!;
-            })
-            .attr('y2', d => {
-              let trgt = intersect({ x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              return trgt ? trgt.y : d.target.y!;
+
+              d3.select(this)
+                .attr('x1', src ? src.x : d.source.x!)
+                .attr('y1', src ? src.y : d.source.y!)
+                .attr('x2', trgt ? trgt.x : d.target.x!)
+                .attr('y2', trgt ? trgt.y : d.target.y!);
             });
 
           // Update node positions
@@ -212,13 +209,17 @@ export namespace graph {
     }
 
     private update_data(nodes: GraphNode[]): void {
+      const cs = this.color_scale;
+
       this.container!
         .selectAll<SVGGElement, GraphNode>('.node') // Select all existing nodes
         .data(nodes, d => d.payload.get_id())
         .each(function (d) {
           const node = d3.select(this);
 
-          node.style('stroke-dasharray', stroke_dasharray(d))
+          node
+            .attr('fill', cs(d.payload.get_cost()))
+            .style('stroke-dasharray', stroke_dasharray(d))
         });
     }
 
