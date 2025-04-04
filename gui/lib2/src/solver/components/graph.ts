@@ -142,7 +142,25 @@ export namespace graph {
       this.add_data();
     }
     resolver_state_changed(r: solver.graph.Resolver): void { this.update_data([this.nodes.get(r.get_id())!]); }
-    current_resolver(_r: solver.graph.Resolver | null): void {
+    current_resolver(r: solver.graph.Resolver | null): void {
+      if (r) {
+        if (this.cr) {
+          this.cr.current = false;
+          const cr = this.nodes.get(r.get_id())!;
+          cr.current = true;
+          this.update_data([this.cr, cr]);
+          this.cr = cr;
+        } else {
+          const cr = this.nodes.get(r.get_id())!;
+          cr.current = true;
+          this.update_data([cr]);
+          this.cr = cr;
+        }
+      } else if (this.cr) {
+        this.cr.current = false;
+        this.update_data([this.cr]);
+        this.cr = undefined;
+      }
     }
     causal_link_added(f: solver.graph.Flaw, r: solver.graph.Resolver): void { this.update_data([this.nodes.get(f.get_id())!]), this.update_data([this.nodes.get(r.get_id())!]); }
 
