@@ -5,8 +5,9 @@ import { Component } from 'ratio-core';
 export namespace graph {
 
   interface GraphNode extends d3.SimulationNodeDatum {
-    id: number;
-    label: string;
+    payload: solver.graph.Flaw | solver.graph.Resolver;
+    entering: GraphLink[];
+    exiting: GraphLink[];
   }
 
   interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
@@ -37,26 +38,66 @@ export namespace graph {
       this.container.append('defs').selectAll('marker').data(['end']).enter().append('marker').attr('id', d => d).attr('viewBox', '0 -5 10 10').attr('refX', 15).attr('refY', 0).attr('orient', 'auto').attr('markerWidth', 6).attr('markerHeight', 6).attr('xoverflow', 'visible').append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', 'black');
 
       this.simulation = d3.forceSimulation(Array.from(this.nodes.values()))
-        .force('link', d3.forceLink<GraphNode, GraphLink>(this.links).id(d => d.id).distance(100))
+        .force('link', d3.forceLink<GraphNode, GraphLink>(this.links).id(d => d.payload.get_id()).distance(100))
         .force('charge', d3.forceManyBody().strength(-400))
         .force('center', d3.forceCenter(this.width / 2, this.height / 2));
+
+      for (const [id, f] of this.payload.get_flaws())
+        this.nodes.set(id, { payload: f, entering: [], exiting: [] });
+
+      for (const [id, r] of this.payload.get_resolvers())
+        this.nodes.set(id, { payload: r, entering: [], exiting: [] });
+
+      for (const [_, gn] of this.nodes)
+        if (gn.payload instanceof solver.graph.Flaw) {
+          for (const c of gn.payload.get_supports()) {
+            const fr = { source: gn, target: this.nodes.get(c.get_id())! }; // the flaw-resolver links..
+            gn.exiting.push(fr);
+            this.links.push(fr);
+          }
+        } else if (gn.payload instanceof solver.graph.Resolver) {
+          const fn = this.nodes.get(gn.payload.get_flaw().get_id())!;
+          const rf = { source: gn, target: fn }; // the resolver-flaw links..
+          gn.exiting.push(rf);
+          fn.entering.push(rf);
+          this.links.push(rf);
+        }
 
       this.payload.add_solver_listener(this);
       this.state_changed();
     }
 
     state_changed(): void { }
-    flaw_created(_flaw: solver.graph.Flaw): void {
+    flaw_created(f: solver.graph.Flaw): void {
+      const fn: GraphNode = { payload: f, entering: [], exiting: [] };
+      for (const c of f.get_causes()) {
+        const fr = { source: fn, target: this.nodes.get(c.get_id())! }; // the flaw-resolver links..
+        fn.exiting.push(fr);
+        this.links.push(fr);
+      }
+      this.nodes.set(f.get_id(), fn);
+
       this.update_graph();
     }
-    flaw_state_changed(_flaw: solver.graph.Flaw): void { }
-    flaw_position_changed(_flaw: solver.graph.Flaw): void { }
-    flaw_cost_changed(_flaw: solver.graph.Flaw): void { }
-    current_flaw(_flaw: solver.graph.Flaw | null): void { }
-    resolver_created(_resolver: solver.graph.Resolver): void { }
-    resolver_state_changed(_resolver: solver.graph.Resolver): void { }
-    current_resolver(_resolver: solver.graph.Resolver | null): void { }
-    causal_link_added(_flaw: solver.graph.Flaw, _resolver: solver.graph.Resolver): void { }
+    flaw_state_changed(_flaw: solver.graph.Flaw): void { this.update_graph(); }
+    flaw_position_changed(_flaw: solver.graph.Flaw): void { this.update_graph(); }
+    flaw_cost_changed(_flaw: solver.graph.Flaw): void { this.update_graph(); }
+    current_flaw(_flaw: solver.graph.Flaw | null): void { this.update_graph(); }
+    resolver_created(r: solver.graph.Resolver): void {
+      const rn: GraphNode = { payload: r, entering: [], exiting: [] };
+      const fn = this.nodes.get(r.get_flaw().get_id())!;
+      const rf = { source: rn, target: fn }; // the resolver-flaw links..
+      rn.exiting.push(rf);
+      fn.entering.push(rf);
+      this.links.push(rf);
+
+      this.nodes.set(r.get_id(), rn);
+
+      this.update_graph();
+    }
+    resolver_state_changed(_resolver: solver.graph.Resolver): void { this.update_graph(); }
+    current_resolver(_resolver: solver.graph.Resolver | null): void { this.update_graph(); }
+    causal_link_added(_flaw: solver.graph.Flaw, _resolver: solver.graph.Resolver): void { this.update_graph(); }
 
     private update_graph(): void {
       // Update links (directed edges)
@@ -75,7 +116,7 @@ export namespace graph {
 
       const node = this.container!
         .selectAll<SVGGElement, GraphNode>('.node') // Select all existing nodes
-        .data(nodes, d => d.id); // Use a key function to track nodes by `id`
+        .data(nodes, d => d.payload.get_id()); // Use a key function to track nodes by `id`
 
       // Create new node groups as needed
       const node_enter = node.enter()
@@ -111,7 +152,7 @@ export namespace graph {
 
       // Append label to new nodes
       node_enter.append('text')
-        .text(d => d.label)
+        .text(d => d.payload.to_string())
         .attr('text-anchor', 'middle')
         .attr('alignment-baseline', 'middle')
         .attr('fill', '#000');
