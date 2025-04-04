@@ -181,17 +181,17 @@ export namespace graph {
               return src ? src.y : d.source.y!;
             })
             .attr('x2', d => {
-              let trgt = intersect({ x: d.target.x! - node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.target.x! - node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! - node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.target.x! + node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! + node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.target.x! + node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! + node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.target.x! - node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              let trgt = intersect({ x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
               return trgt ? trgt.x : d.target.x!;
             })
             .attr('y2', d => {
-              let trgt = intersect({ x: d.target.x! - node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.target.x! - node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! - node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.target.x! + node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! + node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.target.x! + node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
-              if (!trgt) trgt = intersect({ x: d.target.x! + node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.target.x! - node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              let trgt = intersect({ x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! + node_height * 1.5 / 2 }, { x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! + node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.target.x! - node_width * 1.2 / 2, y: d.target.y! - node_height * 1.5 / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
               return trgt ? trgt.y : d.target.y!;
             });
 
