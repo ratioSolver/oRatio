@@ -167,34 +167,32 @@ export namespace graph {
           // Update link positions
           this.container!.selectAll<SVGLineElement, GraphLink>('.link')
             .attr('x1', d => {
-              const dx = d.target.x! - d.source.x!;
-              const dy = d.target.y! - d.source.y!;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-              const padding = 10; // Source node padding distance
-              return d.source.x! + (dx / distance) * padding;
+              let src = intersect({ x: d.source.x! - node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x! - node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!src) src = intersect({ x: d.source.x! - node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x! + node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!src) src = intersect({ x: d.source.x! + node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x! + node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!src) src = intersect({ x: d.source.x! + node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x! - node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              return src ? src.x : d.source.x!;
             })
             .attr('y1', d => {
-              const dx = d.target.x! - d.source.x!;
-              const dy = d.target.y! - d.source.y!;
-              const distance = Math.sqrt(dx * dx + dy * dy);
-              const padding = 10; // Source node padding distance
-              return d.source.y! + (dy / distance) * padding;
+              let src = intersect({ x: d.source.x! - node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x! - node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!src) src = intersect({ x: d.source.x! - node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x! + node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!src) src = intersect({ x: d.source.x! + node_width / 2, y: d.source.y! + node_height / 2 }, { x: d.source.x! + node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!src) src = intersect({ x: d.source.x! + node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x! - node_width / 2, y: d.source.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              return src ? src.y : d.source.y!;
             })
             .attr('x2', d => {
-              const dx = d.target.x! - d.source.x!;
-              const dy = d.target.y! - d.source.y!;
-              const scale_x = node_width / 2 / Math.abs(dx); // Scale factor for x intersection
-              const scale_y = node_height / 2 / Math.abs(dy); // Scale factor for y intersection
-              const scale = Math.min(scale_x, scale_y); // Choose the smaller scale factor to keep within bounds
-              return d.target.x! - dx * scale * 1.5; // Adjust target x
+              let trgt = intersect({ x: d.target.x! - node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.target.x! - node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! - node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.target.x! + node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! + node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.target.x! + node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! + node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.target.x! - node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              return trgt ? trgt.x : d.target.x!;
             })
             .attr('y2', d => {
-              const dx = d.target.x! - d.source.x!;
-              const dy = d.target.y! - d.source.y!;
-              const scale_x = node_width / 2 / Math.abs(dx); // Scale factor for x intersection
-              const scale_y = node_height / 2 / Math.abs(dy); // Scale factor for y intersection
-              const scale = Math.min(scale_x, scale_y); // Choose the smaller scale factor to keep within bounds
-              return d.target.y! - dy * scale * 1.5; // Adjust target y
+              let trgt = intersect({ x: d.target.x! - node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.target.x! - node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! - node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.target.x! + node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! + node_width / 2, y: d.target.y! + node_height / 2 }, { x: d.target.x! + node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              if (!trgt) trgt = intersect({ x: d.target.x! + node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.target.x! - node_width / 2, y: d.target.y! - node_height / 2 }, { x: d.source.x!, y: d.source.y! }, { x: d.target.x!, y: d.target.y! });
+              return trgt ? trgt.y : d.target.y!;
             });
 
           // Update node positions
@@ -212,5 +210,19 @@ export namespace graph {
     start(_atoms: solver.values.Atom[]): void { }
     ending(_atoms: solver.values.Atom[]): void { }
     end(_atoms: solver.values.Atom[]): void { }
+  }
+
+  type Point = { x: number; y: number };
+
+  function intersect(p0: Point, p1: Point, p2: Point, p3: Point): Point | undefined {
+    const s1_x = p1.x - p0.x, s1_y = p1.y - p0.y, s2_x = p3.x - p2.x, s2_y = p3.y - p2.y;
+
+    const s = (-s1_y * (p0.x - p2.x) + s1_x * (p0.y - p2.y)) / (-s2_x * s1_y + s1_x * s2_y);
+    const t = (s2_x * (p0.y - p2.y) - s2_y * (p0.x - p2.x)) / (-s2_x * s1_y + s1_x * s2_y);
+
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+      return { x: p0.x + (t * s1_x), y: p0.y + (t * s1_y) };
+    else
+      return undefined;
   }
 }
