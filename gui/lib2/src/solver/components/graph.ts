@@ -9,6 +9,7 @@ export namespace graph {
 
   interface GraphNode extends d3.SimulationNodeDatum {
     payload: solver.graph.Flaw | solver.graph.Resolver;
+    current: boolean;
     entering: GraphLink[];
     exiting: GraphLink[];
   }
@@ -24,6 +25,8 @@ export namespace graph {
     private readonly height = 600;
     private readonly nodes: Map<number, GraphNode> = new Map();
     private readonly links: GraphLink[] = [];
+    private cf: GraphNode | undefined;
+    private cr: GraphNode | undefined;
 
     private readonly color_scale = d3.scaleLinear<string, string>().domain([0, 20]).range(['green', 'red']);
 
@@ -48,10 +51,10 @@ export namespace graph {
         .force('center', d3.forceCenter(this.width / 2, this.height / 2));
 
       for (const [id, f] of this.payload.get_flaws())
-        this.nodes.set(id, { payload: f, entering: [], exiting: [] });
+        this.nodes.set(id, { payload: f, current: false, entering: [], exiting: [] });
 
       for (const [id, r] of this.payload.get_resolvers())
-        this.nodes.set(id, { payload: r, entering: [], exiting: [] });
+        this.nodes.set(id, { payload: r, current: false, entering: [], exiting: [] });
 
       for (const [_, gn] of this.nodes)
         if (gn.payload instanceof solver.graph.Flaw) {
@@ -68,6 +71,18 @@ export namespace graph {
           this.links.push(rf);
         }
 
+      const cf = this.payload.get_current_flaw();
+      if (cf) {
+        this.cf = this.nodes.get(cf.get_id())!;
+        this.cf.current = true;
+      }
+
+      const cr = this.payload.get_current_resolver();
+      if (cr) {
+        this.cr = this.nodes.get(cr.get_id())!;
+        this.cr.current = true;
+      }
+
       this.add_data();
 
       this.payload.add_solver_listener(this);
@@ -75,7 +90,7 @@ export namespace graph {
 
     state_changed(): void { }
     flaw_created(f: solver.graph.Flaw): void {
-      const fn: GraphNode = { payload: f, entering: [], exiting: [] };
+      const fn: GraphNode = { payload: f, current: false, entering: [], exiting: [] };
       for (const c of f.get_causes()) {
         const fr = { source: fn, target: this.nodes.get(c.get_id())! }; // the flaw-resolver links..
         fn.exiting.push(fr);
@@ -94,10 +109,28 @@ export namespace graph {
       } else
         this.update_data([this.nodes.get(f.get_id())!]);
     }
-    current_flaw(_f: solver.graph.Flaw | null): void {
+    current_flaw(f: solver.graph.Flaw | null): void {
+      if (f) {
+        if (this.cf) {
+          this.cf.current = false;
+          const cf = this.nodes.get(f.get_id())!;
+          cf.current = true;
+          this.update_data([this.cf, cf]);
+          this.cf = cf;
+        } else {
+          const cf = this.nodes.get(f.get_id())!;
+          cf.current = true;
+          this.update_data([cf]);
+          this.cf = cf;
+        }
+      } else if (this.cf) {
+        this.cf.current = false;
+        this.update_data([this.cf]);
+        this.cf = undefined;
+      }
     }
     resolver_created(r: solver.graph.Resolver): void {
-      const rn: GraphNode = { payload: r, entering: [], exiting: [] };
+      const rn: GraphNode = { payload: r, current: false, entering: [], exiting: [] };
       const fn = this.nodes.get(r.get_flaw().get_id())!;
       const rf = { source: rn, target: fn }; // the resolver-flaw links..
       rn.exiting.push(rf);
@@ -161,12 +194,14 @@ export namespace graph {
               .attr('rx', 5)
               .attr('ry', 5)
               .attr('fill', cs(d.payload.get_cost()))
+              .style('stroke-width', stroke_width(d))
               .style('stroke-dasharray', stroke_dasharray(d));
           } else if (d.payload instanceof solver.graph.Resolver) {
             node.append('ellipse')
               .attr('rx', node_width / 2)
               .attr('ry', node_height / 3)
               .attr('fill', cs(d.payload.get_cost()))
+              .style('stroke-width', stroke_width(d))
               .style('stroke-dasharray', stroke_dasharray(d));
           }
         })
@@ -219,6 +254,7 @@ export namespace graph {
 
           node
             .attr('fill', cs(d.payload.get_cost()))
+            .style('stroke-width', stroke_width(d))
             .style('stroke-dasharray', stroke_dasharray(d))
         });
     }
@@ -244,6 +280,8 @@ export namespace graph {
     else
       return undefined;
   }
+
+  function stroke_width(n: GraphNode): number { return n.current ? 2 : 1; }
 
   function stroke_dasharray(n: GraphNode): string {
     switch (n.payload.get_state()) {
