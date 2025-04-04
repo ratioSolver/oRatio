@@ -160,8 +160,7 @@ export namespace solver {
 
       if (solver_message.resolvers) // we create the resolvers..
         for (const [id, rm] of Object.entries(solver_message.resolvers))
-          if (rm.preconditions)
-            this.resolvers.set(Number(id), new graph.Resolver(Number(id), rm.rho, rm.preconditions.map((id: number) => this.get_flaw(id)), this.get_flaw(rm.flaw), graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
+          this.resolvers.set(Number(id), new graph.Resolver(Number(id), rm.rho, rm.preconditions ? rm.preconditions.map((id: number) => this.get_flaw(id)) : [], this.get_flaw(rm.flaw), graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
 
       if (solver_message.flaws)
         for (const [id, fm] of Object.entries(solver_message.flaws)) {

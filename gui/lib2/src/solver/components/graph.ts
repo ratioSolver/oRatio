@@ -66,8 +66,9 @@ export namespace graph {
           this.links.push(rf);
         }
 
+      this.add_data();
+
       this.payload.add_solver_listener(this);
-      this.state_changed();
     }
 
     state_changed(): void { }
@@ -80,12 +81,13 @@ export namespace graph {
       }
       this.nodes.set(f.get_id(), fn);
 
-      this.update_graph();
+      this.add_data();
     }
-    flaw_state_changed(_flaw: solver.graph.Flaw): void { this.update_graph(); }
-    flaw_position_changed(_flaw: solver.graph.Flaw): void { this.update_graph(); }
-    flaw_cost_changed(_flaw: solver.graph.Flaw): void { this.update_graph(); }
-    current_flaw(_flaw: solver.graph.Flaw | null): void { this.update_graph(); }
+    flaw_state_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
+    flaw_position_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
+    flaw_cost_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
+    current_flaw(_f: solver.graph.Flaw | null): void {
+    }
     resolver_created(r: solver.graph.Resolver): void {
       const rn: GraphNode = { payload: r, entering: [], exiting: [] };
       const fn = this.nodes.get(r.get_flaw().get_id())!;
@@ -96,33 +98,26 @@ export namespace graph {
 
       this.nodes.set(r.get_id(), rn);
 
-      this.update_graph();
+      this.add_data();
     }
-    resolver_state_changed(_resolver: solver.graph.Resolver): void { this.update_graph(); }
-    current_resolver(_resolver: solver.graph.Resolver | null): void { this.update_graph(); }
-    causal_link_added(_flaw: solver.graph.Flaw, _resolver: solver.graph.Resolver): void { this.update_graph(); }
+    resolver_state_changed(r: solver.graph.Resolver): void { this.update_data([this.nodes.get(r.get_id())!]); }
+    current_resolver(_r: solver.graph.Resolver | null): void {
+    }
+    causal_link_added(f: solver.graph.Flaw, r: solver.graph.Resolver): void { this.update_data([this.nodes.get(f.get_id())!]), this.update_data([this.nodes.get(r.get_id())!]); }
 
-    private update_graph(): void {
-      // Update links (directed edges)
-      const link = this.container!.selectAll<SVGLineElement, GraphLink>('.link')
+    private add_data(): void {
+      this.container!.selectAll<SVGLineElement, GraphLink>('.link') // Select all existing links
         .data(this.links)
         .enter()
         .append('line')
         .attr('class', 'link')
         .attr('stroke', 'black')
-        .attr('stroke-width', 1.5);
+        .attr('stroke-width', 1.5)
+        .attr('marker-end', 'url(#end)'); // Add arrowheads to links
 
-      link.attr('marker-end', 'url(#end)'); // Add arrowheads to links
-
-      // Update nodes
-      const nodes = Array.from(this.nodes.values());
-
-      const node = this.container!
-        .selectAll<SVGGElement, GraphNode>('.node') // Select all existing nodes
-        .data(nodes, d => d.payload.get_id()); // Use a key function to track nodes by `id`
-
-      // Create new node groups as needed
-      const node_enter = node.enter()
+      this.container!.selectAll<SVGGElement, GraphNode>('.node') // Select all existing nodes
+        .data(Array.from(this.nodes.values()), d => d.payload.get_id())
+        .enter()
         .append('g')
         .attr('class', 'node')
         .call(
@@ -141,32 +136,32 @@ export namespace graph {
               d.fx = null;
               d.fy = null;
             })
-        );
+        )
+        .each(function (d) {
+          const node = d3.select(this);
 
-      // Append shapes based on the node's type
-      node_enter.each(function (d) {
-        const node = d3.select(this);
-
-        // Check the node type and append the corresponding shape
-        if (d.payload instanceof solver.graph.Flaw) {
-          node.append('rect')
-            .attr('width', node_width)
-            .attr('height', node_height)
-            .attr('x', -node_width / 2)
-            .attr('y', -node_height / 2)
-            .attr('rx', 5)
-            .attr('ry', 5)
-            .attr('fill', '#69b3a2');
-        } else if (d.payload instanceof solver.graph.Resolver) {
-          node.append('ellipse')
-            .attr('rx', node_width / 2)
-            .attr('ry', node_height / 3)
-            .attr('fill', '#1f77b4');
-        }
-      });
-
-      // Append label to new nodes
-      node_enter.append('text')
+          // Check the node type and append the corresponding shape
+          if (d.payload instanceof solver.graph.Flaw) {
+            node.append('rect')
+              .attr('width', node_width)
+              .attr('height', node_height)
+              .attr('x', -node_width / 2)
+              .attr('y', -node_height / 2)
+              .attr('rx', 5)
+              .attr('ry', 5)
+              .attr('fill', '#69b3a2')
+              .attr('stroke', 'dimgray')
+              .style('stroke-dasharray', stroke_dasharray(d));
+          } else if (d.payload instanceof solver.graph.Resolver) {
+            node.append('ellipse')
+              .attr('rx', node_width / 2)
+              .attr('ry', node_height / 3)
+              .attr('fill', '#1f77b4')
+              .attr('stroke', 'dimgray')
+              .style('stroke-dasharray', stroke_dasharray(d));
+          }
+        })
+        .append('text')
         .text(d => d.payload.to_string())
         .attr('text-anchor', 'middle')
         .attr('alignment-baseline', 'middle')
@@ -174,7 +169,7 @@ export namespace graph {
 
       // Restart the simulation with new data
       this.simulation!
-        .nodes(nodes) // Update node data in the simulation
+        .nodes(Array.from(this.nodes.values())) // Update node data in the simulation
         .on('tick', () => {
           // Update link positions
           this.container!.selectAll<SVGLineElement, GraphLink>('.link')
@@ -216,6 +211,17 @@ export namespace graph {
       this.simulation!.alpha(1).restart(); // Restart the simulation with the new layout
     }
 
+    private update_data(nodes: GraphNode[]): void {
+      this.container!
+        .selectAll<SVGGElement, GraphNode>('.node') // Select all existing nodes
+        .data(nodes, d => d.payload.get_id())
+        .each(function (d) {
+          const node = d3.select(this);
+
+          node.style('stroke-dasharray', stroke_dasharray(d))
+        });
+    }
+
     execution_state_changed(_state: solver.ExecutionState): void { }
     tick(_time: solver.values.Rational): void { }
     starting(_atoms: solver.values.Atom[]): void { }
@@ -236,5 +242,16 @@ export namespace graph {
       return { x: p0.x + (t * s1_x), y: p0.y + (t * s1_y) };
     else
       return undefined;
+  }
+
+  function stroke_dasharray(n: GraphNode): string {
+    switch (n.payload.get_state()) {
+      case solver.graph.State.active:
+        return ''; // Solid stroke
+      case solver.graph.State.inactive:
+        return '1'; // Dashed stroke
+      case solver.graph.State.forbidden:
+        return '2'; // Longer dashed stroke
+    }
   }
 }
