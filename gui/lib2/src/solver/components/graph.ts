@@ -143,15 +143,27 @@ export namespace graph {
             })
         );
 
-      // Append rectangle to new nodes
-      node_enter.append('rect')
-        .attr('width', node_width)
-        .attr('height', node_height)
-        .attr('x', -node_width / 2)
-        .attr('y', -node_height / 2)
-        .attr('rx', 5)
-        .attr('ry', 5)
-        .attr('fill', '#69b3a2');
+      // Append shapes based on the node's type
+      node_enter.each(function (d) {
+        const node = d3.select(this);
+
+        // Check the node type and append the corresponding shape
+        if (d.payload instanceof solver.graph.Flaw) {
+          node.append('rect')
+            .attr('width', node_width)
+            .attr('height', node_height)
+            .attr('x', -node_width / 2)
+            .attr('y', -node_height / 2)
+            .attr('rx', 5)
+            .attr('ry', 5)
+            .attr('fill', '#69b3a2');
+        } else if (d.payload instanceof solver.graph.Resolver) {
+          node.append('ellipse')
+            .attr('rx', node_width / 2)
+            .attr('ry', node_height / 3)
+            .attr('fill', '#1f77b4');
+        }
+      });
 
       // Append label to new nodes
       node_enter.append('text')
