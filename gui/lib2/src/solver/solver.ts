@@ -647,7 +647,7 @@ export namespace solver {
 
       to_string(slv: Solver, expressive = false): string {
         const num = Number(this.val);
-        if (typeof num === "number" && !isNaN(num) && slv._items.has(num))
+        if (typeof num === 'number' && !isNaN(num) && slv._items.has(num))
           return slv._items.get(num)!.to_string(slv, expressive);
         else
           return `'${this.val}'`;
@@ -769,6 +769,9 @@ export namespace solver {
 
       private constructor() {
         this.add_timeline_generator(new SolverTimelineGenerator());
+        this.add_timeline_generator(new StateVariableTimelineGenerator());
+        this.add_timeline_generator(new ReusableResourceTimelineGenerator());
+        this.add_timeline_generator(new ConsumableResourceTimelineGenerator());
       }
 
       public static get_instance(): TimelineManager {
@@ -806,7 +809,7 @@ export namespace solver {
           else if ('start' in v && 'end' in v)
             return { ...atm, start: values.Rational.make_rational(v.start), end: values.Rational.make_rational(v.end) } as SolverTimelineValue;
           else
-            throw new Error('Invalid item: must have either "at" or both "start" and "end"');
+            throw new Error("Invalid item: must have either 'at' or both 'start' and 'end'");
         });
         return new SolverTimeline(slv, tml.id, tml.name, slv_vals);
       }
@@ -854,6 +857,134 @@ export namespace solver {
       }
 
       override to_string(value: SolverTimelineValue, expressive = false): string { return value.to_string(this.slv, expressive); }
+    }
+  }
+
+  class StateVariableTimelineGenerator extends solver.timeline.TimelineGenerator<StateVariableTimelineValue> {
+
+    constructor() { super('StateVariable'); }
+
+    override make_timeline(slv: solver.Solver, tml: StateVariableTimelineMessage): StateVariableTimeline {
+      const sv_vals = tml.values.map(v => {
+        const atms = v.atoms.map(atm => slv._atoms.get(atm)!);
+        return { atoms: atms, start: solver.values.Rational.make_rational(v.start), end: solver.values.Rational.make_rational(v.end) };
+      });
+      return new StateVariableTimeline(slv, tml.id, tml.name, sv_vals);
+    }
+  }
+
+  type StateVariableTimelineValue = { atoms: solver.values.Atom[] } & solver.timeline.Interval;
+
+  export class StateVariableTimeline extends solver.timeline.Timeline<StateVariableTimelineValue> {
+
+    constructor(slv: solver.Solver, id: number, name: string, values: StateVariableTimelineValue[]) {
+      super(slv, 'StateVariable', id, name, values);
+    }
+
+    override to_string(value: StateVariableTimelineValue, expressive = false): string {
+      if (expressive)
+        switch (value.atoms.length) {
+          case 0:
+            return `[] (${value.start.to_string()} - ${value.end.to_string()})`;
+          case 1:
+            return value.atoms[0].to_string(this.slv, expressive);
+          default:
+            return `[${value.atoms.map(atom => atom.to_string(this.slv, expressive)).join(', ')}] (${value.start.to_string()} - ${value.end.to_string()})`;
+        }
+      else
+        switch (value.atoms.length) {
+          case 0:
+            return '[]';
+          case 1:
+            return value.atoms[0].to_string(this.slv, expressive);
+          default:
+            return `[${value.atoms.map(atom => atom.to_string(this.slv, expressive)).join(', ')}]`;
+        }
+    }
+  }
+
+  class ReusableResourceTimelineGenerator extends solver.timeline.TimelineGenerator<ReusableResourceTimelineValue> {
+
+    constructor() { super('ReusableResource'); }
+
+    override make_timeline(slv: solver.Solver, tml: ReusableResourceTimelineMessage): ReusableResourceTimeline {
+      const rr_vals = tml.values.map(v => {
+        const atms = v.atoms.map(atm => slv._atoms.get(atm)!);
+        return { atoms: atms, usage: solver.values.Rational.make_rational(v.usage), start: solver.values.Rational.make_rational(v.start), end: solver.values.Rational.make_rational(v.end) };
+      });
+      return new ReusableResourceTimeline(slv, tml.id, tml.name, solver.values.Rational.make_rational(tml.capacity), rr_vals);
+    }
+  }
+
+  type ReusableResourceTimelineValue = { atoms: solver.values.Atom[], usage: solver.values.Rational } & solver.timeline.Interval;
+
+  export class ReusableResourceTimeline extends solver.timeline.Timeline<ReusableResourceTimelineValue> {
+
+    capacity: solver.values.Rational;
+
+    constructor(slv: solver.Solver, id: number, name: string, capacity: solver.values.Rational, values: ReusableResourceTimelineValue[]) {
+      super(slv, 'ReusableResource', id, name, values);
+      this.capacity = capacity;
+    }
+
+    override to_string(value: ReusableResourceTimelineValue, expressive = false): string {
+      if (expressive)
+        switch (value.atoms.length) {
+          case 0:
+            return `0 (${value.start.to_string()} - ${value.end.to_string()})`;
+          case 1:
+            return value.usage.to_string() + ' ' + value.atoms[0].to_string(this.slv, expressive);
+          default:
+            return value.usage.to_string() + ` {${value.atoms.map(atom => atom.to_string(this.slv, expressive)).join(', ')}} (${value.start.to_string()} - ${value.end.to_string()})`;
+        }
+      else
+        return value.usage.to_string();
+    }
+  }
+
+  class ConsumableResourceTimelineGenerator extends solver.timeline.TimelineGenerator<ConsumableResourceTimelineValue> {
+
+    constructor() { super('ConsumableResource'); }
+
+    override make_timeline(slv: solver.Solver, tml: ConsumableResourceTimelineMessage): ConsumableResourceTimeline {
+      const cr_vals = tml.values.map(v => {
+        const atms = v.atoms.map(atm => slv._atoms.get(atm)!);
+        return { atoms: atms, from: solver.values.Rational.make_rational(v.from), to: solver.values.Rational.make_rational(v.to), start: solver.values.Rational.make_rational(v.start), end: solver.values.Rational.make_rational(v.end) };
+      });
+      return new ConsumableResourceTimeline(slv, tml.id, tml.name, solver.values.Rational.make_rational(tml.capacity), solver.values.Rational.make_rational(tml.initial_amount), cr_vals);
+    }
+  }
+
+  type ConsumableResourceTimelineValue = { atoms: solver.values.Atom[], from: solver.values.Rational, to: solver.values.Rational } & solver.timeline.Interval;
+
+  export class ConsumableResourceTimeline extends solver.timeline.Timeline<ConsumableResourceTimelineValue> {
+
+    capacity: solver.values.Rational;
+    initial_amount: solver.values.Rational;
+
+    constructor(slv: solver.Solver, id: number, name: string, capacity: solver.values.Rational, initial_amount: solver.values.Rational, values: ConsumableResourceTimelineValue[]) {
+      super(slv, 'ConsumableResource', id, name, values);
+      this.capacity = capacity;
+      this.initial_amount = initial_amount;
+    }
+
+    override to_string(value: ConsumableResourceTimelineValue, expressive = false): string {
+      if (expressive)
+        switch (value.atoms.length) {
+          case 0:
+            return `- (${value.start.to_string()} - ${value.end.to_string()})`;
+          case 1:
+            return `${value.start.to_string()} - ${value.end.to_string()} ${value.atoms[0].to_string(this.slv, expressive)}`;
+          default:
+            return `${value.start.to_string()} - ${value.end.to_string()} {${value.atoms.map(atom => atom.to_string(this.slv, expressive)).join(', ')}} (${value.start.to_string()} - ${value.end.to_string()})`;
+        }
+      else
+        switch (value.atoms.length) {
+          case 0:
+            return '-';
+          default:
+            return `${value.start.to_string()} - ${value.end.to_string()}`;
+        }
     }
   }
 }
@@ -1028,6 +1159,19 @@ export interface TimelineMsg<V extends ImpulseMessage | IntervalMessage> {
 }
 
 interface SolverTimelineMessage extends TimelineMsg<{ atom: number } & (ImpulseMessage | IntervalMessage)> { }
+
+interface StateVariableTimelineMessage extends TimelineMsg<{ atoms: number[] } & IntervalMessage> { }
+
+interface ReusableResourceTimelineMessage extends TimelineMsg<{ atoms: number[]; usage: RationalMessage } & IntervalMessage> {
+
+  capacity: RationalMessage;
+}
+
+interface ConsumableResourceTimelineMessage extends TimelineMsg<{ atoms: number[]; from: RationalMessage; to: RationalMessage } & IntervalMessage> {
+
+  capacity: RationalMessage;
+  initial_amount: RationalMessage;
+}
 
 type SolversUpdateMessage = { msg_type: string } & (CurrentSolverMessage | SolversMessage | NewSolverMessage | DeletedSolverMessage | StateChangedMessage | FlawCreatedMessage | FlawStateChangedMessage | FlawCostChangedMessage | FlawPositionChangedMessage | CurrentFlawMessage | ResolverCreatedMessage | ResolverStateChangedMessage | CurrentResolverMessage | CausalLinkAddedMessage | ExecutionStateChangedMessage | TickMessage | StartingMessage | StartMessage | EndingMessage | EndMessage);
 

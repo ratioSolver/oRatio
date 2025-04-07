@@ -30,7 +30,7 @@ export namespace graph {
 
     private readonly color_scale = d3.scaleLinear<string, string>().domain([0, 20]).range(['green', 'red']);
 
-    private container: d3.Selection<SVGSVGElement, unknown, HTMLElement, any> | undefined;
+    private container: d3.Selection<SVGGElement, unknown, HTMLElement, any> | undefined;
     private simulation: d3.Simulation<GraphNode, GraphLink> | undefined;
 
     constructor(solver: solver.Solver) {
@@ -40,7 +40,22 @@ export namespace graph {
     }
 
     override mounted(): void {
-      this.container = d3.select('#slv-' + this.payload.get_id() + '-graph').append('svg').attr('viewBox', `0 0 ${this.width} ${this.height}`).attr('width', '100%').attr('height', '100%');
+      const container = d3.select('#slv-' + this.payload.get_id() + '-graph')
+        .append('svg')
+        .attr('viewBox', `0 0 ${this.width} ${this.height}`)
+        .attr('width', '100%')
+        .attr('height', '100%');
+
+      this.container = container.append('g').attr('class', 'zoom-group');
+
+      // Define zoom behavior
+      const zoom = d3.zoom<SVGSVGElement, unknown>()
+        .on('zoom', (event) => {
+          this.container!.attr('transform', event.transform);
+        });
+
+      // Attach the zoom behavior to the container
+      container.call(zoom);
 
       // Draw arrows for directed edges
       this.container.append('defs').selectAll('marker').data(['end']).enter().append('marker').attr('id', d => d).attr('viewBox', '0 -5 10 10').attr('refX', 0).attr('refY', 0).attr('orient', 'auto').attr('markerWidth', 6).attr('markerHeight', 6).attr('xoverflow', 'visible').append('path').attr('d', 'M0,-5L10,0L0,5').attr('fill', 'black');
@@ -104,6 +119,7 @@ export namespace graph {
     flaw_position_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
     flaw_cost_changed(f: solver.graph.Flaw): void {
       if (f.get_cost() != Infinity && f.get_cost() > this.color_scale.domain()[1]) {
+        // update color domain..
         this.color_scale.domain([0, f.get_cost()]);
         this.update_data(Array.from(this.nodes.values()));
       } else
@@ -203,7 +219,7 @@ export namespace graph {
             .attr('stroke', 'dimgray')
 
           // Check the node type and append the corresponding shape
-          if (d.payload instanceof solver.graph.Flaw) {
+          if (d.payload instanceof solver.graph.Flaw)
             node.append('rect')
               .attr('width', node_width)
               .attr('height', node_height)
@@ -211,23 +227,21 @@ export namespace graph {
               .attr('y', -node_height / 2)
               .attr('rx', 5)
               .attr('ry', 5)
-              .attr('fill', cs(d.payload.get_cost()))
+              .attr('fill', fill(d, cs))
               .style('stroke-width', stroke_width(d))
               .style('stroke-dasharray', stroke_dasharray(d));
-          } else if (d.payload instanceof solver.graph.Resolver) {
+          else if (d.payload instanceof solver.graph.Resolver)
             node.append('ellipse')
               .attr('rx', node_width / 2)
               .attr('ry', node_height / 3)
-              .attr('fill', cs(d.payload.get_cost()))
+              .attr('fill', fill(d, cs))
               .style('stroke-width', stroke_width(d))
               .style('stroke-dasharray', stroke_dasharray(d));
-          }
         })
         .append('text')
         .text(d => d.payload.to_string())
         .attr('text-anchor', 'middle')
-        .attr('alignment-baseline', 'middle')
-        .attr('fill', '#000');
+        .attr('alignment-baseline', 'middle');
 
       // Restart the simulation with new data
       this.simulation!
@@ -297,6 +311,15 @@ export namespace graph {
       return { x: p0.x + (t * s1_x), y: p0.y + (t * s1_y) };
     else
       return undefined;
+  }
+
+  function fill(n: GraphNode, scale: d3.ScaleLinear<string, string, never>): string {
+    if (n.payload.get_state() == solver.graph.State.inactive)
+      return '#d9d9d9';
+    else if (n.payload.get_cost() == Infinity)
+      return 'black';
+    else
+      return scale(n.payload.get_cost());
   }
 
   function stroke_width(n: GraphNode): number { return n.current ? 2 : 1; }
