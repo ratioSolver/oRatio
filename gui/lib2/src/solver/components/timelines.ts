@@ -30,19 +30,23 @@ export namespace timeline {
       this.container = container.append('g')
         .attr('class', 'zoom-group');
 
+      const x_axis_g = this.container.append('g')
+        .attr('class', 'x-axis')
+        .attr('transform', `translate(0, ${this.height - this.margin.bottom})`)
+        .call(this.x_axis);
+
       // Define zoom behavior
       const zoom = d3.zoom<SVGSVGElement, unknown>()
-        .on('zoom', (event) => {
+        .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+          // Update and redraw the x-axis with the transformed scale
+          x_axis_g.call(this.x_axis.scale(event.transform.rescaleX(this.x_scale)));
+
+          // Update the container's transform to reflect the zoom
           this.container!.attr('transform', `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`);
         });
 
       // Attach the zoom behavior to the container
       container.call(zoom);
-
-      this.container.append('g')
-        .attr('class', 'x-axis')
-        .attr('transform', `translate(0, ${this.height - this.margin.bottom})`)
-        .call(this.x_axis);
 
       this.payload.add_solver_listener(this);
       this.state_changed();
