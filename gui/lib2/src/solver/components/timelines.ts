@@ -68,7 +68,10 @@ export namespace timeline {
         .append('g')
         .attr('class', 'timeline') // Add class to each <g>
         .attr('id', d => d[1].get_id()) // Use names as IDs, but format them
-        .attr('transform', (_, i) => `translate(0, ${i * 50})`); // Position groups (stacked vertically)
+        .attr('transform', (_, i) => `translate(0, ${i * 50})`)
+        .each(function (tl) {
+          ChartManager.get_instance().get_chart_generator(tl[1].get_type()).make_chart(tl[1]);
+        }); // Position groups (stacked vertically)
 
       // Add placeholder content to each timeline group for visualization
       timelines.append('rect')
