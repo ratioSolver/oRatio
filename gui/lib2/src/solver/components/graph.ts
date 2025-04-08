@@ -63,7 +63,15 @@ export namespace graph {
       this.simulation = d3.forceSimulation(Array.from(this.nodes.values()))
         .force('link', d3.forceLink<GraphNode, GraphLink>(this.links).id(d => d.payload.get_id()).distance(100))
         .force('charge', d3.forceManyBody().strength(-400))
-        .force('center', d3.forceCenter(this.width / 2, this.height / 2));
+        .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+        .force('position-x', d3.forceX<GraphNode>((node) => {
+          // Check if the node is a flaw and return a x-coordinate based on its position
+          if (node.payload instanceof solver.graph.Flaw)
+            return node.payload.get_position() * 200;
+          else if (node.payload instanceof solver.graph.Resolver)
+            return (node.payload.get_flaw().get_position() - 0.5) * 200;
+          return NaN;
+        }).strength(0.3));
 
       for (const [id, f] of this.payload.get_flaws())
         this.nodes.set(id, { payload: f, current: false, entering: [], exiting: [] });
@@ -116,7 +124,7 @@ export namespace graph {
       this.add_data();
     }
     flaw_state_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
-    flaw_position_changed(f: solver.graph.Flaw): void { this.update_data([this.nodes.get(f.get_id())!]); }
+    flaw_position_changed(_: solver.graph.Flaw): void { this.update_data(Array.from(this.nodes.values())); }
     flaw_cost_changed(f: solver.graph.Flaw): void {
       if (f.get_cost() != Infinity && f.get_cost() > this.color_scale.domain()[1]) {
         // update color domain..
@@ -178,7 +186,15 @@ export namespace graph {
         this.cr = undefined;
       }
     }
-    causal_link_added(f: solver.graph.Flaw, r: solver.graph.Resolver): void { this.update_data([this.nodes.get(f.get_id())!]), this.update_data([this.nodes.get(r.get_id())!]); }
+    causal_link_added(f: solver.graph.Flaw, r: solver.graph.Resolver): void {
+      const fn = this.nodes.get(f.get_id())!;
+      const rn = this.nodes.get(r.get_id())!;
+      const fr = { source: fn, target: rn }; // the resolver-flaw links..
+      rn.exiting.push(fr);
+      fn.entering.push(fr);
+      this.links.push(fr);
+      this.add_data();
+    }
 
     private add_data(): void {
       this.container!.selectAll<SVGLineElement, GraphLink>('.link') // Select all existing links
@@ -241,7 +257,9 @@ export namespace graph {
         .append('text')
         .text(d => d.payload.to_string())
         .attr('text-anchor', 'middle')
-        .attr('alignment-baseline', 'middle');
+        .attr('alignment-baseline', 'middle')
+        .attr('fill', 'black')          // Explicit text color
+        .attr('stroke', 'none');        // Disable outline/contour
 
       // Restart the simulation with new data
       this.simulation!

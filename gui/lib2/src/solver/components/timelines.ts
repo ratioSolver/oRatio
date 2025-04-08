@@ -10,7 +10,7 @@ export namespace timeline {
     private height = 600;
     private readonly margin = { top: 20, right: 30, bottom: 40, left: 50 };
 
-    private container: d3.Selection<SVGSVGElement, unknown, HTMLElement, any> | undefined;
+    private container: d3.Selection<SVGGElement, unknown, HTMLElement, any> | undefined;
     private readonly x_scale = d3.scaleTime().domain([0, 1]).range([this.margin.left, this.width - this.margin.right]);
     private readonly x_axis = d3.axisBottom(this.x_scale);
 
@@ -21,8 +21,28 @@ export namespace timeline {
     }
 
     override mounted(): void {
-      this.container = d3.select('#slv-' + this.payload.get_id() + '-timelines').append('svg').attr('viewBox', `0 0 ${this.width} ${this.height}`).attr('width', '100%').attr('height', this.height);
-      this.container.append('g').attr('class', 'x-axis').attr('transform', `translate(0, ${this.height - this.margin.bottom})`).call(this.x_axis);
+      const container = d3.select('#slv-' + this.payload.get_id() + '-timelines')
+        .append('svg')
+        .attr('viewBox', `0 0 ${this.width} ${this.height}`)
+        .attr('width', '100%')
+        .attr('height', this.height);
+
+      this.container = container.append('g')
+        .attr('class', 'zoom-group');
+
+      // Define zoom behavior
+      const zoom = d3.zoom<SVGSVGElement, unknown>()
+        .on('zoom', (event) => {
+          this.container!.attr('transform', `translate(${event.transform.x}, 0) scale(${event.transform.k}, 1)`);
+        });
+
+      // Attach the zoom behavior to the container
+      container.call(zoom);
+
+      this.container.append('g')
+        .attr('class', 'x-axis')
+        .attr('transform', `translate(0, ${this.height - this.margin.bottom})`)
+        .call(this.x_axis);
 
       this.payload.add_solver_listener(this);
       this.state_changed();
