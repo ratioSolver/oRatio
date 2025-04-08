@@ -10,13 +10,13 @@ export namespace reusable_resource {
     override make_timeline(slv: solver.Solver, tml: ReusableResourceTimelineMessage): ReusableResourceTimeline {
       const rr_vals = tml.values.map(v => {
         const atms = v.atoms.map(atm => slv._atoms.get(atm)!);
-        return { atoms: atms, usage: solver.values.Rational.make_rational(v.usage), start: solver.values.Rational.make_rational(v.start), end: solver.values.Rational.make_rational(v.end) };
+        return { atoms: atms, amount: solver.values.Rational.make_rational(v.amount), start: solver.values.Rational.make_rational(v.start), end: solver.values.Rational.make_rational(v.end) };
       });
       return new ReusableResourceTimeline(slv, tml.id, tml.name, solver.values.Rational.make_rational(tml.capacity), rr_vals);
     }
   }
 
-  type ReusableResourceTimelineValue = { atoms: solver.values.Atom[], usage: solver.values.Rational } & solver.timeline.Interval;
+  type ReusableResourceTimelineValue = { atoms: solver.values.Atom[], amount: solver.values.Rational } & solver.timeline.Interval;
 
   class ReusableResourceTimeline extends solver.timeline.Timeline<ReusableResourceTimelineValue> {
 
@@ -33,12 +33,12 @@ export namespace reusable_resource {
           case 0:
             return `0 (${value.start.to_string()} - ${value.end.to_string()})`;
           case 1:
-            return value.usage.to_string() + ' ' + value.atoms[0].to_string(this.slv, expressive);
+            return value.amount.to_string() + ' ' + value.atoms[0].to_string(this.slv, expressive);
           default:
-            return value.usage.to_string() + ` {${value.atoms.map(atom => atom.to_string(this.slv, expressive)).join(', ')}} (${value.start.to_string()} - ${value.end.to_string()})`;
+            return value.amount.to_string() + ` {${value.atoms.map(atom => atom.to_string(this.slv, expressive)).join(', ')}} (${value.start.to_string()} - ${value.end.to_string()})`;
         }
       else
-        return value.usage.to_string();
+        return value.amount.to_string();
     }
   }
 
@@ -70,9 +70,9 @@ export namespace reusable_resource {
       const ys = [0];
       for (const val of timeline.get_values()) {
         xs.push(val.start.to_number());
-        ys.push(val.usage.to_number());
+        ys.push(val.amount.to_number());
         xs.push(val.end.to_number());
-        ys.push(val.usage.to_number());
+        ys.push(val.amount.to_number());
       }
       this.data.push({ x: xs, y: ys, name: timeline.get_name(), type: 'scatter', opacity: 0.7, mode: 'lines', fill: 'tozeroy' });
       this.data.push({ x: [origin, horizon], y: [timeline.capacity.to_number(), timeline.capacity.to_number()], name: 'Capacity', type: 'scatter', opacity: 0.7, mode: 'lines' });
@@ -85,7 +85,7 @@ export namespace reusable_resource {
   }
 }
 
-interface ReusableResourceTimelineMessage extends TimelineMsg<{ atoms: number[]; usage: RationalMessage } & IntervalMessage> {
+interface ReusableResourceTimelineMessage extends TimelineMsg<{ atoms: number[]; amount: RationalMessage } & IntervalMessage> {
 
   capacity: RationalMessage;
 }

@@ -40,3 +40,12 @@ add_test(NAME SolverTest11 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/ri
 add_test(NAME SolverTest12 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_12.rddl" "solution.json")
 add_test(NAME SolverTest13 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/core/example_13.rddl" "solution.json")
 set_tests_properties(SolverTest02 SolverTest05 SolverTest06 PROPERTIES WILL_FAIL TRUE)
+
+add_test(NAME SVTest00 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/types/sv/sv_0.rddl" "solution.json")
+add_test(NAME SVTest01 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/types/sv/sv_1.rddl" "solution.json")
+add_test(NAME SVTest02 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/types/sv/sv_2.rddl" "solution.json")
+
+add_test(NAME RRTest00 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/types/rr/rr_0.rddl" "solution.json")
+add_test(NAME RRTest01 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/types/rr/rr_1.rddl" "solution.json")
+add_test(NAME RRTest02 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/types/rr/rr_2.rddl" "solution.json")
+add_test(NAME RRTest03 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/types/rr/rr_3.rddl" "solution.json")
