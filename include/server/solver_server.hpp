@@ -14,7 +14,7 @@ namespace ratio::server
   class server : public network::server, public ratio::solver
   {
   public:
-    server(std::string_view assets_dir = "./gui/app2/dist");
+    server(std::string_view assets_dir = "./gui/app/dist");
 
   private:
     utils::u_ptr<network::response> index(const network::request &req);
