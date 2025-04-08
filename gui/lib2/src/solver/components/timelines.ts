@@ -30,7 +30,7 @@ export namespace timeline {
       this.container = container.append('g')
         .attr('class', 'zoom-group');
 
-      const x_axis_g = this.container.append('g')
+      const x_axis_g = container.append('g')
         .attr('class', 'x-axis')
         .attr('transform', `translate(0, ${this.height - this.margin.bottom})`)
         .call(this.x_axis);
@@ -60,6 +60,32 @@ export namespace timeline {
       this.container!.attr("height", this.height).attr("viewBox", `0 0 ${this.width} ${this.height}`);
 
       this.x_scale.domain([origin, horizon]);
+
+      // Create a group (<g>) for each timeline
+      const timelines = this.container!.selectAll('g.timeline')
+        .data(this.payload.get_timelines()) // Bind data to the groups
+        .enter()
+        .append('g')
+        .attr('class', 'timeline') // Add class to each <g>
+        .attr('id', d => d[1].get_id()) // Use names as IDs, but format them
+        .attr('transform', (_, i) => `translate(0, ${i * 50})`); // Position groups (stacked vertically)
+
+      // Add placeholder content to each timeline group for visualization
+      timelines.append('rect')
+        .attr('x', this.x_scale(origin))
+        .attr('y', 10)
+        .attr('width', this.x_scale(horizon) - this.x_scale(origin))
+        .attr('height', 30)
+        .attr('fill', 'steelblue');
+
+      timelines.append('text')
+        .attr('x', 10)
+        .attr('y', 30)
+        .text(d => d[1].get_name())
+        .attr('fill', 'black')
+        .style('font-size', '12px')
+        .style('alignment-baseline', 'middle');
+
       this.container!.select<SVGGElement>('.x-axis').call(this.x_axis);
     }
     flaw_created(_flaw: solver.graph.Flaw): void { }
