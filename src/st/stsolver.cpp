@@ -18,25 +18,52 @@ namespace ratio
         if (auto it = items.find(name.data()); it != items.end())
             return it->second;
 
-        auto &tp = static_cast<riddle::component_type &>(get_type()).get_field(name).get_type();
+        // different referenced values can represent the same item, so we group them by the item they represent..
+        std::unordered_map<riddle::term *, std::pair<riddle::expr, std::vector<utils::lit>>> itm_vars;
+        for (const auto &v : get_values())
+        {
+            auto xpr = dynamic_cast<riddle::env *>(&*v)->get(name);
+            if (auto t = itm_vars.find(&*xpr); t != itm_vars.end())
+                t->second.second.emplace_back(get_lit(*v));
+            else
+            {
+                auto p = std::make_pair(xpr, std::vector<utils::lit>());
+                p.second.emplace_back(get_lit(*v));
+                itm_vars.emplace(&*xpr, std::move(p));
+            }
+        }
+
+        assert(!itm_vars.empty());
+        assert(std::none_of(itm_vars.begin(), itm_vars.end(), [](const auto &ivs)
+                            { return ivs.second.second.empty(); }));
+
+        if (itm_vars.size() == 1)
+        { // we are lucky!
+            items.emplace(name, itm_vars.begin()->second.first);
+            return itm_vars.begin()->second.first;
+        }
+        // we have to create a new variable :(
+
+        auto &tp = static_cast<riddle::component_type &>(get_type()).get_field(name).get_type(); // the target type..
 
         if (is_bool(tp))
         { // we create a new boolean item..
             auto b = utils::s_ptr_cast<riddle::bool_item>(get_core().new_bool());
             // we force the variable to assume the same value of the referenced bools according to the value of the enum..
-            for (const auto &v : get_values())
-            {
-                std::vector<utils::lit> c_vars_0;
-                c_vars_0.emplace_back(!get_lit(*v));
-                c_vars_0.emplace_back(!b->get_lit());
-                c_vars_0.emplace_back(static_cast<riddle::bool_item &>(*dynamic_cast<riddle::env &>(*v).get(name)).get_lit());
-                static_cast<solver &>(get_core()).add_clause(std::move(c_vars_0));
-                std::vector<utils::lit> c_vars_1;
-                c_vars_1.emplace_back(!get_lit(*v));
-                c_vars_1.emplace_back(b->get_lit());
-                c_vars_1.emplace_back(!static_cast<riddle::bool_item &>(*dynamic_cast<riddle::env &>(*v).get(name)).get_lit());
-                static_cast<solver &>(get_core()).add_clause(std::move(c_vars_1));
-            }
+            for (const auto &[t, vs] : itm_vars)
+                for (const auto &v : vs.second)
+                {
+                    std::vector<utils::lit> c_vars_0;
+                    c_vars_0.emplace_back(!v);
+                    c_vars_0.emplace_back(!b->get_lit());
+                    c_vars_0.emplace_back(static_cast<riddle::bool_item &>(*t).get_lit());
+                    static_cast<solver &>(get_core()).add_clause(std::move(c_vars_0));
+                    std::vector<utils::lit> c_vars_1;
+                    c_vars_1.emplace_back(!v);
+                    c_vars_1.emplace_back(b->get_lit());
+                    c_vars_1.emplace_back(!static_cast<riddle::bool_item &>(*t).get_lit());
+                    static_cast<solver &>(get_core()).add_clause(std::move(c_vars_1));
+                }
             items.emplace(name, b);
             return b;
         }
@@ -44,13 +71,13 @@ namespace ratio
         {
             auto min = utils::inf_rational(utils::rational::positive_infinite);
             auto max = utils::inf_rational(utils::rational::negative_infinite);
-            for (const auto &v : get_values())
+            for (const auto &[t, vs] : itm_vars)
             {
-                const auto &a_itm = static_cast<riddle::arith_item &>(*dynamic_cast<riddle::env &>(*v).get(name));
+                const auto &a_itm = static_cast<riddle::arith_item &>(*t);
                 const auto c_min = static_cast<solver &>(get_core()).arith_lb(a_itm.get_lin());
                 if (min < c_min)
                     min = c_min;
-                const auto c_max = static_cast<solver &>(get_core()).arith_lb(a_itm.get_lin());
+                const auto c_max = static_cast<solver &>(get_core()).arith_ub(a_itm.get_lin());
                 if (max > c_max)
                     max = c_max;
             }
@@ -77,35 +104,26 @@ namespace ratio
             { // we need to create a new variable..
                 auto ai = is_int(tp) ? utils::s_ptr_cast<riddle::arith_item>(get_core().new_int()) : utils::s_ptr_cast<riddle::arith_item>(get_core().new_real());
                 // we force the variable to assume the same value of the referenced ariths according to the value of the enum..
-                for (const auto &v : get_values())
-                    static_cast<solver &>(get_core()).add_eq(ai->get_lin(), static_cast<riddle::arith_item &>(*dynamic_cast<riddle::env &>(*v).get(name)).get_lin(), get_lit(*v));
+                for (const auto &[t, vs] : itm_vars)
+                    for (const auto &v : vs.second)
+                        static_cast<solver &>(get_core()).add_eq(ai->get_lin(), static_cast<riddle::arith_item &>(*t).get_lin(), v);
                 items.emplace(name, ai);
                 return ai;
             }
         }
         else
-        { // different referenced values can represent the same item, so we group them by the item they represent..
-            std::unordered_map<riddle::term *, std::vector<utils::lit>> itm_vars;
-            for (const auto &v : get_values())
-                itm_vars[&*dynamic_cast<riddle::env *>(&*v)->get(name)].emplace_back(get_lit(*v));
-            assert(!itm_vars.empty());
-            assert(std::all_of(itm_vars.begin(), itm_vars.end(), [](const auto &ivs)
-                               { return !ivs.second.empty(); }));
-
-            if (itm_vars.size() == 1) // we are lucky! we have a constant..
-                return dynamic_cast<riddle::env *>(&**get_values().begin())->get(name);
-
+        {
             std::vector<utils::ref_wrapper<utils::enum_val>> values;
             std::vector<utils::lit> lits;
             for (const auto &[itm, vars] : itm_vars)
             {
                 values.push_back(*itm);
-                if (vars.size() == 1)
-                    lits.emplace_back(*vars.begin());
+                if (vars.second.size() == 1)
+                    lits.emplace_back(*vars.second.begin());
                 else
                 {
                     const auto v = utils::lit(static_cast<solver &>(get_core()).mk_var());
-                    std::vector<utils::lit> vs = vars;
+                    std::vector<utils::lit> vs = vars.second;
                     vs.emplace_back(!v);
                     static_cast<solver &>(get_core()).add_clause(std::move(vs));
                     lits.emplace_back(v);

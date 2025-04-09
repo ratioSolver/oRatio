@@ -805,9 +805,9 @@ export namespace solver {
         const slv_vals = tml.values.map(v => {
           const atm = slv._atoms.get(v.atom)!;
           if ('at' in v)
-            return { ...atm, at: values.Rational.make_rational(v.at) } as SolverTimelineValue;
+            return Object.assign(Object.create(Object.getPrototypeOf(atm)), { ...atm, at: values.Rational.make_rational(v.at) });
           else if ('start' in v && 'end' in v)
-            return { ...atm, start: values.Rational.make_rational(v.start), end: values.Rational.make_rational(v.end) } as SolverTimelineValue;
+            return Object.assign(Object.create(Object.getPrototypeOf(atm)), { ...atm, start: values.Rational.make_rational(v.start), end: values.Rational.make_rational(v.end) });
           else
             throw new Error('Invalid item: must have either "at" or both "start" and "end"');
         });
