@@ -395,14 +395,14 @@ namespace ratio
             return true;
         else if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the terms cannot match..
             return false;
-        else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with an arithmetic constraint..
+        else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with an arithmetic comparison..
             return arith_lb(lhs_xpr->get_lin()) <= arith_ub(static_cast<riddle::arith_item &>(rhs).get_lin()) && arith_ub(lhs_xpr->get_lin()) >= arith_lb(static_cast<riddle::arith_item &>(rhs).get_lin());
-        else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean constraint..
+        else if (auto lhs_xpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with a boolean comparison..
             return value(lhs_xpr->get_lit()) == value(static_cast<riddle::bool_item &>(rhs).get_lit()) || value(lhs_xpr->get_lit()) == utils::Undefined || value(static_cast<riddle::bool_item &>(rhs).get_lit()) == utils::Undefined;
-        else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string constraint..
+        else if (auto lhs_xpr = dynamic_cast<riddle::string_item *>(&lhs)) // we are dealing with a string comparison..
             return lhs_xpr->get_string() == static_cast<riddle::string_item &>(rhs).get_string();
         else if (auto lhs_xpr = dynamic_cast<riddle::enum_item *>(&lhs))
-        { // we are dealing with an enumeration constraint..
+        { // we are dealing with an enumeration comparison..
             if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
             {
                 // we compute the intersection of the two domains
@@ -420,11 +420,14 @@ namespace ratio
             else
             {
                 for (const auto &v : lhs_xpr->get_values())
-                    if (match(*lhs_xpr, static_cast<riddle::term &>(*v)))
-                        return true;
+                    if (value(lhs_xpr->get_lit(*v)) != utils::False)
+                        if (match(*lhs_xpr, static_cast<riddle::term &>(*v)))
+                            return true;
                 return false;
             }
         }
+        else if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are comparing a constant with an enum item..
+            return match(rhs, lhs);
         else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
         { // we are dealing with atoms..
             auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
