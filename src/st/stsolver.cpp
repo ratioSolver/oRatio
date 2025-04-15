@@ -418,10 +418,10 @@ namespace ratio
                                    { return value(lhs_xpr->get_lit(*v)) == value(rhs_xpr->get_lit(*v)) || value(lhs_xpr->get_lit(*v)) == utils::Undefined || value(rhs_xpr->get_lit(*v)) == utils::Undefined; });
             }
             else
-            {
+            { // we are dealing with an enumeration and a constant..
                 for (const auto &v : lhs_xpr->get_values())
                     if (value(lhs_xpr->get_lit(*v)) != utils::False)
-                        if (match(*lhs_xpr, static_cast<riddle::term &>(*v)))
+                        if (match(static_cast<riddle::term &>(*v), rhs)) // if any of the values match, then we are done..
                             return true;
                 return false;
             }
@@ -460,7 +460,7 @@ namespace ratio
             }
             return true;
         }
-        else
+        else // should not happen..
             throw std::runtime_error("Invalid type");
     }
 
