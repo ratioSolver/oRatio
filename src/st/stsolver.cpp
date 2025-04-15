@@ -427,7 +427,7 @@ namespace ratio
             }
         }
         else if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are comparing a constant with an enum item..
-            return match(rhs, lhs);
+            return match(*rhs_xpr, lhs);
         else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
         { // we are dealing with atoms..
             auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
