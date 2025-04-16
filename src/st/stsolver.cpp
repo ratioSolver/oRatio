@@ -672,6 +672,10 @@ namespace ratio
                 auto f = *std::max_element(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &a, const auto &b)
                                            { return a->get_estimated_cost() < b->get_estimated_cost(); });
                 set_current_flaw(*f);
+                assert(std::all_of(f->get_resolvers().begin(), f->get_resolvers().end(), [f](const auto &r)
+                                   { return f == &r->get_flaw(); }));
+                assert(std::none_of(f->get_resolvers().begin(), f->get_resolvers().end(), [this](const auto &r)
+                                    { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }));
 
                 if (is_infinite(f->get_estimated_cost()))
                 { // we don't know how to solve this flaw :(
