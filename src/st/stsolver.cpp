@@ -431,7 +431,7 @@ namespace ratio
         else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
         { // we are dealing with atoms..
             auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
-            if (&lhs_xpr->get_type().get_scope() != &rhs_xpr->get_type().get_scope().get_core() && !match(*lhs_xpr->get(riddle::this_kw), *rhs_xpr->get(riddle::this_kw)))
+            if (&lhs_xpr->get_type().get_scope() != &rhs_xpr->get_type().get_scope().get_core() && !match(*lhs_xpr->get(riddle::tau_kw), *rhs_xpr->get(riddle::tau_kw)))
                 return false; // the atoms are not in the same scope, so they cannot match..
             // we check if the atoms' fields match..
             std::queue<riddle::predicate *> q;
@@ -439,7 +439,7 @@ namespace ratio
             while (!q.empty())
             {
                 for (const auto &[f_name, f] : q.front()->get_fields())
-                    if (!f->is_synthetic() && !match(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name)))
+                    if (!match(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name)))
                         return false;
                 for (const auto &pp : q.front()->get_parents())
                     q.push(&*pp);
@@ -518,8 +518,7 @@ namespace ratio
             while (!q.empty())
             {
                 for (const auto &[f_name, f] : q.front()->get_fields())
-                    if (!f->is_synthetic())
-                        make_eq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), p);
+                    make_eq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), p);
                 for (const auto &pp : q.front()->get_parents())
                     q.push(&*pp);
                 q.pop();
@@ -580,12 +579,11 @@ namespace ratio
             while (!q.empty())
             {
                 for (const auto &[f_name, f] : q.front()->get_fields())
-                    if (!f->is_synthetic())
-                    {
-                        auto neq = utils::lit(mk_var());
-                        make_neq(*lhs_at_xpr->get(f_name), *rhs_at_xpr->get(f_name), neq);
-                        clause.push_back(neq);
-                    }
+                {
+                    auto neq = utils::lit(mk_var());
+                    make_neq(*lhs_at_xpr->get(f_name), *rhs_at_xpr->get(f_name), neq);
+                    clause.push_back(neq);
+                }
                 for (const auto &pp : q.front()->get_parents())
                     q.push(&*pp);
                 q.pop();
@@ -602,12 +600,11 @@ namespace ratio
             while (!q.empty())
             {
                 for (const auto &[f_name, f] : q.front()->get_fields())
-                    if (!f->is_synthetic())
-                    {
-                        auto neq = utils::lit(mk_var());
-                        make_neq(*lhs_c_xpr->get(f_name), *rhs_c_xpr->get(f_name), neq);
-                        clause.push_back(neq);
-                    }
+                {
+                    auto neq = utils::lit(mk_var());
+                    make_neq(*lhs_c_xpr->get(f_name), *rhs_c_xpr->get(f_name), neq);
+                    clause.push_back(neq);
+                }
                 for (const auto &pp : q.front()->get_parents())
                     q.push(&*pp);
                 q.pop();
