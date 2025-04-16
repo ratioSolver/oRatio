@@ -724,8 +724,9 @@ namespace ratio
                 STATE_CHANGED();
                 break;
             default:
-                assert(decision_level() == 0); // we must be at the root level..
-                gamma = mk_var();              // we create a new gamma variable for pruning the causal graph..
+                assert(decision_level() == 0);        // we must be at the root level..
+                assert(value(gamma) == utils::False); // the gamma variable must be false..
+                gamma = mk_var();                     // we create a new gamma variable for pruning the causal graph..
                 LOG_DEBUG("γ: " + std::to_string(gamma));
                 already_closed.clear();
 

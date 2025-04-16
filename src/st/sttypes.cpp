@@ -2,6 +2,7 @@
 #include "stsolver.hpp"
 #include "combinations.hpp"
 #include "stflaws.hpp"
+#include "logging.hpp"
 #include <sstream>
 #include <cassert>
 
@@ -30,39 +31,30 @@ namespace ratio
                         listen_arith(l.first);
             }
 
-        if (atm.get_state() == riddle::active)
-        {
-            auto tau = atm.get(riddle::tau_kw);
-            if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
-                for (const auto &v : atm.get_core().enum_value(*ov))
-                    ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
-            else
-                ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
-        }
+        auto tau = atm.get(riddle::tau_kw);
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+            for (const auto &v : atm.get_core().enum_value(*ov))
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
+        else
+            ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
     }
     void atom_listener::on_change(const utils::var &) noexcept
     {
-        if (atm.get_state() == riddle::active)
-        {
-            auto tau = atm.get(riddle::tau_kw);
-            if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
-                for (const auto &v : atm.get_core().enum_value(*ov))
-                    ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
-            else
-                ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
-        }
+        auto tau = atm.get(riddle::tau_kw);
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+            for (const auto &v : atm.get_core().enum_value(*ov))
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
+        else
+            ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
     }
     void atom_listener::on_arith_change(const utils::var &) noexcept
     {
-        if (atm.get_state() == riddle::active)
-        {
-            auto tau = atm.get(riddle::tau_kw);
-            if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
-                for (const auto &v : atm.get_core().enum_value(*ov))
-                    ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
-            else
-                ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
-        }
+        auto tau = atm.get(riddle::tau_kw);
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+            for (const auto &v : atm.get_core().enum_value(*ov))
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
+        else
+            ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
     }
 
     stcomponent_type::stcomponent_type(solver &slv) noexcept : slv(slv) {}

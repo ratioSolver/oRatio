@@ -3,6 +3,7 @@
 #include "types.hpp"
 #include "logging.hpp"
 #include <algorithm>
+#include <stack>
 #include <cassert>
 
 namespace ratio
@@ -59,7 +60,7 @@ namespace ratio
             if (resetting) // if we are resetting, active flaws and cost estimates will be updated in the `pop` function..
                 return;
             if (state == utils::True && std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [](const auto &resolver)
-                                                     { return resolver->get_state() == utils::True; }))
+                                                     { return resolver->state == utils::True; }))
             {
                 if (!trail.empty()) // we store the current flaw as a new flaw, if not already stored, for allowing backtracking..
                     trail.back().new_flaws.emplace(&f);
@@ -111,15 +112,17 @@ namespace ratio
             if (flaw_q.empty())
                 throw riddle::unsolvable_exception(); // if the flaw queue is empty, then the problem is unsolvable..
 
-            auto &flaw = *flaw_q.front();
+            auto &f = *flaw_q.front();
+            set_current_flaw(f); // set the current flaw..
             flaw_q.pop_front();
-            if (flaw.get_state() != utils::False)
+            if (f.state != utils::False)
             {
-                if (is_deferrable(flaw))
-                    flaw_q.push_back(flaw);
+                if (is_deferrable(f))
+                    flaw_q.push_back(f);
                 else
-                    expand_flaw(flaw);
+                    expand_flaw(f);
             }
+            set_current_flaw(std::nullopt); // reset the current flaw..
         }
     }
 
@@ -128,8 +131,6 @@ namespace ratio
         LOG_DEBUG("[" << get_name() << "] Expanding the causal graph..");
         assert(std::none_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
                             { return is_infinite(f->est_cost); })); // none of the active flaw should cost infinite (otherwise the build procedure should have been called)..
-        assert(std::all_of(flaw_q.cbegin(), flaw_q.cend(), [this](auto f)
-                           { return is_deferrable(*f); })); // all the flaws in the flaw queue should be deferrable..
 
         if (flaw_q.empty())                       // we have no flaws to expand..
             throw riddle::unsolvable_exception(); // if the flaw queue is empty, then the problem is unsolvable..
@@ -138,22 +139,13 @@ namespace ratio
         auto q_size = flaw_q.size();
         for (size_t i = 0; i < q_size; ++i)
         {
-            auto &flaw = *flaw_q.front();
+            auto &f = *flaw_q.front();
+            set_current_flaw(f); // set the current flaw..
             flaw_q.pop_front();
-            assert(!flaw.is_expanded());
-            if (flaw.get_state() != utils::False)
-                expand_flaw(flaw);
-        }
-    }
-
-    void graph::expand_flaws(const std::vector<utils::ref_wrapper<flaw>> &flaws)
-    {
-        for (auto &flaw : flaws)
-        {
-            expand_flaw(*flaw);
-            flaw_q.erase(std::remove_if(flaw_q.begin(), flaw_q.end(), [&flaw](const auto &f)
-                                        { return f == flaw; }),
-                         flaw_q.end());
+            assert(!f.is_expanded());
+            if (f.state != utils::False)
+                expand_flaw(f);
+            set_current_flaw(std::nullopt); // reset the current flaw..
         }
     }
 
@@ -167,51 +159,56 @@ namespace ratio
 
     void graph::expand_flaw(flaw &f)
     {
-        assert(!f.is_expanded());              // the flaw should not be expanded..
-        assert(f.get_state() != utils::False); // the flaw should not be infeasible..
-        set_current_flaw(f);                   // set the current flaw..
+        assert(!f.is_expanded());        // the flaw should not be expanded..
+        assert(f.state != utils::False); // the flaw should not be infeasible..
 
         f.compute_resolvers(); // compute the resolvers for the current flaw..
         f.expanded = true;     // mark the flaw as expanded..
         f.expanded_flaw();     // notify the listeners that the flaw has been expanded (might be used for enforcing causality constraints)..
 
         assert(std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [](const auto &resolver)
-                            { return resolver->get_state() == utils::False; })); // all the resolvers should be feasible..
+                            { return resolver->state == utils::False; })); // all the resolvers should be feasible..
         for (auto &resolver : f.get_resolvers())
         {
             set_current_resolver(resolver); // set the current resolver..
             resolver->apply();              // we apply the resolver..
         }
 
-        compute_flaw_cost(f);    // compute the cost of the flaw..
-        assert(visited.empty()); // we should have visited all the flaws..
+        compute_flaw_cost(f); // compute the cost of the flaw..
 
         set_current_resolver(std::nullopt); // reset the current resolver..
-        set_current_flaw(std::nullopt);     // reset the current flaw..
     }
 
     void graph::compute_flaw_cost(flaw &f)
     {
-        utils::rational c_cost = utils::rational::positive_infinite;
-        if (visited.find(&f) == visited.end() && f.state != utils::False)
-            for (const auto &res : f.resolvers)
-                if (res->state != utils::False)
-                    c_cost = std::min(c_cost, res->get_estimated_cost());
+        std::unordered_set<flaw *> visited;
+        std::stack<flaw *> stk;
+        stk.push(&f);
 
-        if (f.est_cost != c_cost)
+        while (!stk.empty())
         {
-            if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
-                trail.back().old_f_costs.emplace(&f, f.est_cost);
+            auto *c_f = stk.top();
+            stk.pop();
 
-            // we update the cost of the flaw..
-            f.est_cost = c_cost;
-            FLAW_COST_CHANGED(f);
+            utils::rational c_cost = utils::rational::positive_infinite;
+            if (c_f->state != utils::False && visited.insert(c_f).second)
+                for (const auto &res : c_f->resolvers)
+                    if (res->state != utils::False)
+                        c_cost = std::min(c_cost, res->get_estimated_cost());
 
-            // we propagate the cost to the supported resolvers..
-            visited.insert(&f);
-            for (auto &support : f.get_supports())
-                compute_flaw_cost(support->f);
-            visited.erase(&f);
+            if (c_f->est_cost != c_cost)
+            {
+                if (!trail.empty()) // we store the current flaw's estimated cost, if not already stored, for allowing backtracking..
+                    trail.back().old_f_costs.emplace(c_f, c_f->est_cost);
+
+                // we update the cost of the flaw..
+                c_f->est_cost = c_cost;
+                FLAW_COST_CHANGED(*c_f);
+
+                // we propagate the cost to the supported resolvers..
+                for (auto &support : c_f->get_supports())
+                    stk.push(&support->f);
+            }
         }
     }
 
@@ -227,12 +224,13 @@ namespace ratio
         auto &t = trail.back();
         // we restore the previous state of the graph..
         for (const auto &f : t.solved_flaws)
-            if (f->get_state() == utils::True)
+            if (f->state == utils::True && std::none_of(f->get_resolvers().cbegin(), f->get_resolvers().cend(), [](const auto &r)
+                                                        { return r->state == utils::True; }))
                 active_flaws.emplace(f); // we restore the solved flaws..
         for (const auto &f : t.new_flaws)
             active_flaws.erase(f); // we remove the new flaws..
         assert(std::all_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
-                           { return f->get_state() == utils::True; })); // all the active flaws should be active..
+                           { return f->state == utils::True; })); // all the active flaws should be active..
         for (const auto &[f, c] : t.old_f_costs)
         { // we restore the flaws' costs..
             assert(f->est_cost != c);
@@ -244,17 +242,27 @@ namespace ratio
 
     bool graph::is_deferrable(flaw &f)
     {
-        if (f.get_estimated_cost() < utils::rational::positive_infinite || std::any_of(f.get_resolvers().cbegin(), f.get_resolvers().cend(), [this](auto &r)
-                                                                                       { return r->get_state() == utils::True; }))
-            return true; // we already have a possible solution for this flaw, thus we defer..
-        if (f.get_state() == utils::True || visited.count(&f))
-            return false; // we necessarily have to solve this flaw: it cannot be deferred..
-        // we recursively check the flaw's supports..
-        visited.insert(&f);
-        bool def = std::all_of(f.get_supports().cbegin(), f.get_supports().cend(), [this](auto &r)
-                               { return is_deferrable(r->get_flaw()); });
-        visited.erase(&f);
-        return def;
+        std::unordered_set<flaw *> visited;
+        std::stack<flaw *> stk;
+        stk.push(&f);
+
+        while (!stk.empty())
+        {
+            flaw *c_f = stk.top();
+            stk.pop();
+
+            if (c_f->get_estimated_cost() < utils::rational::positive_infinite || std::any_of(c_f->get_resolvers().cbegin(), c_f->get_resolvers().cend(), [this](auto &r)
+                                                                                              { return r->state == utils::True; }))
+                continue; // deferrable, check nothing more..
+
+            if (c_f->state == utils::True || !visited.insert(c_f).second)
+                return false; // not deferrable..
+
+            for (const auto &support : c_f->get_supports())
+                stk.push(&support->get_flaw()); // schedule to be checked..
+        }
+        // if stack empties, all reachable flaws were deferrable
+        return true;
     }
 
     flaw::flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) : gr(gr), causes(causes), exclusive(exclusive)
@@ -273,14 +281,14 @@ namespace ratio
         {
             this->state = state;
             if (state == utils::True && std::none_of(resolvers.begin(), resolvers.end(), [](const auto &resolver)
-                                                     { return resolver->get_state() == utils::True; }))
+                                                     { return resolver->state == utils::True; }))
                 gr.active_flaws.emplace(this);
         }
     }
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(get_state())}, {"position", static_cast<uint64_t>(position)}};
+        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(state)}, {"position", static_cast<uint64_t>(position)}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);
@@ -332,7 +340,7 @@ namespace ratio
 
     json::json resolver::to_json() const
     {
-        json::json j_resolver{{"flaw", static_cast<uint64_t>(f.get_id())}, {"intrinsic_cost", {{"num", static_cast<int64_t>(intrinsic_cost.numerator())}, {"den", static_cast<int64_t>(intrinsic_cost.denominator())}}}, {"state", to_string(get_state())}};
+        json::json j_resolver{{"flaw", static_cast<uint64_t>(f.get_id())}, {"intrinsic_cost", {{"num", static_cast<int64_t>(intrinsic_cost.numerator())}, {"den", static_cast<int64_t>(intrinsic_cost.denominator())}}}, {"state", to_string(state)}};
         if (!preconditions.empty())
         {
             json::json j_preconditions(json::json_type::array);

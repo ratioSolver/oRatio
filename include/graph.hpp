@@ -130,8 +130,6 @@ namespace ratio
      */
     void add_layer();
 
-    void expand_flaws(const std::vector<utils::ref_wrapper<flaw>> &flaws);
-
     void add_causal_link(flaw &f, resolver &r) noexcept;
 
     void push() noexcept;
@@ -243,7 +241,6 @@ namespace ratio
     std::optional<utils::ref_wrapper<resolver>> c_res; // the current resolver..
     std::deque<utils::ref_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..
     std::unordered_set<flaw *> active_flaws;           // the currently active flaws..
-    std::unordered_set<flaw *> visited;                // the visited flaws, for graph cost propagation (and deferrable flaws check)..
 
     struct layer
     {
