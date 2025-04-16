@@ -173,10 +173,9 @@ namespace ratio
             set_current_resolver(resolver); // set the current resolver..
             resolver->apply();              // we apply the resolver..
         }
+        set_current_resolver(std::nullopt); // reset the current resolver..
 
         compute_flaw_cost(f); // compute the cost of the flaw..
-
-        set_current_resolver(std::nullopt); // reset the current resolver..
     }
 
     void graph::compute_flaw_cost(flaw &f)
@@ -184,17 +183,24 @@ namespace ratio
         std::unordered_set<flaw *> visited;
         std::stack<flaw *> stk;
         stk.push(&f);
+        visited.insert(&f); // we insert the flaw in the visited set..
 
         while (!stk.empty())
         {
             auto *c_f = stk.top();
             stk.pop();
+            visited.erase(c_f); // we remove the flaw from the visited set..
 
+            set_current_flaw(*c_f); // set the current flaw..
             utils::rational c_cost = utils::rational::positive_infinite;
-            if (c_f->state != utils::False && visited.insert(c_f).second)
+            if (c_f->state != utils::False)
                 for (const auto &res : c_f->resolvers)
+                {
+                    set_current_resolver(*res); // set the current resolver..
                     if (res->state != utils::False)
                         c_cost = std::min(c_cost, res->get_estimated_cost());
+                    set_current_resolver(std::nullopt); // reset the current resolver..
+                }
 
             if (c_f->est_cost != c_cost)
             {
@@ -207,8 +213,10 @@ namespace ratio
 
                 // we propagate the cost to the supported resolvers..
                 for (auto &support : c_f->get_supports())
-                    stk.push(&support->f);
+                    if (visited.insert(&support->f).second) // not already queued
+                        stk.push(&support->f);
             }
+            set_current_flaw(std::nullopt); // reset the current flaw..
         }
     }
 
