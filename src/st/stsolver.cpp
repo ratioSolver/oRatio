@@ -431,6 +431,9 @@ namespace ratio
         else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
         { // we are dealing with atoms..
             auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
+            if (&lhs_xpr->get_type().get_scope() != &rhs_xpr->get_type().get_scope().get_core() && !match(*lhs_xpr->get(riddle::this_kw), *rhs_xpr->get(riddle::this_kw)))
+                return false; // the atoms are not in the same scope, so they cannot match..
+            // we check if the atoms' fields match..
             std::queue<riddle::predicate *> q;
             q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
             while (!q.empty())
@@ -444,29 +447,15 @@ namespace ratio
             }
             return true;
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs))
-        { // we are dealing with components..
-            auto rhs_xpr = static_cast<riddle::component *>(&rhs);
-            std::queue<riddle::component_type *> q;
-            q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
-            while (!q.empty())
-            {
-                for (const auto &[f_name, f] : q.front()->get_fields())
-                    if (!f->is_synthetic() && !match(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name)))
-                        return false;
-                for (const auto &pp : q.front()->get_parents())
-                    q.push(&*pp);
-                q.pop();
-            }
-            return true;
-        }
-        else // should not happen..
-            throw std::runtime_error("Invalid type");
+        else // we are dealing with components (and we have already checked their are not the same)..
+            return false;
     }
 
     void solver::make_eq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
     {
-        if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always false..
+        if (&lhs == &rhs) // the terms are the same, so they are equal..
+            return;
+        else if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the constraint is always false..
             add_clause({!p});
         else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with an arithmetic constraint..
             add_eq(lhs_xpr->get_lin(), static_cast<riddle::arith_item *>(&rhs)->get_lin(), p);
@@ -536,23 +525,8 @@ namespace ratio
                 q.pop();
             }
         }
-        else if (auto lhs_xpr = dynamic_cast<riddle::component *>(&lhs))
-        { // we are dealing with components..
-            auto rhs_xpr = static_cast<riddle::component *>(&rhs);
-            std::queue<riddle::component_type *> q;
-            q.push(static_cast<riddle::component_type *>(&lhs_xpr->get_type()));
-            while (!q.empty())
-            {
-                for (const auto &[f_name, f] : q.front()->get_fields())
-                    if (!f->is_synthetic())
-                        make_eq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), p);
-                for (const auto &pp : q.front()->get_parents())
-                    q.push(&*pp);
-                q.pop();
-            }
-        }
-        else
-            throw std::runtime_error("Invalid type");
+        else // we are dealing with components (and we have already checked their are not the same)..
+            add_clause({!p});
     }
 
     void solver::make_neq(riddle::term &lhs, riddle::term &rhs, const utils::lit &p)
