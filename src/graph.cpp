@@ -235,11 +235,11 @@ namespace ratio
         assert(std::all_of(active_flaws.begin(), active_flaws.end(), [](const auto &f)
                            { return f->state == utils::True; })); // all the active flaws should be active..
         for (const auto &[f, c] : t.old_f_costs)
-        { // we restore the flaws' costs..
-            assert(f->est_cost != c);
-            f->est_cost = c;
-            FLAW_COST_CHANGED(*f);
-        }
+            if (f->est_cost != c)
+            { // we restore the flaws' costs..
+                f->est_cost = c;
+                FLAW_COST_CHANGED(*f);
+            }
         trail.pop_back();
     }
 

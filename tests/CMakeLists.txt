@@ -80,3 +80,7 @@ add_test(NAME UI_03_21 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle
 add_test(NAME UI_03_24 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/urban_intelligence/urban_intelligence_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/riddle/examples/urban_intelligence/urban_intelligence_03_24.rddl" "solution.json")
 add_test(NAME UI_03_27 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/urban_intelligence/urban_intelligence_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/riddle/examples/urban_intelligence/urban_intelligence_03_27.rddl" "solution.json")
 add_test(NAME UI_03_30 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/urban_intelligence/urban_intelligence_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/riddle/examples/urban_intelligence/urban_intelligence_03_30.rddl" "solution.json")
+
+add_test(NAME Blocks0 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/blocks/blocks_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/riddle/examples/blocks/blocks_01.rddl" "solution.json")
+add_test(NAME Blocks1 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/blocks/blocks_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/riddle/examples/blocks/blocks_02.rddl" "solution.json")
+# add_test(NAME Blocks2 COMMAND solver_tests "${PROJECT_SOURCE_DIR}/extern/riddle/examples/blocks/blocks_domain.rddl" "${PROJECT_SOURCE_DIR}/extern/riddle/examples/blocks/blocks_03.rddl" "solution.json")
