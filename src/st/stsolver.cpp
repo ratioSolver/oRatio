@@ -5,6 +5,7 @@
 #include "conjunction.hpp"
 #include "logging.hpp"
 #include <algorithm>
+#include <stack>
 #include <cassert>
 
 namespace ratio
@@ -738,6 +739,8 @@ namespace ratio
 
                 propagate(); // we propagate the constraints..
 
+                // visit_graph(); // we visit the causal graph..
+
                 // we prune the causal graph..
                 for (const auto &f : get_queued_flaws())
                     if (already_closed.insert(&*f).second) // we prune the flaw..
@@ -749,6 +752,66 @@ namespace ratio
                 break;
             }
         }
+    }
+
+    void solver::visit_graph()
+    {
+        assert(std::none_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
+                            { return is_infinite(f->get_estimated_cost()); }));
+        // we visit the causal graph..
+        std::stack<std::pair<flaw *, std::size_t>> stk;
+        for (const auto &f : get_active_flaws())
+            stk.push({&*f, 0});
+
+        std::unordered_set<flaw *> to_expand;
+
+        while (!stk.empty())
+        {
+            auto top = stk.top();
+            if (std::any_of(top.first->get_resolvers().begin() + top.second, top.first->get_resolvers().end(), [this](const auto &r)
+                            { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }))
+            { // we have no more resolvers to visit..
+                stk.pop();
+                semitone::pop();
+            }
+            else
+            { // we have to visit the next resolver..
+                set_current_flaw(*top.first);
+                std::size_t c_level = get_decisions().size();
+                auto r = top.first->get_resolvers()[top.second++];
+                set_current_resolver(*r);
+                assume(static_cast<stresolver &>(*r).get_rho());
+                STATE_CHANGED();
+                if (c_level + 1 == get_decisions().size())
+                { // propagation succeeded..
+                    for (const auto &pre : r->get_preconditions())
+                    {
+                        assert(value(static_cast<stflaw &>(*pre).get_phi()) == utils::True);
+                        if (!pre->is_expanded())
+                            to_expand.insert(&*pre);
+                        else if (std::none_of(pre->get_resolvers().begin(), pre->get_resolvers().end(), [this](const auto &r)
+                                              { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }))
+                            stk.push({&*pre, 0});
+                    }
+                    for (const auto &mtx : get_resolvers())
+                        if (&mtx->get_flaw() != top.first && value(static_cast<stresolver &>(*mtx).get_rho()) == utils::False)
+                        {
+                        }
+                }
+                else
+                { // propagation failed..
+                    c_level = get_decisions().size();
+                    while (stk.size() > c_level)
+                        stk.pop(); // we remove the visited resolvers..
+                }
+                set_current_resolver(std::nullopt);
+                set_current_flaw(std::nullopt);
+            }
+        }
+
+        // we expand the flaws..
+        for (const auto &f : to_expand)
+            expand_flaw(*f);
     }
 
     void solver::solve_inconsistencies()
@@ -768,8 +831,8 @@ namespace ratio
                 if (auto ct = dynamic_cast<riddle::component_type *>(etp.second.get()))
                     q.push(ct);
 
-            if (auto st_ct = dynamic_cast<stcomponent_type *>(tp)) // we have a timeline type..
-            {                                                      // we extract the timeline..
+            if (auto st_ct = dynamic_cast<stcomponent_type *>(tp)) // we have a flawable component type..
+            {                                                      // we extract the current inconsistencies..
                 auto st_incs = st_ct->get_current_incs();
                 incs.insert(incs.end(), st_incs.begin(), st_incs.end());
             }

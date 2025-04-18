@@ -106,6 +106,7 @@ namespace ratio
     void popped() noexcept override { graph::pop(); }  // we pop the solver..
 
     void check_graph();
+    void visit_graph();
 
     void solve_inconsistencies();
 

@@ -136,9 +136,10 @@ namespace ratio
 
     void pop() noexcept;
 
-  private:
+  protected:
     void expand_flaw(flaw &f);
 
+  private:
     void compute_flaw_cost(flaw &f);
 
     virtual void added_causal_link(flaw &, resolver &) {}

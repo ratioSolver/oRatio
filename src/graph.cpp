@@ -188,16 +188,11 @@ namespace ratio
             auto c_f = stk.top();
             stk.pop();
 
-            set_current_flaw(*c_f.first); // set the current flaw..
             utils::rational c_cost = utils::rational::positive_infinite;
             if (c_f.first->state != utils::False && c_f.second.insert(c_f.first).second) // we compute the cost of the flaw as the minimum of the costs of its resolvers..
                 for (const auto &res : c_f.first->resolvers)
-                {
-                    set_current_resolver(*res); // set the current resolver..
                     if (res->state != utils::False)
                         c_cost = std::min(c_cost, res->get_estimated_cost());
-                    set_current_resolver(std::nullopt); // reset the current resolver..
-                }
 
             if (c_f.first->est_cost != c_cost) // we update the cost of the flaw..
             {
@@ -211,7 +206,6 @@ namespace ratio
                 for (auto &support : c_f.first->get_supports())
                     stk.push({&support->f, c_f.second}); // we push the supported flaw in the stack..
             }
-            set_current_flaw(std::nullopt); // reset the current flaw..
         }
     }
 
