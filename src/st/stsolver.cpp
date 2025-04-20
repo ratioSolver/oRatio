@@ -758,27 +758,41 @@ namespace ratio
     {
         assert(std::none_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
                             { return is_infinite(f->get_estimated_cost()); }));
+
+        // we try to negate the landmark candidates. if we cannot, then they are really landmarks..
+        std::unordered_set<ratio::flaw *> c_lms;
+        for (const auto &lm : landmark_candidates)
+        {
+            assume(!static_cast<stflaw &>(*lm).get_phi());
+            if (!get_decisions().empty())
+                semitone::pop(); // not a landmark, we backtrack..
+            else
+                c_lms.insert(&*lm); // we have a landmark..
+        }
+        for (const auto &lm : c_lms)
+            landmark_candidates.erase(lm); // we remove the landmarks from the candidates..
+
         // we visit the causal graph..
-        std::stack<std::pair<flaw *, std::size_t>> stk;
+        std::stack<flaw *> stk;
         for (const auto &f : get_active_flaws())
-            stk.push({&*f, 0});
+            stk.push(&*f);
 
         std::unordered_set<flaw *> to_expand;
 
         while (!stk.empty())
         {
             auto top = stk.top();
-            if (std::any_of(top.first->get_resolvers().begin() + top.second, top.first->get_resolvers().end(), [this](const auto &r)
-                            { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }))
-            { // we have no more resolvers to visit..
-                stk.pop();
+            stk.pop();
+            if (std::any_of(top->get_resolvers().begin(), top->get_resolvers().end(), [this](const auto &r)
+                            { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; })) // we have no more resolvers to visit..
                 semitone::pop();
-            }
             else
             { // we have to visit the next resolver..
-                set_current_flaw(*top.first);
+                set_current_flaw(*top);
                 std::size_t c_level = get_decisions().size();
-                auto r = top.first->get_resolvers()[top.second++];
+                // we get the least expensive resolver..
+                auto r = *std::min_element(top->get_resolvers().begin(), top->get_resolvers().end(), [](const auto &a, const auto &b)
+                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
                 set_current_resolver(*r);
                 assume(static_cast<stresolver &>(*r).get_rho());
                 STATE_CHANGED();
@@ -791,10 +805,10 @@ namespace ratio
                             to_expand.insert(&*pre);
                         else if (std::none_of(pre->get_resolvers().begin(), pre->get_resolvers().end(), [this](const auto &r)
                                               { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }))
-                            stk.push({&*pre, 0});
+                            stk.push(&*pre); // we have to visit the precondition..
                     }
                     for (const auto &mtx : get_resolvers())
-                        if (&mtx->get_flaw() != top.first && value(static_cast<stresolver &>(*mtx).get_rho()) == utils::False)
+                        if (&mtx->get_flaw() != top && value(static_cast<stresolver &>(*mtx).get_rho()) == utils::False)
                         {
                         }
                 }

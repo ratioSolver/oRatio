@@ -111,7 +111,8 @@ namespace ratio
     void solve_inconsistencies();
 
   private:
-    utils::var gamma{0};                       // The variable representing the validity of this graph..
-    std::unordered_set<flaw *> already_closed; // already closed flaws (for avoiding duplicating graph pruning constraints)..
+    utils::var gamma{0};                            // The variable representing the validity of this graph..
+    std::unordered_set<flaw *> already_closed;      // already closed flaws (for avoiding duplicating graph pruning constraints)..
+    std::unordered_set<flaw *> landmark_candidates; // the set of landmark candidates..
   };
 } // namespace ratio

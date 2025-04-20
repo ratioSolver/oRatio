@@ -254,6 +254,9 @@ namespace ratio
         get_solver().add_clause({!get_rho(), !static_cast<atom_flaw &>(get_flaw()).get_atom()->get_sigma()});
         //  - and we make the target atom's sigma true (active atom)..
         get_solver().add_clause({!get_rho(), atm->get_sigma()});
+
+        if (get_solver().value(atm->get_flaw().get_phi()) != utils::True)
+            get_solver().landmark_candidates.insert(&atm->get_flaw()); // we add the target atom's flaw to the set of landmarks..
     }
 
     json::json unify_atom::to_json() const
