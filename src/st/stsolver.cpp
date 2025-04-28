@@ -797,8 +797,12 @@ namespace ratio
             auto top = stk.top();
             stk.pop();
 
-            set_current_flaw(*top.f);
             std::size_t c_level = get_decisions().size();
+            // the current level can be higher than the level of the flaw, so we have to backtrack to the proper level..
+            while (top.level < c_level)
+                semitone::pop(); // we backtrack to the current level..
+
+            set_current_flaw(*top.f);
             // we get the least expensive resolver..
             auto r = *std::min_element(top.ress.begin(), top.ress.end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
@@ -818,6 +822,8 @@ namespace ratio
                 if (!ok)
                 {
                     semitone::pop(); // we backtrack..
+                    set_current_resolver(std::nullopt);
+                    set_current_flaw(std::nullopt);
                     continue;
                 }
 
@@ -850,16 +856,20 @@ namespace ratio
             else
             { // propagation failed..
                 c_level = get_decisions().size();
-                while (stk.top().level > c_level)
-                    stk.pop(); // we remove the visited resolvers..
+                // the current level can be lower than the level of the flaw, so we remove states from the stack..
+                while (!stk.empty() && stk.top().level > c_level)
+                    stk.pop();
             }
             set_current_resolver(std::nullopt);
             set_current_flaw(std::nullopt);
         }
 
+        while (!get_decisions().empty())
+            semitone::pop(); // we backtrack to the root level..
+
         // we expand the flaws..
         for (const auto &f : to_expand)
-            expand_flaw(*f);
+            expand_flaw(*f, true);
     }
 
     void solver::solve_inconsistencies()

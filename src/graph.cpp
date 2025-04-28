@@ -157,7 +157,7 @@ namespace ratio
         NEW_CAUSAL_LINK(f, r);
     }
 
-    void graph::expand_flaw(flaw &f)
+    void graph::expand_flaw(flaw &f, bool remove)
     {
         assert(!f.is_expanded());        // the flaw should not be expanded..
         assert(f.state != utils::False); // the flaw should not be infeasible..
@@ -176,9 +176,14 @@ namespace ratio
         set_current_resolver(std::nullopt); // reset the current resolver..
 
         compute_flaw_cost(f); // compute the cost of the flaw..
+
+        if (remove) // we have to remove the flaw from the queue..
+            flaw_q.erase(std::remove_if(flaw_q.begin(), flaw_q.end(), [&f](const auto &flaw)
+                                        { return &*flaw == &f; }),
+                         flaw_q.end()); // we remove the flaw from the queue..
     }
 
-    void graph::compute_flaw_cost(flaw &f)
+    void graph::compute_flaw_cost(flaw &f) noexcept
     {
         std::stack<std::pair<flaw *, std::unordered_set<flaw *>>> stk;
         stk.push({&f, {}}); // we push the flaw in the stack..

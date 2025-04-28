@@ -137,10 +137,16 @@ namespace ratio
     void pop() noexcept;
 
   protected:
-    void expand_flaw(flaw &f);
+    /**
+     * @brief Expands the given flaw by applying the necessary operations.
+     *
+     * @param f The flaw object to be expanded.
+     * @param remove If true, the flaw will be removed from the queue.
+     */
+    void expand_flaw(flaw &f, bool remove = false);
 
   private:
-    void compute_flaw_cost(flaw &f);
+    void compute_flaw_cost(flaw &f) noexcept;
 
     virtual void added_causal_link(flaw &, resolver &) {}
 
