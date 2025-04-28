@@ -739,7 +739,7 @@ namespace ratio
 
                 propagate(); // we propagate the constraints..
 
-                // visit_graph(); // we visit the causal graph..
+                visit_graph(); // we visit the causal graph..
 
                 // we prune the causal graph..
                 for (const auto &f : get_queued_flaws())
@@ -773,9 +773,22 @@ namespace ratio
             landmark_candidates.erase(lm); // we remove the landmarks from the candidates..
 
         // we visit the causal graph..
-        std::stack<flaw *> stk;
+        struct state
+        {
+            std::size_t level;                   // the level of the flaw..
+            flaw *f;                             // the flaw..
+            std::unordered_set<resolver *> ress; // the resolvers of the flaw..
+        };
+        std::stack<state> stk;
         for (const auto &f : get_active_flaws())
-            stk.push(&*f);
+        {
+            state s = {0, &*f, {}};
+            for (const auto &r : f->get_resolvers())
+                if (value(static_cast<stresolver &>(*r).get_rho()) != utils::False)
+                    s.ress.insert(&*r);
+            assert(!s.ress.empty());
+            stk.push(std::move(s));
+        }
 
         std::unordered_set<flaw *> to_expand;
 
@@ -783,44 +796,65 @@ namespace ratio
         {
             auto top = stk.top();
             stk.pop();
-            if (std::any_of(top->get_resolvers().begin(), top->get_resolvers().end(), [this](const auto &r)
-                            { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; })) // we have no more resolvers to visit..
-                semitone::pop();
-            else
-            { // we have to visit the next resolver..
-                set_current_flaw(*top);
-                std::size_t c_level = get_decisions().size();
-                // we get the least expensive resolver..
-                auto r = *std::min_element(top->get_resolvers().begin(), top->get_resolvers().end(), [](const auto &a, const auto &b)
-                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
-                set_current_resolver(*r);
-                assume(static_cast<stresolver &>(*r).get_rho());
-                STATE_CHANGED();
-                if (c_level + 1 == get_decisions().size())
-                { // propagation succeeded..
-                    for (const auto &pre : r->get_preconditions())
-                    {
-                        assert(value(static_cast<stflaw &>(*pre).get_phi()) == utils::True);
-                        if (!pre->is_expanded())
-                            to_expand.insert(&*pre);
-                        else if (std::none_of(pre->get_resolvers().begin(), pre->get_resolvers().end(), [this](const auto &r)
-                                              { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }))
-                            stk.push(&*pre); // we have to visit the precondition..
+
+            set_current_flaw(*top.f);
+            std::size_t c_level = get_decisions().size();
+            // we get the least expensive resolver..
+            auto r = *std::min_element(top.ress.begin(), top.ress.end(), [](const auto &a, const auto &b)
+                                       { return a->get_estimated_cost() < b->get_estimated_cost(); });
+            set_current_resolver(*r);
+            top.ress.erase(r); // we remove the resolver from the set of resolvers..
+            assume(static_cast<stresolver &>(*r).get_rho());
+            STATE_CHANGED();
+            if (c_level + 1 == get_decisions().size())
+            { // propagation succeeded..
+                bool ok = true;
+                for (const auto &f : get_active_flaws())
+                    if (!f->is_expanded())
+                    { // we have to expand the flaw..
+                        ok = false;
+                        to_expand.insert(&*f);
                     }
-                    for (const auto &mtx : get_resolvers())
-                        if (&mtx->get_flaw() != top && value(static_cast<stresolver &>(*mtx).get_rho()) == utils::False)
-                        {
-                        }
+                if (!ok)
+                {
+                    semitone::pop(); // we backtrack..
+                    continue;
                 }
-                else
-                { // propagation failed..
-                    c_level = get_decisions().size();
-                    while (stk.size() > c_level)
-                        stk.pop(); // we remove the visited resolvers..
+
+                std::vector<state> stk2;
+                for (const auto &pre : r->get_preconditions())
+                {
+                    assert(value(static_cast<stflaw &>(*pre).get_phi()) == utils::True);
+                    if (!pre->is_expanded())
+                    { // we have to expand the precondition..
+                        ok = false;
+                        to_expand.insert(&*pre);
+                    }
+                    else if (std::none_of(pre->get_resolvers().begin(), pre->get_resolvers().end(), [this](const auto &r)
+                                          { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }))
+                    {
+                        state s = {top.level + 1, &*pre, {}};
+                        for (const auto &r : pre->get_resolvers())
+                            if (value(static_cast<stresolver &>(*r).get_rho()) != utils::False)
+                                s.ress.insert(&*r);
+                        assert(!s.ress.empty());
+                        stk2.push_back(std::move(s));
+                    }
                 }
-                set_current_resolver(std::nullopt);
-                set_current_flaw(std::nullopt);
+                if (ok && !stk2.empty()) // we have to visit the preconditions..
+                    for (const auto &s : stk2)
+                        stk.push(std::move(s));
+                else // either we have no preconditions to visit or we have some preconditions that are not expanded, we backtrack..
+                    semitone::pop();
             }
+            else
+            { // propagation failed..
+                c_level = get_decisions().size();
+                while (stk.top().level > c_level)
+                    stk.pop(); // we remove the visited resolvers..
+            }
+            set_current_resolver(std::nullopt);
+            set_current_flaw(std::nullopt);
         }
 
         // we expand the flaws..
