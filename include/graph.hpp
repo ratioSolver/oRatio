@@ -349,7 +349,7 @@ namespace ratio
     std::vector<utils::ref_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
 
-  inline std::string to_string(const utils::lbool &node_state) noexcept
+  [[nodiscard]] inline std::string to_string(const utils::lbool &node_state) noexcept
   {
     switch (node_state)
     {
