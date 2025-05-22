@@ -89,16 +89,20 @@ namespace ratio
     void stresolver::on_change(const utils::var &v) noexcept
     {
         get_solver().set_resolver_state(*this, get_solver().value(v));
-        if (get_solver().visiting && get_solver().value(v) == utils::False)
+
+        // we check if this resolver is mutex with the current resolver..
+        if (get_solver().visiting && get_state() == utils::False && get_flaw().get_state() == utils::True)
         { // this flaw is mutex with the current resolver..
             auto cr = get_solver().get_current_resolver().value();
             if (&cr->get_flaw() == &get_flaw())
                 return; // the resolvers solve the same flaw, so we ignore the mutex..
-            if (get_solver().tp_distance(static_cast<stflaw &>(cr->get_flaw()).get_pos(), static_cast<stflaw &>(get_flaw()).get_pos()).first > 0)
+            auto dist = get_solver().tp_distance(static_cast<stflaw &>(cr->get_flaw()).get_pos(), static_cast<stflaw &>(get_flaw()).get_pos());
+            LOG_DEBUG("[" << to_string(dist.first) << ", " << to_string(dist.second) << "]");
+            if (dist.first > 0)
                 return; // the resolvers are not mutex..
-            LOG_DEBUG("[" << get_solver().get_name() << "] " << cr->to_json() << " is mutex with " << to_json());
             if (get_solver().mutexes.count({this, &*cr}) == 0)
             {
+                LOG_DEBUG("[" << get_solver().get_name() << "] " << cr->to_json() << " is mutex with " << to_json());
                 get_solver().pending_mutexes.emplace_back(this, &*cr);
                 get_solver().mutexes.insert({this, &*cr});
                 get_solver().mutexes.insert({&*cr, this});
@@ -138,6 +142,7 @@ namespace ratio
     void choose_val::apply()
     {
         assert(get_solver().value(get_rho()) == get_state());
+        assert(get_state() != utils::False); // The resolver cannot be negated..
     }
 
     clause_flaw::clause_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
@@ -153,6 +158,7 @@ namespace ratio
     void choose_lit::apply()
     {
         assert(get_solver().value(get_rho()) == get_state());
+        assert(get_state() != utils::False); // The resolver cannot be negated..
     }
 
     disjunction_flaw::disjunction_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept : stflaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
@@ -167,6 +173,7 @@ namespace ratio
     void choose_conjunction::apply()
     {
         assert(get_solver().value(get_rho()) == get_state());
+        assert(get_state() != utils::False); // The resolver cannot be negated..
         conj.execute();
     }
 
@@ -218,6 +225,7 @@ namespace ratio
     void activate_fact::apply()
     {
         assert(get_solver().value(get_rho()) == get_state());
+        assert(get_state() != utils::False);                                                                      // The resolver cannot be negated..
         assert(get_solver().value(static_cast<atom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::False); // The atom is not necessarily inactive..
 
         // activating this resolver activates the goal..
@@ -237,6 +245,7 @@ namespace ratio
     void activate_goal::apply()
     {
         assert(get_solver().value(get_rho()) == get_state());
+        assert(get_state() != utils::False);                                                                      // The resolver cannot be negated..
         assert(get_solver().value(static_cast<atom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::False); // The atom is not necessarily inactive..
 
         // activating this resolver activates the goal..
@@ -258,11 +267,15 @@ namespace ratio
     void unify_atom::apply()
     {
         assert(get_solver().value(get_rho()) == get_state());
+        assert(get_state() != utils::False);                                                                     // The resolver cannot be negated..
         assert(get_solver().value(static_cast<atom_flaw &>(get_flaw()).get_atom()->get_sigma()) != utils::True); // The atom must be unifiable
         assert(get_solver().value(atm->get_sigma()) != utils::False);                                            // The target atom must be activable..
 
         // we associate the unification constraints with the rho literal..
         get_solver().make_eq(static_cast<atom &>(*static_cast<atom_flaw &>(get_flaw()).get_atom()), *atm, get_rho());
+
+        if (get_state() == utils::False)
+            return; // The equality constraint cannot be satisfied..
 
         // we add a causal link from the target atom's flaw to this resolver..
         get_solver().add_causal_link(atm->get_flaw(), *this);
@@ -273,7 +286,7 @@ namespace ratio
         //  - and we make the target atom's sigma true (active atom)..
         get_solver().add_clause({!get_rho(), atm->get_sigma()});
 
-        if (get_solver().value(atm->get_flaw().get_phi()) != utils::True)
+        if (atm->get_flaw().get_state() != utils::True)
             get_solver().landmark_candidates.insert(&atm->get_flaw()); // we add the target atom's flaw to the set of landmarks..
     }
 
@@ -291,7 +304,7 @@ namespace ratio
     {
         assert(get_solver().value(get_phi()) == get_state());
         for (const auto &r : n_r.get_flaw().get_resolvers())
-            if (&*r == &n_r)
+            if (&*r == &n_r || r->get_state() == utils::False)
                 continue; // we skip the mutex resolver..
             else
                 new_resolver<mutex_resolver>(*this, static_cast<stresolver &>(*r));
@@ -310,6 +323,8 @@ namespace ratio
 
     void mutex_resolver::apply()
     {
+        assert(get_solver().value(get_rho()) == get_state());
+        assert(get_state() != utils::False); // The resolver cannot be negated..
         for (const auto &pre : r.get_preconditions())
             get_solver().add_causal_link(*pre, *this);
     }

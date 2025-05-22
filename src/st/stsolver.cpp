@@ -762,13 +762,17 @@ namespace ratio
         // we try to negate the landmark candidates. if we cannot, then they are really landmarks..
         std::unordered_set<ratio::flaw *> c_lms;
         for (const auto &lm : landmark_candidates)
-        {
-            assume(!static_cast<stflaw &>(*lm).get_phi());
-            if (!get_decisions().empty())
-                semitone::pop(); // not a landmark, we backtrack..
+            if (lm->get_state() == utils::Undefined)
+            { // we have to check if the landmark is really a landmark..
+                assume(!static_cast<stflaw &>(*lm).get_phi());
+                if (!get_decisions().empty())
+                    semitone::pop(); // not a landmark, we backtrack..
+                else
+                    c_lms.insert(&*lm); // we have a landmark..
+            }
             else
                 c_lms.insert(&*lm); // we have a landmark..
-        }
+
         for (const auto &lm : c_lms)
             landmark_candidates.erase(lm); // we remove the landmarks from the candidates..
 
