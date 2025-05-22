@@ -186,4 +186,33 @@ namespace ratio
   private:
     atom_expr atm; // the atom to unify with..
   };
+
+  class mutex_flaw final : public stflaw
+  {
+  public:
+    mutex_flaw(resolver &n_r, resolver &c_r) noexcept;
+
+  private:
+    void compute_resolvers() override;
+
+    [[nodiscard]] json::json to_json() const override;
+
+  private:
+    resolver &n_r; // the negated resolver..
+    resolver &c_r; // the current resolver..
+  };
+
+  class mutex_resolver final : public stresolver
+  {
+  public:
+    mutex_resolver(mutex_flaw &f, const stresolver &r) noexcept;
+
+  private:
+    void apply() override;
+
+    [[nodiscard]] json::json to_json() const override;
+
+  private:
+    const stresolver &r; // the resolver..
+  };
 } // namespace ratio

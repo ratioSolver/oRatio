@@ -772,6 +772,8 @@ namespace ratio
         for (const auto &lm : c_lms)
             landmark_candidates.erase(lm); // we remove the landmarks from the candidates..
 
+        visiting = true;
+
         // we visit the causal graph..
         struct state
         {
@@ -867,9 +869,15 @@ namespace ratio
         while (!get_decisions().empty())
             semitone::pop(); // we backtrack to the root level..
 
+        for (const auto &mtx : pending_mutexes)
+            expand_flaw(new_flaw<mutex_flaw>(*mtx.first, *mtx.second), true); // we create (and expand) the mutex flaws..
+        pending_mutexes.clear();
+
         // we expand the flaws..
         for (const auto &f : to_expand)
             expand_flaw(*f, true);
+
+        visiting = false;
     }
 
     void solver::solve_inconsistencies()

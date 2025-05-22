@@ -12,6 +12,7 @@ namespace ratio
   class stcomponent_type;
   class atom_listener;
   class unify_atom;
+  class mutex_resolver;
 
   class enum_item : public riddle::enum_item
   {
@@ -49,6 +50,7 @@ namespace ratio
     friend class stflaw;
     friend class stresolver;
     friend class unify_atom;
+    friend class mutex_resolver;
     friend class stcomponent_type;
 
   public:
@@ -111,9 +113,11 @@ namespace ratio
     void solve_inconsistencies();
 
   private:
-    utils::var gamma{0};                            // The variable representing the validity of this graph..
-    std::unordered_set<flaw *> already_closed;      // already closed flaws (for avoiding duplicating graph pruning constraints)..
-    std::unordered_set<flaw *> landmark_candidates; // the set of landmark candidates..
-    bool visiting = false;                          // the graph is being visited..
+    utils::var gamma{0};                                            // The variable representing the validity of this graph..
+    std::unordered_set<flaw *> already_closed;                      // already closed flaws (for avoiding duplicating graph pruning constraints)..
+    std::unordered_set<flaw *> landmark_candidates;                 // the set of landmark candidates..
+    bool visiting = false;                                          // the graph is being visited..
+    std::set<std::pair<resolver *, resolver *>> mutexes;            // the set of mutex resolvers..
+    std::vector<std::pair<resolver *, resolver *>> pending_mutexes; // the set of pending mutex resolvers..
   };
 } // namespace ratio

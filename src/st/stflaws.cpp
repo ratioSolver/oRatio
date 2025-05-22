@@ -86,7 +86,25 @@ namespace ratio
             listen(variable(rho));
     }
 
-    void stresolver::on_change(const utils::var &v) noexcept { get_solver().set_resolver_state(*this, get_solver().value(v)); }
+    void stresolver::on_change(const utils::var &v) noexcept
+    {
+        get_solver().set_resolver_state(*this, get_solver().value(v));
+        if (get_solver().visiting && get_solver().value(v) == utils::False)
+        { // this flaw is mutex with the current resolver..
+            auto cr = get_solver().get_current_resolver().value();
+            if (&cr->get_flaw() == &get_flaw())
+                return; // the resolvers solve the same flaw, so we ignore the mutex..
+            if (get_solver().tp_distance(static_cast<stflaw &>(cr->get_flaw()).get_pos(), static_cast<stflaw &>(get_flaw()).get_pos()).first > 0)
+                return; // the resolvers are not mutex..
+            LOG_DEBUG("[" << get_solver().get_name() << "] " << cr->to_json() << " is mutex with " << to_json());
+            if (get_solver().mutexes.count({this, &*cr}) == 0)
+            {
+                get_solver().pending_mutexes.emplace_back(this, &*cr);
+                get_solver().mutexes.insert({this, &*cr});
+                get_solver().mutexes.insert({&*cr, this});
+            }
+        }
+    }
     void stresolver::on_reset(const utils::var &v) noexcept { get_solver().set_resolver_state(*this, get_solver().value(v), true); }
 
     [[nodiscard]] json::json stresolver::to_json() const
@@ -264,6 +282,42 @@ namespace ratio
         auto j = stresolver::to_json();
         j["type"] = "unify_atom";
         j["target"] = static_cast<uint64_t>(atm->get_id());
+        return j;
+    }
+
+    mutex_flaw::mutex_flaw(resolver &n_r, resolver &c_r) noexcept : stflaw(static_cast<solver &>(n_r.get_flaw().get_graph()), std::vector<utils::ref_wrapper<resolver>>{c_r}), n_r(n_r), c_r(c_r) {}
+
+    void mutex_flaw::compute_resolvers()
+    {
+        assert(get_solver().value(get_phi()) == get_state());
+        for (const auto &r : n_r.get_flaw().get_resolvers())
+            if (&*r == &n_r)
+                continue; // we skip the mutex resolver..
+            else
+                new_resolver<mutex_resolver>(*this, static_cast<stresolver &>(*r));
+    }
+
+    json::json mutex_flaw::to_json() const
+    {
+        auto j = stflaw::to_json();
+        j["type"] = "h2flaw";
+        j["n_resolver"] = static_cast<uint64_t>(n_r.get_id());
+        j["c_resolver"] = static_cast<uint64_t>(c_r.get_id());
+        return j;
+    }
+
+    mutex_resolver::mutex_resolver(mutex_flaw &f, const stresolver &r) noexcept : stresolver(f, utils::rational(1), r.get_rho()), r(r) {}
+
+    void mutex_resolver::apply()
+    {
+        for (const auto &pre : r.get_preconditions())
+            get_solver().add_causal_link(*pre, *this);
+    }
+
+    json::json mutex_resolver::to_json() const
+    {
+        auto j = stresolver::to_json();
+        j["type"] = "mutex_resolver";
         return j;
     }
 } // namespace ratio
