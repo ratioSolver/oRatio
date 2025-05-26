@@ -9,6 +9,7 @@ namespace ratio
   {
   public:
     stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
+    stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const utils::lit &phi, const utils::var &pos, const bool &exclusive = false) noexcept;
 
     [[nodiscard]] inline solver &get_solver() noexcept { return static_cast<solver &>(get_graph()); }
     [[nodiscard]] inline const solver &get_solver() const noexcept { return static_cast<const solver &>(get_graph()); }

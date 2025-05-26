@@ -6,7 +6,8 @@
 
 namespace ratio
 {
-    stflaw::stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), prop_listener(slv), dl_listener(slv.get_difference_logic_theory()), phi(compute_phi(slv, get_causes())), pos(slv.mk_tp())
+    stflaw::stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), compute_phi(slv, causes), slv.mk_tp(), exclusive) {}
+    stflaw::stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const utils::lit &phi, const utils::var &pos, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), prop_listener(slv), dl_listener(slv.get_difference_logic_theory()), phi(phi), pos(pos)
     {
         assert(slv.value(phi) != utils::False); // the activation literal must not be false..
         // this flaw's position must be greater than 0..
@@ -14,7 +15,7 @@ namespace ratio
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
             slv.add_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
 
-        if (get_solver().value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
+        if (slv.value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
             set_state(utils::True);
         else // otherwise, we listen to the activation literal..
             listen(variable(phi));
@@ -300,7 +301,7 @@ namespace ratio
         return j;
     }
 
-    mutex_flaw::mutex_flaw(resolver &n_r, resolver &c_r) noexcept : stflaw(static_cast<solver &>(n_r.get_flaw().get_graph()), std::vector<utils::ref_wrapper<resolver>>{c_r}), n_r(n_r), c_r(c_r) {}
+    mutex_flaw::mutex_flaw(resolver &n_r, resolver &c_r) noexcept : stflaw(static_cast<solver &>(n_r.get_flaw().get_graph()), std::vector<utils::ref_wrapper<resolver>>{c_r}, utils::lit(static_cast<solver &>(n_r.get_flaw().get_graph()).mk_var()), static_cast<solver &>(n_r.get_flaw().get_graph()).mk_tp()), n_r(n_r), c_r(c_r) { get_solver().add_clause({!static_cast<stresolver &>(c_r).get_rho(), get_phi()}); }
 
     void mutex_flaw::compute_resolvers()
     {
