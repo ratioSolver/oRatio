@@ -519,7 +519,10 @@ namespace ratio
             while (!q.empty())
             {
                 for (const auto &[f_name, f] : q.front()->get_fields())
-                    make_eq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), p);
+                    if (value(p) == utils::False) // if the equality control variable is false, we do not need to add any further constraints..
+                        return;
+                    else
+                        make_eq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), p);
                 for (const auto &pp : q.front()->get_parents())
                     q.push(&*pp);
                 q.pop();
@@ -629,26 +632,29 @@ namespace ratio
 
         while (!get_active_flaws().empty())
         { // we try to solve the problem with the current causal graph..
+            if (std::any_of(get_root_flaws().begin(), get_root_flaws().end(), [](const auto &f)
+                            { return is_infinite(f->get_estimated_cost()); }))
+            { // we don't know how to solve this flaw :(
+                next();
+                STATE_CHANGED();
+                check_graph();
+                continue;
+            }
+
             // we get the most expensive flaw..
             auto f = *std::max_element(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
             set_current_flaw(*f);
-
-            if (is_infinite(f->get_estimated_cost()))
-            { // we don't know how to solve this flaw :(
-                do
-                { // we have to search..
-                    next();
-                    STATE_CHANGED();
-                    check_graph();
-                } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
-                                     { return is_infinite(f->get_estimated_cost()); }));
-                continue;
-            }
+            assert(!is_infinite(f->get_estimated_cost()));
+            assert(std::all_of(f->get_resolvers().begin(), f->get_resolvers().end(), [f](const auto &r)
+                               { return f == &r->get_flaw(); }));
+            assert(std::none_of(f->get_resolvers().begin(), f->get_resolvers().end(), [this](const auto &r)
+                                { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }));
 
             // we get the least expensive resolver..
             auto r = *std::min_element(f->get_resolvers().begin(), f->get_resolvers().end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
+            assert(!is_infinite(r->get_estimated_cost()));
             set_current_resolver(*r);
 
             // we apply the resolver..
@@ -669,30 +675,29 @@ namespace ratio
         {
             while (!get_active_flaws().empty())
             { // we try to solve the problem with the current causal graph..
+                if (std::any_of(get_root_flaws().begin(), get_root_flaws().end(), [](const auto &f)
+                                { return is_infinite(f->get_estimated_cost()); }))
+                { // we don't know how to solve this flaw :(
+                    next();
+                    STATE_CHANGED();
+                    check_graph();
+                    continue;
+                }
+
                 // we get the most expensive flaw..
                 auto f = *std::max_element(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &a, const auto &b)
                                            { return a->get_estimated_cost() < b->get_estimated_cost(); });
                 set_current_flaw(*f);
+                assert(!is_infinite(f->get_estimated_cost()));
                 assert(std::all_of(f->get_resolvers().begin(), f->get_resolvers().end(), [f](const auto &r)
                                    { return f == &r->get_flaw(); }));
                 assert(std::none_of(f->get_resolvers().begin(), f->get_resolvers().end(), [this](const auto &r)
                                     { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }));
 
-                if (is_infinite(f->get_estimated_cost()))
-                { // we don't know how to solve this flaw :(
-                    do
-                    { // we have to search..
-                        next();
-                        STATE_CHANGED();
-                        check_graph();
-                    } while (std::any_of(get_active_flaws().begin(), get_active_flaws().end(), [](const auto &f)
-                                         { return is_infinite(f->get_estimated_cost()); }));
-                    continue;
-                }
-
                 // we get the least expensive resolver..
                 auto r = *std::min_element(f->get_resolvers().begin(), f->get_resolvers().end(), [](const auto &a, const auto &b)
                                            { return a->get_estimated_cost() < b->get_estimated_cost(); });
+                assert(!is_infinite(r->get_estimated_cost()));
                 set_current_resolver(*r);
 
                 // we apply the resolver..
@@ -803,10 +808,16 @@ namespace ratio
             auto top = stk.top();
             stk.pop();
 
+            if (value(static_cast<stflaw *>(top.f)->get_phi()) == utils::False)
+                continue; // the flaw is unsolvable, we skip it..
+
             std::size_t c_level = get_decisions().size();
             // the current level can be higher than the level of the flaw, so we have to backtrack to the proper level..
             while (top.level < c_level)
+            {
                 semitone::pop(); // we backtrack to the current level..
+                c_level = get_decisions().size();
+            }
 
             set_current_flaw(*top.f);
             // we get the least expensive resolver..
@@ -873,8 +884,9 @@ namespace ratio
         while (!get_decisions().empty())
             semitone::pop(); // we backtrack to the root level..
 
-        for (const auto &mtx : pending_mutexes)
-            expand_flaw(new_flaw<mutex_flaw>(*mtx.first, *mtx.second), true); // we create (and expand) the mutex flaws..
+        for (const auto &[n_r, c_r] : pending_mutexes)
+            if (value(static_cast<stresolver &>(*c_r).get_rho()) != utils::False)
+                expand_flaw(new_flaw<mutex_flaw>(*n_r, *c_r), true); // we create (and expand) the mutex flaws..
         pending_mutexes.clear();
 
         // we expand the flaws..

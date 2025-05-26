@@ -68,7 +68,7 @@ namespace ratio
       flaws.emplace_back(std::move(f));
       flaw_q.push_back(f_ref); // add to the flaw queue..
       if (f_ref.get_causes().empty())
-        active_flaws.emplace(&f_ref); // add to the active flaws..
+        root_flaws.emplace(&f_ref); // add to the active flaws..
       return f_ref;
     }
 
@@ -115,6 +115,8 @@ namespace ratio
     [[nodiscard]] std::vector<utils::ref_wrapper<flaw>> get_queued_flaws() const noexcept;
 
     [[nodiscard]] const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
+
+    [[nodiscard]] const std::unordered_set<flaw *> &get_root_flaws() const noexcept { return root_flaws; }
 
     /**
      * @brief Builds the graph.
@@ -248,6 +250,7 @@ namespace ratio
     std::optional<utils::ref_wrapper<resolver>> c_res; // the current resolver..
     std::deque<utils::ref_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..
     std::unordered_set<flaw *> active_flaws;           // the currently active flaws..
+    std::unordered_set<flaw *> root_flaws;             // the root flaws (the ones that are not caused by any other flaw)..
 
     struct layer
     {

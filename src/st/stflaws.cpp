@@ -8,6 +8,7 @@ namespace ratio
 {
     stflaw::stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), prop_listener(slv), dl_listener(slv.get_difference_logic_theory()), phi(compute_phi(slv, get_causes())), pos(slv.mk_tp())
     {
+        assert(slv.value(phi) != utils::False); // the activation literal must not be false..
         // this flaw's position must be greater than 0..
         slv.add_distance(pos, 0, utils::rational::zero);
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
@@ -94,10 +95,11 @@ namespace ratio
         if (get_solver().visiting && get_state() == utils::False && get_flaw().get_state() == utils::True)
         { // this flaw is mutex with the current resolver..
             auto cr = get_solver().get_current_resolver().value();
+            if (cr->get_state() != utils::True)
+                return; // the current resolver is not active, so this resolver has become negated as a consequence of no-good propagation..
             if (&cr->get_flaw() == &get_flaw())
                 return; // the resolvers solve the same flaw, so we ignore the mutex..
             auto dist = get_solver().tp_distance(static_cast<stflaw &>(cr->get_flaw()).get_pos(), static_cast<stflaw &>(get_flaw()).get_pos());
-            LOG_DEBUG("[" << to_string(dist.first) << ", " << to_string(dist.second) << "]");
             if (dist.first > 0)
                 return; // the resolvers are not mutex..
             if (get_solver().mutexes.count({this, &*cr}) == 0)
