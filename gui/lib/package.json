@@ -34,6 +34,6 @@
     "d3-scale-chromatic": "^3.1.0",
     "d3-interpolate": "^3.0.1",
     "plotly.js-dist-min": "^2.34.0",
-    "ratio-core": "file:../core"
+    "ratio-core": "^0.0.14"
   }
 }
