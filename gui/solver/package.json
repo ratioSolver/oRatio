@@ -1,6 +1,6 @@
 {
   "name": "@ratiosolver/solver",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,11 +23,13 @@
     "@types/plotly.js-dist-min": "^2.3.4",
     "typescript": "~5.6.2"
   },
+  "peerDependencies": {
+    "@ratiosolver/flick": "^0.0.3"
+  },
   "dependencies": {
     "@floating-ui/dom": "^1.6.13",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
-    "@ratiosolver/flick": "^0.0.3",
     "cytoscape": "^3.30.4",
     "cytoscape-dagre": "^2.5.0",
     "cytoscape-popper": "^4.0.1",
