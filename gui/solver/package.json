@@ -1,6 +1,6 @@
 {
-  "name": "ratio-lib",
-  "version": "0.0.28",
+  "name": "@ratiosolver/solver",
+  "version": "0.0.1",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,7 +27,7 @@
     "@floating-ui/dom": "^1.6.13",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
-    "@ratiosolver/flick": "^0.0.1",
+    "@ratiosolver/flick": "^0.0.2",
     "cytoscape": "^3.30.4",
     "cytoscape-dagre": "^2.5.0",
     "cytoscape-popper": "^4.0.1",
