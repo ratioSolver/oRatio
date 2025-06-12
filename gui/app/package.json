@@ -13,7 +13,7 @@
     "vite": "^6.0.5"
   },
   "dependencies": {
-    "ratio-core": "file:../core",
-    "ratio-lib": "file:../lib"
+    "@ratiosolver/flick": "^0.0.3",
+    "@ratiosolver/solver": "file:../solver"
   }
 }
