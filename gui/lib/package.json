@@ -17,9 +17,9 @@
   "devDependencies": {
     "@types/cytoscape": "^3.21.8",
     "@types/cytoscape-dagre": "^2.3.3",
+    "@types/d3-interpolate": "^3.0.4",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-scale-chromatic": "^3.1.0",
-    "@types/d3-interpolate": "^3.0.4",
     "@types/plotly.js-dist-min": "^2.3.4",
     "typescript": "~5.6.2"
   },
@@ -27,13 +27,13 @@
     "@floating-ui/dom": "^1.6.13",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
+    "@ratiosolver/flick": "^0.0.1",
     "cytoscape": "^3.30.4",
     "cytoscape-dagre": "^2.5.0",
     "cytoscape-popper": "^4.0.1",
+    "d3-interpolate": "^3.0.1",
     "d3-scale": "^4.0.2",
     "d3-scale-chromatic": "^3.1.0",
-    "d3-interpolate": "^3.0.1",
-    "plotly.js-dist-min": "^2.34.0",
-    "ratio-core": "^0.0.14"
+    "plotly.js-dist-min": "^2.34.0"
   }
 }
