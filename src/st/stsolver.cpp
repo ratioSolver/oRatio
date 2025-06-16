@@ -10,7 +10,7 @@
 
 namespace ratio
 {
-    enum_item::enum_item(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values, std::vector<utils::lit> &&lits) noexcept : riddle::enum_item(tp, std::move(values), std::move(lits)) {}
+    enum_item::enum_item(riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values, std::vector<utils::lit> &&lits) noexcept : riddle::enum_item(tp, std::move(values), std::move(lits)) {}
 
     riddle::expr enum_item::get(std::string_view name)
     {
@@ -23,13 +23,13 @@ namespace ratio
         std::unordered_map<riddle::term *, std::pair<riddle::expr, std::vector<utils::lit>>> itm_vars;
         for (const auto &v : get_values())
         {
-            auto xpr = dynamic_cast<riddle::env *>(&*v)->get(name);
+            auto xpr = dynamic_cast<riddle::env *>(&v.get())->get(name);
             if (auto t = itm_vars.find(&*xpr); t != itm_vars.end())
-                t->second.second.emplace_back(get_lit(*v));
+                t->second.second.emplace_back(get_lit(v.get()));
             else
             {
                 auto p = std::make_pair(xpr, std::vector<utils::lit>());
-                p.second.emplace_back(get_lit(*v));
+                p.second.emplace_back(get_lit(v.get()));
                 itm_vars.emplace(&*xpr, std::move(p));
             }
         }
@@ -49,7 +49,7 @@ namespace ratio
 
         if (is_bool(tp))
         { // we create a new boolean item..
-            auto b = utils::s_ptr_cast<riddle::bool_item>(get_core().new_bool());
+            auto b = std::dynamic_pointer_cast<riddle::bool_item>(get_core().new_bool());
             // we force the variable to assume the same value of the referenced bools according to the value of the enum..
             for (const auto &[t, vs] : itm_vars)
                 for (const auto &v : vs.second)
@@ -103,7 +103,7 @@ namespace ratio
             }
             else
             { // we need to create a new variable..
-                auto ai = is_int(tp) ? utils::s_ptr_cast<riddle::arith_item>(get_core().new_int()) : utils::s_ptr_cast<riddle::arith_item>(get_core().new_real());
+                auto ai = is_int(tp) ? std::dynamic_pointer_cast<riddle::arith_item>(get_core().new_int()) : std::dynamic_pointer_cast<riddle::arith_item>(get_core().new_real());
                 // we force the variable to assume the same value of the referenced ariths according to the value of the enum..
                 for (const auto &[t, vs] : itm_vars)
                     for (const auto &v : vs.second)
@@ -114,7 +114,7 @@ namespace ratio
         }
         else
         {
-            std::vector<utils::ref_wrapper<utils::enum_val>> values;
+            std::vector<std::reference_wrapper<utils::enum_val>> values;
             std::vector<utils::lit> lits;
             for (const auto &[itm, vars] : itm_vars)
             {
@@ -131,7 +131,7 @@ namespace ratio
                 }
             }
 
-            auto ei = utils::make_s_ptr<enum_item>(static_cast<riddle::component_type &>(tp), std::move(values), std::move(lits));
+            auto ei = std::make_shared<enum_item>(static_cast<riddle::component_type &>(tp), std::move(values), std::move(lits));
             items.emplace(name, ei);
             return ei;
         }
@@ -158,26 +158,26 @@ namespace ratio
         add_type(utils::make_u_ptr<stconsumable_resource>(*this));
     }
 
-    riddle::bool_expr solver::new_bool() { return utils::make_s_ptr<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::lit(mk_var())); }
+    riddle::bool_expr solver::new_bool() { return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::lit(mk_var())); }
     riddle::bool_expr solver::new_bool(const bool value)
     {
         auto l = value ? utils::TRUE_lit : utils::FALSE_lit;
-        return utils::make_s_ptr<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), std::move(l));
+        return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), std::move(l));
     }
     utils::lbool solver::bool_value(const riddle::bool_term &expr) const noexcept { return value(static_cast<const riddle::bool_item &>(expr).get_lit()); }
 
-    riddle::arith_expr solver::new_int() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(), utils::rational::one)); }
-    riddle::arith_expr solver::new_int(const INT_TYPE value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(utils::rational(value))); }
-    riddle::arith_expr solver::new_int(const INT_TYPE lb, const INT_TYPE ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
-    riddle::arith_expr solver::new_uncertain_int(const INT_TYPE lb, const INT_TYPE ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
+    riddle::arith_expr solver::new_int() { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(), utils::rational::one)); }
+    riddle::arith_expr solver::new_int(const INT_TYPE value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(utils::rational(value))); }
+    riddle::arith_expr solver::new_int(const INT_TYPE lb, const INT_TYPE ub) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
+    riddle::arith_expr solver::new_uncertain_int(const INT_TYPE lb, const INT_TYPE ub) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(mk_int(utils::rational(lb), utils::rational(ub)), utils::rational::one)); }
 
-    riddle::arith_expr solver::new_real() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(), utils::rational::one)); }
-    riddle::arith_expr solver::new_real(utils::rational &&value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(std::move(value))); }
-    riddle::arith_expr solver::new_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
-    riddle::arith_expr solver::new_uncertain_real(utils::rational &&lb, utils::rational &&ub) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
+    riddle::arith_expr solver::new_real() { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(), utils::rational::one)); }
+    riddle::arith_expr solver::new_real(utils::rational &&value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(std::move(value))); }
+    riddle::arith_expr solver::new_real(utils::rational &&lb, utils::rational &&ub) { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
+    riddle::arith_expr solver::new_uncertain_real(utils::rational &&lb, utils::rational &&ub) { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(mk_real(std::move(lb), std::move(ub)), utils::rational::one)); }
 
-    riddle::arith_expr solver::new_time() { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(mk_tp(), utils::rational::one)); }
-    riddle::arith_expr solver::new_time(utils::rational &&value) { return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(std::move(value))); }
+    riddle::arith_expr solver::new_time() { return std::make_shared<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(mk_tp(), utils::rational::one)); }
+    riddle::arith_expr solver::new_time(utils::rational &&value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(std::move(value))); }
 
     utils::inf_rational solver::arith_value(const riddle::arith_term &expr) const noexcept
     {
@@ -187,33 +187,33 @@ namespace ratio
             return utils::inf_rational(tp_bounds(static_cast<const riddle::arith_item &>(expr).get_lin().vars.begin()->first).first);
     }
 
-    riddle::string_expr solver::new_string() { return utils::make_s_ptr<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ""); }
-    riddle::string_expr solver::new_string(std::string &&value) { return utils::make_s_ptr<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
+    riddle::string_expr solver::new_string() { return std::make_shared<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ""); }
+    riddle::string_expr solver::new_string(std::string &&value) { return std::make_shared<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
     std::string solver::string_value(const riddle::string_term &expr) const noexcept { return static_cast<const riddle::string_item &>(expr).get_string(); }
 
-    riddle::enum_expr solver::new_enum(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
+    riddle::enum_expr solver::new_enum(riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values)
     {
-        std::vector<utils::ref_wrapper<resolver>> causes;
-        if (get_current_resolver().has_value())
+        std::vector<std::reference_wrapper<resolver>> causes;
+        if (get_current_resolver())
             causes.push_back(get_current_resolver().value());
         auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values));
         return ef.get_var();
     }
-    std::vector<utils::ref_wrapper<utils::enum_val>> solver::enum_value(const riddle::enum_term &expr) const noexcept
+    std::vector<std::reference_wrapper<utils::enum_val>> solver::enum_value(const riddle::enum_term &expr) const noexcept
     {
-        std::vector<utils::ref_wrapper<utils::enum_val>> dom;
+        std::vector<std::reference_wrapper<utils::enum_val>> dom;
         for (const auto &val : static_cast<const riddle::enum_item &>(expr).get_values())
-            if (value(static_cast<const riddle::enum_item &>(expr).get_lit(*val)) != utils::False)
-                dom.push_back(*val);
+            if (value(static_cast<const riddle::enum_item &>(expr).get_lit(val.get())) != utils::False)
+                dom.push_back(val.get());
         return dom;
     }
 
     riddle::arith_expr solver::new_negation(riddle::arith_expr xpr)
     {
         if (xpr->get_type().get_name() == riddle::int_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), -static_cast<const riddle::arith_item &>(*xpr).get_lin());
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), -static_cast<const riddle::arith_item &>(*xpr).get_lin());
         else if (xpr->get_type().get_name() == riddle::real_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), -static_cast<const riddle::arith_item &>(*xpr).get_lin());
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), -static_cast<const riddle::arith_item &>(*xpr).get_lin());
         else
             throw std::runtime_error("Invalid type");
     }
@@ -226,9 +226,9 @@ namespace ratio
             sum += static_cast<const riddle::arith_item &>(*xpr).get_lin();
         auto &tp = type_promotion(xprs);
         if (tp.get_name() == riddle::int_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(sum));
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(sum));
         else if (tp.get_name() == riddle::real_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(sum));
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(sum));
         else
             throw std::runtime_error("Invalid type");
     }
@@ -241,9 +241,9 @@ namespace ratio
             sub -= static_cast<const riddle::arith_item &>(*xprs[i]).get_lin();
         auto &tp = type_promotion(xprs);
         if (tp.get_name() == riddle::int_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(sub));
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(sub));
         else if (tp.get_name() == riddle::real_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(sub));
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(sub));
         else
             throw std::runtime_error("Invalid type");
     }
@@ -259,9 +259,9 @@ namespace ratio
                 throw std::runtime_error("Non-linear arithmetic not supported");
         auto &tp = type_promotion(xprs);
         if (tp.get_name() == riddle::int_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(prod));
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(prod));
         else if (tp.get_name() == riddle::real_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(prod));
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(prod));
         else
             throw std::runtime_error("Invalid type");
     }
@@ -277,9 +277,9 @@ namespace ratio
                 throw std::runtime_error("Non-linear arithmetic not supported");
         auto &tp = type_promotion(xprs);
         if (tp.get_name() == riddle::int_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(div));
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(div));
         else if (tp.get_name() == riddle::real_kw)
-            return utils::make_s_ptr<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(div));
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(div));
         else
             throw std::runtime_error("Invalid type");
     }
@@ -287,8 +287,8 @@ namespace ratio
     void solver::new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
-        std::vector<utils::ref_wrapper<resolver>> causes;
-        if (get_current_resolver().has_value())
+        std::vector<std::reference_wrapper<resolver>> causes;
+        if (get_current_resolver())
             causes.push_back(get_current_resolver().value());
         new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
     }
@@ -298,11 +298,11 @@ namespace ratio
         assert(!exprs.empty());
         std::vector<utils::lit> clause;
         for (const riddle::bool_expr &expr : exprs)
-            if (auto b_xpr = utils::s_ptr_cast<riddle::bool_item>(expr))
+            if (auto b_xpr = std::dynamic_pointer_cast<riddle::bool_item>(expr))
                 clause.push_back(b_xpr->get_lit());
-            else if (auto n_xpr = utils::s_ptr_cast<riddle::bool_not>(expr))
+            else if (auto n_xpr = std::dynamic_pointer_cast<riddle::bool_not>(expr))
             {
-                if (auto b_xpr = utils::s_ptr_cast<riddle::bool_item>(n_xpr->get_arg()))
+                if (auto b_xpr = std::dynamic_pointer_cast<riddle::bool_item>(n_xpr->get_arg()))
                     clause.push_back(!b_xpr->get_lit());
                 else
                 {
@@ -312,20 +312,20 @@ namespace ratio
                         p = utils::lit(mk_var());
                         clause.push_back(p);
                     }
-                    else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
-                        p = static_cast<stresolver &>(*get_current_resolver().value()).get_rho();
+                    else if (get_current_resolver()) // we add the constraint to the current resolver..
+                        p = static_cast<stresolver &>(get_current_resolver().value().get()).get_rho();
                     else // we enforce the constraint directly..
                         p = utils::TRUE_lit;
 
-                    if (auto lt_xpr = utils::s_ptr_cast<riddle::lt_term>(n_xpr->get_arg()))
+                    if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(n_xpr->get_arg()))
                         add_ge(static_cast<riddle::arith_item &>(*lt_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*lt_xpr->get_rhs()).get_lin(), p);
-                    else if (auto le_xpr = utils::s_ptr_cast<riddle::le_term>(n_xpr->get_arg()))
+                    else if (auto le_xpr = std::dynamic_pointer_cast<riddle::le_term>(n_xpr->get_arg()))
                         add_gt(static_cast<riddle::arith_item &>(*le_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*le_xpr->get_rhs()).get_lin(), p);
-                    else if (auto eq_xpr = utils::s_ptr_cast<riddle::eq_term>(n_xpr->get_arg()))
+                    else if (auto eq_xpr = std::dynamic_pointer_cast<riddle::eq_term>(n_xpr->get_arg()))
                         make_neq(*eq_xpr->get_lhs(), *eq_xpr->get_rhs(), p);
-                    else if (auto ge_xpr = utils::s_ptr_cast<riddle::ge_term>(n_xpr->get_arg()))
+                    else if (auto ge_xpr = std::dynamic_pointer_cast<riddle::ge_term>(n_xpr->get_arg()))
                         add_lt(static_cast<riddle::arith_item &>(*ge_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*ge_xpr->get_rhs()).get_lin(), p);
-                    else if (auto gt_xpr = utils::s_ptr_cast<riddle::gt_term>(n_xpr->get_arg()))
+                    else if (auto gt_xpr = std::dynamic_pointer_cast<riddle::gt_term>(n_xpr->get_arg()))
                         add_le(static_cast<riddle::arith_item &>(*gt_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*gt_xpr->get_rhs()).get_lin(), p);
                     else
                         throw std::runtime_error("Invalid type");
@@ -339,20 +339,20 @@ namespace ratio
                     p = utils::lit(mk_var());
                     clause.push_back(p);
                 }
-                else if (get_current_resolver().has_value()) // we add the constraint to the current resolver..
-                    p = static_cast<stresolver &>(*get_current_resolver().value()).get_rho();
+                else if (get_current_resolver()) // we add the constraint to the current resolver..
+                    p = static_cast<stresolver &>(get_current_resolver().value().get()).get_rho();
                 else // we enforce the constraint directly..
                     p = utils::TRUE_lit;
 
-                if (auto lt_xpr = utils::s_ptr_cast<riddle::lt_term>(expr))
+                if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(expr))
                     add_lt(static_cast<riddle::arith_item &>(*lt_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*lt_xpr->get_rhs()).get_lin(), p);
-                else if (auto le_xpr = utils::s_ptr_cast<riddle::le_term>(expr))
+                else if (auto le_xpr = std::dynamic_pointer_cast<riddle::le_term>(expr))
                     add_le(static_cast<riddle::arith_item &>(*le_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*le_xpr->get_rhs()).get_lin(), p);
-                else if (auto eq_xpr = utils::s_ptr_cast<riddle::eq_term>(expr))
+                else if (auto eq_xpr = std::dynamic_pointer_cast<riddle::eq_term>(expr))
                     make_eq(*eq_xpr->get_lhs(), *eq_xpr->get_rhs(), p);
-                else if (auto ge_xpr = utils::s_ptr_cast<riddle::ge_term>(expr))
+                else if (auto ge_xpr = std::dynamic_pointer_cast<riddle::ge_term>(expr))
                     add_ge(static_cast<riddle::arith_item &>(*ge_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*ge_xpr->get_rhs()).get_lin(), p);
-                else if (auto gt_xpr = utils::s_ptr_cast<riddle::gt_term>(expr))
+                else if (auto gt_xpr = std::dynamic_pointer_cast<riddle::gt_term>(expr))
                     add_gt(static_cast<riddle::arith_item &>(*gt_xpr->get_lhs()).get_lin(), static_cast<riddle::arith_item &>(*gt_xpr->get_rhs()).get_lin(), p);
                 else
                     throw std::runtime_error("Invalid type");
@@ -360,14 +360,14 @@ namespace ratio
 
         if (clause.size() == 1)
         { // we can propagate..
-            if (get_current_resolver().has_value())
-                clause.push_back(!static_cast<stresolver &>(*get_current_resolver().value()).get_rho());
+            if (get_current_resolver())
+                clause.push_back(!static_cast<stresolver &>(get_current_resolver().value().get()).get_rho());
             add_clause(std::move(clause));
         }
         else if (clause.size() > 1)
         { // we have a new flaw..
-            std::vector<utils::ref_wrapper<resolver>> causes;
-            if (get_current_resolver().has_value())
+            std::vector<std::reference_wrapper<resolver>> causes;
+            if (get_current_resolver())
                 causes.emplace_back(get_current_resolver().value());
             new_flaw<clause_flaw>(*this, std::move(causes), std::move(clause), false);
         }
@@ -375,8 +375,8 @@ namespace ratio
 
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
-        std::vector<utils::ref_wrapper<resolver>> causes;
-        if (get_current_resolver().has_value())
+        std::vector<std::reference_wrapper<resolver>> causes;
+        if (get_current_resolver())
             causes.push_back(get_current_resolver().value());
         auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args));
         return af.get_atom();
@@ -410,9 +410,9 @@ namespace ratio
                 std::unordered_set<utils::enum_val *> intersection;
                 for (const auto &v : lhs_xpr->get_values())
                     for (const auto &w : rhs_xpr->get_values())
-                        if (v == w)
+                        if (&v.get() == &w.get())
                         {
-                            intersection.insert(&*v);
+                            intersection.insert(&v.get());
                             break;
                         }
                 return std::any_of(intersection.begin(), intersection.end(), [&](const utils::enum_val *v)
@@ -421,8 +421,8 @@ namespace ratio
             else
             { // we are dealing with an enumeration and a constant..
                 for (const auto &v : lhs_xpr->get_values())
-                    if (value(lhs_xpr->get_lit(*v)) != utils::False)
-                        if (match(static_cast<riddle::term &>(*v), rhs)) // if any of the values match, then we are done..
+                    if (value(lhs_xpr->get_lit(v.get())) != utils::False)
+                        if (match(static_cast<riddle::term &>(v.get()), rhs)) // if any of the values match, then we are done..
                             return true;
                 return false;
             }
@@ -443,7 +443,7 @@ namespace ratio
                     if (!match(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name)))
                         return false;
                 for (const auto &pp : q.front()->get_parents())
-                    q.push(&*pp);
+                    q.push(&pp.get());
                 q.pop();
             }
             return true;
@@ -479,9 +479,9 @@ namespace ratio
                 std::unordered_set<utils::enum_val *> intersection;
                 for (const auto &v : lhs_xpr->get_values())
                     for (const auto &w : rhs_xpr->get_values())
-                        if (v == w)
+                        if (&v.get() == &w.get())
                         {
-                            intersection.insert(&*v);
+                            intersection.insert(&v.get());
                             break;
                         }
                 if (intersection.empty())
@@ -489,11 +489,11 @@ namespace ratio
 
                 // the values outside the intersection are pruned if the equality control variable becomes true..
                 for (const auto &v : lhs_xpr->get_values())
-                    if (!intersection.count(&*v))
-                        add_clause({!lhs_xpr->get_lit(*v), !p});
+                    if (!intersection.count(&v.get()))
+                        add_clause({!lhs_xpr->get_lit(v.get()), !p});
                 for (const auto &v : rhs_xpr->get_values())
-                    if (!intersection.count(&*v))
-                        add_clause({!rhs_xpr->get_lit(*v), !p});
+                    if (!intersection.count(&v.get()))
+                        add_clause({!rhs_xpr->get_lit(v.get()), !p});
 
                 for (const auto &v : intersection)
                 {
@@ -505,8 +505,8 @@ namespace ratio
             {
                 add_clause({!p, lhs_xpr->get_lit(*static_cast<utils::enum_val *>(&rhs))});
                 for (const auto &v : lhs_xpr->get_values())
-                    if (&*v != &*static_cast<utils::enum_val *>(&rhs))
-                        add_clause({!p, !lhs_xpr->get_lit(*v)});
+                    if (&v.get() != static_cast<utils::enum_val *>(&rhs))
+                        add_clause({!p, !lhs_xpr->get_lit(v.get())});
             }
         }
         else if (auto rhs_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with an enumeration constraint..
@@ -524,7 +524,7 @@ namespace ratio
                     else
                         make_eq(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name), p);
                 for (const auto &pp : q.front()->get_parents())
-                    q.push(&*pp);
+                    q.push(&pp.get());
                 q.pop();
             }
         }
@@ -562,9 +562,9 @@ namespace ratio
             {
                 for (const auto &v : lhs_ei_xpr->get_values())
                     for (const auto &w : rhs_ei_xpr->get_values())
-                        if (v == w)
+                        if (&v.get() == &w.get())
                         { // choosing a value from one domain excludes the corresponding value from the other domain..
-                            add_clause({!p, !lhs_ei_xpr->get_lit(*v), !rhs_ei_xpr->get_lit(*v)});
+                            add_clause({!p, !lhs_ei_xpr->get_lit(v.get()), !rhs_ei_xpr->get_lit(v.get())});
                             break;
                         }
             }
@@ -589,7 +589,7 @@ namespace ratio
                     clause.push_back(neq);
                 }
                 for (const auto &pp : q.front()->get_parents())
-                    q.push(&*pp);
+                    q.push(&pp.get());
                 q.pop();
             }
             add_clause(std::move(clause));
@@ -610,7 +610,7 @@ namespace ratio
                     clause.push_back(neq);
                 }
                 for (const auto &pp : q.front()->get_parents())
-                    q.push(&*pp);
+                    q.push(&pp.get());
                 q.pop();
             }
             add_clause(std::move(clause));
@@ -649,16 +649,16 @@ namespace ratio
             assert(std::all_of(f->get_resolvers().begin(), f->get_resolvers().end(), [f](const auto &r)
                                { return f == &r->get_flaw(); }));
             assert(std::none_of(f->get_resolvers().begin(), f->get_resolvers().end(), [this](const auto &r)
-                                { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }));
+                                { return value(static_cast<stresolver &>(r.get()).get_rho()) == utils::True; }));
 
             // we get the least expensive resolver..
             auto r = *std::min_element(f->get_resolvers().begin(), f->get_resolvers().end(), [](const auto &a, const auto &b)
                                        { return a->get_estimated_cost() < b->get_estimated_cost(); });
             assert(!is_infinite(r->get_estimated_cost()));
-            set_current_resolver(*r);
+            set_current_resolver(r.get());
 
             // we apply the resolver..
-            assume(static_cast<stresolver &>(*r).get_rho());
+            assume(static_cast<stresolver &>(r.get()).get_rho());
             STATE_CHANGED();
 
             set_current_resolver(std::nullopt);
@@ -690,18 +690,18 @@ namespace ratio
                 set_current_flaw(*f);
                 assert(!is_infinite(f->get_estimated_cost()));
                 assert(std::all_of(f->get_resolvers().begin(), f->get_resolvers().end(), [f](const auto &r)
-                                   { return f == &r->get_flaw(); }));
+                                   { return f == &r.get().get_flaw(); }));
                 assert(std::none_of(f->get_resolvers().begin(), f->get_resolvers().end(), [this](const auto &r)
-                                    { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }));
+                                    { return value(static_cast<stresolver &>(r.get()).get_rho()) == utils::True; }));
 
                 // we get the least expensive resolver..
                 auto r = *std::min_element(f->get_resolvers().begin(), f->get_resolvers().end(), [](const auto &a, const auto &b)
-                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
-                assert(!is_infinite(r->get_estimated_cost()));
-                set_current_resolver(*r);
+                                           { return a.get().get_estimated_cost() < b.get().get_estimated_cost(); });
+                assert(!is_infinite(r.get().get_estimated_cost()));
+                set_current_resolver(r.get());
 
                 // we apply the resolver..
-                assume(static_cast<stresolver &>(*r).get_rho());
+                assume(static_cast<stresolver &>(r.get()).get_rho());
                 STATE_CHANGED();
 
                 set_current_resolver(std::nullopt);
@@ -748,8 +748,8 @@ namespace ratio
 
                 // we prune the causal graph..
                 for (const auto &f : get_queued_flaws())
-                    if (already_closed.insert(&*f).second) // we prune the flaw..
-                        add_clause({utils::lit(gamma, false), !static_cast<stflaw &>(*f).get_phi()});
+                    if (already_closed.insert(&f.get()).second) // we prune the flaw..
+                        add_clause({utils::lit(gamma, false), !static_cast<stflaw &>(f.get()).get_phi()});
                 propagate(); // we propagate the pruning constraints..
 
                 assume(utils::lit(gamma)); // we enforce the pruning constraints..
@@ -795,8 +795,8 @@ namespace ratio
         {
             state s = {0, &*f, {}};
             for (const auto &r : f->get_resolvers())
-                if (value(static_cast<stresolver &>(*r).get_rho()) != utils::False)
-                    s.ress.insert(&*r);
+                if (value(static_cast<stresolver &>(r.get()).get_rho()) != utils::False)
+                    s.ress.insert(&r.get());
             assert(!s.ress.empty());
             stk.push(std::move(s));
         }
@@ -847,19 +847,19 @@ namespace ratio
                 std::vector<state> stk2;
                 for (const auto &pre : r->get_preconditions())
                 {
-                    assert(value(static_cast<stflaw &>(*pre).get_phi()) == utils::True);
-                    if (!pre->is_expanded())
+                    assert(value(static_cast<stflaw &>(pre.get()).get_phi()) == utils::True);
+                    if (!pre.get().is_expanded())
                     { // we have to expand the precondition..
                         ok = false;
-                        to_expand.insert(&*pre);
+                        to_expand.insert(&pre.get());
                     }
-                    else if (std::none_of(pre->get_resolvers().begin(), pre->get_resolvers().end(), [this](const auto &r)
-                                          { return value(static_cast<stresolver &>(*r).get_rho()) == utils::True; }))
+                    else if (std::none_of(pre.get().get_resolvers().begin(), pre.get().get_resolvers().end(), [this](const auto &r)
+                                          { return value(static_cast<stresolver &>(r.get()).get_rho()) == utils::True; }))
                     {
-                        state s = {top.level + 1, &*pre, {}};
-                        for (const auto &r : pre->get_resolvers())
-                            if (value(static_cast<stresolver &>(*r).get_rho()) != utils::False)
-                                s.ress.insert(&*r);
+                        state s = {top.level + 1, &pre.get(), {}};
+                        for (const auto &r : pre.get().get_resolvers())
+                            if (value(static_cast<stresolver &>(r.get()).get_rho()) != utils::False)
+                                s.ress.insert(&r.get());
                         assert(!s.ress.empty());
                         stk2.push_back(std::move(s));
                     }
@@ -890,16 +890,16 @@ namespace ratio
                 set_current_flaw(c_r->get_flaw());
                 // we check all the resolvers of the flaw..
                 for (const auto &c_rs : c_r->get_flaw().get_resolvers())
-                    if (c_r != &*c_rs && c_rs->get_state() == utils::Undefined)
+                    if (c_r != &c_rs.get() && c_rs.get().get_state() == utils::Undefined)
                     {
-                        set_current_resolver(*c_rs);
-                        assume(static_cast<stresolver &>(*c_rs).get_rho());
+                        set_current_resolver(c_rs.get());
+                        assume(static_cast<stresolver &>(c_rs.get()).get_rho());
                         STATE_CHANGED();
                         if (get_decisions().size()) // propagation succeeded..
                             semitone::pop();        // we backtrack..
                     }
                 for (const auto &c_rs : c_r->get_flaw().get_resolvers())
-                    expand_flaw(new_flaw<mutex_flaw>(*c_rs, n_r->get_flaw()), true); // we create (and expand) the mutex flaws..
+                    expand_flaw(new_flaw<mutex_flaw>(c_rs.get(), n_r->get_flaw()), true); // we create (and expand) the mutex flaws..
             }
         pending_mutexes.clear();
 

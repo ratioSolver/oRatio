@@ -91,18 +91,18 @@ namespace ratio
       return r_ref;
     }
 
-    [[nodiscard]] std::vector<utils::ref_wrapper<flaw>> get_flaws() const noexcept;
-    [[nodiscard]] std::vector<utils::ref_wrapper<resolver>> get_resolvers() const noexcept;
+    [[nodiscard]] std::vector<std::reference_wrapper<flaw>> get_flaws() const noexcept;
+    [[nodiscard]] std::vector<std::reference_wrapper<resolver>> get_resolvers() const noexcept;
 
-    [[nodiscard]] std::optional<utils::ref_wrapper<flaw>> get_current_flaw() const noexcept { return c_flaw; }
-    void set_current_flaw(std::optional<utils::ref_wrapper<flaw>> flaw) noexcept
+    [[nodiscard]] std::optional<std::reference_wrapper<flaw>> get_current_flaw() const noexcept { return c_flaw; }
+    void set_current_flaw(std::optional<std::reference_wrapper<flaw>> flaw) noexcept
     {
       c_flaw = flaw;
       CURRENT_FLAW(flaw);
     }
 
-    [[nodiscard]] std::optional<utils::ref_wrapper<resolver>> get_current_resolver() const noexcept { return c_res; }
-    void set_current_resolver(std::optional<utils::ref_wrapper<resolver>> resolver) noexcept
+    [[nodiscard]] std::optional<std::reference_wrapper<resolver>> get_current_resolver() const noexcept { return c_res; }
+    void set_current_resolver(std::optional<std::reference_wrapper<resolver>> resolver) noexcept
     {
       c_res = resolver;
       CURRENT_RESOLVER(resolver);
@@ -112,7 +112,7 @@ namespace ratio
     void set_flaw_position(flaw &f, size_t pos) noexcept;
     void set_resolver_state(resolver &r, utils::lbool state, bool resetting = false) noexcept;
 
-    [[nodiscard]] std::vector<utils::ref_wrapper<flaw>> get_queued_flaws() const noexcept;
+    [[nodiscard]] std::vector<std::reference_wrapper<flaw>> get_queued_flaws() const noexcept;
 
     [[nodiscard]] const std::unordered_set<flaw *> &get_active_flaws() const noexcept { return active_flaws; }
 
@@ -205,7 +205,7 @@ namespace ratio
      *
      * @param flaw The current flaw.
      */
-    virtual void current_flaw(std::optional<utils::ref_wrapper<flaw>>) {}
+    virtual void current_flaw(std::optional<std::reference_wrapper<flaw>>) {}
 
     /**
      * @brief Notifies when a resolver has been created.
@@ -230,7 +230,7 @@ namespace ratio
      *
      * @param resolver The current resolver.
      */
-    virtual void current_resolver(std::optional<utils::ref_wrapper<resolver>>) {}
+    virtual void current_resolver(std::optional<std::reference_wrapper<resolver>>) {}
 
     /**
      * @brief Notifies when a causal link has been added.
@@ -244,13 +244,13 @@ namespace ratio
 #endif
 
   private:
-    std::vector<utils::u_ptr<flaw>> flaws;             // The set of flaws
-    std::vector<utils::u_ptr<resolver>> resolvers;     // The set of resolvers
-    std::optional<utils::ref_wrapper<flaw>> c_flaw;    // the current flaw..
-    std::optional<utils::ref_wrapper<resolver>> c_res; // the current resolver..
-    std::deque<utils::ref_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..
-    std::unordered_set<flaw *> active_flaws;           // the currently active flaws..
-    std::unordered_set<flaw *> root_flaws;             // the root flaws (the ones that are not caused by any other flaw)..
+    std::vector<utils::u_ptr<flaw>> flaws;                 // The set of flaws
+    std::vector<utils::u_ptr<resolver>> resolvers;         // The set of resolvers
+    std::optional<std::reference_wrapper<flaw>> c_flaw;    // the current flaw..
+    std::optional<std::reference_wrapper<resolver>> c_res; // the current resolver..
+    std::deque<std::reference_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..
+    std::unordered_set<flaw *> active_flaws;               // the currently active flaws..
+    std::unordered_set<flaw *> root_flaws;                 // the root flaws (the ones that are not caused by any other flaw)..
 
     struct layer
     {
@@ -267,7 +267,7 @@ namespace ratio
     friend class resolver;
 
   public:
-    flaw(graph &gr, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false);
+    flaw(graph &gr, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive = false);
     flaw(const flaw &) = delete;
     virtual ~flaw() = default;
 
@@ -276,15 +276,15 @@ namespace ratio
     [[nodiscard]] graph &get_graph() noexcept { return gr; }
     [[nodiscard]] const graph &get_graph() const noexcept { return gr; }
 
-    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> &get_causes() const noexcept { return causes; }
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_causes() const noexcept { return causes; }
 
     [[nodiscard]] bool is_exclusive() const noexcept { return exclusive; }
 
-    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> &get_resolvers() const noexcept { return resolvers; }
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_resolvers() const noexcept { return resolvers; }
 
     [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
 
-    [[nodiscard]] const std::vector<utils::ref_wrapper<resolver>> &get_supports() const noexcept { return supports; }
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_supports() const noexcept { return supports; }
 
     [[nodiscard]] virtual json::json to_json() const;
 
@@ -310,11 +310,11 @@ namespace ratio
 
   private:
     graph &gr;                                                     // the graph this flaw belongs to..
-    std::vector<utils::ref_wrapper<resolver>> causes;              // the causes of this flaw..
+    std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
     const bool exclusive;                                          // whether this flaw is exclusive or not..
-    std::vector<utils::ref_wrapper<resolver>> resolvers;           // the resolvers for this flaw..
+    std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
-    std::vector<utils::ref_wrapper<resolver>> supports;            // the resolvers supported by this flaw (used for propagating cost estimates)..
+    std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
     bool expanded = false;                                         // whether this flaw has been expanded or not..
     utils::lbool state = utils::Undefined;                         // the current state of the flaw..
     size_t position = 0;                                           // the position of the flaw in the graph..
@@ -339,7 +339,7 @@ namespace ratio
 
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
 
-    [[nodiscard]] const std::vector<utils::ref_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
+    [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
 
     [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
 
@@ -352,10 +352,10 @@ namespace ratio
     virtual void apply() = 0;
 
   private:
-    flaw &f;                                             // the flaw solved by this resolver..
-    utils::lbool state = utils::Undefined;               // the current state of the resolver..
-    utils::rational intrinsic_cost;                      // the intrinsic cost of this resolver..
-    std::vector<utils::ref_wrapper<flaw>> preconditions; // the preconditions of this resolver..
+    flaw &f;                                                 // the flaw solved by this resolver..
+    utils::lbool state = utils::Undefined;                   // the current state of the resolver..
+    utils::rational intrinsic_cost;                          // the intrinsic cost of this resolver..
+    std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
   };
 
   [[nodiscard]] inline std::string to_string(const utils::lbool &node_state) noexcept

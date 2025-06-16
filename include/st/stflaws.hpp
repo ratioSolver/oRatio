@@ -8,8 +8,8 @@ namespace ratio
   class stflaw : public flaw, private smt::prop_listener, private smt::dl_listener
   {
   public:
-    stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
-    stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const utils::lit &phi, const utils::var &pos, const bool &exclusive = false) noexcept;
+    stflaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
+    stflaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const utils::lit &phi, const utils::var &pos, const bool &exclusive = false) noexcept;
 
     [[nodiscard]] inline solver &get_solver() noexcept { return static_cast<solver &>(get_graph()); }
     [[nodiscard]] inline const solver &get_solver() const noexcept { return static_cast<const solver &>(get_graph()); }
@@ -19,7 +19,7 @@ namespace ratio
     [[nodiscard]] const utils::var &get_pos() const noexcept { return pos; }
 
   private:
-    [[nodiscard]] static utils::lit compute_phi(solver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept;
+    [[nodiscard]] static utils::lit compute_phi(solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept;
 
     void expanded_flaw() override;
 
@@ -60,7 +60,7 @@ namespace ratio
   class clause_flaw final : public stflaw
   {
   public:
-    clause_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
+    clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
 
     [[nodiscard]] const std::vector<utils::lit> &get_disjuncts() const noexcept { return clause; }
 
@@ -83,17 +83,17 @@ namespace ratio
   class enum_flaw final : public stflaw
   {
   public:
-    enum_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept;
+    enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) noexcept;
 
-    [[nodiscard]] const utils::s_ptr<riddle::enum_item> &get_var() const noexcept { return var; }
+    [[nodiscard]] const std::shared_ptr<riddle::enum_item> &get_var() const noexcept { return var; }
 
   private:
     void compute_resolvers() override;
 
-    static utils::s_ptr<riddle::enum_item> create_var(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values);
+    static std::shared_ptr<riddle::enum_item> create_var(riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values);
 
   private:
-    utils::s_ptr<riddle::enum_item> var;
+    std::shared_ptr<riddle::enum_item> var;
   };
 
   class choose_val final : public stresolver
@@ -111,7 +111,7 @@ namespace ratio
   class disjunction_flaw final : public stflaw
   {
   public:
-    disjunction_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+    disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept;
 
     [[nodiscard]] const std::vector<utils::u_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
 
@@ -137,7 +137,7 @@ namespace ratio
   class atom_flaw final : public stflaw
   {
   public:
-    atom_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept;
+    atom_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept;
 
     [[nodiscard]] atom_expr get_atom() const noexcept { return atm; }
 

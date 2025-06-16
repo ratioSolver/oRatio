@@ -16,34 +16,32 @@ namespace ratio::server
         add_ws_route("/ratio").on_open(std::bind(&server::on_ws_open, this, network::placeholders::request)).on_close(std::bind(&server::on_ws_close, this, network::placeholders::request)).on_error(std::bind(&server::on_ws_error, this, network::placeholders::request, std::placeholders::_2));
     }
 
-    utils::u_ptr<network::response> server::index(const network::request &)
+    std::unique_ptr<network::response> server::index(const network::request &)
     {
-        return utils::make_u_ptr<network::file_response>(assets_dir + "/index.html");
+        return std::make_unique<network::file_response>(assets_dir + "/index.html");
     }
-    utils::u_ptr<network::response> server::assets(const network::request &req)
+    std::unique_ptr<network::response> server::assets(const network::request &req)
     {
         std::string target = req.get_target();
         if (target.find('?') != std::string::npos)
             target = target.substr(0, target.find('?'));
-        return utils::make_u_ptr<network::file_response>(assets_dir + target);
+        return std::make_unique<network::file_response>(assets_dir + target);
     }
 
-    void server::on_ws_open(network::ws_session &ws)
+    void server::on_ws_open(network::ws_server_session_base &ws)
     {
-        LOG_TRACE("New connection from " << ws.remote_endpoint());
         clients.insert(&ws);
         ws.send(make_solver_message(*this).dump());
         LOG_DEBUG("Connected clients: " + std::to_string(clients.size()));
     }
-    void server::on_ws_close(network::ws_session &ws)
+    void server::on_ws_close(network::ws_server_session_base &ws)
     {
-        LOG_TRACE("Connection closed with " << ws.remote_endpoint());
         clients.erase(&ws);
         LOG_DEBUG("Connected clients: " + std::to_string(clients.size()));
     }
-    void server::on_ws_error(network::ws_session &ws, const std::error_code &ec)
+    void server::on_ws_error(network::ws_server_session_base &ws, const std::error_code &ec)
     {
-        LOG_ERR("Error with " << ws.remote_endpoint() << ": " << ec.message());
+        LOG_ERR("WebSocket error: " + ec.message());
         clients.erase(&ws);
         LOG_DEBUG("Connected clients: " + std::to_string(clients.size()));
     }
@@ -87,11 +85,11 @@ namespace ratio::server
         for (auto client : clients)
             client->send(msg);
     }
-    void server::current_flaw(std::optional<utils::ref_wrapper<ratio::flaw>> f)
+    void server::current_flaw(std::optional<std::reference_wrapper<ratio::flaw>> f)
     {
         auto j_msg = json::json{{"msg_type", "current_flaw"}};
         if (f)
-            j_msg["id"] = static_cast<uint64_t>(f.value()->get_id());
+            j_msg["id"] = static_cast<uint64_t>(f.value().get().get_id());
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
@@ -112,11 +110,11 @@ namespace ratio::server
         for (auto client : clients)
             client->send(msg);
     }
-    void server::current_resolver(std::optional<utils::ref_wrapper<ratio::resolver>> r)
+    void server::current_resolver(std::optional<std::reference_wrapper<ratio::resolver>> r)
     {
         auto j_msg = json::json{{"msg_type", "current_resolver"}};
         if (r)
-            j_msg["id"] = static_cast<uint64_t>(r.value()->get_id());
+            j_msg["id"] = static_cast<uint64_t>(r.value().get().get_id());
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

@@ -18,7 +18,7 @@ namespace ratio
   class enum_item : public riddle::enum_item
   {
   public:
-    enum_item(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values, std::vector<utils::lit> &&lits) noexcept;
+    enum_item(riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values, std::vector<utils::lit> &&lits) noexcept;
 
     riddle::expr get(std::string_view name) override;
   };
@@ -38,7 +38,7 @@ namespace ratio
     atom_flaw &flaw; // the flaw associated with this atom..
   };
 
-  using atom_expr = utils::s_ptr<atom>;
+  using atom_expr = std::shared_ptr<atom>;
 
   class solver : public smt::semitone, public graph
   {
@@ -81,8 +81,8 @@ namespace ratio
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
     [[nodiscard]] std::string string_value(const riddle::string_term &expr) const noexcept override;
 
-    [[nodiscard]] riddle::enum_expr new_enum(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) override;
-    [[nodiscard]] std::vector<utils::ref_wrapper<utils::enum_val>> enum_value(const riddle::enum_term &expr) const noexcept override;
+    [[nodiscard]] riddle::enum_expr new_enum(riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) override;
+    [[nodiscard]] std::vector<std::reference_wrapper<utils::enum_val>> enum_value(const riddle::enum_term &expr) const noexcept override;
 
     [[nodiscard]] riddle::arith_expr new_negation(riddle::arith_expr xpr) override;
 

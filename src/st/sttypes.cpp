@@ -12,10 +12,10 @@ namespace ratio
     {
         listen(variable(atm.get_sigma()));
         for (const auto &[name, xpr] : atm.items)
-            if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*xpr))
+            if (auto *ov = dynamic_cast<const riddle::enum_item *>(xpr.get()))
             {
                 for (const auto &v : atm.get_core().enum_value(*ov))
-                    listen(variable(ov->get_lit(*v)));
+                    listen(variable(ov->get_lit(v.get())));
             }
             else if (is_bool(xpr))
             {
@@ -32,27 +32,27 @@ namespace ratio
             }
 
         auto tau = atm.get(riddle::tau_kw);
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(tau.get()))
             for (const auto &v : atm.get_core().enum_value(*ov))
-                ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(&v.get()));
         else
             ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
     }
     void atom_listener::on_change(const utils::var &) noexcept
     {
         auto tau = atm.get(riddle::tau_kw);
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(tau.get()))
             for (const auto &v : atm.get_core().enum_value(*ov))
-                ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(&v.get()));
         else
             ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
     }
     void atom_listener::on_arith_change(const utils::var &) noexcept
     {
         auto tau = atm.get(riddle::tau_kw);
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(tau.get()))
             for (const auto &v : atm.get_core().enum_value(*ov))
-                ct.to_check.emplace(dynamic_cast<riddle::component *>(&*v));
+                ct.to_check.emplace(dynamic_cast<riddle::component *>(&v.get()));
         else
             ct.to_check.emplace(dynamic_cast<riddle::component *>(tau.get()));
     }
@@ -66,18 +66,18 @@ namespace ratio
             return utils::True; // the atoms must be on the same component..
 
         std::set<const riddle::component *> l_tau_cmps;
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*l_tau))
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(l_tau.get()))
             for (const auto &v : get_solver().enum_value(*ov))
-                l_tau_cmps.emplace(dynamic_cast<riddle::component *>(&*v));
+                l_tau_cmps.emplace(dynamic_cast<riddle::component *>(&v.get()));
         else
-            l_tau_cmps.emplace(dynamic_cast<riddle::component *>(&*l_tau));
+            l_tau_cmps.emplace(dynamic_cast<riddle::component *>(l_tau.get()));
 
         std::set<const riddle::component *> r_tau_cmps;
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*r_tau))
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(r_tau.get()))
             for (const auto &v : get_solver().enum_value(*ov))
-                r_tau_cmps.emplace(dynamic_cast<riddle::component *>(&*v));
+                r_tau_cmps.emplace(dynamic_cast<riddle::component *>(&v.get()));
         else
-            r_tau_cmps.emplace(dynamic_cast<riddle::component *>(&*r_tau));
+            r_tau_cmps.emplace(dynamic_cast<riddle::component *>(r_tau.get()));
 
         if (l_tau_cmps.size() == 1 && r_tau_cmps.size() == 1 && *l_tau_cmps.begin() == *r_tau_cmps.begin())
             return utils::True; // the atoms must be on the same component..
@@ -88,7 +88,7 @@ namespace ratio
         return utils::False; // the atoms can't be on the same component..
     }
 
-    void stcomponent_type::new_flaw(std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause)
+    void stcomponent_type::new_flaw(std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause)
     {
         if (slv.decision_level() == 0)
             slv.new_flaw<clause_flaw>(slv, std::move(causes), std::move(clause), false);
@@ -104,14 +104,14 @@ namespace ratio
         // we assign the atoms to the state-variables that need to be checked..
         std::unordered_map<const riddle::component *, std::vector<riddle::atom_term *>> sv_instances;
         for (const auto &atm : get_atoms())
-            if (get_solver().value(utils::s_ptr_cast<atom>(atm)->get_sigma()) == utils::True)
+            if (get_solver().value(std::dynamic_pointer_cast<atom>(atm)->get_sigma()) == utils::True)
             { // the atom is active..
                 const auto tau = atm->get(riddle::tau_kw);
-                if (auto c_svs = dynamic_cast<riddle::enum_item *>(&*tau)) // the `tau` parameter is a variable..
+                if (auto c_svs = dynamic_cast<riddle::enum_item *>(tau.get())) // the `tau` parameter is a variable..
                     for (const auto &c_sv : get_core().enum_value(*c_svs))
-                        sv_instances[dynamic_cast<riddle::component *>(&*c_sv)].push_back(&*atm);
+                        sv_instances[dynamic_cast<riddle::component *>(&c_sv.get())].push_back(atm.get());
                 else // the `tau` parameter is a constant..
-                    sv_instances[dynamic_cast<riddle::component *>(tau.get())].push_back(&*atm);
+                    sv_instances[dynamic_cast<riddle::component *>(tau.get())].push_back(atm.get());
             }
 
         for (const auto &[sv, atms] : sv_instances)
@@ -195,15 +195,15 @@ namespace ratio
                             std::set<riddle::atom_term *> mcs(as.cbegin(), as.cend()); // the MCS..
                             if (sv_flaws.insert(mcs).second && get_solver().decision_level())
                             {
-                                std::vector<utils::ref_wrapper<resolver>> causes;
+                                std::vector<std::reference_wrapper<resolver>> causes;
                                 for (const auto &a : as)
                                     for (const auto &r : static_cast<atom *>(a)->get_flaw().get_resolvers())
-                                        if (auto act = dynamic_cast<activate_fact *>(&*r))
+                                        if (auto act = dynamic_cast<activate_fact *>(&r.get()))
                                         {
                                             causes.emplace_back(*act);
                                             break;
                                         }
-                                        else if (auto act = dynamic_cast<activate_goal *>(&*r))
+                                        else if (auto act = dynamic_cast<activate_goal *>(&r.get()))
                                         {
                                             causes.emplace_back(*act);
                                             break;
@@ -234,12 +234,12 @@ namespace ratio
 
         // we store the variables for on-line flaw resolution..
         auto tau = atm->get(riddle::tau_kw);
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(tau.get()))
             for (const auto &v : get_solver().enum_value(*ov))
-                frbs[&*atm][&*v] = ov->get_lit(*v);
+                frbs[atm.get()][&v.get()] = ov->get_lit(v.get());
 
-        const auto start = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::start_kw));
-        const auto end = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::end_kw));
+        const auto start = std::dynamic_pointer_cast<riddle::arith_item>(atm->get(riddle::start_kw));
+        const auto end = std::dynamic_pointer_cast<riddle::arith_item>(atm->get(riddle::end_kw));
         for (const auto &c_atm : get_atoms())
             if (atm != c_atm)
             {
@@ -247,14 +247,14 @@ namespace ratio
                 {
                 case utils::True:
                 { // the atoms are on the same state-variable..
-                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
-                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+                    const auto c_start = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
 
-                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    if (get_solver().arith_ub(end->get_lin()) > get_solver().arith_lb(c_start->get_lin()) && get_solver().arith_lb(start->get_lin()) < get_solver().arith_ub(c_end->get_lin()))
                     { // the atoms might temporally overlap..
-                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                        if (get_solver().arith_ub(start->get_lin()) < get_solver().arith_lb(c_end->get_lin()))
                             get_solver().add_le(end->get_lin(), c_start->get_lin()); // `atm` must be before `c_atm`..
-                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                        else if (get_solver().arith_lb(end->get_lin()) > get_solver().arith_ub(c_start->get_lin()))
                             get_solver().add_le(c_end->get_lin(), start->get_lin()); // `c_atm` must be before `atm`..
                         else
                         { // the ordering constraints between the atoms are stored in the leqs map..
@@ -263,32 +263,32 @@ namespace ratio
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
                             assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[atm.get()][c_atm.get()] = before;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                     }
                 }
                 break;
                 case utils::Undefined:
                 { // the atoms might be on the same state-variable..
-                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
-                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+                    const auto c_start = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
 
-                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    if (get_solver().arith_ub(end->get_lin()) > get_solver().arith_lb(c_start->get_lin()) && get_solver().arith_lb(start->get_lin()) < get_solver().arith_ub(c_end->get_lin()))
                     { // the atoms might temporally overlap..
-                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                        if (get_solver().arith_ub(start->get_lin()) < get_solver().arith_lb(c_end->get_lin()))
                         {
                             auto before = utils::lit(get_solver().mk_var());
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             assert(get_solver().value(before) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
+                            leqs[atm.get()][c_atm.get()] = before;
                         }
-                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                        else if (get_solver().arith_lb(end->get_lin()) > get_solver().arith_ub(c_start->get_lin()))
                         {
                             auto after = utils::lit(get_solver().mk_var());
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after); // `c_atm` before `atm`..
                             assert(get_solver().value(after) == utils::Undefined);
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                         else
                         { // the ordering constraints between the atoms are stored in the leqs map..
@@ -297,8 +297,8 @@ namespace ratio
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
                             assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[atm.get()][c_atm.get()] = before;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                     }
                 }
@@ -317,14 +317,14 @@ namespace ratio
         // we assign the atoms to the state-variables that need to be checked..
         std::unordered_map<riddle::component *, std::vector<riddle::atom_term *>> rr_instances;
         for (const auto &atm : get_atoms())
-            if (get_solver().value(utils::s_ptr_cast<atom>(atm)->get_sigma()) == utils::True)
+            if (get_solver().value(std::dynamic_pointer_cast<atom>(atm)->get_sigma()) == utils::True)
             { // the atom is active..
                 const auto tau = atm->get(riddle::tau_kw);
-                if (auto c_svs = dynamic_cast<riddle::enum_item *>(&*tau)) // the `tau` parameter is a variable..
+                if (auto c_svs = dynamic_cast<riddle::enum_item *>(tau.get())) // the `tau` parameter is a variable..
                     for (const auto &c_sv : get_core().enum_value(*c_svs))
-                        rr_instances[dynamic_cast<riddle::component *>(&*c_sv)].push_back(&*atm);
+                        rr_instances[dynamic_cast<riddle::component *>(&c_sv.get())].push_back(atm.get());
                 else // the `tau` parameter is a constant..
-                    rr_instances[dynamic_cast<riddle::component *>(tau.get())].push_back(&*atm);
+                    rr_instances[dynamic_cast<riddle::component *>(tau.get())].push_back(atm.get());
             }
 
         for (const auto &[rr, atms] : rr_instances)
@@ -414,15 +414,15 @@ namespace ratio
                             std::set<riddle::atom_term *> mcs(as.cbegin(), as.cend()); // the MCS..
                             if (rr_flaws.insert(mcs).second && get_solver().decision_level())
                             {
-                                std::vector<utils::ref_wrapper<resolver>> causes;
+                                std::vector<std::reference_wrapper<resolver>> causes;
                                 for (const auto &a : as)
                                     for (const auto &r : static_cast<atom *>(a)->get_flaw().get_resolvers())
-                                        if (auto act = dynamic_cast<activate_fact *>(&*r))
+                                        if (auto act = dynamic_cast<activate_fact *>(&r.get()))
                                         {
                                             causes.emplace_back(*act);
                                             break;
                                         }
-                                        else if (auto act = dynamic_cast<activate_goal *>(&*r))
+                                        else if (auto act = dynamic_cast<activate_goal *>(&r.get()))
                                         {
                                             causes.emplace_back(*act);
                                             break;
@@ -453,12 +453,12 @@ namespace ratio
 
         // we store the variables for on-line flaw resolution..
         auto tau = atm->get(riddle::tau_kw);
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(tau.get()))
             for (const auto &v : get_solver().enum_value(*ov))
-                frbs[&*atm][&*v] = ov->get_lit(*v);
+                frbs[atm.get()][&v.get()] = ov->get_lit(v.get());
 
-        const auto start = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::start_kw));
-        const auto end = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::end_kw));
+        const auto start = std::dynamic_pointer_cast<riddle::arith_item>(atm->get(riddle::start_kw));
+        const auto end = std::dynamic_pointer_cast<riddle::arith_item>(atm->get(riddle::end_kw));
         for (const auto &c_atm : get_atoms())
             if (atm != c_atm)
             {
@@ -466,14 +466,14 @@ namespace ratio
                 {
                 case utils::True:
                 { // the atoms are on the same state-variable..
-                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
-                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+                    const auto c_start = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
 
-                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    if (get_solver().arith_ub(end->get_lin()) > get_solver().arith_lb(c_start->get_lin()) && get_solver().arith_lb(start->get_lin()) < get_solver().arith_ub(c_end->get_lin()))
                     { // the atoms might temporally overlap..
-                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                        if (get_solver().arith_ub(start->get_lin()) < get_solver().arith_lb(c_end->get_lin()))
                             get_solver().add_le(end->get_lin(), c_start->get_lin()); // `atm` must be before `c_atm`..
-                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                        else if (get_solver().arith_lb(end->get_lin()) > get_solver().arith_ub(c_start->get_lin()))
                             get_solver().add_le(c_end->get_lin(), start->get_lin()); // `c_atm` must be before `atm`..
                         else
                         { // the ordering constraints between the atoms are stored in the leqs map..
@@ -482,32 +482,32 @@ namespace ratio
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
                             assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[atm.get()][c_atm.get()] = before;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                     }
                 }
                 break;
                 case utils::Undefined:
                 { // the atoms might be on the same state-variable..
-                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
-                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+                    const auto c_start = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
 
-                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    if (get_solver().arith_ub(end->get_lin()) > get_solver().arith_lb(c_start->get_lin()) && get_solver().arith_lb(start->get_lin()) < get_solver().arith_ub(c_end->get_lin()))
                     { // the atoms might temporally overlap..
-                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                        if (get_solver().arith_ub(start->get_lin()) < get_solver().arith_lb(c_end->get_lin()))
                         {
                             auto before = utils::lit(get_solver().mk_var());
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             assert(get_solver().value(before) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
+                            leqs[atm.get()][c_atm.get()] = before;
                         }
-                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                        else if (get_solver().arith_lb(end->get_lin()) > get_solver().arith_ub(c_start->get_lin()))
                         {
                             auto after = utils::lit(get_solver().mk_var());
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after); // `c_atm` before `atm`..
                             assert(get_solver().value(after) == utils::Undefined);
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                         else
                         { // the ordering constraints between the atoms are stored in the leqs map..
@@ -516,8 +516,8 @@ namespace ratio
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
                             assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[atm.get()][c_atm.get()] = before;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                     }
                 }
@@ -543,12 +543,12 @@ namespace ratio
 
         // we store the variables for on-line flaw resolution..
         auto tau = atm->get(riddle::tau_kw);
-        if (auto *ov = dynamic_cast<const riddle::enum_item *>(&*tau))
+        if (auto *ov = dynamic_cast<const riddle::enum_item *>(tau.get()))
             for (const auto &v : get_solver().enum_value(*ov))
-                frbs[&*atm][&*v] = ov->get_lit(*v);
+                frbs[atm.get()][&v.get()] = ov->get_lit(v.get());
 
-        const auto start = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::start_kw));
-        const auto end = utils::s_ptr_cast<riddle::arith_item>(atm->get(riddle::end_kw));
+        const auto start = std::dynamic_pointer_cast<riddle::arith_item>(atm->get(riddle::start_kw));
+        const auto end = std::dynamic_pointer_cast<riddle::arith_item>(atm->get(riddle::end_kw));
         for (const auto &c_atm : get_atoms())
             if (atm != c_atm)
             {
@@ -556,14 +556,14 @@ namespace ratio
                 {
                 case utils::True:
                 { // the atoms are on the same state-variable..
-                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
-                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+                    const auto c_start = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
 
-                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    if (get_solver().arith_ub(end->get_lin()) > get_solver().arith_lb(c_start->get_lin()) && get_solver().arith_lb(start->get_lin()) < get_solver().arith_ub(c_end->get_lin()))
                     { // the atoms might temporally overlap..
-                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                        if (get_solver().arith_ub(start->get_lin()) < get_solver().arith_lb(c_end->get_lin()))
                             get_solver().add_le(end->get_lin(), c_start->get_lin()); // `atm` must be before `c_atm`..
-                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                        else if (get_solver().arith_lb(end->get_lin()) > get_solver().arith_ub(c_start->get_lin()))
                             get_solver().add_le(c_end->get_lin(), start->get_lin()); // `c_atm` must be before `atm`..
                         else
                         { // the ordering constraints between the atoms are stored in the leqs map..
@@ -572,32 +572,32 @@ namespace ratio
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
                             assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[atm.get()][c_atm.get()] = before;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                     }
                 }
                 break;
                 case utils::Undefined:
                 { // the atoms might be on the same state-variable..
-                    const auto c_start = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
-                    const auto c_end = utils::s_ptr_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
+                    const auto c_start = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::start_kw));
+                    const auto c_end = std::dynamic_pointer_cast<riddle::arith_item>(c_atm->get(riddle::end_kw));
 
-                    if (get_solver().arith_ub(end) > get_solver().arith_lb(c_start) && get_solver().arith_lb(start) < get_solver().arith_ub(c_end))
+                    if (get_solver().arith_ub(end->get_lin()) > get_solver().arith_lb(c_start->get_lin()) && get_solver().arith_lb(start->get_lin()) < get_solver().arith_ub(c_end->get_lin()))
                     { // the atoms might temporally overlap..
-                        if (get_solver().arith_ub(start) < get_solver().arith_lb(c_end))
+                        if (get_solver().arith_ub(start->get_lin()) < get_solver().arith_lb(c_end->get_lin()))
                         {
                             auto before = utils::lit(get_solver().mk_var());
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             assert(get_solver().value(before) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
+                            leqs[atm.get()][c_atm.get()] = before;
                         }
-                        else if (get_solver().arith_lb(end) > get_solver().arith_ub(c_start))
+                        else if (get_solver().arith_lb(end->get_lin()) > get_solver().arith_ub(c_start->get_lin()))
                         {
                             auto after = utils::lit(get_solver().mk_var());
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after); // `c_atm` before `atm`..
                             assert(get_solver().value(after) == utils::Undefined);
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                         else
                         { // the ordering constraints between the atoms are stored in the leqs map..
@@ -606,8 +606,8 @@ namespace ratio
                             get_solver().add_le(end->get_lin(), c_start->get_lin(), before); // `atm` before `c_atm`..
                             get_solver().add_le(c_end->get_lin(), start->get_lin(), after);  // `c_atm` before `atm`..
                             assert(get_solver().value(before) == utils::Undefined && get_solver().value(after) == utils::Undefined);
-                            leqs[&*atm][&*c_atm] = before;
-                            leqs[&*c_atm][&*atm] = after;
+                            leqs[atm.get()][c_atm.get()] = before;
+                            leqs[c_atm.get()][atm.get()] = after;
                         }
                     }
                 }

@@ -6,14 +6,14 @@
 
 namespace ratio
 {
-    stflaw::stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), compute_phi(slv, causes), slv.mk_tp(), exclusive) {}
-    stflaw::stflaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, const utils::lit &phi, const utils::var &pos, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), prop_listener(slv), dl_listener(slv.get_difference_logic_theory()), phi(phi), pos(pos)
+    stflaw::stflaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), compute_phi(slv, causes), slv.mk_tp(), exclusive) {}
+    stflaw::stflaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const utils::lit &phi, const utils::var &pos, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), prop_listener(slv), dl_listener(slv.get_difference_logic_theory()), phi(phi), pos(pos)
     {
         assert(slv.value(phi) != utils::False); // the activation literal must not be false..
         // this flaw's position must be greater than 0..
         slv.add_distance(pos, 0, utils::rational::zero);
         for (const auto &cause : causes) // we impose the position constraint (i.e., the flaw must be before its causes) to avoid causality loops..
-            slv.add_distance(static_cast<stflaw &>(cause->get_flaw()).get_pos(), pos, -utils::rational::one);
+            slv.add_distance(static_cast<stflaw &>(cause.get().get_flaw()).get_pos(), pos, -utils::rational::one);
 
         if (slv.value(phi) == utils::True) // if the flaw is active, we add it to the set of active flaws..
             set_state(utils::True);
@@ -22,19 +22,19 @@ namespace ratio
         listen_tp(pos);
     }
 
-    utils::lit stflaw::compute_phi(solver &slv, const std::vector<utils::ref_wrapper<resolver>> &causes) noexcept
+    utils::lit stflaw::compute_phi(solver &slv, const std::vector<std::reference_wrapper<resolver>> &causes) noexcept
     {
         utils::lit phi;
         if (causes.empty()) // if the flaw has no causes, it is always active..
             phi = utils::TRUE_lit;
         else if (causes.size() == 1) // if the flaw has a single cause, we use its activation literal..
-            phi = static_cast<stresolver &>(*causes.front()).get_rho();
+            phi = static_cast<stresolver &>(causes.front().get()).get_rho();
         else
         { // we create a new variable for the flaw..
             phi = utils::lit(slv.mk_var());
             std::vector<utils::lit> ls;
             for (const auto &cause : causes)
-                ls.push_back(!static_cast<stresolver &>(*cause).get_rho());
+                ls.push_back(!static_cast<stresolver &>(cause.get()).get_rho());
             ls.push_back(phi);
             slv.add_clause(std::move(ls));
         }
@@ -45,7 +45,7 @@ namespace ratio
     {
         std::vector<utils::lit> ls;
         for (const auto &resolver : get_resolvers())
-            ls.push_back(static_cast<stresolver &>(*resolver).get_rho());
+            ls.push_back(static_cast<stresolver &>(resolver.get()).get_rho());
         if (get_solver().value(phi) == utils::True)
         {
             if (is_exclusive())
@@ -96,19 +96,19 @@ namespace ratio
         if (get_solver().visiting && !get_state() && get_flaw().get_state() == utils::True)
         { // this flaw is mutex with the current resolver..
             auto cr = get_solver().get_current_resolver().value();
-            if (cr->get_state() != utils::True)
+            if (cr.get().get_state() != utils::True)
                 return; // the current resolver is not active, so this resolver has become negated as a consequence of no-good propagation..
-            if (&cr->get_flaw() == &get_flaw())
+            if (&cr.get().get_flaw() == &get_flaw())
                 return; // the resolvers solve the same flaw, so we ignore the mutex..
-            auto dist = get_solver().tp_distance(static_cast<stflaw &>(cr->get_flaw()).get_pos(), static_cast<stflaw &>(get_flaw()).get_pos());
+            auto dist = get_solver().tp_distance(static_cast<stflaw &>(cr.get().get_flaw()).get_pos(), static_cast<stflaw &>(get_flaw()).get_pos());
             if (dist.first > 0)
                 return; // the resolvers are not mutex..
-            if (get_solver().mutexes.count({this, &*cr}) == 0)
+            if (get_solver().mutexes.count({this, &cr.get()}) == 0)
             {
-                LOG_DEBUG("[" << get_solver().get_name() << "] " << cr->to_json() << " is mutex with " << to_json());
-                get_solver().pending_mutexes.emplace_back(this, &*cr);
-                get_solver().mutexes.insert({this, &*cr});
-                get_solver().mutexes.insert({&*cr, this});
+                LOG_DEBUG("[" << get_solver().get_name() << "] " << cr.get().to_json() << " is mutex with " << to_json());
+                get_solver().pending_mutexes.emplace_back(this, &cr.get());
+                get_solver().mutexes.insert({this, &cr.get()});
+                get_solver().mutexes.insert({&cr.get(), this});
             }
         }
     }
@@ -121,8 +121,8 @@ namespace ratio
         return j;
     }
 
-    enum_flaw::enum_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values) noexcept : stflaw(slv, std::move(causes), true), var(create_var(tp, std::move(values))) {}
-    utils::s_ptr<riddle::enum_item> enum_flaw::create_var(riddle::component_type &tp, std::vector<utils::ref_wrapper<utils::enum_val>> &&values)
+    enum_flaw::enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) noexcept : stflaw(slv, std::move(causes), true), var(create_var(tp, std::move(values))) {}
+    std::shared_ptr<riddle::enum_item> enum_flaw::create_var(riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values)
     {
         assert(!values.empty());
         std::vector<utils::lit> lits;
@@ -131,14 +131,14 @@ namespace ratio
         else
             for (size_t i = 0; i < values.size(); i++)
                 lits.push_back(utils::lit(static_cast<solver &>(tp.get_scope().get_core()).mk_var()));
-        return utils::make_s_ptr<enum_item>(tp, std::move(values), std::move(lits));
+        return std::make_shared<enum_item>(tp, std::move(values), std::move(lits));
     }
     void enum_flaw::compute_resolvers()
     {
         assert(get_solver().value(get_phi()) == get_state());
         for (const auto &val : var->get_values())
-            if (get_solver().value(var->get_lit(*val)) != utils::False) // we prune unassignable values..
-                new_resolver<choose_val>(*this, *val);
+            if (get_solver().value(var->get_lit(val.get())) != utils::False) // we prune unassignable values..
+                new_resolver<choose_val>(*this, val.get());
     }
 
     choose_val::choose_val(enum_flaw &f, const utils::enum_val &val) noexcept : stresolver(f, utils::rational(1), f.get_var()->get_lit(val)), val(val) {}
@@ -148,7 +148,7 @@ namespace ratio
         assert(get_state()); // The resolver cannot be negated..
     }
 
-    clause_flaw::clause_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
+    clause_flaw::clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept : stflaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
     void clause_flaw::compute_resolvers()
     {
         assert(get_solver().value(get_phi()) == get_state());
@@ -164,7 +164,7 @@ namespace ratio
         assert(get_state()); // The resolver cannot be negated..
     }
 
-    disjunction_flaw::disjunction_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept : stflaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
+    disjunction_flaw::disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept : stflaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
     void disjunction_flaw::compute_resolvers()
     {
         assert(get_solver().value(get_phi()) == get_state());
@@ -180,7 +180,7 @@ namespace ratio
         conj.execute();
     }
 
-    atom_flaw::atom_flaw(solver &slv, std::vector<utils::ref_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept : stflaw(slv, std::move(causes)), atm(utils::make_s_ptr<atom>(*this, pred, is_fact, std::move(args), utils::lit(slv.mk_var()))) {}
+    atom_flaw::atom_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) noexcept : stflaw(slv, std::move(causes)), atm(std::make_shared<atom>(*this, pred, is_fact, std::move(args), utils::lit(slv.mk_var()))) {}
     void atom_flaw::compute_resolvers()
     {
         assert(get_solver().value(get_phi()) == get_state());
@@ -200,7 +200,7 @@ namespace ratio
                 if (get_solver().value(static_cast<atom &>(*a).get_flaw().get_phi()) == utils::False)
                     continue; // the atom cannot be activated..
                 if (get_solver().match(*atm, *a))
-                    new_resolver<unify_atom>(*this, utils::s_ptr_cast<atom>(a));
+                    new_resolver<unify_atom>(*this, std::dynamic_pointer_cast<atom>(a));
             }
 
         if (atm->is_fact())
@@ -301,16 +301,16 @@ namespace ratio
         return j;
     }
 
-    mutex_flaw::mutex_flaw(resolver &r, flaw &f) noexcept : stflaw(static_cast<solver &>(f.get_graph()), std::vector<utils::ref_wrapper<resolver>>{r}, utils::lit(static_cast<solver &>(f.get_graph()).mk_var()), static_cast<solver &>(f.get_graph()).mk_tp()), r(r), f(f) { get_solver().add_clause({!static_cast<stresolver &>(r).get_rho(), get_phi()}); }
+    mutex_flaw::mutex_flaw(resolver &r, flaw &f) noexcept : stflaw(static_cast<solver &>(f.get_graph()), std::vector<std::reference_wrapper<resolver>>{r}, utils::lit(static_cast<solver &>(f.get_graph()).mk_var()), static_cast<solver &>(f.get_graph()).mk_tp()), r(r), f(f) { get_solver().add_clause({!static_cast<stresolver &>(r).get_rho(), get_phi()}); }
 
     void mutex_flaw::compute_resolvers()
     {
         assert(get_solver().value(get_phi()) == get_state());
         for (const auto &c_r : f.get_resolvers())
-            if (get_solver().mutexes.count({&r, &*c_r}) || !c_r->get_state())
+            if (get_solver().mutexes.count({&r, &c_r.get()}) || !c_r.get().get_state())
                 continue; // we skip the mutex resolver..
             else
-                new_resolver<mutex_resolver>(*this, static_cast<stresolver &>(*c_r));
+                new_resolver<mutex_resolver>(*this, static_cast<stresolver &>(c_r.get()));
     }
 
     json::json mutex_flaw::to_json() const
@@ -329,7 +329,7 @@ namespace ratio
         assert(get_solver().value(get_rho()) == get_state());
         assert(get_state()); // The resolver cannot be negated..
         for (const auto &pre : r.get_preconditions())
-            get_solver().add_causal_link(*pre, *this);
+            get_solver().add_causal_link(pre.get(), *this);
     }
 
     json::json mutex_resolver::to_json() const

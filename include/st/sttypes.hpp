@@ -41,7 +41,7 @@ namespace ratio
   protected:
     utils::lbool share_component(riddle::atom_expr lhs, riddle::atom_expr rhs);
 
-    void new_flaw(std::vector<utils::ref_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause);
+    void new_flaw(std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause);
 
   private:
     solver &slv; // the solver..
@@ -49,7 +49,7 @@ namespace ratio
   protected:
     std::set<const riddle::component *> to_check;                                                             // the components whose atoms have changed..
     std::vector<atom_listener> listeners;                                                                     // the atom listeners..
-    std::vector<std::pair<std::vector<utils::ref_wrapper<resolver>>, std::vector<utils::lit>>> pending_flaws; // the pending flaws..
+    std::vector<std::pair<std::vector<std::reference_wrapper<resolver>>, std::vector<utils::lit>>> pending_flaws; // the pending flaws..
   };
 
   class ststate_variable final : public riddle::state_variable, public stcomponent_type
