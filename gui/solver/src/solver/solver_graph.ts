@@ -1,4 +1,4 @@
-import { Component } from "ratio-core";
+import { Component } from "@ratiosolver/flick";
 import { solver } from "./solver";
 import cytoscape from 'cytoscape';
 import { interpolateRgb } from 'd3-interpolate';

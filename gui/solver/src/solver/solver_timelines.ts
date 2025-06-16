@@ -1,4 +1,4 @@
-import { Component } from "ratio-core";
+import { Component } from "@ratiosolver/flick";
 import { solver } from "./solver";
 import Plotly, { Layout, PlotData, Shape } from 'plotly.js-dist-min';
 
