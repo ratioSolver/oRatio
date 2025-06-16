@@ -153,9 +153,9 @@ namespace ratio
     solver::solver(std::string_view name) noexcept : graph(name)
     {
         read(INIT_STRING);
-        add_type(utils::make_u_ptr<ststate_variable>(*this));
-        add_type(utils::make_u_ptr<streusable_resource>(*this));
-        add_type(utils::make_u_ptr<stconsumable_resource>(*this));
+        add_type(std::make_unique<ststate_variable>(*this));
+        add_type(std::make_unique<streusable_resource>(*this));
+        add_type(std::make_unique<stconsumable_resource>(*this));
     }
 
     riddle::bool_expr solver::new_bool() { return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), utils::lit(mk_var())); }
@@ -284,7 +284,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    void solver::new_disjunction(std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts)
+    void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
         std::vector<std::reference_wrapper<resolver>> causes;

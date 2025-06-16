@@ -62,7 +62,7 @@ namespace ratio
     Tp &new_flaw(Args &&...args) noexcept
     {
       static_assert(std::is_base_of_v<flaw, Tp>, "Tp must be a subclass of flaw");
-      auto f = utils::make_u_ptr<Tp>(std::forward<Args>(args)...);
+      auto f = std::make_unique<Tp>(std::forward<Args>(args)...);
       auto &f_ref = *f;
       NEW_FLAW(f_ref);
       flaws.emplace_back(std::move(f));
@@ -84,7 +84,7 @@ namespace ratio
     Tp &new_resolver(Args &&...args) noexcept
     {
       static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
-      auto r = utils::make_u_ptr<Tp>(std::forward<Args>(args)...);
+      auto r = std::make_unique<Tp>(std::forward<Args>(args)...);
       auto &r_ref = *r;
       NEW_RESOLVER(r_ref);
       resolvers.emplace_back(std::move(r));
@@ -244,8 +244,8 @@ namespace ratio
 #endif
 
   private:
-    std::vector<utils::u_ptr<flaw>> flaws;                 // The set of flaws
-    std::vector<utils::u_ptr<resolver>> resolvers;         // The set of resolvers
+    std::vector<std::unique_ptr<flaw>> flaws;              // The set of flaws
+    std::vector<std::unique_ptr<resolver>> resolvers;      // The set of resolvers
     std::optional<std::reference_wrapper<flaw>> c_flaw;    // the current flaw..
     std::optional<std::reference_wrapper<resolver>> c_res; // the current resolver..
     std::deque<std::reference_wrapper<flaw>> flaw_q;       // the flaw queue (for the graph building procedure)..

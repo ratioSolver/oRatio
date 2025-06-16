@@ -111,15 +111,15 @@ namespace ratio
   class disjunction_flaw final : public stflaw
   {
   public:
-    disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::u_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+    disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
 
-    [[nodiscard]] const std::vector<utils::u_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
+    [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
 
   private:
     void compute_resolvers() override;
 
   private:
-    std::vector<utils::u_ptr<riddle::conjunction>> disjuncts;
+    std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
   };
 
   class choose_conjunction final : public stresolver
