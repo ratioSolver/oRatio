@@ -10,11 +10,11 @@ namespace ratio::server
         return j;
     }
 
-    json::json make_solvers_message(const std::vector<utils::ref_wrapper<graph>> &gs) noexcept
+    json::json make_solvers_message(const std::vector<std::reference_wrapper<graph>> &gs) noexcept
     {
         json::json j{{"msg_type", "solvers"}};
         for (const auto &g : gs)
-            j[std::to_string(g->get_id())] = g->to_json();
+            j[std::to_string(g.get().get_id())] = g.get().to_json();
         return j;
     }
 } // namespace ratio::server
