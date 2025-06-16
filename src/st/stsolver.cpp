@@ -885,8 +885,22 @@ namespace ratio
             semitone::pop(); // we backtrack to the root level..
 
         for (const auto &[n_r, c_r] : pending_mutexes)
-            if (value(static_cast<stresolver &>(*c_r).get_rho()) != utils::False)
-                expand_flaw(new_flaw<mutex_flaw>(*n_r, *c_r), true); // we create (and expand) the mutex flaws..
+            if (c_r->get_state() && get_active_flaws().count(&c_r->get_flaw())) // c_r has not been negated and it's flaw has not been solved..
+            {
+                set_current_flaw(c_r->get_flaw());
+                // we check all the resolvers of the flaw..
+                for (const auto &c_rs : c_r->get_flaw().get_resolvers())
+                    if (c_r != &*c_rs && c_rs->get_state() == utils::Undefined)
+                    {
+                        set_current_resolver(*c_rs);
+                        assume(static_cast<stresolver &>(*c_rs).get_rho());
+                        STATE_CHANGED();
+                        if (get_decisions().size()) // propagation succeeded..
+                            semitone::pop();        // we backtrack..
+                    }
+                for (const auto &c_rs : c_r->get_flaw().get_resolvers())
+                    expand_flaw(new_flaw<mutex_flaw>(*c_rs, n_r->get_flaw()), true); // we create (and expand) the mutex flaws..
+            }
         pending_mutexes.clear();
 
         // we expand the flaws..

@@ -12,6 +12,7 @@ namespace ratio
   class stcomponent_type;
   class atom_listener;
   class unify_atom;
+  class mutex_flaw;
   class mutex_resolver;
 
   class enum_item : public riddle::enum_item
@@ -50,6 +51,7 @@ namespace ratio
     friend class stflaw;
     friend class stresolver;
     friend class unify_atom;
+    friend class mutex_flaw;
     friend class mutex_resolver;
     friend class stcomponent_type;
 

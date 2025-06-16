@@ -191,7 +191,16 @@ namespace ratio
   class mutex_flaw final : public stflaw
   {
   public:
-    mutex_flaw(resolver &n_r, resolver &c_r) noexcept;
+    /**
+     * @brief Constructs a mutex flaw.
+     *
+     * This flaw appends the `f` flaw to the `r` resolver's preconditions.
+     * The resolvers for this flaw are the `f` flaw's resolvers, except the ones that are mutex with the `r` resolver.
+     *
+     * @param r The resolver that is mutex with at least one resolver of the `f` flaw.
+     * @param f The flaw whose at least one resolver is mutex with the `r` resolver.
+     */
+    mutex_flaw(resolver &r, flaw &f) noexcept;
 
   private:
     void compute_resolvers() override;
@@ -199,8 +208,8 @@ namespace ratio
     [[nodiscard]] json::json to_json() const override;
 
   private:
-    resolver &n_r; // the negated resolver..
-    resolver &c_r; // the current resolver..
+    resolver &r; // the resolver that is mutex with at least one resolver of the `f` flaw..
+    flaw &f;     // the flaw whose at least one resolver is mutex with the `r` resolver..
   };
 
   class mutex_resolver final : public stresolver
