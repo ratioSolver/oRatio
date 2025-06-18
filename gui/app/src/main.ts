@@ -1,4 +1,4 @@
-import { Settings, AppComponent, App, Connection } from '@ratiosolver/flick';
+import { Settings, AppComponent, App, Connection, BrandComponent } from '@ratiosolver/flick';
 import { solver, TimelinesChart, SolverGraph } from '@ratiosolver/solver';
 import './styles.css';
 
@@ -11,19 +11,8 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
   constructor() {
     super();
 
-    const brand = document.createElement('a');
-    brand.classList.add('navbar-brand');
-
-    const brand_icon = document.createElement('img');
-    brand_icon.src = 'favicon.ico';
-    brand_icon.alt = 'oRatio';
-    brand_icon.width = 30;
-    brand_icon.height = 30;
-    brand_icon.classList.add('d-inline-block', 'align-text-top', 'mr-2');
-    brand.appendChild(brand_icon);
-    brand.appendChild(document.createTextNode('oRatio'));
-
-    this.navbar.element.appendChild(brand);
+    const brand = new BrandComponent('oRatio');
+    this.navbar.add_child(brand);
 
     const pills = document.createElement('ul');
     pills.classList.add('nav', 'nav-pills', 'ml-2');
