@@ -11,11 +11,6 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
   constructor() {
     super();
 
-    solver.SolverSet.get_instance().add_solver_set_listener(this);
-    Connection.get_instance().connect();
-  }
-
-  override populate_navbar(container: HTMLDivElement): void {
     const brand = document.createElement('a');
     brand.classList.add('navbar-brand');
 
@@ -28,7 +23,7 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
     brand.appendChild(brand_icon);
     brand.appendChild(document.createTextNode('oRatio'));
 
-    container.appendChild(brand);
+    this.navbar.appendChild(brand);
 
     const pills = document.createElement('ul');
     pills.classList.add('nav', 'nav-pills', 'ml-2');
@@ -65,7 +60,10 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
     graph_pill.appendChild(graph_button);
     pills.appendChild(graph_pill);
 
-    container.appendChild(pills);
+    this.navbar.appendChild(pills);
+
+    solver.SolverSet.get_instance().add_solver_set_listener(this);
+    Connection.get_instance().connect();
   }
 
   init(solvers: Map<number, solver.Solver>): void {
