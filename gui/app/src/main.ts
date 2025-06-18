@@ -23,7 +23,7 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
     brand.appendChild(brand_icon);
     brand.appendChild(document.createTextNode('oRatio'));
 
-    this.navbar.appendChild(brand);
+    this.navbar.element.appendChild(brand);
 
     const pills = document.createElement('ul');
     pills.classList.add('nav', 'nav-pills', 'ml-2');
@@ -60,7 +60,7 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
     graph_pill.appendChild(graph_button);
     pills.appendChild(graph_pill);
 
-    this.navbar.appendChild(pills);
+    this.navbar.element.appendChild(pills);
 
     solver.SolverSet.get_instance().add_solver_set_listener(this);
     Connection.get_instance().connect();
