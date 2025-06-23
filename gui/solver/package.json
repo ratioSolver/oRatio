@@ -1,6 +1,6 @@
 {
   "name": "@ratiosolver/solver",
-  "version": "0.0.22",
+  "version": "0.0.32",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,10 +21,11 @@
     "@types/d3-scale": "^4.0.9",
     "@types/d3-scale-chromatic": "^3.1.0",
     "@types/plotly.js-dist-min": "^2.3.4",
+    "@types/leaflet": "^1.9.18",
     "typescript": "~5.8.3"
   },
   "peerDependencies": {
-    "@ratiosolver/flick": "^0.0.27",
+    "@ratiosolver/flick": "^0.0.34",
     "bootstrap": "^5.3.6"
   },
   "dependencies": {
