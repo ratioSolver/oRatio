@@ -1,4 +1,4 @@
-import { App, Component, AnchorComponent, UListComponent } from '@ratiosolver/flick';
+import { App, Component, Selector, SelectorGroup, UListComponent } from '@ratiosolver/flick';
 import { solver } from "./solver";
 import { library, icon } from '@fortawesome/fontawesome-svg-core'
 import { faBrain, faPauseCircle, faPlayCircle, faCheckCircle, faXmarkCircle } from '@fortawesome/free-solid-svg-icons'
@@ -7,15 +7,34 @@ import { SolverGraph } from './solver_graph';
 
 library.add(faBrain, faPauseCircle, faPlayCircle, faCheckCircle, faXmarkCircle);
 
-export class SolverAnchor extends AnchorComponent<solver.Solver> implements solver.SolverListener {
+export class SolverElement extends Component<solver.Solver, HTMLLIElement> implements solver.SolverListener, Selector {
 
-  constructor(solver: solver.Solver) {
-    super(solver);
-    solver.add_solver_listener(this);
-    this.element.addEventListener('click', () => { App.get_instance().selected_component(this); });
+  private group: SelectorGroup;
+  private a: HTMLAnchorElement;
+  private icn: Element;
+
+  constructor(group: SelectorGroup, solver: solver.Solver) {
+    super(solver, document.createElement('li'));
+    this.group = group;
+    this.element.classList.add('nav-item', 'list-group-item');
+
+    this.a = document.createElement('a');
+    this.a.classList.add('nav-link', 'd-flex', 'align-items-center');
+    this.a.href = '#';
+    this.icn = to_icon(solver.get_state());
+    this.icn.classList.add('me-2');
+    this.a.append(this.icn);
+    this.a.append(document.createTextNode(solver.get_name()));
+    this.a.addEventListener('click', (event) => {
+      event.preventDefault();
+      group.set_selected(this);
+    });
+
+    this.element.append(this.a);
+    group.add_selector(this);
   }
 
-  state_changed(): void { this.render(); }
+  state_changed(): void { }
   flaw_created(_flaw: solver.graph.Flaw): void { }
   flaw_state_changed(_flaw: solver.graph.Flaw): void { }
   flaw_position_changed(_flaw: solver.graph.Flaw): void { }
@@ -25,41 +44,42 @@ export class SolverAnchor extends AnchorComponent<solver.Solver> implements solv
   resolver_state_changed(_resolver: solver.graph.Resolver): void { }
   current_resolver(_resolver: solver.graph.Resolver | null): void { }
   causal_link_added(_flaw: solver.graph.Flaw, _resolver: solver.graph.Resolver): void { }
-
-  execution_state_changed(_state: solver.ExecutionState): void { }
+  execution_state_changed(state: solver.ExecutionState): void {
+    const new_icn = to_icon(state);
+    this.icn.replaceWith(new_icn);
+    this.icn = new_icn;
+  }
   tick(_time: solver.values.Rational): void { }
   starting(_atoms: solver.values.Atom[]): void { }
   start(_atoms: solver.values.Atom[]): void { }
   ending(_atoms: solver.values.Atom[]): void { }
   end(_atoms: solver.values.Atom[]): void { }
 
-  private render(): void {
-    this.element.innerHTML = to_icon(this.payload.get_state()) + ' ' + this.payload.get_name();
-  }
+  override unmounting(): void { this.group.remove_selector(this); }
 
-  override unmounting(): void {
-    this.payload.remove_solver_listener(this);
-    if (App.get_instance().get_selected_component() === this)
-      App.get_instance().selected_component(null);
+  select(): void {
+    this.a.classList.add('active');
+    App.get_instance().selected_component(new SolverComponent(this.payload));
   }
+  unselect(): void { this.a.classList.remove('active'); }
 }
 
-class SolverListItem extends Component<solver.Solver, HTMLLIElement> {
+export class SolverList extends UListComponent<solver.Solver> implements solver.SolverSetListener {
 
-  private solver_anchor: SolverAnchor;
+  private group: SelectorGroup;
 
-  constructor(solver: solver.Solver) {
-    super(solver, document.createElement('li'));
-    this.solver_anchor = new SolverAnchor(solver);
-    this.element.appendChild(this.solver_anchor.element);
+  constructor(group: SelectorGroup = new SelectorGroup(), slvs: solver.Solver[] = []) {
+    super(slvs.map(slv => new SolverElement(group, slv)), (t0: solver.Solver, t1: solver.Solver) => t0.get_name() === t1.get_name() ? 0 : (t0.get_name() < t1.get_name() ? -1 : 1));
+    this.group = group;
+    this.element.classList.add('nav', 'nav-pills', 'list-group', 'flex-column');
+    solver.SolverSet.get_instance().add_solver_set_listener(this);
   }
-}
 
-export class SolverListComponent extends UListComponent<solver.Solver> {
+  init(_solvers: Map<number, solver.Solver>): void { }
+  solver_created(solver: solver.Solver): void { this.add_child(new SolverElement(this.group, solver)); }
+  solver_deleted(id: number): void { this.remove_child(this.children.find(child => child.payload.get_id() === id)!); }
 
-  constructor(payload: SolverListItem[]) {
-    super(payload, (s0: solver.Solver, s1: solver.Solver) => s0.get_name().localeCompare(s1.get_name()));
-  }
+  override unmounting(): void { solver.SolverSet.get_instance().remove_solver_set_listener(this); }
 }
 
 export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
@@ -122,13 +142,13 @@ export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
   override unmounting(): void { if (this.selected_comp) this.selected_comp.unmounting(); }
 }
 
-function to_icon(state: solver.ExecutionState): string[] {
+function to_icon(state: solver.ExecutionState): Element {
   switch (state) {
     case solver.ExecutionState.reasoning:
-    case solver.ExecutionState.adapting: return icon(faBrain).html;
-    case solver.ExecutionState.idle: return icon(faPauseCircle).html;
-    case solver.ExecutionState.executing: return icon(faPlayCircle).html;
-    case solver.ExecutionState.finished: return icon(faCheckCircle).html;
-    case solver.ExecutionState.failed: return icon(faXmarkCircle).html;
+    case solver.ExecutionState.adapting: return icon(faBrain).node[0];
+    case solver.ExecutionState.idle: return icon(faPauseCircle).node[0];
+    case solver.ExecutionState.executing: return icon(faPlayCircle).node[0];
+    case solver.ExecutionState.finished: return icon(faCheckCircle).node[0];
+    case solver.ExecutionState.failed: return icon(faXmarkCircle).node[0];
   }
 }
