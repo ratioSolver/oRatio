@@ -1,4 +1,4 @@
-import { App, Component, Selector, SelectorGroup, UListComponent } from '@ratiosolver/flick';
+import { Component, SelectorGroup, UListComponent, UListElement } from '@ratiosolver/flick';
 import { solver } from "./solver";
 import { library, icon } from '@fortawesome/fontawesome-svg-core'
 import { faBrain, faPauseCircle, faPlayCircle, faCheckCircle, faXmarkCircle } from '@fortawesome/free-solid-svg-icons'
@@ -7,31 +7,10 @@ import { SolverGraph } from './solver_graph';
 
 library.add(faBrain, faPauseCircle, faPlayCircle, faCheckCircle, faXmarkCircle);
 
-export class SolverElement extends Component<solver.Solver, HTMLLIElement> implements solver.SolverListener, Selector {
-
-  private group: SelectorGroup;
-  private a: HTMLAnchorElement;
-  private icn: Element;
+export class SolverElement extends UListElement<solver.Solver> implements solver.SolverListener {
 
   constructor(group: SelectorGroup, solver: solver.Solver) {
-    super(solver, document.createElement('li'));
-    this.group = group;
-    this.element.classList.add('nav-item', 'list-group-item');
-
-    this.a = document.createElement('a');
-    this.a.classList.add('nav-link', 'd-flex', 'align-items-center');
-    this.a.href = '#';
-    this.icn = to_icon(solver.get_state());
-    this.icn.classList.add('me-2');
-    this.a.append(this.icn);
-    this.a.append(document.createTextNode(solver.get_name()));
-    this.a.addEventListener('click', (event) => {
-      event.preventDefault();
-      group.set_selected(this);
-    });
-
-    this.element.append(this.a);
-    group.add_selector(this);
+    super(group, solver, to_icon(solver.get_state()), solver.get_name(), () => new SolverComponent(this.payload));
   }
 
   state_changed(): void { }
@@ -44,24 +23,12 @@ export class SolverElement extends Component<solver.Solver, HTMLLIElement> imple
   resolver_state_changed(_resolver: solver.graph.Resolver): void { }
   current_resolver(_resolver: solver.graph.Resolver | null): void { }
   causal_link_added(_flaw: solver.graph.Flaw, _resolver: solver.graph.Resolver): void { }
-  execution_state_changed(state: solver.ExecutionState): void {
-    const new_icn = to_icon(state);
-    this.icn.replaceWith(new_icn);
-    this.icn = new_icn;
-  }
+  execution_state_changed(state: solver.ExecutionState): void { this.set_icon(to_icon(state)); }
   tick(_time: solver.values.Rational): void { }
   starting(_atoms: solver.values.Atom[]): void { }
   start(_atoms: solver.values.Atom[]): void { }
   ending(_atoms: solver.values.Atom[]): void { }
   end(_atoms: solver.values.Atom[]): void { }
-
-  override unmounting(): void { this.group.remove_selector(this); }
-
-  select(): void {
-    this.a.classList.add('active');
-    App.get_instance().selected_component(new SolverComponent(this.payload));
-  }
-  unselect(): void { this.a.classList.remove('active'); }
 }
 
 export class SolverList extends UListComponent<solver.Solver> implements solver.SolverSetListener {
