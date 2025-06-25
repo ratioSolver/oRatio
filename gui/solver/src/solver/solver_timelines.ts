@@ -19,7 +19,7 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
   };
   private layout: Partial<Layout> & { [key: `yaxis${number}`]: Partial<Plotly.LayoutAxis>; } = {
     autosize: true,
-    xaxis: { title: 'Time' },
+    xaxis: { title: { text: 'Time' } },
     showlegend: false,
     shapes: [this.current_time],
   };
@@ -46,7 +46,7 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
     for (const [id, tl] of this.payload.get_timelines()) {
       const gen = solver.chart.ChartManager.get_instance().get_chart_generator(tl.get_type());
       const c = gen.make_chart(tl);
-      const layout = { title: tl.get_name(), domain: [start_domain + domain_separator, start_domain + domain_size - domain_separator], zeroline: false, showticklabels: gen.show_tick_labels(), showgrid: gen.show_grid(), range: c.get_range() };
+      const layout = { title: { text: tl.get_name() }, domain: [start_domain + domain_separator, start_domain + domain_size - domain_separator], zeroline: false, showticklabels: gen.show_tick_labels(), showgrid: gen.show_grid(), range: c.get_range() };
       if (i == 1) {
         yaxis.set(id, 'y');
         this.layout['yaxis'] = layout;
