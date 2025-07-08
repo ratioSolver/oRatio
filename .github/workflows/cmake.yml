@@ -92,7 +92,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install cmake
+          brew install --formula cmake
 
       - name: Configure CMake
         run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_ASAN=ON -DENABLE_UBSAN=ON
@@ -159,7 +159,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install cmake
+          brew install --formula cmake
 
       - name: Configure CMake
         run: cmake -B build -DCMAKE_BUILD_TYPE=Release
