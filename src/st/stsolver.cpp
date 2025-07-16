@@ -744,7 +744,7 @@ namespace ratio
 
                 propagate(); // we propagate the constraints..
 
-                visit_graph(); // we visit the causal graph..
+                // visit_graph(); // we visit the causal graph..
 
                 // we prune the causal graph..
                 for (const auto &f : get_queued_flaws())
