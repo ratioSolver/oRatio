@@ -47,6 +47,15 @@ namespace ratio
   public:
     graph(std::string_view name = "oRatio");
 
+    /**
+     * @brief Solves the problem defined by the derived class.
+     *
+     * This is a pure virtual function that must be implemented by subclasses.
+     * The implementation should contain the logic to solve the specific problem
+     * represented by the derived class.
+     */
+    virtual void solve() = 0;
+
     [[nodiscard]] virtual json::json to_json() const override;
 
   protected:
