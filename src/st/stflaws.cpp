@@ -72,7 +72,7 @@ namespace ratio
     json::json stflaw::to_json() const
     {
         json::json j = flaw::to_json();
-        j["phi"] = to_string(phi).c_str();
+        j["phi"] = to_string(phi);
         j["pos"] = static_cast<uint64_t>(pos);
         return j;
     }
@@ -117,7 +117,7 @@ namespace ratio
     [[nodiscard]] json::json stresolver::to_json() const
     {
         json::json j = resolver::to_json();
-        j["rho"] = to_string(rho).c_str();
+        j["rho"] = to_string(rho);
         return j;
     }
 
@@ -218,7 +218,7 @@ namespace ratio
     {
         auto j = stflaw::to_json();
         j["type"] = "atom";
-        j["atom"] = {{"id", static_cast<uint64_t>(atm->get_id())}, {"is_fact", atm->is_fact()}, {"pred", atm->get_type().get_name().c_str()}, {"sigma", static_cast<uint64_t>(variable(atm->get_sigma()))}};
+        j["atom"] = {{"id", static_cast<uint64_t>(atm->get_id())}, {"is_fact", atm->is_fact()}, {"pred", atm->get_type().get_name()}, {"sigma", static_cast<uint64_t>(variable(atm->get_sigma()))}};
         return j;
     }
 
