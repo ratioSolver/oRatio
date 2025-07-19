@@ -73,7 +73,7 @@ namespace ratio
     {
         json::json j = flaw::to_json();
         j["phi"] = to_string(phi);
-        j["pos"] = static_cast<uint64_t>(pos);
+        j["pos"] = pos;
         return j;
     }
 
@@ -218,7 +218,7 @@ namespace ratio
     {
         auto j = stflaw::to_json();
         j["type"] = "atom";
-        j["atom"] = {{"id", static_cast<uint64_t>(atm->get_id())}, {"is_fact", atm->is_fact()}, {"pred", atm->get_type().get_name()}, {"sigma", static_cast<uint64_t>(variable(atm->get_sigma()))}};
+        j["atom"] = {{"id", atm->get_id()}, {"is_fact", atm->is_fact()}, {"pred", atm->get_type().get_name()}, {"sigma", variable(atm->get_sigma())}};
         return j;
     }
 
@@ -297,7 +297,7 @@ namespace ratio
     {
         auto j = stresolver::to_json();
         j["type"] = "unify_atom";
-        j["target"] = static_cast<uint64_t>(atm->get_id());
+        j["target"] = atm->get_id();
         return j;
     }
 
@@ -317,8 +317,8 @@ namespace ratio
     {
         auto j = stflaw::to_json();
         j["type"] = "h2flaw";
-        j["resolver"] = static_cast<uint64_t>(r.get_id());
-        j["flaw"] = static_cast<uint64_t>(f.get_id());
+        j["resolver"] = r.get_id();
+        j["flaw"] = f.get_id();
         return j;
     }
 

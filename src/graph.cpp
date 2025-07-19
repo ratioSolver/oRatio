@@ -28,9 +28,9 @@ namespace ratio
             j_graph["resolvers"] = std::move(j_resolvers);
         }
         if (get_current_flaw())
-            j_graph["current_flaw"] = static_cast<uint64_t>(get_current_flaw().value().get().get_id());
+            j_graph["current_flaw"] = get_current_flaw().value().get().get_id();
         if (get_current_resolver())
-            j_graph["current_resolver"] = static_cast<uint64_t>(get_current_resolver().value().get().get_id());
+            j_graph["current_resolver"] = get_current_resolver().value().get().get_id();
 
         return j_graph;
     }
@@ -290,19 +290,19 @@ namespace ratio
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", {{"num", static_cast<int64_t>(est_cost.numerator())}, {"den", static_cast<int64_t>(est_cost.denominator())}}}, {"state", to_string(state)}, {"position", static_cast<uint64_t>(position)}};
+        json::json j_flaw{{"cost", {{"num", est_cost.numerator()}, {"den", est_cost.denominator()}}}, {"state", to_string(state)}, {"position", position}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);
             for (const auto &c : causes)
-                j_causes.push_back(static_cast<uint64_t>(c.get().get_id()));
+                j_causes.push_back(c.get().get_id());
             j_flaw["causes"] = std::move(j_causes);
         }
         if (!supports.empty())
         {
             json::json j_supports(json::json_type::array);
             for (const auto &s : supports)
-                j_supports.push_back(static_cast<uint64_t>(s.get().get_id()));
+                j_supports.push_back(s.get().get_id());
             j_flaw["supports"] = std::move(j_supports);
         }
         return j_flaw;
@@ -343,12 +343,12 @@ namespace ratio
 
     json::json resolver::to_json() const
     {
-        json::json j_resolver{{"flaw", static_cast<uint64_t>(f.get_id())}, {"intrinsic_cost", {{"num", static_cast<int64_t>(intrinsic_cost.numerator())}, {"den", static_cast<int64_t>(intrinsic_cost.denominator())}}}, {"state", to_string(state)}};
+        json::json j_resolver{{"flaw", f.get_id()}, {"intrinsic_cost", {{"num", intrinsic_cost.numerator()}, {"den", intrinsic_cost.denominator()}}}, {"state", to_string(state)}};
         if (!preconditions.empty())
         {
             json::json j_preconditions(json::json_type::array);
             for (const auto &p : preconditions)
-                j_preconditions.push_back(static_cast<uint64_t>(p.get().get_id()));
+                j_preconditions.push_back(p.get().get_id());
             j_resolver["preconditions"] = std::move(j_preconditions);
         }
         return j_resolver;
