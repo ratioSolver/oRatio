@@ -89,7 +89,7 @@ namespace ratio::server
     {
         auto j_msg = json::json{{"msg_type", "current_flaw"}};
         if (f)
-            j_msg["id"] = static_cast<uint64_t>(f.value().get().get_id());
+            j_msg["id"] = f.value().get().get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
@@ -97,7 +97,7 @@ namespace ratio::server
     void server::resolver_created(const ratio::resolver &r)
     {
         auto j_msg = r.to_json();
-        j_msg["id"] = static_cast<uint64_t>(r.get_id());
+        j_msg["id"] = r.get_id();
         j_msg["msg_type"] = "resolver_created";
         auto msg = j_msg.dump();
         for (auto client : clients)
@@ -114,7 +114,7 @@ namespace ratio::server
     {
         auto j_msg = json::json{{"msg_type", "current_resolver"}};
         if (r)
-            j_msg["id"] = static_cast<uint64_t>(r.value().get().get_id());
+            j_msg["id"] = r.value().get().get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

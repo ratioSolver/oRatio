@@ -126,15 +126,15 @@ namespace ratio
 
                 for (const auto &atm : atms)
                 {
-                    const auto start = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::start_kw)));
-                    const auto end = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::end_kw)));
+                    const auto start = get_core().arith_value(*atm->get<riddle::arith_term>(riddle::start_kw));
+                    const auto end = get_core().arith_value(*atm->get<riddle::arith_term>(riddle::end_kw));
                     starting_atoms[start].insert(atm);
                     ending_atoms[end].insert(atm);
                     pulses.insert(start);
                     pulses.insert(end);
                 }
-                pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(origin_kw))));
-                pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(horizon_kw))));
+                pulses.insert(get_core().arith_value(*get_core().env::get<riddle::arith_term>(origin_kw)));
+                pulses.insert(get_core().arith_value(*get_core().env::get<riddle::arith_term>(horizon_kw)));
 
                 // we scroll through the timeline looking for inconsistencies..
                 bool has_conflict = false;
@@ -337,19 +337,19 @@ namespace ratio
                 // all the pulses of the timeline..
                 std::set<utils::inf_rational> pulses;
                 // the resource capacity..
-                const auto c_capacity = get_core().arith_value(static_cast<riddle::arith_term &>(*rr->get(riddle::reusable_resource_capacity_kw)));
+                const auto c_capacity = get_core().arith_value(*rr->get<riddle::arith_term>(riddle::reusable_resource_capacity_kw));
 
                 for (const auto &atm : atms)
                 {
-                    const auto start = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::start_kw)));
-                    const auto end = get_core().arith_value(static_cast<riddle::arith_term &>(*atm->get(riddle::end_kw)));
+                    const auto start = get_core().arith_value(*atm->get<riddle::arith_term>(riddle::start_kw));
+                    const auto end = get_core().arith_value(*atm->get<riddle::arith_term>(riddle::end_kw));
                     starting_atoms[start].insert(atm);
                     ending_atoms[end].insert(atm);
                     pulses.insert(start);
                     pulses.insert(end);
                 }
-                pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(origin_kw))));
-                pulses.insert(get_core().arith_value(static_cast<riddle::arith_term &>(*get_core().get(horizon_kw))));
+                pulses.insert(get_core().arith_value(*get_core().env::get<riddle::arith_term>(origin_kw)));
+                pulses.insert(get_core().arith_value(*get_core().env::get<riddle::arith_term>(horizon_kw)));
 
                 // we scroll through the timeline looking for inconsistencies..
                 bool has_conflict = false;
@@ -365,7 +365,7 @@ namespace ratio
                 {
                     utils::inf_rational c_usage; // the concurrent resource usage..
                     for (const auto &a : overlapping_atoms)
-                        c_usage += get_core().arith_value(static_cast<riddle::arith_term &>(*a->get(riddle::reusable_resource_amount_kw)));
+                        c_usage += get_core().arith_value(*a->get<riddle::arith_term>(riddle::reusable_resource_amount_kw));
 
                     if (c_usage > c_capacity) // if the resource usage exceeds the resource capacity, we have a conflict..
                     {
