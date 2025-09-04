@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - "v*" # Run when tag matches v*, e.g., v1.0.0
-    branches:
-      - uncertainty # You can also trigger on uncertainty branch pushes if you prefer, but be careful with versioning
   release:
     types: [published]
 
