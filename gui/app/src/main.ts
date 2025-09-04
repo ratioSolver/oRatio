@@ -1,18 +1,15 @@
-import { Settings, AppComponent, App, Connection, BrandComponent } from '@ratiosolver/flick';
+import { Settings, AppComponent, App, Connection, BrandComponent, NavbarContent } from '@ratiosolver/flick';
 import { solver, TimelinesChart, SolverGraph } from '@ratiosolver/solver';
 import './styles.css';
 
 Settings.get_instance().load_settings({ ws_path: '/ratio' });
 
-class oRatio extends AppComponent implements solver.SolverSetListener {
+class ChartSelector extends NavbarContent implements solver.SolverSetListener {
 
   private solver: solver.Solver | null = null;
 
   constructor() {
     super();
-
-    const brand = new BrandComponent('oRatio');
-    this.navbar.add_child(brand);
 
     const pills = document.createElement('ul');
     pills.classList.add('nav', 'nav-pills', 'ml-2');
@@ -49,10 +46,9 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
     graph_pill.appendChild(graph_button);
     pills.appendChild(graph_pill);
 
-    this.navbar.element.appendChild(pills);
+    this.node.appendChild(pills);
 
     solver.SolverSet.get_instance().add_solver_set_listener(this);
-    Connection.get_instance().connect();
   }
 
   init(solvers: Map<number, solver.Solver>): void {
@@ -63,6 +59,15 @@ class oRatio extends AppComponent implements solver.SolverSetListener {
   }
   solver_created(_solver: solver.Solver): void { }
   solver_deleted(_id: number): void { }
+}
+
+class oRatio extends AppComponent {
+
+  constructor() {
+    super(new BrandComponent('oRatio'), new ChartSelector());
+
+    Connection.get_instance().connect();
+  }
 
   override received_message(message: any): void { solver.SolverSet.get_instance().update_solvers(message); }
 }

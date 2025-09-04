@@ -13,8 +13,8 @@
     "vite": "^6.0.5"
   },
   "dependencies": {
-    "@ratiosolver/flick": "^0.0.41",
-    "@ratiosolver/solver": "^0.0.38",
+    "@ratiosolver/flick": "^0.1.00",
+    "@ratiosolver/solver": "^0.0.40",
     "bootstrap": "^5.3.6"
   }
 }

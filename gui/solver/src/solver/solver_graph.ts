@@ -1,4 +1,4 @@
-import { Component } from "@ratiosolver/flick";
+import { PayloadComponent } from "@ratiosolver/flick";
 import { solver } from "./solver";
 import cytoscape from 'cytoscape';
 import { interpolateRgb } from 'd3-interpolate';
@@ -6,7 +6,7 @@ import { interpolateRgb } from 'd3-interpolate';
 const infiniteColor = "black";
 const forbiddenColor = "lightgray";
 
-export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implements solver.SolverListener {
+export class SolverGraph extends PayloadComponent<HTMLDivElement, solver.Solver> implements solver.SolverListener {
 
   private cy: cytoscape.Core | null = null;
   private layout = {
@@ -24,14 +24,14 @@ export class SolverGraph extends Component<solver.Solver, HTMLDivElement> implem
   private max_cost = 5;
 
   constructor(solver: solver.Solver) {
-    super(solver, document.createElement('div'));
-    this.element.id = 'slv-' + solver.get_id() + '-graph';
-    this.element.classList.add('d-flex', 'flex-column', 'flex-grow-1');
+    super(document.createElement('div'), solver);
+    this.node.id = 'slv-' + solver.get_id() + '-graph';
+    this.node.classList.add('d-flex', 'flex-column', 'flex-grow-1');
   }
 
   override mounted(): void {
     this.cy = cytoscape({
-      container: this.element,
+      container: this.node,
       style: [
         {
           selector: 'node[type="flaw"]',

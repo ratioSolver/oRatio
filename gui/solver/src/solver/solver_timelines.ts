@@ -1,8 +1,8 @@
-import { Component } from "@ratiosolver/flick";
+import { PayloadComponent } from "@ratiosolver/flick";
 import { solver } from "./solver";
 import Plotly, { Layout, PlotData, Shape } from 'plotly.js-dist-min';
 
-export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> implements solver.SolverListener {
+export class TimelinesChart extends PayloadComponent<HTMLDivElement, solver.Solver> implements solver.SolverListener {
 
   private current_time: Partial<Shape> = {
     type: 'line',
@@ -26,9 +26,9 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
   private config = { responsive: true, displaylogo: false };
 
   constructor(solver: solver.Solver) {
-    super(solver, document.createElement('div'));
-    this.element.id = 'slv-' + solver.get_id() + '-timelines';
-    this.element.classList.add('d-flex', 'flex-column', 'flex-grow-1');
+    super(document.createElement('div'), solver);
+    this.node.id = 'slv-' + solver.get_id() + '-timelines';
+    this.node.classList.add('d-flex', 'flex-column', 'flex-grow-1');
   }
 
   override mounted(): void {
@@ -64,7 +64,7 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
       i++;
     }
 
-    Plotly.react(this.element, data.flat(), this.layout, this.config);
+    Plotly.react(this.node, data.flat(), this.layout, this.config);
   }
   flaw_created(_flaw: solver.graph.Flaw): void { }
   flaw_state_changed(_flaw: solver.graph.Flaw): void { }
@@ -80,7 +80,7 @@ export class TimelinesChart extends Component<solver.Solver, HTMLDivElement> imp
   tick(time: solver.values.Rational): void {
     this.current_time.x0 = time.to_number();
     this.current_time.x1 = time.to_number();
-    Plotly.react(this.element, [], this.layout, this.config);
+    Plotly.react(this.node, [], this.layout, this.config);
   }
   starting(_atoms: solver.values.Atom[]): void { }
   start(_atoms: solver.values.Atom[]): void { }

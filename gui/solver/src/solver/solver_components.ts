@@ -1,4 +1,4 @@
-import { Component, SelectorGroup, UListComponent, UListElement } from '@ratiosolver/flick';
+import { Component, SelectorGroup, UListComponent, ListItemComponent, App, PayloadComponent } from '@ratiosolver/flick';
 import { solver } from "./solver";
 import { library, icon } from '@fortawesome/fontawesome-svg-core'
 import { faBrain, faPauseCircle, faPlayCircle, faCheckCircle, faXmarkCircle } from '@fortawesome/free-solid-svg-icons'
@@ -7,10 +7,10 @@ import { SolverGraph } from './solver_graph';
 
 library.add(faBrain, faPauseCircle, faPlayCircle, faCheckCircle, faXmarkCircle);
 
-export class SolverElement extends UListElement<solver.Solver> implements solver.SolverListener {
+export class SolverElement extends ListItemComponent<solver.Solver> implements solver.SolverListener {
 
   constructor(group: SelectorGroup, solver: solver.Solver) {
-    super(group, solver, to_icon(solver.get_state()), solver.get_name(), () => new SolverComponent(this.payload));
+    super(group, solver, to_icon(solver.get_state()), solver.get_name());
   }
 
   state_changed(): void { }
@@ -29,6 +29,10 @@ export class SolverElement extends UListElement<solver.Solver> implements solver
   start(_atoms: solver.values.Atom[]): void { }
   ending(_atoms: solver.values.Atom[]): void { }
   end(_atoms: solver.values.Atom[]): void { }
+
+  override select(): void {
+    App.get_instance().selected_component(new SolverComponent(this.payload));
+  }
 }
 
 export class SolverList extends UListComponent<solver.Solver> implements solver.SolverSetListener {
@@ -38,7 +42,7 @@ export class SolverList extends UListComponent<solver.Solver> implements solver.
   constructor(group: SelectorGroup = new SelectorGroup(), slvs: solver.Solver[] = []) {
     super(slvs.map(slv => new SolverElement(group, slv)), (t0: solver.Solver, t1: solver.Solver) => t0.get_name() === t1.get_name() ? 0 : (t0.get_name() < t1.get_name() ? -1 : 1));
     this.group = group;
-    this.element.classList.add('nav', 'nav-pills', 'list-group', 'flex-column');
+    this.node.classList.add('nav', 'nav-pills', 'list-group', 'flex-column');
     solver.SolverSet.get_instance().add_solver_set_listener(this);
   }
 
@@ -49,14 +53,14 @@ export class SolverList extends UListComponent<solver.Solver> implements solver.
   override unmounting(): void { solver.SolverSet.get_instance().remove_solver_set_listener(this); }
 }
 
-export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
+export class SolverComponent extends PayloadComponent<HTMLDivElement, solver.Solver> {
 
-  private selected_comp: Component<any, HTMLElement> | null = null;
+  private selected_comp: Component<HTMLElement> | null = null;
 
   constructor(solver: solver.Solver) {
-    super(solver, document.createElement('div'));
-    this.element.id = 'slv-' + solver.get_id();
-    this.element.classList.add('d-flex', 'flex-column', 'flex-grow-1');
+    super(document.createElement('div'), solver);
+    this.node.id = 'slv-' + solver.get_id();
+    this.node.classList.add('d-flex', 'flex-column', 'flex-grow-1');
     const fragment = document.createDocumentFragment();
     const pills = document.createElement('ul');
     pills.classList.add('nav', 'nav-pills', 'mb-3');
@@ -103,7 +107,7 @@ export class SolverComponent extends Component<solver.Solver, HTMLDivElement> {
 
     fragment.appendChild(pills);
 
-    this.element.appendChild(fragment);
+    this.node.appendChild(fragment);
   }
 
   override unmounting(): void { if (this.selected_comp) this.selected_comp.unmounting(); }
