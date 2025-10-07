@@ -19,11 +19,12 @@ message(STATUS "Build the oRatio executable: ${BUILD_EXECUTABLE}")
 message(STATUS "Build the oRatio server: ${BUILD_ORATIO_SERVER}")
 
 add_subdirectory(extern/riddle)
+add_subdirectory(extern/linspire)
 
-add_library(oRatioLib src/graph.cpp)
+add_library(oRatioLib src/solver.cpp)
 target_compile_features(oRatioLib PUBLIC cxx_std_17)
-add_dependencies(oRatioLib RiDDLe)
-target_link_libraries(oRatioLib PUBLIC RiDDLe)
+add_dependencies(oRatioLib RiDDLe LinSpire)
+target_link_libraries(oRatioLib PUBLIC RiDDLe LinSpire)
 target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 if(ENABLE_API)

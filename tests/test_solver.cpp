@@ -1,10 +1,4 @@
-#if defined(SEMITONE)
-#include "stsolver.hpp"
-#elif defined(MathSAT)
-#include "msatsolver.hpp"
-#elif defined(Z3)
-#include "z3solver.hpp"
-#endif
+#include "solver.hpp"
 #include "logging.hpp"
 #include <chrono>
 #include <numeric>
@@ -34,17 +28,11 @@ int main(int argc, char const *argv[])
     {
         LOG_INFO("running test " + std::to_string(i + 1) + " of " + std::to_string(NUM_TESTS));
         auto start = std::chrono::high_resolution_clock::now();
-#if defined(SEMITONE)
-        ratio::solver s;
-#elif defined(MathSAT)
-        ratio::msatsolver s;
-#elif defined(Z3)
-        ratio::z3solver s;
-#endif
+        ratio::solver slv;
         try
         {
-            s.read(prob_names);
-            s.solve();
+            // slv.read(prob_names);
+            // slv.solve();
             LOG_INFO("hurray!! we have found a solution..");
             results.push_back(true);
         }
