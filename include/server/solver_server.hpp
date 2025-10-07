@@ -1,43 +1,8 @@
 #pragma once
 
-#include "server.hpp"
-#if defined(SEMITONE)
-#include "stsolver.hpp"
-#elif defined(MathSAT)
-#include "msatsolver.hpp"
-#elif defined(Z3)
-#include "z3solver.hpp"
-#endif
-
-namespace ratio::server
+namespace ratio
 {
-  class server : public network::server, public ratio::solver
+  class solver_server
   {
-  public:
-    server(std::string_view assets_dir = "./gui/app/dist");
-
-  private:
-    std::unique_ptr<network::response> index(const network::request &req);
-    std::unique_ptr<network::response> assets(const network::request &req);
-
-    void on_ws_open(network::ws_server_session_base &ws);
-    void on_ws_close(network::ws_server_session_base &ws);
-    void on_ws_error(network::ws_server_session_base &ws, const std::error_code &);
-
-  private:
-    void state_changed() override;
-    void flaw_created(const ratio::flaw &f) override;
-    void flaw_state_changed(const ratio::flaw &f) override;
-    void flaw_cost_changed(const ratio::flaw &f) override;
-    void flaw_position_changed(const ratio::flaw &f) override;
-    void current_flaw(std::optional<std::reference_wrapper<ratio::flaw>>) override;
-    void resolver_created(const ratio::resolver &r) override;
-    void resolver_state_changed(const ratio::resolver &r) override;
-    void causal_link_added(const ratio::flaw &f, const ratio::resolver &r) override;
-    void current_resolver(std::optional<std::reference_wrapper<ratio::resolver>>) override;
-
-  private:
-    const std::string assets_dir;
-    std::unordered_set<network::ws_server_session_base *> clients;
   };
-} // namespace ratio::server
+} // namespace ratio
