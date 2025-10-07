@@ -5,6 +5,3 @@
 [submodule "extern/rationet"]
 	path = extern/rationet
 	url = https://github.com/ratioSolver/ratioNet
-[submodule "extern/semitone"]
-	path = extern/semitone
-	url = https://github.com/ratioSolver/SeMiTONE
