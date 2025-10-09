@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core.hpp"
-#include "lit.hpp"
+#include "items.hpp"
 #include "linspire.hpp"
 
 #ifdef ENABLE_API
@@ -32,6 +32,20 @@ namespace ratio
 {
   class flaw;
   class resolver;
+  class atom_flaw;
+
+  class atom : public riddle::atom
+  {
+    friend class atom_listener;
+
+  public:
+    atom(atom_flaw &flaw, riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : riddle::atom(pred, is_fact, std::move(args), std::move(sigma)), flaw(flaw) {}
+
+    [[nodiscard]] atom_flaw &get_flaw() noexcept { return flaw; }
+
+  private:
+    atom_flaw &flaw; // the flaw associated with this atom..
+  };
 
   class solver : public riddle::core
   {
@@ -64,7 +78,19 @@ namespace ratio
     [[nodiscard]] riddle::enum_expr new_enum(riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values) override;
     [[nodiscard]] std::vector<std::reference_wrapper<utils::enum_val>> enum_value(const riddle::enum_term &expr) const noexcept override;
 
+    [[nodiscard]] riddle::arith_expr new_negation(riddle::arith_expr xpr) override;
+
+    [[nodiscard]] riddle::arith_expr new_sum(std::vector<riddle::arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_subtraction(std::vector<riddle::arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::arith_expr> &&xprs) override;
+
+    void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
+    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
+
   private:
+    riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
+
     /**
      * @brief Create a new propositional variable
      *
