@@ -6,7 +6,7 @@ namespace ratio
 {
     solver::solver(std::string_view name) noexcept : riddle::core(name)
     {
-        assigns[utils::FALSE_var] = utils::False; // the false constant..
+        assigns.push_back(utils::False); // the false constant..
     }
 
     riddle::bool_expr solver::new_bool()
@@ -20,10 +20,7 @@ namespace ratio
         auto l = value ? utils::TRUE_lit : utils::FALSE_lit;
         return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), std::move(l));
     }
-    utils::lbool solver::bool_value(const riddle::bool_term &expr) const noexcept
-    {
-        return assigns.at(expr.get_id());
-    }
+    utils::lbool solver::bool_value(const riddle::bool_term &expr) const noexcept { return value(static_cast<const riddle::bool_item &>(expr).get_lit()); }
 
     riddle::arith_expr solver::new_int() { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), lin_slv.new_var()); }
     riddle::arith_expr solver::new_int(const INT_TYPE value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::rational(value)); }
