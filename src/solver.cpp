@@ -153,6 +153,12 @@ namespace ratio
     }
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
+        assert(disjuncts.size() > 1);
+        std::vector<std::reference_wrapper<resolver>> causes;
+        if (c_res)
+            causes.push_back(c_res.value());
+
+        new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
     }
 
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)

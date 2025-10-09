@@ -1,6 +1,7 @@
 #pragma once
 
 #include "items.hpp"
+#include "conjunction.hpp"
 #include <vector>
 #include <functional>
 
@@ -39,6 +40,28 @@ namespace ratio
 
   private:
     std::shared_ptr<riddle::enum_item> var;
+  };
+
+  class clause_flaw final : public flaw
+  {
+  public:
+    clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
+
+    [[nodiscard]] const std::vector<utils::lit> &get_clause() const noexcept { return clause; }
+
+  private:
+    std::vector<utils::lit> clause;
+  };
+
+  class disjunction_flaw final : public flaw
+  {
+  public:
+    disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+
+    [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
+
+  private:
+    std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
   };
 
   class atom_flaw final : public flaw
