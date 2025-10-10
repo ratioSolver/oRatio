@@ -147,6 +147,22 @@ namespace ratio
 
     void solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
     {
+        assert(!exprs.empty());
+        if (exprs.size() == 1)
+        {
+            if (c_res) // if there is a current resolver, add the expression to it..
+                c_res.value().get().exprs.push_back(exprs[0]);
+            else // otherwise, just execute the expression..
+                execute(exprs[0]);
+        }
+        else
+        { // otherwise, create a new clause flaw..
+            std::vector<std::reference_wrapper<resolver>> causes;
+            if (c_res)
+                causes.push_back(c_res.value());
+
+            new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
+        }
     }
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
@@ -156,6 +172,10 @@ namespace ratio
             causes.push_back(c_res.value());
 
         new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
+    }
+
+    void solver::solve()
+    {
     }
 
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
@@ -173,5 +193,15 @@ namespace ratio
         const auto x = assigns.size();
         assigns.push_back(utils::Undefined);
         return x;
+    }
+
+    void solver::execute(const riddle::bool_expr &expr)
+    {
+        if (auto n_xpr = std::dynamic_pointer_cast<riddle::bool_not>(expr))
+        {
+        }
+        else
+        {
+        }
     }
 } // namespace ratio

@@ -2,6 +2,7 @@
 
 #include "items.hpp"
 #include "conjunction.hpp"
+#include "linspire.hpp"
 #include <vector>
 #include <functional>
 
@@ -25,10 +26,16 @@ namespace ratio
 
   class resolver
   {
+    friend class solver;
+
   public:
     resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;
     resolver(const resolver &) = delete;
     virtual ~resolver() = default;
+
+  private:
+    std::shared_ptr<linspire::constraint> cst; // the constraint associated with this resolver..
+    std::vector<riddle::bool_expr> exprs;
   };
 
   class enum_flaw final : public flaw
@@ -45,12 +52,12 @@ namespace ratio
   class clause_flaw final : public flaw
   {
   public:
-    clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<utils::lit> &&clause, const bool &exclusive) noexcept;
+    clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause, const bool &exclusive = false) noexcept;
 
-    [[nodiscard]] const std::vector<utils::lit> &get_clause() const noexcept { return clause; }
+    [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
 
   private:
-    std::vector<utils::lit> clause;
+    std::vector<riddle::bool_expr> clause;
   };
 
   class disjunction_flaw final : public flaw

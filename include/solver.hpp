@@ -88,6 +88,8 @@ namespace ratio
     void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
     void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
 
+    void solve();
+
   private:
     riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
 
@@ -141,6 +143,8 @@ namespace ratio
       NEW_FLAW(f_ref);
       return f_ref;
     }
+
+    void execute(const riddle::bool_expr &expr);
 
   private:
     std::vector<utils::lbool> assigns;                     // for each variable, the current assignment..
