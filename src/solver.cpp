@@ -22,17 +22,17 @@ namespace ratio
     }
     utils::lbool solver::bool_value(const riddle::bool_term &expr) const noexcept { return value(static_cast<const riddle::bool_item &>(expr).get_lit()); }
 
-    riddle::arith_expr solver::new_int() { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), lin_slv.new_var()); }
+    riddle::arith_expr solver::new_int() { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(lin_slv.new_var(), utils::rational::one)); }
     riddle::arith_expr solver::new_int(const INT_TYPE value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::rational(value)); }
     riddle::arith_expr solver::new_int(const INT_TYPE lb, const INT_TYPE ub) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), lin_slv.new_var(utils::rational(lb), utils::rational(ub))); }
     riddle::arith_expr solver::new_uncertain_int(const INT_TYPE lb, const INT_TYPE ub) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), lin_slv.new_var(utils::rational(lb), utils::rational(ub))); }
 
-    riddle::arith_expr solver::new_real() { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), lin_slv.new_var()); }
+    riddle::arith_expr solver::new_real() { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), utils::lin(lin_slv.new_var(), utils::rational::one)); }
     riddle::arith_expr solver::new_real(utils::rational &&value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(value)); }
     riddle::arith_expr solver::new_real(utils::rational &&lb, utils::rational &&ub) { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), lin_slv.new_var(std::move(lb), std::move(ub))); }
     riddle::arith_expr solver::new_uncertain_real(utils::rational &&lb, utils::rational &&ub) { return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), lin_slv.new_var(std::move(lb), std::move(ub))); }
 
-    riddle::arith_expr solver::new_time() { return std::make_shared<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), lin_slv.new_var()); }
+    riddle::arith_expr solver::new_time() { return std::make_shared<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(lin_slv.new_var(), utils::rational::one)); }
     riddle::arith_expr solver::new_time(utils::rational &&value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), std::move(value)); }
 
     utils::inf_rational solver::arith_value(const riddle::arith_term &expr) const noexcept { return lin_slv.val(static_cast<const riddle::arith_item &>(expr).get_lin()); }
@@ -176,6 +176,8 @@ namespace ratio
 
     void solver::solve()
     {
+        if (!lin_slv.check())
+            throw std::runtime_error("Unsatisfiable constraints");
     }
 
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
@@ -202,6 +204,43 @@ namespace ratio
         }
         else
         {
+            if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(expr))
+            {
+                if (lin_slv.new_lt(std::dynamic_pointer_cast<riddle::arith_item>(lt_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(lt_xpr->get_rhs())->get_lin(), true))
+                    return;
+                else
+                    throw std::runtime_error("Unsatisfiable constraint");
+            }
+            else if (auto le_xpr = std::dynamic_pointer_cast<riddle::le_term>(expr))
+            {
+                if (lin_slv.new_lt(std::dynamic_pointer_cast<riddle::arith_item>(le_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(le_xpr->get_rhs())->get_lin()))
+                    return;
+                else
+                    throw std::runtime_error("Unsatisfiable constraint");
+            }
+            else if (auto eq_xpr = std::dynamic_pointer_cast<riddle::eq_term>(expr))
+            {
+                if (lin_slv.new_eq(std::dynamic_pointer_cast<riddle::arith_item>(eq_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(eq_xpr->get_rhs())->get_lin()))
+                    return;
+                else
+                    throw std::runtime_error("Unsatisfiable constraint");
+            }
+            else if (auto ge_xpr = std::dynamic_pointer_cast<riddle::ge_term>(expr))
+            {
+                if (lin_slv.new_gt(std::dynamic_pointer_cast<riddle::arith_item>(ge_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(ge_xpr->get_rhs())->get_lin()))
+                    return;
+                else
+                    throw std::runtime_error("Unsatisfiable constraint");
+            }
+            else if (auto gt_xpr = std::dynamic_pointer_cast<riddle::gt_term>(expr))
+            {
+                if (lin_slv.new_gt(std::dynamic_pointer_cast<riddle::arith_item>(gt_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(gt_xpr->get_rhs())->get_lin(), true))
+                    return;
+                else
+                    throw std::runtime_error("Unsatisfiable constraint");
+            }
+            else
+                throw std::runtime_error("Unsupported boolean expression");
         }
     }
 } // namespace ratio
