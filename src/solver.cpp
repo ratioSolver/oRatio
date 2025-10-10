@@ -152,8 +152,8 @@ namespace ratio
         {
             if (c_res) // if there is a current resolver, add the expression to it..
                 c_res.value().get().exprs.push_back(exprs[0]);
-            else // otherwise, just execute the expression..
-                execute(exprs[0]);
+            else if (!execute(exprs[0])) // otherwise, just execute the expression..
+                throw std::runtime_error("Unsatisfiable constraints");
         }
         else
         { // otherwise, create a new clause flaw..
@@ -197,50 +197,58 @@ namespace ratio
         return x;
     }
 
-    void solver::execute(const riddle::bool_expr &expr)
+    bool solver::execute(const riddle::bool_expr &expr) noexcept
     {
         if (auto n_xpr = std::dynamic_pointer_cast<riddle::bool_not>(expr))
         {
+            if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(n_xpr->get_arg()))
+                return lin_slv.new_gt(std::static_pointer_cast<riddle::arith_item>(lt_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(lt_xpr->get_rhs())->get_lin());
+            else if (auto le_xpr = std::dynamic_pointer_cast<riddle::le_term>(n_xpr->get_arg()))
+                return lin_slv.new_gt(std::static_pointer_cast<riddle::arith_item>(le_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(le_xpr->get_rhs())->get_lin(), true);
+            else if (auto eq_xpr = std::dynamic_pointer_cast<riddle::eq_term>(n_xpr->get_arg()))
+            {
+                if (&*eq_xpr->get_lhs() == &*eq_xpr->get_rhs()) // the terms are the same, so they are equal..
+                    return false;
+                else if (&eq_xpr->get_lhs()->get_type() != &eq_xpr->get_lhs()->get_type()) // the types are different, so the constraint is always false..
+                    return true;
+                else if (auto lhs_xpr = std::dynamic_pointer_cast<riddle::arith_item>(eq_xpr->get_lhs())) // we are dealing with an arithmetic constraint..
+                {
+                    new_clause({std::make_shared<riddle::lt_term>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), lhs_xpr, std::static_pointer_cast<riddle::arith_item>(eq_xpr->get_rhs())), std::make_shared<riddle::gt_term>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), lhs_xpr, std::static_pointer_cast<riddle::arith_item>(eq_xpr->get_rhs()))});
+                    return true;
+                }
+                else // unsupported expression, just return false..
+                    return false;
+            }
+            else if (auto ge_xpr = std::dynamic_pointer_cast<riddle::ge_term>(n_xpr->get_arg()))
+                return lin_slv.new_lt(std::static_pointer_cast<riddle::arith_item>(ge_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(ge_xpr->get_rhs())->get_lin());
+            else if (auto gt_xpr = std::dynamic_pointer_cast<riddle::gt_term>(n_xpr->get_arg()))
+                return lin_slv.new_lt(std::static_pointer_cast<riddle::arith_item>(gt_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(gt_xpr->get_rhs())->get_lin(), true);
+            else
+                return false; // unsupported expression, just return false..
         }
         else
         {
             if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(expr))
-            {
-                if (lin_slv.new_lt(std::dynamic_pointer_cast<riddle::arith_item>(lt_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(lt_xpr->get_rhs())->get_lin(), true))
-                    return;
-                else
-                    throw std::runtime_error("Unsatisfiable constraint");
-            }
+                return lin_slv.new_lt(std::static_pointer_cast<riddle::arith_item>(lt_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(lt_xpr->get_rhs())->get_lin(), true);
             else if (auto le_xpr = std::dynamic_pointer_cast<riddle::le_term>(expr))
-            {
-                if (lin_slv.new_lt(std::dynamic_pointer_cast<riddle::arith_item>(le_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(le_xpr->get_rhs())->get_lin()))
-                    return;
-                else
-                    throw std::runtime_error("Unsatisfiable constraint");
-            }
+                return lin_slv.new_lt(std::static_pointer_cast<riddle::arith_item>(le_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(le_xpr->get_rhs())->get_lin());
             else if (auto eq_xpr = std::dynamic_pointer_cast<riddle::eq_term>(expr))
             {
-                if (lin_slv.new_eq(std::dynamic_pointer_cast<riddle::arith_item>(eq_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(eq_xpr->get_rhs())->get_lin()))
-                    return;
-                else
-                    throw std::runtime_error("Unsatisfiable constraint");
+                if (&*eq_xpr->get_lhs() == &*eq_xpr->get_rhs()) // the terms are the same, so they are equal..
+                    return true;
+                else if (&eq_xpr->get_lhs()->get_type() != &eq_xpr->get_lhs()->get_type()) // the types are different, so the constraint is always false..
+                    return false;
+                else if (auto lhs_xpr = std::dynamic_pointer_cast<riddle::arith_item>(eq_xpr->get_lhs())) // we are dealing with an arithmetic constraint..
+                    return lin_slv.new_eq(lhs_xpr->get_lin(), std::static_pointer_cast<riddle::arith_item>(eq_xpr->get_rhs())->get_lin());
+                else // unsupported expression, just return false..
+                    return false;
             }
             else if (auto ge_xpr = std::dynamic_pointer_cast<riddle::ge_term>(expr))
-            {
-                if (lin_slv.new_gt(std::dynamic_pointer_cast<riddle::arith_item>(ge_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(ge_xpr->get_rhs())->get_lin()))
-                    return;
-                else
-                    throw std::runtime_error("Unsatisfiable constraint");
-            }
+                return lin_slv.new_gt(std::static_pointer_cast<riddle::arith_item>(ge_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(ge_xpr->get_rhs())->get_lin());
             else if (auto gt_xpr = std::dynamic_pointer_cast<riddle::gt_term>(expr))
-            {
-                if (lin_slv.new_gt(std::dynamic_pointer_cast<riddle::arith_item>(gt_xpr->get_lhs())->get_lin(), std::dynamic_pointer_cast<riddle::arith_item>(gt_xpr->get_rhs())->get_lin(), true))
-                    return;
-                else
-                    throw std::runtime_error("Unsatisfiable constraint");
-            }
+                return lin_slv.new_gt(std::static_pointer_cast<riddle::arith_item>(gt_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(gt_xpr->get_rhs())->get_lin(), true);
             else
-                throw std::runtime_error("Unsupported boolean expression");
+                return false; // unsupported expression, just return false..
         }
     }
 } // namespace ratio

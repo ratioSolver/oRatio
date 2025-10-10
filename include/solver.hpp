@@ -144,7 +144,7 @@ namespace ratio
       return f_ref;
     }
 
-    void execute(const riddle::bool_expr &expr);
+    [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept;
 
   private:
     std::vector<utils::lbool> assigns;                     // for each variable, the current assignment..
