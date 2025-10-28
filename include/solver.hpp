@@ -2,6 +2,7 @@
 
 #include "core.hpp"
 #include "items.hpp"
+#include "arc_consistency.hpp"
 #include "linspire.hpp"
 
 #ifdef ENABLE_API
@@ -91,40 +92,8 @@ namespace ratio
     void solve();
 
   private:
-    riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
-
-    /**
-     * @brief Create a new propositional variable
-     *
-     * @return The new variable.
-     */
-    [[nodiscard]] utils::var mk_var() noexcept;
-
-    /**
-     * @brief Return the value of a variable.
-     *
-     * @param x The variable.
-     * @return The value of the variable.
-     */
-    [[nodiscard]] utils::lbool value(const utils::var &x) const noexcept { return assigns.at(x); }
-    /**
-     * @brief Return the value of a literal.
-     *
-     * @param p The literal.
-     * @return The value of the literal.
-     */
-    [[nodiscard]] utils::lbool value(const utils::lit &p) const noexcept
-    {
-      switch (value(variable(p)))
-      {
-      case utils::True:
-        return sign(p) ? utils::True : utils::False;
-      case utils::False:
-        return sign(p) ? utils::False : utils::True;
-      default:
-        return utils::Undefined;
-      }
-    }
+    [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
+    [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;
 
     /**
      * @brief Creates a new flaw of the given type.
@@ -147,7 +116,7 @@ namespace ratio
     [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept;
 
   private:
-    std::vector<utils::lbool> assigns;                     // for each variable, the current assignment..
+    arc_consistency::solver ac_slv;                        // the arc consistency solver..
     linspire::solver lin_slv;                              // the linear solver..
     std::optional<std::reference_wrapper<resolver>> c_res; // the current resolver..
   };

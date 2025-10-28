@@ -4,23 +4,15 @@
 
 namespace ratio
 {
-    solver::solver(std::string_view name) noexcept : riddle::core(name)
-    {
-        assigns.push_back(utils::False); // the false constant..
-    }
+    solver::solver(std::string_view name) noexcept : riddle::core(name) {}
 
-    riddle::bool_expr solver::new_bool()
-    {
-        const auto x = assigns.size();
-        assigns.push_back(utils::Undefined);
-        return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), x);
-    }
+    riddle::bool_expr solver::new_bool() { return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ac_slv.new_sat()); }
     riddle::bool_expr solver::new_bool(const bool value)
     {
         auto l = value ? utils::TRUE_lit : utils::FALSE_lit;
         return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), std::move(l));
     }
-    utils::lbool solver::bool_value(const riddle::bool_term &expr) const noexcept { return value(static_cast<const riddle::bool_item &>(expr).get_lit()); }
+    utils::lbool solver::bool_value(const riddle::bool_term &expr) const noexcept { return ac_slv.sat_val(static_cast<const riddle::bool_item &>(expr).get_lit()); }
 
     riddle::arith_expr solver::new_int() { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(lin_slv.new_var(), utils::rational::one)); }
     riddle::arith_expr solver::new_int(const INT_TYPE value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::rational(value)); }
@@ -50,27 +42,19 @@ namespace ratio
 
         std::vector<utils::lit> lits;
         if (values.size() == 1)
-        { // if there is only one value, it must be true..
-            lits.push_back(utils::TRUE_lit);
-            return std::make_shared<riddle::enum_item>(tp, std::move(values), std::move(lits));
+        {
+            auto ev = ac_slv.new_var(values);
+            return std::make_shared<riddle::enum_item>(tp, std::move(values), ev);
         }
         else
-        { // otherwise, create a new variable for each value..
-            for (size_t i = 0; i < values.size(); ++i)
-                lits.push_back(mk_var());
+        {
+            auto ev = ac_slv.new_var(values);
             // .. and create a new enum flaw to manage the variable..
-            auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), std::make_shared<riddle::enum_item>(tp, std::move(values), std::move(lits)));
+            auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), std::make_shared<riddle::enum_item>(tp, std::move(values), ev));
             return ef.get_var();
         }
     }
-    std::vector<std::reference_wrapper<utils::enum_val>> solver::enum_value(const riddle::enum_term &expr) const noexcept
-    {
-        std::vector<std::reference_wrapper<utils::enum_val>> dom;
-        for (const auto &val : static_cast<const riddle::enum_item &>(expr).get_values())
-            if (value(static_cast<const riddle::enum_item &>(expr).get_lit(val.get())) != utils::False)
-                dom.push_back(val.get());
-        return dom;
-    }
+    std::vector<std::reference_wrapper<utils::enum_val>> solver::enum_value(const riddle::enum_term &expr) const noexcept { return ac_slv.domain(static_cast<const riddle::enum_item &>(expr).get_var()); }
 
     riddle::arith_expr solver::new_negation(riddle::arith_expr xpr)
     {
@@ -186,15 +170,20 @@ namespace ratio
         if (c_res)
             causes.push_back(c_res.value());
 
-        auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), mk_var());
+        auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), ac_slv.new_sat());
         return af.get_atom();
     }
-
-    utils::var solver::mk_var() noexcept
+    riddle::atom_state solver::get_atom_state(const riddle::atom_term &atm) const noexcept
     {
-        const auto x = assigns.size();
-        assigns.push_back(utils::Undefined);
-        return x;
+        switch (ac_slv.sat_val(static_cast<const atom &>(atm).get_sigma()))
+        {
+        case utils::True:
+            return riddle::active;
+        case utils::False:
+            return riddle::unified;
+        default:
+            return riddle::inactive;
+        }
     }
 
     bool solver::execute(const riddle::bool_expr &expr) noexcept
