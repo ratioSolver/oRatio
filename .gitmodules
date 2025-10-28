@@ -8,3 +8,6 @@
 [submodule "extern/linspire"]
 	path = extern/linspire
 	url = https://github.com/ratioSolver/LinSpire
+[submodule "extern/ac"]
+	path = extern/ac
+	url = https://github.com/ratioSolver/arc-consistency
