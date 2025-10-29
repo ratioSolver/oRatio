@@ -1,6 +1,6 @@
 {
   "name": "@ratiosolver/solver",
-  "version": "0.0.42",
+  "version": "0.0.43",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,7 +25,7 @@
     "typescript": "~5.8.3"
   },
   "peerDependencies": {
-    "@ratiosolver/flick": "^0.1.12",
+    "@ratiosolver/flick": "^0.1.13",
     "bootstrap": "^5.3.6"
   },
   "dependencies": {
