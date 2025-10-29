@@ -31,8 +31,8 @@ int main(int argc, char const *argv[])
         ratio::solver slv;
         try
         {
-            // slv.read(prob_names);
-            // slv.solve();
+            slv.read(prob_names);
+            slv.solve();
             LOG_INFO("hurray!! we have found a solution..");
             results.push_back(true);
         }
