@@ -145,7 +145,11 @@ namespace ratio
             if (c_res)
                 causes.push_back(c_res.value());
 
-            new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
+            std::vector<utils::lit> clause;
+            clause.reserve(exprs.size());
+            for (const riddle::bool_expr &expr : exprs)
+                clause.push_back(static_cast<const riddle::bool_item &>(*expr).get_lit());
+            new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs), ac_slv.new_clause(std::move(clause)));
         }
     }
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
@@ -160,7 +164,7 @@ namespace ratio
 
     void solver::solve()
     {
-        if (!lin_slv.check())
+        if (!lin_slv.check() || !ac_slv.propagate())
             throw std::runtime_error("Unsatisfiable constraints");
     }
 
@@ -190,7 +194,13 @@ namespace ratio
     {
         if (auto n_xpr = std::dynamic_pointer_cast<riddle::bool_not>(expr))
         {
-            if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(n_xpr->get_arg()))
+            if (auto b_xpr = std::dynamic_pointer_cast<riddle::bool_item>(n_xpr->get_arg()))
+            {
+                auto a_cnstr = ac_slv.new_assign(utils::variable(b_xpr->get_lit()), utils::sign(b_xpr->get_lit()) ? arc_consistency::solver::False : arc_consistency::solver::True);
+                ac_slv.add_constraint(a_cnstr);
+                return true;
+            }
+            else if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(n_xpr->get_arg()))
                 return lin_slv.new_gt(std::static_pointer_cast<riddle::arith_item>(lt_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(lt_xpr->get_rhs())->get_lin());
             else if (auto le_xpr = std::dynamic_pointer_cast<riddle::le_term>(n_xpr->get_arg()))
                 return lin_slv.new_gt(std::static_pointer_cast<riddle::arith_item>(le_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(le_xpr->get_rhs())->get_lin(), true);
@@ -217,7 +227,13 @@ namespace ratio
         }
         else
         {
-            if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(expr))
+            if (auto b_xpr = std::dynamic_pointer_cast<riddle::bool_item>(expr))
+            {
+                auto a_cnstr = ac_slv.new_assign(utils::variable(b_xpr->get_lit()), utils::sign(b_xpr->get_lit()) ? arc_consistency::solver::True : arc_consistency::solver::False);
+                ac_slv.add_constraint(a_cnstr);
+                return true;
+            }
+            else if (auto lt_xpr = std::dynamic_pointer_cast<riddle::lt_term>(expr))
                 return lin_slv.new_lt(std::static_pointer_cast<riddle::arith_item>(lt_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(lt_xpr->get_rhs())->get_lin(), true);
             else if (auto le_xpr = std::dynamic_pointer_cast<riddle::le_term>(expr))
                 return lin_slv.new_lt(std::static_pointer_cast<riddle::arith_item>(le_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(le_xpr->get_rhs())->get_lin());
