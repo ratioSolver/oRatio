@@ -35,8 +35,8 @@ namespace ratio
     virtual ~resolver() = default;
 
   private:
-    std::shared_ptr<linspire::constraint> cst; // the constraint associated with this resolver..
-    std::vector<riddle::bool_expr> exprs;
+    std::shared_ptr<linspire::constraint> cnst; // the constraint associated with this resolver..
+    std::vector<std::shared_ptr<arc_consistency::constraint>> ac_cnsts;
   };
 
   class enum_flaw final : public flaw
@@ -53,13 +53,12 @@ namespace ratio
   class clause_flaw final : public flaw
   {
   public:
-    clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause, std::shared_ptr<arc_consistency::constraint> ac_cnstr, const bool &exclusive = false) noexcept;
+    clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause, const bool &exclusive = false) noexcept;
 
     [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
 
   private:
     std::vector<riddle::bool_expr> clause;
-    std::shared_ptr<arc_consistency::constraint> ac_cnstr;
   };
 
   class disjunction_flaw final : public flaw
