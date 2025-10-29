@@ -35,8 +35,10 @@ namespace ratio
     virtual ~resolver() = default;
 
   private:
-    std::shared_ptr<linspire::constraint> cnst; // the constraint associated with this resolver..
-    std::vector<std::shared_ptr<arc_consistency::constraint>> ac_cnsts;
+    flaw &f;                                                            // the flaw solved by this resolver..
+    utils::rational intrinsic_cost;                                     // the intrinsic cost of this resolver..
+    std::shared_ptr<linspire::constraint> cnst;                         // the constraint associated with this resolver..
+    std::vector<std::shared_ptr<arc_consistency::constraint>> ac_cnsts; // the arc consistency constraints associated with this resolver..
   };
 
   class enum_flaw final : public flaw

@@ -5,6 +5,8 @@ namespace ratio
 {
     flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : slv(slv), causes(std::move(causes)), exclusive(exclusive) {}
 
+    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : f(f), intrinsic_cost(std::move(intrinsic_cost)), cnst(std::make_shared<linspire::constraint>()) {}
+
     enum_flaw::enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::shared_ptr<riddle::enum_item> var) noexcept : flaw(slv, std::move(causes)), var(std::move(var)) {}
 
     clause_flaw::clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause, const bool &exclusive) noexcept : flaw(slv, std::move(causes), exclusive), clause(std::move(clause)) {}
