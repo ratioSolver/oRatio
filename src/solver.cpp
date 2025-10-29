@@ -2,6 +2,26 @@
 #include "graph.hpp"
 #include <cassert>
 
+#ifdef ORATIO_ENABLE_LISTENERS
+#define STATE_CHANGED() state_changed()
+#define FLAW_STATE_CHANGED(f) flaw_state_changed(f)
+#define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
+#define FLAW_POSITION_CHANGED(f) flaw_position_changed(f)
+#define RESOLVER_STATE_CHANGED(r) resolver_state_changed(r)
+#define NEW_CAUSAL_LINK(f, r) causal_link_added(f, r)
+#define CURRENT_FLAW(f) current_flaw(f)
+#define CURRENT_RESOLVER(r) current_resolver(r)
+#else
+#define STATE_CHANGED()
+#define FLAW_STATE_CHANGED(f)
+#define FLAW_COST_CHANGED(f)
+#define FLAW_POSITION_CHANGED(f)
+#define RESOLVER_STATE_CHANGED(r)
+#define NEW_CAUSAL_LINK(f, r)
+#define CURRENT_FLAW(f)
+#define CURRENT_RESOLVER(r)
+#endif
+
 namespace ratio
 {
     solver::solver(std::string_view name) noexcept : riddle::core(name) {}
