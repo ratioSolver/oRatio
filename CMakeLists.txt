@@ -19,7 +19,9 @@ message(STATUS "Build the oRatio executable: ${BUILD_EXECUTABLE}")
 message(STATUS "Build the oRatio server: ${BUILD_ORATIO_SERVER}")
 
 add_subdirectory(extern/riddle)
+set(LINSPIRE_BUILD_LISTENERS ON CACHE BOOL "Enable listener functionality in LinSpire" FORCE)
 add_subdirectory(extern/linspire)
+set(ARCCONSISTENCY_BUILD_LISTENERS ON CACHE BOOL "Enable listener functionality in ArcConsistency" FORCE)
 add_subdirectory(extern/ac)
 
 add_library(oRatioLib src/solver.cpp src/graph.cpp)
