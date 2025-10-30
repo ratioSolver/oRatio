@@ -19,6 +19,10 @@ namespace ratio
     flaw(const flaw &) = delete;
     virtual ~flaw() = default;
 
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+
+    [[nodiscard]] virtual json::json to_json() const;
+
   private:
     solver &slv;
     std::vector<std::reference_wrapper<resolver>> causes;
@@ -33,6 +37,10 @@ namespace ratio
     resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;
     resolver(const resolver &) = delete;
     virtual ~resolver() = default;
+
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+
+    [[nodiscard]] virtual json::json to_json() const;
 
   private:
     flaw &f;                                                            // the flaw solved by this resolver..

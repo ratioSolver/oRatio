@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core.hpp"
-#include "graph.hpp"
+#include "flaws.hpp"
 
 #ifdef ORATIO_ENABLE_LISTENERS
 #define NEW_FLAW(f) flaw_created(f)

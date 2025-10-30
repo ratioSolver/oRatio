@@ -1,11 +1,30 @@
-#include "graph.hpp"
+#include "flaws.hpp"
 #include "solver.hpp"
 
 namespace ratio
 {
     flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : slv(slv), causes(std::move(causes)), exclusive(exclusive) {}
 
+    json::json flaw::to_json() const
+    {
+        json::json j_flaw;
+        if (!causes.empty())
+        {
+            json::json j_causes(json::json_type::array);
+            for (const auto &c : causes)
+                j_causes.push_back(c.get().get_id());
+            j_flaw["causes"] = std::move(j_causes);
+        }
+        return j_flaw;
+    }
+
     resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : f(f), intrinsic_cost(std::move(intrinsic_cost)), cnst(std::make_shared<linspire::constraint>()) {}
+
+    json::json resolver::to_json() const
+    {
+        json::json j_resolver{{"flaw", f.get_id()}, {"intrinsic_cost", {{"num", intrinsic_cost.numerator()}, {"den", intrinsic_cost.denominator()}}}};
+        return j_resolver;
+    }
 
     enum_flaw::enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::shared_ptr<riddle::enum_item> var) noexcept : flaw(slv, std::move(causes)), var(std::move(var)) {}
 

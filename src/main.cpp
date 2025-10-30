@@ -1,4 +1,4 @@
-#ifdef BUILD_SERVER
+#ifdef ORATIO_BUILD_SERVER
 #include "solver_server.hpp"
 #include <thread>
 #else
@@ -27,7 +27,7 @@ int main(int argc, char const *argv[])
     std::string sol_name = argv[argc - 1];
     LOG_DEBUG("setting solution file: " + sol_name);
 
-#ifdef BUILD_SERVER
+#ifdef ORATIO_BUILD_SERVER
     ratio::server solver;
     LOG_INFO("starting oRatio server");
     auto srv_ft = std::async(std::launch::async, [&solver]

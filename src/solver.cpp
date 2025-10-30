@@ -1,5 +1,5 @@
 #include "solver.hpp"
-#include "graph.hpp"
+#include "flaws.hpp"
 #include <cassert>
 
 #ifdef ORATIO_ENABLE_LISTENERS
