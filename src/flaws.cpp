@@ -37,8 +37,7 @@ namespace ratio
     json::json atom_flaw::to_json() const
     {
         json::json j_flaw = flaw::to_json();
-        j_flaw["type"] = "atom";
-        j_flaw["atom"] = {{"atom_id", atm->get_id()}, {"is_fact", atm->is_fact()}, {"predicate", atm->get_type().get_name()}, {"sigma", 0}};
+        j_flaw["data"] = {{"type", "atom"}, {"atom", {{"atom_id", atm->get_id()}, {"is_fact", atm->is_fact()}, {"predicate", atm->get_type().get_name()}, {"sigma", 0}}}};
         return j_flaw;
     }
 } // namespace ratio

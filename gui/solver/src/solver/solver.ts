@@ -158,12 +158,12 @@ export namespace solver {
     _set_graph(solver_message: SolverMessage) {
       if (solver_message.flaws) // we create the flaws..
         for (const [id, fm] of Object.entries(solver_message.flaws))
-          this.flaws.set(Number(id), new graph.Flaw(Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
+          this.flaws.set(Number(id), new graph.Flaw(this, Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm));
 
       if (solver_message.resolvers) // we create the resolvers..
         for (const [id, rm] of Object.entries(solver_message.resolvers))
           if (rm.preconditions)
-            this.resolvers.set(Number(id), new graph.Resolver(Number(id), rm.rho, rm.preconditions.map((id: number) => this.get_flaw(id)), this.get_flaw(rm.flaw), graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
+            this.resolvers.set(Number(id), new graph.Resolver(this, Number(id), rm.rho, rm.preconditions.map((id: number) => this.get_flaw(id)), this.get_flaw(rm.flaw), graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
 
       if (solver_message.flaws)
         for (const [id, fm] of Object.entries(solver_message.flaws)) {
@@ -258,7 +258,8 @@ export namespace solver {
             const fcm = message as FlawCreatedMessage;
             const causes: graph.Resolver[] = fcm.causes ? fcm.causes.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
             const supports: graph.Resolver[] = fcm.supports ? fcm.supports.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
-            this.solvers.get(get_id(fcm.solver_id))!.flaw_created(new graph.Flaw(fcm.id, fcm.phi, causes, supports, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
+            const fc_slv = this.solvers.get(get_id(fcm.solver_id))!;
+            fc_slv.flaw_created(new graph.Flaw(fc_slv, fcm.id, fcm.phi, causes, supports, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
             break;
           case 'flaw_state_changed':
             const fscm = message as FlawStateChangedMessage;
@@ -286,7 +287,8 @@ export namespace solver {
             const rcm = message as ResolverCreatedMessage;
             const preconditions: graph.Flaw[] = rcm.preconditions ? rcm.preconditions.map((id: number) => this.solvers.get(get_id(rcm.solver_id))!.get_flaw(id)) : [];
             const flaw = this.solvers.get(get_id(rcm.solver_id))!.get_flaw(rcm.flaw);
-            this.solvers.get(get_id(rcm.solver_id))!.resolver_created(new graph.Resolver(rcm.id, rcm.rho, preconditions, flaw, graph.State[rcm.state as keyof typeof graph.State], rcm.intrinsic_cost, rcm.data));
+            const rc_slv = this.solvers.get(get_id(rcm.solver_id))!;
+            rc_slv.resolver_created(new graph.Resolver(rc_slv, rcm.id, rcm.rho, preconditions, flaw, graph.State[rcm.state as keyof typeof graph.State], rcm.intrinsic_cost, rcm.data));
             break;
           case 'resolver_state_changed':
             const rscm = message as ResolverStateChangedMessage;
@@ -356,16 +358,18 @@ export namespace solver {
 
     export class Flaw {
 
-      private id: number;
-      private phi: string;
+      private readonly solver: solver.Solver;
+      private readonly id: number;
+      private readonly phi: string;
       _causes: Resolver[];
       _supports: Resolver[];
       _state: State;
       _cost: RationalMessage;
       _position: number;
-      private data: FlawData | undefined;
+      private readonly data?: any;
 
-      constructor(id: number, phi: string, causes: Resolver[], supports: Resolver[], state: State, cost: RationalMessage, position: number, data: FlawData | undefined) {
+      constructor(solver: solver.Solver, id: number, phi: string, causes: Resolver[], supports: Resolver[], state: State, cost: RationalMessage, position: number, data?: any) {
+        this.solver = solver;
         this.id = id;
         this.phi = phi;
         this._causes = causes;
@@ -378,6 +382,7 @@ export namespace solver {
           cause._preconditions.push(this);
       }
 
+      get_solver(): solver.Solver { return this.solver; }
       get_id(): number { return this.id; }
       get_phi(): string { return this.phi; }
       get_causes(): Resolver[] { return this._causes; }
@@ -391,7 +396,7 @@ export namespace solver {
           if (this.data)
             switch (this.data.type) {
               case 'atom':
-                return this.phi + ' ' + ((this.data as AtomFlawData).atom.fact ? 'fact' : 'goal') + ' ' + (this.data as AtomFlawData).atom.type.split(':').pop() + ' ' + (this._cost.num / this._cost.den);
+                return this.phi + ' ' + (this.data.atom.is_fact ? 'fact' : 'goal') + ' ' + this.data.atom.predicate.split(':').pop() + ' ' + (this._cost.num / this._cost.den);
               default:
                 return this.phi + ' ' + (this._cost.num / this._cost.den);
             }
@@ -402,7 +407,7 @@ export namespace solver {
           if (this.data)
             switch (this.data.type) {
               case 'atom':
-                return ((this.data as AtomFlawData).atom.fact ? 'fact' : 'goal') + ' ' + (this.data as AtomFlawData).atom.type.split(':').pop();
+                return (this.data.atom.is_fact ? 'fact' : 'goal') + ' ' + this.data.atom.predicate.split(':').pop();
               default:
                 return this.phi;
             }
@@ -413,15 +418,17 @@ export namespace solver {
 
     export class Resolver {
 
-      private id: number;
-      private rho: string;
+      private readonly solver: solver.Solver;
+      private readonly id: number;
+      private readonly rho: string;
       _preconditions: Flaw[];
-      private flaw: Flaw;
+      private readonly flaw: Flaw;
       _state: State;
-      private intrinsic_cost: RationalMessage;
-      private data: ResolverData;
+      private readonly intrinsic_cost: RationalMessage;
+      private readonly data?: any;
 
-      constructor(id: number, rho: string, preconditions: Flaw[], flaw: Flaw, state: State, intrinsic_cost: RationalMessage, data: ResolverData) {
+      constructor(solver: solver.Solver, id: number, rho: string, preconditions: Flaw[], flaw: Flaw, state: State, intrinsic_cost: RationalMessage, data?: any) {
+        this.solver = solver;
         this.id = id;
         this.rho = rho;
         this._preconditions = preconditions;
@@ -431,6 +438,7 @@ export namespace solver {
         this.data = data;
       }
 
+      get_solver(): solver.Solver { return this.solver; }
       get_id(): number { return this.id; }
       get_rho(): string { return this.rho; }
       get_preconditions(): Flaw[] { return this._preconditions; }
@@ -1195,21 +1203,7 @@ interface FlawMessage {
   state: string;
   cost: RationalMessage;
   position: number;
-  data: FlawData;
-}
-
-interface FlawData {
-
-  type: string;
-}
-
-interface AtomFlawData extends FlawData {
-
-  atom: {
-    sigma: number;
-    type: string;
-    fact: boolean;
-  };
+  data?: any;
 }
 
 interface ResolverMessage {
@@ -1220,14 +1214,7 @@ interface ResolverMessage {
   flaw: number;
   state: string;
   intrinsic_cost: RationalMessage;
-  data: ResolverData;
-}
-
-interface ResolverData {
-
-  type: string;
-  name?: string;
-  value?: any;
+  data?: any;
 }
 
 function get_id(solver_id: number | undefined): number { return solver_id ? solver_id : 0; }
