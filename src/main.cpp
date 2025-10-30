@@ -18,10 +18,14 @@ int main(int argc, char const *argv[])
     // the problem files..
     std::vector<std::string> prob_names;
     for (int i = 1; i < argc - 1; i++)
+    {
+        LOG_DEBUG("adding problem file: " + std::string(argv[i]));
         prob_names.push_back(argv[i]);
+    }
 
     // the solution file..
     std::string sol_name = argv[argc - 1];
+    LOG_DEBUG("setting solution file: " + sol_name);
 
 #ifdef BUILD_SERVER
     ratio::server solver;

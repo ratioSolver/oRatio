@@ -241,6 +241,22 @@ namespace ratio
                     new_clause({std::make_shared<riddle::lt_term>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), lhs_xpr, std::static_pointer_cast<riddle::arith_item>(eq_xpr->get_rhs())), std::make_shared<riddle::gt_term>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), lhs_xpr, std::static_pointer_cast<riddle::arith_item>(eq_xpr->get_rhs()))});
                     return true;
                 }
+                else if (auto lhs_bxpr = std::dynamic_pointer_cast<riddle::bool_item>(eq_xpr->get_lhs())) // we are dealing with a boolean constraint..
+                {
+                    auto neq_cnstr = ac_slv.new_distinct(utils::variable(lhs_bxpr->get_lit()), utils::variable(static_cast<riddle::bool_item &>(*eq_xpr->get_rhs()).get_lit()));
+                    ac_slv.add_constraint(neq_cnstr);
+                    if (c_res) // if there is a current resolver, add the expression to it..
+                        c_res.value().get().ac_cnsts.push_back(neq_cnstr);
+                    return true;
+                }
+                else if (auto lhs_enum_xpr = std::dynamic_pointer_cast<riddle::enum_item>(eq_xpr->get_lhs())) // we are dealing with an enum constraint..
+                {
+                    auto neq_cnstr = ac_slv.new_distinct(lhs_enum_xpr->get_var(), static_cast<riddle::enum_item &>(*eq_xpr->get_rhs()).get_var());
+                    ac_slv.add_constraint(neq_cnstr);
+                    if (c_res) // if there is a current resolver, add the expression to it..
+                        c_res.value().get().ac_cnsts.push_back(neq_cnstr);
+                    return true;
+                }
                 else // unsupported expression, just return false..
                     return false;
             }
@@ -273,6 +289,22 @@ namespace ratio
                     return false;
                 else if (auto lhs_xpr = std::dynamic_pointer_cast<riddle::arith_item>(eq_xpr->get_lhs())) // we are dealing with an arithmetic constraint..
                     return lin_slv.new_eq(lhs_xpr->get_lin(), std::static_pointer_cast<riddle::arith_item>(eq_xpr->get_rhs())->get_lin(), c_res ? c_res.value().get().cnst : nullptr);
+                else if (auto lhs_bxpr = std::dynamic_pointer_cast<riddle::bool_item>(eq_xpr->get_lhs())) // we are dealing with a boolean constraint..
+                {
+                    auto eq_cnstr = ac_slv.new_equal(utils::variable(lhs_bxpr->get_lit()), utils::variable(static_cast<riddle::bool_item &>(*eq_xpr->get_rhs()).get_lit()));
+                    ac_slv.add_constraint(eq_cnstr);
+                    if (c_res) // if there is a current resolver, add the expression to it..
+                        c_res.value().get().ac_cnsts.push_back(eq_cnstr);
+                    return true;
+                }
+                else if (auto lhs_enum_xpr = std::dynamic_pointer_cast<riddle::enum_item>(eq_xpr->get_lhs())) // we are dealing with an enum constraint..
+                {
+                    auto eq_cnstr = ac_slv.new_equal(lhs_enum_xpr->get_var(), static_cast<riddle::enum_item &>(*eq_xpr->get_rhs()).get_var());
+                    ac_slv.add_constraint(eq_cnstr);
+                    if (c_res) // if there is a current resolver, add the expression to it..
+                        c_res.value().get().ac_cnsts.push_back(eq_cnstr);
+                    return true;
+                }
                 else // unsupported expression, just return false..
                     return false;
             }
