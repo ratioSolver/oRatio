@@ -158,7 +158,7 @@ export namespace solver {
     _set_graph(solver_message: SolverMessage) {
       if (solver_message.flaws) // we create the flaws..
         for (const [id, fm] of Object.entries(solver_message.flaws))
-          this.flaws.set(Number(id), new graph.Flaw(this, Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm));
+          this.flaws.set(Number(id), new graph.Flaw(this, Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
 
       if (solver_message.resolvers) // we create the resolvers..
         for (const [id, rm] of Object.entries(solver_message.resolvers))

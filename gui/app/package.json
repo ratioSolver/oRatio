@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@ratiosolver/flick": "^0.1.13",
-    "@ratiosolver/solver": "^0.0.44",
+    "@ratiosolver/solver": "^0.0.45",
     "bootstrap": "^5.3.6"
   }
 }
