@@ -251,14 +251,33 @@ namespace ratio
                 }
                 else if (auto lhs_enum_xpr = std::dynamic_pointer_cast<riddle::enum_item>(eq_xpr->get_lhs())) // we are dealing with an enum constraint..
                 {
-                    auto neq_cnstr = ac_slv.new_distinct(lhs_enum_xpr->get_var(), static_cast<riddle::enum_item &>(*eq_xpr->get_rhs()).get_var());
+                    if (auto rhs_enum_xpr = std::dynamic_pointer_cast<riddle::enum_item>(eq_xpr->get_rhs()))
+                    { // both sides are enum items..
+                        auto neq_cnstr = ac_slv.new_distinct(lhs_enum_xpr->get_var(), static_cast<riddle::enum_item &>(*eq_xpr->get_rhs()).get_var());
+                        ac_slv.add_constraint(neq_cnstr);
+                        if (c_res) // if there is a current resolver, add the expression to it..
+                            c_res.value().get().ac_cnsts.push_back(neq_cnstr);
+                        return true;
+                    }
+                    else
+                    {
+                        auto neq_cnstr = ac_slv.new_forbid(lhs_enum_xpr->get_var(), *eq_xpr->get_rhs());
+                        ac_slv.add_constraint(neq_cnstr);
+                        if (c_res) // if there is a current resolver, add the expression to it..
+                            c_res.value().get().ac_cnsts.push_back(neq_cnstr);
+                        return true;
+                    }
+                }
+                else if (auto rhs_enum_xpr = std::dynamic_pointer_cast<riddle::enum_item>(eq_xpr->get_rhs()))
+                {
+                    auto neq_cnstr = ac_slv.new_forbid(rhs_enum_xpr->get_var(), *eq_xpr->get_lhs());
                     ac_slv.add_constraint(neq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
                         c_res.value().get().ac_cnsts.push_back(neq_cnstr);
                     return true;
                 }
-                else // unsupported expression, just return false..
-                    return false;
+                else
+                    return true;
             }
             else if (auto ge_xpr = std::dynamic_pointer_cast<riddle::ge_term>(n_xpr->get_arg()))
                 return lin_slv.new_lt(std::static_pointer_cast<riddle::arith_item>(ge_xpr->get_lhs())->get_lin(), std::static_pointer_cast<riddle::arith_item>(ge_xpr->get_rhs())->get_lin(), false, c_res ? c_res.value().get().cnst : nullptr);
@@ -299,13 +318,32 @@ namespace ratio
                 }
                 else if (auto lhs_enum_xpr = std::dynamic_pointer_cast<riddle::enum_item>(eq_xpr->get_lhs())) // we are dealing with an enum constraint..
                 {
-                    auto eq_cnstr = ac_slv.new_equal(lhs_enum_xpr->get_var(), static_cast<riddle::enum_item &>(*eq_xpr->get_rhs()).get_var());
+                    if (auto rhs_enum_xpr = std::dynamic_pointer_cast<riddle::enum_item>(eq_xpr->get_rhs()))
+                    { // both sides are enum items..
+                        auto eq_cnstr = ac_slv.new_equal(lhs_enum_xpr->get_var(), static_cast<riddle::enum_item &>(*eq_xpr->get_rhs()).get_var());
+                        ac_slv.add_constraint(eq_cnstr);
+                        if (c_res) // if there is a current resolver, add the expression to it..
+                            c_res.value().get().ac_cnsts.push_back(eq_cnstr);
+                        return true;
+                    }
+                    else
+                    {
+                        auto eq_cnstr = ac_slv.new_assign(lhs_enum_xpr->get_var(), *eq_xpr->get_rhs());
+                        ac_slv.add_constraint(eq_cnstr);
+                        if (c_res) // if there is a current resolver, add the expression to it..
+                            c_res.value().get().ac_cnsts.push_back(eq_cnstr);
+                        return true;
+                    }
+                }
+                else if (auto rhs_enum_xpr = std::dynamic_pointer_cast<riddle::enum_item>(eq_xpr->get_rhs()))
+                {
+                    auto eq_cnstr = ac_slv.new_assign(rhs_enum_xpr->get_var(), *eq_xpr->get_lhs());
                     ac_slv.add_constraint(eq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
                         c_res.value().get().ac_cnsts.push_back(eq_cnstr);
                     return true;
                 }
-                else // unsupported expression, just return false..
+                else
                     return false;
             }
             else if (auto ge_xpr = std::dynamic_pointer_cast<riddle::ge_term>(expr))
