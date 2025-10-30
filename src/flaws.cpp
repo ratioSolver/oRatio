@@ -22,7 +22,7 @@ namespace ratio
 
     json::json resolver::to_json() const
     {
-        json::json j_resolver{{"flaw", f.get_id()}, {"intrinsic_cost", {{"num", intrinsic_cost.numerator()}, {"den", intrinsic_cost.denominator()}}}};
+        json::json j_resolver{{"flaw", f.get_id()}, {"intrinsic_cost", linspire::to_json(intrinsic_cost)}};
         return j_resolver;
     }
 
@@ -33,4 +33,12 @@ namespace ratio
     disjunction_flaw::disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 
     atom_flaw::atom_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<atom>(*this, pred, is_fact, std::move(args), std::move(sigma))) {}
+
+    json::json atom_flaw::to_json() const
+    {
+        json::json j_flaw = flaw::to_json();
+        j_flaw["type"] = "atom";
+        j_flaw["atom"] = {{"atom_id", atm->get_id()}, {"is_fact", atm->is_fact()}, {"predicate", atm->get_type().get_name()}, {"sigma", 0}};
+        return j_flaw;
+    }
 } // namespace ratio

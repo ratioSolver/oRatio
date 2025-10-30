@@ -235,7 +235,7 @@ export namespace solver {
       if ('msg_type' in message)
         switch (message.msg_type) {
           case 'solver':
-            const csm = message as CurrentSolverMessage;
+            const csm = message as SolverMessage;
             this.init(new Map<number, Solver>([[0, Solver.make_solver(csm)]]));
             break;
           case 'solvers':
@@ -953,45 +953,34 @@ export namespace solver {
   }
 }
 
-interface CurrentSolverMessage extends SolverMessage {
-
-  type: string; // 'solver'
-}
-
 interface SolversMessage {
 
-  type: string; // 'solvers'
   solvers: SolverMessage[];
 }
 
 interface NewSolverMessage {
 
-  type: string; // 'new_solver'
   solver: SolverMessage;
 }
 
 interface DeletedSolverMessage {
 
-  type: string; // 'deleted_solver'
   solver_id?: number;
 }
 
 interface StateChangedMessage extends StateMessage {
 
-  type: string; // 'state_changed'
   solver_id?: number;
 }
 
 interface FlawCreatedMessage extends FlawMessage {
 
-  type: string; // 'flaw_created'
   solver_id?: number;
   id: number;
 }
 
 interface FlawStateChangedMessage {
 
-  type: string; // 'flaw_state_changed'
   solver_id?: number;
   id: number;
   state: string;
@@ -999,7 +988,6 @@ interface FlawStateChangedMessage {
 
 interface FlawCostChangedMessage {
 
-  type: string; // 'flaw_cost_changed'
   solver_id?: number;
   id: number;
   cost: RationalMessage;
@@ -1007,7 +995,6 @@ interface FlawCostChangedMessage {
 
 interface FlawPositionChangedMessage {
 
-  type: string; // 'flaw_position_changed'
   solver_id?: number;
   id: number;
   position: number;
@@ -1015,21 +1002,18 @@ interface FlawPositionChangedMessage {
 
 interface CurrentFlawMessage {
 
-  type: string; // 'current_flaw'
   solver_id?: number;
   id: number;
 }
 
 interface ResolverCreatedMessage extends ResolverMessage {
 
-  type: string; // 'resolver_created'
   solver_id?: number;
   id: number;
 }
 
 interface ResolverStateChangedMessage {
 
-  type: string; // 'resolver_state_changed'
   solver_id?: number;
   id: number;
   state: string;
@@ -1037,14 +1021,12 @@ interface ResolverStateChangedMessage {
 
 interface CurrentResolverMessage {
 
-  type: string; // 'current_resolver'
   solver_id?: number;
   id: number;
 }
 
 interface CausalLinkAddedMessage {
 
-  type: string; // 'causal_link_added'
   solver_id?: number;
   flaw: number;
   resolver: number;
@@ -1052,42 +1034,36 @@ interface CausalLinkAddedMessage {
 
 interface ExecutionStateChangedMessage {
 
-  type: string; // 'execution_state_changed'
   solver_id?: number;
   state: string;
 }
 
 interface TickMessage {
 
-  type: string; // 'tick'
   solver_id?: number;
   time: RationalMessage;
 }
 
 interface StartingMessage {
 
-  type: string; // 'starting'
   solver_id?: number;
   atoms: number[];
 }
 
 interface StartMessage {
 
-  type: string; // 'start'
   solver_id?: number;
   atoms: number[];
 }
 
 interface EndingMessage {
 
-  type: string; // 'ending'
   solver_id?: number;
   atoms: number[];
 }
 
 interface EndMessage {
 
-  type: string; // 'end'
   solver_id?: number;
   atoms: number[];
 }
@@ -1124,7 +1100,7 @@ export interface TimelineMsg<V extends ImpulseMessage | IntervalMessage> {
 
 interface SolverTimelineMessage extends TimelineMsg<{ atom: number } & (ImpulseMessage | IntervalMessage)> { }
 
-type SolversUpdateMessage = { msg_type: string } & (CurrentSolverMessage | SolversMessage | NewSolverMessage | DeletedSolverMessage | StateChangedMessage | FlawCreatedMessage | FlawStateChangedMessage | FlawCostChangedMessage | FlawPositionChangedMessage | CurrentFlawMessage | ResolverCreatedMessage | ResolverStateChangedMessage | CurrentResolverMessage | CausalLinkAddedMessage | ExecutionStateChangedMessage | TickMessage | StartingMessage | StartMessage | EndingMessage | EndMessage);
+type SolversUpdateMessage = { msg_type: string } & (SolversMessage | NewSolverMessage | DeletedSolverMessage | StateChangedMessage | FlawCreatedMessage | FlawStateChangedMessage | FlawCostChangedMessage | FlawPositionChangedMessage | CurrentFlawMessage | ResolverCreatedMessage | ResolverStateChangedMessage | CurrentResolverMessage | CausalLinkAddedMessage | ExecutionStateChangedMessage | TickMessage | StartingMessage | StartMessage | EndingMessage | EndMessage);
 
 export interface RationalMessage {
 

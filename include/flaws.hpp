@@ -92,6 +92,8 @@ namespace ratio
 
     [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
 
+    [[nodiscard]] virtual json::json to_json() const override;
+
   private:
     riddle::atom_expr atm;
   };
