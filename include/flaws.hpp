@@ -21,12 +21,15 @@ namespace ratio
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
+    [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
+
     [[nodiscard]] virtual json::json to_json() const;
 
   private:
-    solver &slv;
-    std::vector<std::reference_wrapper<resolver>> causes;
-    const bool exclusive;
+    solver &slv;                                                   // the solver managing this flaw..
+    std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
+    const bool exclusive;                                          // whether the flaw is exclusive..
+    utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
   };
 
   class resolver

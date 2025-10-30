@@ -73,6 +73,8 @@ namespace ratio
 
     void solve();
 
+    [[nodiscard]] virtual json::json to_json() const override;
+
   private:
     [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
     [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;

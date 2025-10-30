@@ -7,7 +7,7 @@ namespace ratio
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw;
+        json::json j_flaw{{"cost", linspire::to_json(est_cost)}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);

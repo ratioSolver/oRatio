@@ -66,7 +66,7 @@ namespace ratio
     }
     void server::flaw_cost_changed(const ratio::flaw &f)
     {
-        auto j_msg = json::json{{"msg_type", "flaw_cost_changed"}, {"id", f.get_id()}};
+        auto j_msg = json::json{{"msg_type", "flaw_cost_changed"}, {"id", f.get_id()}, {"cost", linspire::to_json(f.get_estimated_cost())}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

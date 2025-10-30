@@ -354,4 +354,29 @@ namespace ratio
                 return false; // unsupported expression, just return false..
         }
     }
+
+    json::json solver::to_json() const
+    {
+        json::json j_graph = core::to_json();
+        if (!flaws.empty())
+        {
+            json::json j_flaws;
+            for (const auto &f : flaws)
+                j_flaws[std::to_string(f->get_id())] = f->to_json();
+            j_graph["flaws"] = std::move(j_flaws);
+        }
+        if (!resolvers.empty())
+        {
+            json::json j_resolvers;
+            for (const auto &r : resolvers)
+                j_resolvers[std::to_string(r->get_id())] = r->to_json();
+            j_graph["resolvers"] = std::move(j_resolvers);
+        }
+        if (c_flaw)
+            j_graph["current_flaw"] = c_flaw.value().get().get_id();
+        if (c_res)
+            j_graph["current_resolver"] = c_res.value().get().get_id();
+
+        return j_graph;
+    }
 } // namespace ratio
