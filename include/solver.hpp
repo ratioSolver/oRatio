@@ -32,6 +32,8 @@ namespace ratio
 
   class solver : public riddle::core
   {
+    friend class flaw;
+
   public:
     solver(std::string_view name = "oRatio") noexcept;
 
@@ -215,5 +217,6 @@ namespace ratio
     std::vector<std::unique_ptr<resolver>> resolvers;      // The set of resolvers
     std::optional<std::reference_wrapper<flaw>> c_flaw;    // The current flaw..
     std::optional<std::reference_wrapper<resolver>> c_res; // The current resolver..
+    std::unordered_set<flaw *> active_flaws;               // the currently active flaws..
   };
 } // namespace ratio

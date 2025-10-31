@@ -190,6 +190,11 @@ namespace ratio
     {
         if (!lin_slv.check() || !ac_slv.propagate())
             throw std::runtime_error("Unsatisfiable constraints");
+        auto it = std::find_if(active_flaws.begin(), active_flaws.end(), [](flaw *f)
+                               { return utils::is_positive_infinite(f->get_estimated_cost()); });
+        while (it != active_flaws.end())
+        {
+        }
     }
 
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)

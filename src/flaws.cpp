@@ -3,11 +3,18 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : slv(slv), causes(std::move(causes)), exclusive(exclusive) {}
+    flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : slv(slv), causes(std::move(causes)), exclusive(exclusive)
+    {
+        if (causes.empty())
+        { // if there are no causes, the flaw is a root flaw, so it is active by default..
+            state = utils::True;
+            slv.active_flaws.insert(this);
+        }
+    }
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", linspire::to_json(est_cost)}};
+        json::json j_flaw{{"cost", linspire::to_json(est_cost)}, {"state", to_string(state)}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);
@@ -22,7 +29,7 @@ namespace ratio
 
     json::json resolver::to_json() const
     {
-        json::json j_resolver{{"flaw", f.get_id()}, {"intrinsic_cost", linspire::to_json(intrinsic_cost)}};
+        json::json j_resolver{{"flaw", f.get_id()}, {"intrinsic_cost", linspire::to_json(intrinsic_cost)}, {"state", to_string(state)}};
         return j_resolver;
     }
 
