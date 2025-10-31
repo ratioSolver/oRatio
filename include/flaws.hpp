@@ -28,6 +28,9 @@ namespace ratio
     [[nodiscard]] virtual json::json to_json() const;
 
   private:
+    virtual void compute_resolvers() = 0;
+
+  private:
     solver &slv;                                                   // the solver managing this flaw..
     std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
     const bool exclusive;                                          // whether the flaw is exclusive..
@@ -52,6 +55,9 @@ namespace ratio
     [[nodiscard]] virtual json::json to_json() const;
 
   private:
+    virtual void apply() = 0;
+
+  private:
     flaw &f;                                                            // the flaw solved by this resolver..
     utils::lbool state = utils::Undefined;                              // the current state of the resolver..
     utils::rational intrinsic_cost;                                     // the intrinsic cost of this resolver..
@@ -68,6 +74,9 @@ namespace ratio
     [[nodiscard]] const std::shared_ptr<riddle::enum_item> &get_var() const noexcept { return var; }
 
   private:
+    void compute_resolvers() override;
+
+  private:
     std::shared_ptr<riddle::enum_item> var;
   };
 
@@ -79,6 +88,9 @@ namespace ratio
     [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
 
   private:
+    void compute_resolvers() override;
+
+  private:
     std::vector<riddle::bool_expr> clause;
   };
 
@@ -88,6 +100,9 @@ namespace ratio
     disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
 
     [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
+
+  private:
+    void compute_resolvers() override;
 
   private:
     std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
@@ -103,7 +118,48 @@ namespace ratio
     [[nodiscard]] virtual json::json to_json() const override;
 
   private:
+    void compute_resolvers() override;
+
+  private:
     riddle::atom_expr atm;
+  };
+
+  class activate_fact final : public resolver
+  {
+  public:
+    activate_fact(atom_flaw &f) noexcept;
+    activate_fact(atom_flaw &f, const utils::lit &rho) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+  };
+
+  class activate_goal final : public resolver
+  {
+  public:
+    activate_goal(atom_flaw &f) noexcept;
+    activate_goal(atom_flaw &f, const utils::lit &rho) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+  };
+
+  class unify_atom final : public resolver
+  {
+  public:
+    unify_atom(atom_flaw &f, riddle::atom_expr atm) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+
+  private:
+    riddle::atom_expr atm; // the atom to unify with..
   };
 
   [[nodiscard]] inline std::string to_string(const utils::lbool &node_state) noexcept
