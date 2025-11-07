@@ -114,6 +114,8 @@ namespace ratio
 
     void solve();
 
+    [[nodiscard]] bool match(riddle::term &lhs, riddle::term &rhs) const;
+
     [[nodiscard]] virtual json::json to_json() const override;
 
   private:
