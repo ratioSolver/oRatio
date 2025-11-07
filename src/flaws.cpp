@@ -32,8 +32,8 @@ namespace ratio
         return j_flaw;
     }
 
-    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost), new_sat()) {}
-    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : f(f), intrinsic_cost(std::move(intrinsic_cost)), rho(rho), cnst(std::make_shared<linspire::constraint>()) {}
+    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost), f.new_sat()) {}
+    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : f(f), intrinsic_cost(std::move(intrinsic_cost)), rho(rho), cnst(std::make_shared<linspire::constraint>()) { f.resolvers.push_back(*this); }
     utils::lbool resolver::get_state() const noexcept { return f.slv.ac_slv.sat_val(rho); }
     void resolver::on_domain_changed(const utils::var v) noexcept
     {
@@ -112,7 +112,7 @@ namespace ratio
         return j_flaw;
     }
 
-    activate_fact::activate_fact(atom_flaw &f) noexcept : activate_fact(f, new_sat()) {}
+    activate_fact::activate_fact(atom_flaw &f) noexcept : resolver(f, 1) {}
     activate_fact::activate_fact(atom_flaw &f, const utils::lit &rho) noexcept : resolver(f, 1, rho) {}
     void activate_fact::apply()
     {
@@ -124,7 +124,7 @@ namespace ratio
         return j_res;
     }
 
-    activate_goal::activate_goal(atom_flaw &f) noexcept : activate_goal(f, new_sat()) {}
+    activate_goal::activate_goal(atom_flaw &f) noexcept : resolver(f, 1) {}
     activate_goal::activate_goal(atom_flaw &f, const utils::lit &rho) noexcept : resolver(f, 1, rho) {}
     void activate_goal::apply()
     {

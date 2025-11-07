@@ -80,9 +80,6 @@ namespace ratio
 
     [[nodiscard]] virtual json::json to_json() const;
 
-  protected:
-    [[nodiscard]] utils::var new_sat() noexcept { return f.new_sat(); }
-
   private:
     virtual void apply() = 0;
 

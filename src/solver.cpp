@@ -205,6 +205,16 @@ namespace ratio
             {
                 LOG_TRACE("Computing resolvers for " << f.to_json());
                 f.compute_resolvers();
+                f.expanded = true;
+                assert(std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [&](resolver &r)
+                                    { return r.get_state() == utils::False; }) &&
+                       "Computed resolver found to be inactive.");
+                for (resolver &r : f.get_resolvers())
+                {
+                    CURRENT_RESOLVER(r);
+                    LOG_TRACE("Applying resolver " << r.to_json());
+                    r.apply();
+                }
             }
             active_flaws.erase(it);
             it = std::find_if(active_flaws.begin(), active_flaws.end(), [](flaw *f)
