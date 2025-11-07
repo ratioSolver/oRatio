@@ -33,6 +33,7 @@ namespace ratio
   class solver : public riddle::core
   {
     friend class flaw;
+    friend class resolver;
 
   public:
     solver(std::string_view name = "oRatio") noexcept;
@@ -73,14 +74,6 @@ namespace ratio
     void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
     void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
 
-    void solve();
-
-    [[nodiscard]] virtual json::json to_json() const override;
-
-  private:
-    [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
-    [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;
-
     /**
      * @brief Creates a new flaw of the given type.
      *
@@ -118,6 +111,14 @@ namespace ratio
       resolvers.emplace_back(std::move(r));
       return r_ref;
     }
+
+    void solve();
+
+    [[nodiscard]] virtual json::json to_json() const override;
+
+  private:
+    [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
+    [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;
 
     [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept;
 

@@ -12,8 +12,11 @@ namespace ratio
   class solver;
   class resolver;
 
-  class flaw
+  class flaw : private arc_consistency::listener
   {
+    friend class solver;
+    friend class resolver;
+
   public:
     flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive = false) noexcept;
     flaw(const flaw &) = delete;
@@ -21,46 +24,74 @@ namespace ratio
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
-    [[nodiscard]] utils::lbool get_state() const noexcept { return state; }
+    [[nodiscard]] const utils::lit &get_phi() const noexcept { return phi; }
+
+    [[nodiscard]] utils::lbool get_state() const noexcept;
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_causes() const noexcept { return causes; }
+
+    [[nodiscard]] bool is_expanded() const noexcept { return expanded; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_resolvers() const noexcept { return resolvers; }
 
     [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
 
     [[nodiscard]] virtual json::json to_json() const;
 
+  protected:
+    [[nodiscard]] utils::var new_sat() noexcept;
+
   private:
     virtual void compute_resolvers() = 0;
 
+    void on_domain_changed(const utils::var v) noexcept override;
+
+  protected:
+    solver &slv; // the solver managing this flaw..
+
   private:
-    solver &slv;                                                   // the solver managing this flaw..
+    const utils::lit phi;                                          // the phi literal indicating whether the flaw is active or not..
     std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
+    bool expanded = false;                                         // whether the flaw has been expanded..
     const bool exclusive;                                          // whether the flaw is exclusive..
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
-    utils::lbool state = utils::Undefined;                         // the current state of the flaw..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
   };
 
-  class resolver
+  class resolver : public arc_consistency::listener
   {
     friend class solver;
 
   public:
     resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept;
+    resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept;
     resolver(const resolver &) = delete;
     virtual ~resolver() = default;
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
-    [[nodiscard]] utils::lbool get_state() const noexcept { return state; }
+    [[nodiscard]] flaw &get_flaw() const noexcept { return f; }
+
+    [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+
+    [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
+
+    [[nodiscard]] utils::lbool get_state() const noexcept;
 
     [[nodiscard]] virtual json::json to_json() const;
+
+  protected:
+    [[nodiscard]] utils::var new_sat() noexcept { return f.new_sat(); }
 
   private:
     virtual void apply() = 0;
 
+    void on_domain_changed(const utils::var v) noexcept override;
+
   private:
     flaw &f;                                                            // the flaw solved by this resolver..
-    utils::lbool state = utils::Undefined;                              // the current state of the resolver..
     utils::rational intrinsic_cost;                                     // the intrinsic cost of this resolver..
+    const utils::lit rho;                                               // the rho literal indicating whether the resolver is active or not..
     std::vector<std::reference_wrapper<flaw>> preconditions;            // the preconditions of this resolver..
     std::shared_ptr<linspire::constraint> cnst;                         // the constraint associated with this resolver..
     std::vector<std::shared_ptr<arc_consistency::constraint>> ac_cnsts; // the arc consistency constraints associated with this resolver..
@@ -119,6 +150,8 @@ namespace ratio
 
   private:
     void compute_resolvers() override;
+
+    bool can_unify_with(const riddle::atom_term &other) const noexcept;
 
   private:
     riddle::atom_expr atm;

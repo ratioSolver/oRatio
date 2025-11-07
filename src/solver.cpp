@@ -1,5 +1,6 @@
 #include "solver.hpp"
 #include "flaws.hpp"
+#include "logging.hpp"
 #include <cassert>
 
 #ifdef ORATIO_ENABLE_LISTENERS
@@ -194,6 +195,20 @@ namespace ratio
                                { return utils::is_positive_infinite(f->get_estimated_cost()); });
         while (it != active_flaws.end())
         {
+            auto &f = **it;
+            CURRENT_FLAW(f);
+            assert(f.get_state() == utils::True && "Active flaw found to be inactive.");
+            if (f.is_expanded())
+            {
+            }
+            else
+            {
+                LOG_TRACE("Computing resolvers for " << f.to_json());
+                f.compute_resolvers();
+            }
+            active_flaws.erase(it);
+            it = std::find_if(active_flaws.begin(), active_flaws.end(), [](flaw *f)
+                              { return utils::is_positive_infinite(f->get_estimated_cost()); });
         }
     }
 
