@@ -36,6 +36,8 @@ namespace ratio
 
     [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
 
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_supports() const noexcept { return supports; }
+
     [[nodiscard]] virtual json::json to_json() const;
 
   protected:
@@ -56,6 +58,7 @@ namespace ratio
     const bool exclusive;                                          // whether the flaw is exclusive..
     std::vector<std::reference_wrapper<resolver>> resolvers;       // the resolvers for this flaw..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
+    std::vector<std::reference_wrapper<resolver>> supports;        // the resolvers supported by this flaw (used for propagating cost estimates)..
   };
 
   class resolver : public arc_consistency::listener
@@ -73,6 +76,8 @@ namespace ratio
     [[nodiscard]] flaw &get_flaw() const noexcept { return f; }
 
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+
+    [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
 
     [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
 

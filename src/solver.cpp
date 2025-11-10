@@ -1,6 +1,7 @@
 #include "solver.hpp"
 #include "flaws.hpp"
 #include "logging.hpp"
+#include <stack>
 #include <cassert>
 
 #ifdef ORATIO_ENABLE_LISTENERS
@@ -216,6 +217,7 @@ namespace ratio
                     r.apply();
                 }
             }
+            compute_flaw_cost(f);
             active_flaws.erase(it);
             it = std::find_if(active_flaws.begin(), active_flaws.end(), [](flaw *f)
                               { return utils::is_positive_infinite(f->get_estimated_cost()); });
@@ -442,6 +444,34 @@ namespace ratio
                 return lin_slv.new_gt(static_cast<riddle::arith_item *>(gt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(gt_xpr->get_rhs().get())->get_lin(), true, c_res ? c_res.value().get().cnst : nullptr);
             else
                 return false; // unsupported expression, just return false..
+        }
+    }
+
+    void solver::compute_flaw_cost(flaw &f) noexcept
+    {
+        std::stack<std::pair<flaw *, std::unordered_set<flaw *>>> stk;
+        stk.push({&f, {}}); // we push the flaw in the stack..
+
+        while (!stk.empty())
+        {
+            auto c_f = stk.top();
+            stk.pop();
+
+            utils::rational c_cost = utils::rational::positive_infinite;
+            if (c_f.first->get_state() != utils::False && c_f.second.insert(c_f.first).second) // we compute the cost of the flaw as the minimum of the costs of its resolvers..
+                for (const auto &res : c_f.first->resolvers)
+                    if (res.get().get_state() != utils::False)
+                        c_cost = std::min(c_cost, res.get().get_estimated_cost());
+
+            if (c_f.first->est_cost != c_cost) // we update the cost of the flaw..
+            {
+                c_f.first->est_cost = c_cost;
+                FLAW_COST_CHANGED(*c_f.first);
+
+                // we propagate the cost to the supported resolvers..
+                for (auto &support : c_f.first->get_supports())
+                    stk.push({&support.get().f, c_f.second}); // we push the supported flaw in the stack..
+            }
         }
     }
 

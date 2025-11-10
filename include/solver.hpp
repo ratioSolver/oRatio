@@ -124,6 +124,8 @@ namespace ratio
 
     [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept;
 
+    void compute_flaw_cost(flaw &f) noexcept;
+
 #ifdef ORATIO_ENABLE_LISTENERS
   protected:
     /**

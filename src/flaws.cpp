@@ -34,6 +34,25 @@ namespace ratio
 
     resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost), f.new_sat()) {}
     resolver::resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : f(f), intrinsic_cost(std::move(intrinsic_cost)), rho(rho), cnst(std::make_shared<linspire::constraint>()) { f.resolvers.push_back(*this); }
+    utils::rational resolver::get_estimated_cost() const noexcept
+    {
+        if (get_state() == utils::False)
+            return utils::rational::positive_infinite;
+        else if (preconditions.empty())
+            return intrinsic_cost;
+#ifdef H_ADD
+        // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
+        return std::accumulate(preconditions.begin(), preconditions.end(), intrinsic_cost, [](const auto &lhs, const auto &prec)
+                               { return lhs + prec.get().get_estimated_cost(); });
+#endif
+#ifdef H_MAX
+        // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
+        return intrinsic_cost + (*std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
+                                                   { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); }))
+                                    .get()
+                                    .get_estimated_cost();
+#endif
+    }
     utils::lbool resolver::get_state() const noexcept { return f.slv.ac_slv.sat_val(rho); }
     void resolver::on_domain_changed(const utils::var v) noexcept
     {
