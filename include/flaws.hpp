@@ -41,7 +41,7 @@ namespace ratio
     [[nodiscard]] virtual json::json to_json() const;
 
   protected:
-    [[nodiscard]] utils::var new_sat() noexcept;
+    [[nodiscard]] solver &get_solver() const noexcept { return slv; }
 
   private:
     virtual void compute_resolvers() = 0;
@@ -84,6 +84,11 @@ namespace ratio
     [[nodiscard]] utils::lbool get_state() const noexcept;
 
     [[nodiscard]] virtual json::json to_json() const;
+
+  protected:
+    [[nodiscard]] solver &get_solver() const noexcept { return f.slv; }
+
+    void new_clause(std::vector<utils::lit> &&lits);
 
   private:
     virtual void apply() = 0;

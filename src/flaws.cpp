@@ -5,7 +5,7 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : slv(slv), phi(causes.empty() ? utils::TRUE_lit : new_sat()), causes(std::move(causes)), exclusive(exclusive)
+    flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : slv(slv), phi(causes.empty() ? utils::TRUE_lit : slv.ac_slv.new_sat()), causes(std::move(causes)), exclusive(exclusive)
     {
         if (causes.empty()) // if there are no causes, the flaw is a root flaw, so it is active by default..
             slv.active_flaws.insert(this);
@@ -18,7 +18,6 @@ namespace ratio
             slv.active_flaws.insert(this); // add it to the active flaws..
         slv.flaw_state_changed(*this);
     }
-    utils::var flaw::new_sat() noexcept { return slv.ac_slv.new_sat(); }
     json::json flaw::to_json() const
     {
         json::json j_flaw{{"cost", linspire::to_json(est_cost)}, {"state", to_string(slv.ac_slv.sat_val(phi))}};
@@ -32,7 +31,7 @@ namespace ratio
         return j_flaw;
     }
 
-    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost), f.new_sat()) {}
+    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost), f.slv.ac_slv.new_sat()) {}
     resolver::resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : f(f), intrinsic_cost(std::move(intrinsic_cost)), rho(rho), cnst(std::make_shared<linspire::constraint>()) { f.resolvers.push_back(*this); }
     utils::rational resolver::get_estimated_cost() const noexcept
     {
@@ -58,6 +57,13 @@ namespace ratio
     {
         assert(utils::variable(rho) == v && "Domain change notified for a variable not associated with this resolver.");
         f.slv.resolver_state_changed(*this);
+    }
+    void resolver::new_clause(std::vector<utils::lit> &&lits)
+    {
+        auto clause = get_solver().ac_slv.new_clause(std::move(lits));
+        ac_cnsts.push_back(clause);
+        if (get_state() == utils::True)
+            get_solver().ac_slv.add_constraint(clause);
     }
     json::json resolver::to_json() const
     {
@@ -135,6 +141,10 @@ namespace ratio
     activate_fact::activate_fact(atom_flaw &f, const utils::lit &rho) noexcept : resolver(f, 1, rho) {}
     void activate_fact::apply()
     {
+        assert(static_cast<atom_flaw &>(get_flaw()).get_atom()->is_fact() && "activate_fact resolver applied to a non-fact atom.");
+
+        // activating this resolver activates the atom associated with the flaw..
+        new_clause({!get_rho(), static_cast<atom &>(*static_cast<atom_flaw &>(get_flaw()).get_atom()).get_sigma()});
     }
     json::json activate_fact::to_json() const
     {
@@ -147,6 +157,13 @@ namespace ratio
     activate_goal::activate_goal(atom_flaw &f, const utils::lit &rho) noexcept : resolver(f, 1, rho) {}
     void activate_goal::apply()
     {
+        assert(!static_cast<atom_flaw &>(get_flaw()).get_atom()->is_fact() && "activate_goal resolver applied to a fact atom.");
+
+        // activating this resolver activates the atom associated with the flaw..
+        new_clause({!get_rho(), static_cast<atom &>(*static_cast<atom_flaw &>(get_flaw()).get_atom()).get_sigma()});
+
+        // we call the predicate's procedure associated with the atom..
+        static_cast<riddle::predicate &>(static_cast<atom_flaw &>(get_flaw()).get_atom()->get_type()).call(static_cast<atom_flaw &>(get_flaw()).get_atom());
     }
     json::json activate_goal::to_json() const
     {

@@ -214,6 +214,7 @@ namespace ratio
                 {
                     CURRENT_RESOLVER(r);
                     LOG_TRACE("Applying resolver " << r.to_json());
+                    assert(r.get_state() && "Computed resolver found to be inactive.");
                     r.apply();
                 }
             }
