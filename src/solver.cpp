@@ -196,29 +196,32 @@ namespace ratio
                                { return utils::is_positive_infinite(f->get_estimated_cost()); });
         while (it != active_flaws.end())
         {
-            auto &f = **it;
-            CURRENT_FLAW(f);
-            assert(f.get_state() == utils::True && "Active flaw found to be inactive.");
-            if (f.is_expanded())
+            c_flaw = **it;
+            CURRENT_FLAW(c_flaw);
+            assert(c_flaw->get().get_state() == utils::True && "Active flaw found to be inactive.");
+            if (c_flaw->get().is_expanded())
             {
             }
             else
             {
-                LOG_TRACE("Computing resolvers for " << f.to_json());
-                f.compute_resolvers();
-                f.expanded = true;
-                assert(std::none_of(f.get_resolvers().begin(), f.get_resolvers().end(), [&](resolver &r)
+                LOG_TRACE("Computing resolvers for " << c_flaw->get().to_json());
+                c_flaw->get().compute_resolvers();
+                c_flaw->get().expanded = true;
+                assert(std::none_of(c_flaw->get().get_resolvers().begin(), c_flaw->get().get_resolvers().end(), [&](resolver &r)
                                     { return r.get_state() == utils::False; }) &&
                        "Computed resolver found to be inactive.");
-                for (resolver &r : f.get_resolvers())
+                for (resolver &r : c_flaw->get().get_resolvers())
                 {
-                    CURRENT_RESOLVER(r);
-                    LOG_TRACE("Applying resolver " << r.to_json());
-                    assert(r.get_state() && "Computed resolver found to be inactive.");
-                    r.apply();
+                    c_res = r;
+                    CURRENT_RESOLVER(c_res);
+                    LOG_TRACE("Applying resolver " << c_res->get().to_json());
+                    assert(c_res->get().get_state() && "Computed resolver found to be inactive.");
+                    c_res->get().apply();
                 }
+                c_res.reset();
             }
-            compute_flaw_cost(f);
+            compute_flaw_cost(c_flaw->get());
+            c_flaw.reset();
             active_flaws.erase(it);
             it = std::find_if(active_flaws.begin(), active_flaws.end(), [](flaw *f)
                               { return utils::is_positive_infinite(f->get_estimated_cost()); });
