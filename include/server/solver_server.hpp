@@ -23,7 +23,6 @@ namespace ratio
     void flaw_created(const ratio::flaw &f) override;
     void flaw_state_changed(const ratio::flaw &f) override;
     void flaw_cost_changed(const ratio::flaw &f) override;
-    void flaw_position_changed(const ratio::flaw &f) override;
     void current_flaw(std::optional<std::reference_wrapper<ratio::flaw>>) override;
     void resolver_created(const ratio::resolver &r) override;
     void resolver_state_changed(const ratio::resolver &r) override;

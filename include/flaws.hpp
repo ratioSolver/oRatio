@@ -95,6 +95,8 @@ namespace ratio
 
     void on_domain_changed(const utils::var v) noexcept override;
 
+    void retract() noexcept;
+
   private:
     flaw &f;                                                            // the flaw solved by this resolver..
     utils::rational intrinsic_cost;                                     // the intrinsic cost of this resolver..

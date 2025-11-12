@@ -5,10 +5,12 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : slv(slv), phi(causes.empty() ? utils::TRUE_lit : slv.ac_slv.new_sat()), causes(std::move(causes)), exclusive(exclusive)
+    flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, const bool &exclusive) noexcept : listener(slv.ac_slv), slv(slv), phi(causes.empty() ? utils::TRUE_lit : slv.ac_slv.new_sat()), causes(std::move(causes)), exclusive(exclusive)
     {
         if (causes.empty()) // if there are no causes, the flaw is a root flaw, so it is active by default..
             slv.active_flaws.insert(this);
+        else if (get_state() == utils::Undefined) // otherwise, we need to monitor its state..
+            listen_to(utils::variable(phi));
     }
     utils::lbool flaw::get_state() const noexcept { return slv.ac_slv.sat_val(phi); }
     void flaw::on_domain_changed(const utils::var v) noexcept
@@ -32,7 +34,12 @@ namespace ratio
     }
 
     resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost), f.slv.ac_slv.new_sat()) {}
-    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : f(f), intrinsic_cost(std::move(intrinsic_cost)), rho(rho), cnst(std::make_shared<linspire::constraint>()) { f.resolvers.push_back(*this); }
+    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : listener(f.slv.ac_slv), f(f), intrinsic_cost(std::move(intrinsic_cost)), rho(rho), cnst(std::make_shared<linspire::constraint>())
+    {
+        f.resolvers.push_back(*this);
+        if (get_state() == utils::Undefined) // if the resolver is not yet active or forbidden, we need to monitor its state..
+            listen_to(utils::variable(rho));
+    }
     utils::rational resolver::get_estimated_cost() const noexcept
     {
         if (get_state() == utils::False)
@@ -57,6 +64,13 @@ namespace ratio
     {
         assert(utils::variable(rho) == v && "Domain change notified for a variable not associated with this resolver.");
         f.slv.resolver_state_changed(*this);
+    }
+    void resolver::retract() noexcept
+    {
+        if (cnst)
+            f.slv.lin_slv.retract(cnst);
+        for (auto &ac_cnst : ac_cnsts)
+            f.slv.ac_slv.retract(ac_cnst);
     }
     void resolver::new_clause(std::vector<utils::lit> &&lits)
     {

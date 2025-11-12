@@ -163,14 +163,6 @@ namespace ratio
      */
     virtual void flaw_cost_changed(const flaw &) {}
     /**
-     * @brief Notifies when the position of a flaw has changed.
-     *
-     * This function is called when the position of a flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when a flaw's position changes.
-     *
-     * @param flaw The flaw whose position has changed.
-     */
-    virtual void flaw_position_changed(const flaw &) {}
-    /**
      * @brief Notifies when the current flaw has changed.
      *
      * This function is called when the current flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when the current flaw changes.

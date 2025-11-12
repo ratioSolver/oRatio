@@ -59,7 +59,7 @@ namespace ratio
     }
     void server::flaw_state_changed(const ratio::flaw &f)
     {
-        auto j_msg = json::json{{"msg_type", "flaw_state_changed"}, {"id", f.get_id()}};
+        auto j_msg = json::json{{"msg_type", "flaw_state_changed"}, {"id", f.get_id()}, {"state", to_string(f.get_state())}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
@@ -67,13 +67,6 @@ namespace ratio
     void server::flaw_cost_changed(const ratio::flaw &f)
     {
         auto j_msg = json::json{{"msg_type", "flaw_cost_changed"}, {"id", f.get_id()}, {"cost", linspire::to_json(f.get_estimated_cost())}};
-        auto msg = j_msg.dump();
-        for (auto client : clients)
-            client->send(msg);
-    }
-    void server::flaw_position_changed(const ratio::flaw &f)
-    {
-        auto j_msg = json::json{{"msg_type", "flaw_position_changed"}, {"id", f.get_id()}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
@@ -98,7 +91,7 @@ namespace ratio
     }
     void server::resolver_state_changed(const ratio::resolver &r)
     {
-        auto j_msg = json::json{{"msg_type", "resolver_state_changed"}, {"id", r.get_id()}};
+        auto j_msg = json::json{{"msg_type", "resolver_state_changed"}, {"id", r.get_id()}, {"state", to_string(r.get_state())}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

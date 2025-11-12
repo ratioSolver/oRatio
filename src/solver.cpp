@@ -210,15 +210,43 @@ namespace ratio
                 assert(std::none_of(c_flaw->get().get_resolvers().begin(), c_flaw->get().get_resolvers().end(), [&](resolver &r)
                                     { return r.get_state() == utils::False; }) &&
                        "Computed resolver found to be inactive.");
+                std::vector<utils::lit> any_res;
                 for (resolver &r : c_flaw->get().get_resolvers())
                 {
                     c_res = r;
                     CURRENT_RESOLVER(c_res);
                     LOG_TRACE("Applying resolver " << c_res->get().to_json());
                     assert(c_res->get().get_state() && "Computed resolver found to be inactive.");
-                    c_res->get().apply();
+                    any_res.push_back(c_res->get().get_rho());
+                    try
+                    {
+                        c_res->get().apply();
+                        if (c_res->get().get_state() != utils::True)
+                            c_res->get().retract();
+                    }
+                    catch (const std::exception &e)
+                    {
+                        c_res->get().retract();
+                        if (auto lin_cnfl = lin_slv.get_conflict(); !lin_cnfl.empty())
+                        {
+                            std::vector<utils::lit> ac_cnfl;
+                            for (const auto &l_cnstr : lin_cnfl)
+                                for (const auto &res : resolvers)
+                                    if (l_cnstr == res->cnst)
+                                        ac_cnfl.push_back(!res->get_rho());
+                            ac_slv.add_constraint(ac_slv.new_clause(std::move(ac_cnfl)));
+                            if (!ac_slv.propagate())
+                                throw std::runtime_error("Unsatisfiable constraints");
+                        }
+                    }
+                    c_res.reset();
+                    CURRENT_RESOLVER(c_res);
                 }
-                c_res.reset();
+                assert((any_res.size() > 1 || ac_slv.sat_val(any_res[0]) == utils::True) && "Single resolver must be active.");
+                // at least one resolver must be active..
+                ac_slv.add_constraint(ac_slv.new_clause(std::move(any_res)));
+                if (!ac_slv.propagate())
+                    throw std::runtime_error("Unsatisfiable constraints");
             }
             compute_flaw_cost(c_flaw->get());
             c_flaw.reset();
