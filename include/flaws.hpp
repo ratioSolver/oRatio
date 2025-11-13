@@ -87,15 +87,16 @@ namespace ratio
 
   protected:
     [[nodiscard]] solver &get_solver() const noexcept { return f.slv; }
+    [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept;
 
     void new_clause(std::vector<utils::lit> &&lits);
+
+    void retract() noexcept;
 
   private:
     virtual void apply() = 0;
 
     void on_domain_changed(const utils::var v) noexcept override;
-
-    void retract() noexcept;
 
   private:
     flaw &f;                                                            // the flaw solved by this resolver..

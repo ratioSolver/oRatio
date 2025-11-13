@@ -61,17 +61,18 @@ namespace ratio
 #endif
     }
     utils::lbool resolver::get_state() const noexcept { return f.slv.ac_slv.sat_val(rho); }
-    void resolver::on_domain_changed(const utils::var v) noexcept
-    {
-        assert(utils::variable(rho) == v && "Domain change notified for a variable not associated with this resolver.");
-        f.slv.resolver_state_changed(*this);
-    }
     void resolver::retract() noexcept
     {
         f.slv.lin_slv.retract(cnst);
         for (auto &ac_cnst : ac_cnsts)
             f.slv.ac_slv.retract(ac_cnst);
     }
+    void resolver::on_domain_changed(const utils::var v) noexcept
+    {
+        assert(utils::variable(rho) == v && "Domain change notified for a variable not associated with this resolver.");
+        f.slv.resolver_state_changed(*this);
+    }
+    bool resolver::execute(const riddle::bool_expr &expr) noexcept { return f.get_solver().execute(expr); }
     void resolver::new_clause(std::vector<utils::lit> &&lits)
     {
         auto clause = get_solver().ac_slv.new_clause(std::move(lits));
@@ -189,6 +190,13 @@ namespace ratio
     unify_atom::unify_atom(atom_flaw &f, riddle::atom_expr atm) noexcept : resolver(f, 1), atm(std::move(atm)) {}
     void unify_atom::apply()
     {
+        if (execute(get_solver().new_eq(static_cast<atom_flaw &>(get_flaw()).get_atom(), atm)))
+        {
+            //  - we make the current atom's sigma false (unified atom)..
+            new_clause({!get_rho(), !static_cast<atom &>(*static_cast<atom_flaw &>(get_flaw()).get_atom()).get_sigma()});
+            //  - and we make the target atom's sigma true (active atom)..
+            new_clause({!get_rho(), static_cast<atom &>(*atm).get_sigma()});
+        }
     }
     json::json unify_atom::to_json() const
     {

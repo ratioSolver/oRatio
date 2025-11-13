@@ -8,7 +8,6 @@
 #define STATE_CHANGED() state_changed()
 #define FLAW_STATE_CHANGED(f) flaw_state_changed(f)
 #define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
-#define FLAW_POSITION_CHANGED(f) flaw_position_changed(f)
 #define RESOLVER_STATE_CHANGED(r) resolver_state_changed(r)
 #define NEW_CAUSAL_LINK(f, r) causal_link_added(f, r)
 #define CURRENT_FLAW(f) current_flaw(f)
@@ -17,7 +16,6 @@
 #define STATE_CHANGED()
 #define FLAW_STATE_CHANGED(f)
 #define FLAW_COST_CHANGED(f)
-#define FLAW_POSITION_CHANGED(f)
 #define RESOLVER_STATE_CHANGED(r)
 #define NEW_CAUSAL_LINK(f, r)
 #define CURRENT_FLAW(f)
@@ -221,7 +219,7 @@ namespace ratio
                     try
                     {
                         c_res->get().apply();
-                        if (c_res->get().get_state() != utils::True)
+                        if (!lin_slv.check() || !ac_slv.propagate() || c_res->get().get_state() != utils::True)
                             c_res->get().retract();
                     }
                     catch (const std::exception &e)
@@ -249,6 +247,7 @@ namespace ratio
             }
             compute_flaw_cost(c_flaw->get());
             c_flaw.reset();
+            CURRENT_FLAW(c_flaw);
             active_flaws.erase(it);
             it = std::find_if(active_flaws.begin(), active_flaws.end(), [](flaw *f)
                               { return utils::is_positive_infinite(f->get_estimated_cost()); });
@@ -454,7 +453,7 @@ namespace ratio
                 {
                     auto rhs_atm = static_cast<riddle::atom_term *>(eq_xpr->get_rhs().get());
                     std::queue<riddle::predicate *> q;
-                    q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
+                    q.push(static_cast<riddle::predicate *>(&rhs_atm->get_type()));
                     while (!q.empty())
                     {
                         for (const auto &[f_name, f] : q.front()->get_fields())
