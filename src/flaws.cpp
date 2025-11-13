@@ -34,11 +34,12 @@ namespace ratio
     }
 
     resolver::resolver(flaw &f, utils::rational &&intrinsic_cost) noexcept : resolver(f, std::move(intrinsic_cost), f.slv.ac_slv.new_sat()) {}
-    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : listener(f.slv.ac_slv), f(f), intrinsic_cost(std::move(intrinsic_cost)), rho(rho), cnst(std::make_shared<linspire::constraint>())
+    resolver::resolver(flaw &f, utils::rational &&intrinsic_cost, const utils::lit &rho) noexcept : listener(f.slv.ac_slv), f(f), intrinsic_cost(std::move(intrinsic_cost)), rho(rho)
     {
         f.resolvers.push_back(*this);
         if (get_state() == utils::Undefined) // if the resolver is not yet active or forbidden, we need to monitor its state..
             listen_to(utils::variable(rho));
+        f.slv.lin_cnst_to_resolvers[&cnst].push_back(*this);
     }
     utils::rational resolver::get_estimated_cost() const noexcept
     {
@@ -67,8 +68,7 @@ namespace ratio
     }
     void resolver::retract() noexcept
     {
-        if (cnst)
-            f.slv.lin_slv.retract(cnst);
+        f.slv.lin_slv.retract(cnst);
         for (auto &ac_cnst : ac_cnsts)
             f.slv.ac_slv.retract(ac_cnst);
     }

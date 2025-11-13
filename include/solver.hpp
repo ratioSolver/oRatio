@@ -208,12 +208,13 @@ namespace ratio
 #endif
 
   private:
-    arc_consistency::solver ac_slv;                        // The arc consistency solver..
-    linspire::solver lin_slv;                              // The linear solver..
-    std::vector<std::unique_ptr<flaw>> flaws;              // The set of flaws
-    std::vector<std::unique_ptr<resolver>> resolvers;      // The set of resolvers
-    std::optional<std::reference_wrapper<flaw>> c_flaw;    // The current flaw..
-    std::optional<std::reference_wrapper<resolver>> c_res; // The current resolver..
-    std::unordered_set<flaw *> active_flaws;               // the currently active flaws..
+    arc_consistency::solver ac_slv;                                                                                  // The arc consistency solver..
+    linspire::solver lin_slv;                                                                                        // The linear solver..
+    std::vector<std::unique_ptr<flaw>> flaws;                                                                        // The set of flaws
+    std::vector<std::unique_ptr<resolver>> resolvers;                                                                // The set of resolvers
+    std::optional<std::reference_wrapper<flaw>> c_flaw;                                                              // The current flaw..
+    std::optional<std::reference_wrapper<resolver>> c_res;                                                           // The current resolver..
+    std::unordered_set<flaw *> active_flaws;                                                                         // the currently active flaws..
+    std::unordered_map<linspire::constraint *, std::vector<std::reference_wrapper<resolver>>> lin_cnst_to_resolvers; // mapping from linear constraints to the resolvers using them..
   };
 } // namespace ratio

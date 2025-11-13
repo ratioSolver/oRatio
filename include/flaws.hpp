@@ -102,7 +102,7 @@ namespace ratio
     utils::rational intrinsic_cost;                                     // the intrinsic cost of this resolver..
     const utils::lit rho;                                               // the rho literal indicating whether the resolver is active or not..
     std::vector<std::reference_wrapper<flaw>> preconditions;            // the preconditions of this resolver..
-    std::shared_ptr<linspire::constraint> cnst;                         // the constraint associated with this resolver..
+    linspire::constraint cnst;                                          // the constraint associated with this resolver..
     std::vector<std::shared_ptr<arc_consistency::constraint>> ac_cnsts; // the arc consistency constraints associated with this resolver..
   };
 

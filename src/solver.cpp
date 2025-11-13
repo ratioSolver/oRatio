@@ -172,7 +172,7 @@ namespace ratio
 
             auto ac_cnstr = ac_slv.new_clause(std::move(clause));
             if (c_res) // if there is a current resolver, add the expression to it..
-                c_res.value().get().ac_cnsts.push_back(ac_cnstr);
+                c_res->get().ac_cnsts.push_back(ac_cnstr);
             else
                 ac_slv.add_constraint(ac_cnstr);
             new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
@@ -231,9 +231,8 @@ namespace ratio
                         {
                             std::vector<utils::lit> ac_cnfl;
                             for (const auto &l_cnstr : lin_cnfl)
-                                for (const auto &res : resolvers)
-                                    if (l_cnstr == res->cnst)
-                                        ac_cnfl.push_back(!res->get_rho());
+                                for (const auto &res : lin_cnst_to_resolvers.at(&l_cnstr.get()))
+                                    ac_cnfl.push_back(res.get().get_rho());
                             ac_slv.add_constraint(ac_slv.new_clause(std::move(ac_cnfl)));
                             if (!ac_slv.propagate())
                                 throw std::runtime_error("Unsatisfiable constraints");
@@ -310,13 +309,13 @@ namespace ratio
                 auto a_cnstr = ac_slv.new_assign(utils::variable(b_xpr->get_lit()), utils::sign(b_xpr->get_lit()) ? arc_consistency::solver::False : arc_consistency::solver::True);
                 ac_slv.add_constraint(a_cnstr);
                 if (c_res)
-                    c_res.value().get().ac_cnsts.push_back(a_cnstr);
+                    c_res->get().ac_cnsts.push_back(a_cnstr);
                 return true;
             }
             else if (auto lt_xpr = dynamic_cast<riddle::lt_term *>(n_xpr->get_arg().get()))
-                return lin_slv.new_gt(static_cast<riddle::arith_item *>(lt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(lt_xpr->get_rhs().get())->get_lin(), false, c_res ? c_res.value().get().cnst : nullptr);
+                return lin_slv.new_gt(static_cast<riddle::arith_item *>(lt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(lt_xpr->get_rhs().get())->get_lin(), false, c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
             else if (auto le_xpr = dynamic_cast<riddle::le_term *>(n_xpr->get_arg().get()))
-                return lin_slv.new_gt(static_cast<riddle::arith_item *>(le_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(le_xpr->get_rhs().get())->get_lin(), true, c_res ? c_res.value().get().cnst : nullptr);
+                return lin_slv.new_gt(static_cast<riddle::arith_item *>(le_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(le_xpr->get_rhs().get())->get_lin(), true, c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
             else if (auto eq_xpr = dynamic_cast<riddle::eq_term *>(n_xpr->get_arg().get()))
             {
                 if (&*eq_xpr->get_lhs() == &*eq_xpr->get_rhs()) // the terms are the same, so they are equal..
@@ -335,7 +334,7 @@ namespace ratio
                     auto neq_cnstr = ac_slv.new_distinct(utils::variable(lhs_bxpr->get_lit()), utils::variable(static_cast<riddle::bool_item &>(*eq_xpr->get_rhs()).get_lit()));
                     ac_slv.add_constraint(neq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
-                        c_res.value().get().ac_cnsts.push_back(neq_cnstr);
+                        c_res->get().ac_cnsts.push_back(neq_cnstr);
                     return true;
                 }
                 else if (auto lhs_enum_xpr = dynamic_cast<riddle::enum_item *>(eq_xpr->get_lhs().get())) // we are dealing with an enum constraint..
@@ -345,7 +344,7 @@ namespace ratio
                         auto neq_cnstr = ac_slv.new_distinct(lhs_enum_xpr->get_var(), rhs_enum_xpr->get_var());
                         ac_slv.add_constraint(neq_cnstr);
                         if (c_res) // if there is a current resolver, add the expression to it..
-                            c_res.value().get().ac_cnsts.push_back(neq_cnstr);
+                            c_res->get().ac_cnsts.push_back(neq_cnstr);
                         return true;
                     }
                     else
@@ -353,7 +352,7 @@ namespace ratio
                         auto neq_cnstr = ac_slv.new_forbid(lhs_enum_xpr->get_var(), *eq_xpr->get_rhs());
                         ac_slv.add_constraint(neq_cnstr);
                         if (c_res) // if there is a current resolver, add the expression to it..
-                            c_res.value().get().ac_cnsts.push_back(neq_cnstr);
+                            c_res->get().ac_cnsts.push_back(neq_cnstr);
                         return true;
                     }
                 }
@@ -362,7 +361,7 @@ namespace ratio
                     auto neq_cnstr = ac_slv.new_forbid(rhs_enum_xpr->get_var(), *eq_xpr->get_lhs());
                     ac_slv.add_constraint(neq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
-                        c_res.value().get().ac_cnsts.push_back(neq_cnstr);
+                        c_res->get().ac_cnsts.push_back(neq_cnstr);
                     return true;
                 }
                 else if (auto lhs_atm = dynamic_cast<riddle::atom_term *>(eq_xpr->get_lhs().get()))
@@ -386,9 +385,9 @@ namespace ratio
                     return true;
             }
             else if (auto ge_xpr = dynamic_cast<riddle::ge_term *>(n_xpr->get_arg().get()))
-                return lin_slv.new_lt(static_cast<riddle::arith_item *>(ge_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(ge_xpr->get_rhs().get())->get_lin(), false, c_res ? c_res.value().get().cnst : nullptr);
+                return lin_slv.new_lt(static_cast<riddle::arith_item *>(ge_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(ge_xpr->get_rhs().get())->get_lin(), false, c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
             else if (auto gt_xpr = dynamic_cast<riddle::gt_term *>(n_xpr->get_arg().get()))
-                return lin_slv.new_lt(static_cast<riddle::arith_item *>(gt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(gt_xpr->get_rhs().get())->get_lin(), true, c_res ? c_res.value().get().cnst : nullptr);
+                return lin_slv.new_lt(static_cast<riddle::arith_item *>(gt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(gt_xpr->get_rhs().get())->get_lin(), true, c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
             else
                 return false; // unknown expression inside negation..
         }
@@ -399,13 +398,13 @@ namespace ratio
                 auto a_cnstr = ac_slv.new_assign(utils::variable(b_xpr->get_lit()), utils::sign(b_xpr->get_lit()) ? arc_consistency::solver::True : arc_consistency::solver::False);
                 ac_slv.add_constraint(a_cnstr);
                 if (c_res)
-                    c_res.value().get().ac_cnsts.push_back(a_cnstr);
+                    c_res->get().ac_cnsts.push_back(a_cnstr);
                 return true;
             }
             else if (auto lt_xpr = dynamic_cast<riddle::lt_term *>(expr.get()))
-                return lin_slv.new_lt(static_cast<riddle::arith_item *>(lt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(lt_xpr->get_rhs().get())->get_lin(), true, c_res ? c_res.value().get().cnst : nullptr);
+                return lin_slv.new_lt(static_cast<riddle::arith_item *>(lt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(lt_xpr->get_rhs().get())->get_lin(), true, c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
             else if (auto le_xpr = dynamic_cast<riddle::le_term *>(expr.get()))
-                return lin_slv.new_lt(static_cast<riddle::arith_item *>(le_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(le_xpr->get_rhs().get())->get_lin(), false, c_res ? c_res.value().get().cnst : nullptr);
+                return lin_slv.new_lt(static_cast<riddle::arith_item *>(le_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(le_xpr->get_rhs().get())->get_lin(), false, c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
             else if (auto eq_xpr = dynamic_cast<riddle::eq_term *>(expr.get()))
             {
                 if (&*eq_xpr->get_lhs() == &*eq_xpr->get_rhs()) // the terms are the same, so they are equal..
@@ -413,7 +412,7 @@ namespace ratio
                 else if (&eq_xpr->get_lhs()->get_type() != &eq_xpr->get_lhs()->get_type()) // the types are different, so the constraint is always false..
                     return false;
                 else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(eq_xpr->get_lhs().get())) // we are dealing with an arithmetic constraint..
-                    return lin_slv.new_eq(lhs_xpr->get_lin(), static_cast<riddle::arith_item *>(eq_xpr->get_rhs().get())->get_lin(), c_res ? c_res.value().get().cnst : nullptr);
+                    return lin_slv.new_eq(lhs_xpr->get_lin(), static_cast<riddle::arith_item *>(eq_xpr->get_rhs().get())->get_lin(), c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
                 else if (auto lhs_sxpr = dynamic_cast<riddle::string_item *>(eq_xpr->get_lhs().get())) // we are dealing with a string constraint..
                     return lhs_sxpr->get_string() == static_cast<riddle::string_item &>(*eq_xpr->get_rhs()).get_string();
                 else if (auto lhs_bxpr = dynamic_cast<riddle::bool_item *>(eq_xpr->get_lhs().get())) // we are dealing with a boolean constraint..
@@ -421,7 +420,7 @@ namespace ratio
                     auto eq_cnstr = ac_slv.new_equal(utils::variable(lhs_bxpr->get_lit()), utils::variable(static_cast<riddle::bool_item &>(*eq_xpr->get_rhs()).get_lit()));
                     ac_slv.add_constraint(eq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
-                        c_res.value().get().ac_cnsts.push_back(eq_cnstr);
+                        c_res->get().ac_cnsts.push_back(eq_cnstr);
                     return true;
                 }
                 else if (auto lhs_enum_xpr = dynamic_cast<riddle::enum_item *>(eq_xpr->get_lhs().get())) // we are dealing with an enum constraint..
@@ -431,7 +430,7 @@ namespace ratio
                         auto eq_cnstr = ac_slv.new_equal(lhs_enum_xpr->get_var(), rhs_enum_xpr->get_var());
                         ac_slv.add_constraint(eq_cnstr);
                         if (c_res) // if there is a current resolver, add the expression to it..
-                            c_res.value().get().ac_cnsts.push_back(eq_cnstr);
+                            c_res->get().ac_cnsts.push_back(eq_cnstr);
                         return true;
                     }
                     else
@@ -439,7 +438,7 @@ namespace ratio
                         auto eq_cnstr = ac_slv.new_assign(lhs_enum_xpr->get_var(), *eq_xpr->get_rhs());
                         ac_slv.add_constraint(eq_cnstr);
                         if (c_res) // if there is a current resolver, add the expression to it..
-                            c_res.value().get().ac_cnsts.push_back(eq_cnstr);
+                            c_res->get().ac_cnsts.push_back(eq_cnstr);
                         return true;
                     }
                 }
@@ -448,7 +447,7 @@ namespace ratio
                     auto eq_cnstr = ac_slv.new_assign(rhs_enum_xpr->get_var(), *eq_xpr->get_lhs());
                     ac_slv.add_constraint(eq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
-                        c_res.value().get().ac_cnsts.push_back(eq_cnstr);
+                        c_res->get().ac_cnsts.push_back(eq_cnstr);
                     return true;
                 }
                 else if (auto lhs_atm = dynamic_cast<riddle::atom_term *>(eq_xpr->get_lhs().get())) // we are dealing with an atom constraint..
@@ -471,9 +470,9 @@ namespace ratio
                     return false;
             }
             else if (auto ge_xpr = dynamic_cast<riddle::ge_term *>(expr.get()))
-                return lin_slv.new_gt(static_cast<riddle::arith_item *>(ge_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(ge_xpr->get_rhs().get())->get_lin(), false, c_res ? c_res.value().get().cnst : nullptr);
+                return lin_slv.new_gt(static_cast<riddle::arith_item *>(ge_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(ge_xpr->get_rhs().get())->get_lin(), false, c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
             else if (auto gt_xpr = dynamic_cast<riddle::gt_term *>(expr.get()))
-                return lin_slv.new_gt(static_cast<riddle::arith_item *>(gt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(gt_xpr->get_rhs().get())->get_lin(), true, c_res ? c_res.value().get().cnst : nullptr);
+                return lin_slv.new_gt(static_cast<riddle::arith_item *>(gt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(gt_xpr->get_rhs().get())->get_lin(), true, c_res ? std::make_optional(std::ref(c_res->get().cnst)) : std::nullopt);
             else
                 return false; // unsupported expression, just return false..
         }
@@ -525,9 +524,9 @@ namespace ratio
             j_graph["resolvers"] = std::move(j_resolvers);
         }
         if (c_flaw)
-            j_graph["current_flaw"] = c_flaw.value().get().get_id();
+            j_graph["current_flaw"] = c_flaw->get().get_id();
         if (c_res)
-            j_graph["current_resolver"] = c_res.value().get().get_id();
+            j_graph["current_resolver"] = c_res->get().get_id();
 
         return j_graph;
     }
