@@ -77,8 +77,7 @@ namespace ratio
     {
         auto clause = get_solver().ac_slv.new_clause(std::move(lits));
         ac_cnsts.push_back(clause);
-        if (get_state() == utils::True)
-            get_solver().ac_slv.add_constraint(clause);
+        get_solver().ac_slv.add_constraint(clause);
     }
     json::json resolver::to_json() const
     {
