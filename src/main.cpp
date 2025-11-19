@@ -1,5 +1,5 @@
 #ifdef ORATIO_BUILD_SERVER
-#include "solver_server.hpp"
+#include "basic_solver_server.hpp"
 #include <thread>
 #else
 #include "solver.hpp"

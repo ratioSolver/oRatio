@@ -1,4 +1,4 @@
-#include "solver.hpp"
+#include "basic_solver.hpp"
 #include "logging.hpp"
 #include <chrono>
 #include <numeric>
@@ -28,7 +28,7 @@ int main(int argc, char const *argv[])
     {
         LOG_INFO("running test " + std::to_string(i + 1) + " of " + std::to_string(NUM_TESTS));
         auto start = std::chrono::high_resolution_clock::now();
-        ratio::solver slv;
+        ratio::basic_solver slv;
         try
         {
             slv.read(prob_names);

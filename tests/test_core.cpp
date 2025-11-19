@@ -1,9 +1,9 @@
-#include "solver.hpp"
+#include "basic_solver.hpp"
 #include <cassert>
 
 void test_basic_core()
 {
-    ratio::solver slv;
+    ratio::basic_solver slv;
 
     auto i0 = slv.new_int();
     auto i1 = slv.new_int();
