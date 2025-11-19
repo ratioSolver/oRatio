@@ -32,6 +32,8 @@ namespace ratio
 
   class resolver
   {
+    friend class basic_solver;
+
   public:
     resolver(flaw &flw, utils::rational &&intrinsic_cost) noexcept;
     resolver(const resolver &) = delete;
@@ -41,8 +43,10 @@ namespace ratio
     virtual void apply() = 0;
 
   protected:
-    flaw &flw;                      // The flaw this resolver addresses..
-    utils::rational intrinsic_cost; // The intrinsic cost of applying this resolver..
+    flaw &flw;                                                                 // The flaw this resolver addresses..
+    utils::rational intrinsic_cost;                                            // The intrinsic cost of applying this resolver..
+    linspire::constraint cnst;                                                 // The constraint associated with this resolver..
+    std::vector<std::reference_wrapper<arc_consistency::constraint>> ac_cnsts; // The arc consistency constraints associated with this resolver..
   };
 
   class basic_solver : public solver_core
