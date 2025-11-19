@@ -1,5 +1,7 @@
 #include "solver_core.hpp"
 #include "items.hpp"
+#include "logging.hpp"
+#include <cassert>
 
 namespace ratio
 {
@@ -31,4 +33,14 @@ namespace ratio
     riddle::string_expr solver_core::new_string() { return std::make_shared<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ""); }
     riddle::string_expr solver_core::new_string(std::string &&value) { return std::make_shared<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
     std::string solver_core::string_value(const riddle::string_term &expr) const noexcept { return static_cast<const riddle::string_item &>(expr).get_string(); }
+
+    std::vector<riddle::expr> solver_core::enum_value(const riddle::enum_term &expr) const noexcept
+    {
+        auto &dom = ac_slv.domain(static_cast<const riddle::enum_item &>(expr).get_var());
+        std::vector<riddle::expr> values;
+        for (auto ev_ptr : static_cast<const riddle::enum_item &>(expr).get_values())
+            if (dom.find(&*ev_ptr) != dom.end())
+                values.push_back(ev_ptr);
+        return values;
+    };
 } // namespace ratio

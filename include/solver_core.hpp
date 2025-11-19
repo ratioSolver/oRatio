@@ -34,7 +34,6 @@ namespace ratio
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
     [[nodiscard]] std::string string_value(const riddle::string_term &expr) const noexcept override;
 
-    [[nodiscard]] riddle::expr new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values) override;
     [[nodiscard]] std::vector<riddle::expr> enum_value(const riddle::enum_term &expr) const noexcept override;
 
     [[nodiscard]] riddle::arith_expr new_negation(riddle::arith_expr xpr) override;
@@ -53,8 +52,8 @@ namespace ratio
     [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
     [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;
 
-  private:
+  protected:
     arc_consistency::solver ac_slv; // The arc consistency solver..
-    linspire::solver lin_slv;
+    linspire::solver lin_slv;       // The linear programming solver..
   };
 } // namespace ratio
