@@ -43,9 +43,6 @@ namespace ratio
     [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::arith_expr> &&xprs) override;
     [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::arith_expr> &&xprs) override;
 
-    void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
-    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
-
     virtual void solve() = 0;
 
   private:

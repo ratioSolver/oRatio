@@ -43,4 +43,77 @@ namespace ratio
                 values.push_back(ev_ptr);
         return values;
     };
+
+    riddle::arith_expr solver_core::new_negation(riddle::arith_expr xpr)
+    {
+        if (xpr->get_type().get_name() == riddle::int_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), -static_cast<const riddle::arith_item &>(*xpr).get_lin());
+        else if (xpr->get_type().get_name() == riddle::real_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), -static_cast<const riddle::arith_item &>(*xpr).get_lin());
+        else
+            throw std::runtime_error("Invalid type");
+    }
+
+    riddle::arith_expr solver_core::new_sum(std::vector<riddle::arith_expr> &&xprs)
+    {
+        assert(xprs.size() > 1);
+        utils::lin sum;
+        for (const riddle::arith_expr &xpr : xprs)
+            sum += static_cast<const riddle::arith_item &>(*xpr).get_lin();
+        auto &tp = type_promotion(xprs);
+        if (tp.get_name() == riddle::int_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(sum));
+        else if (tp.get_name() == riddle::real_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(sum));
+        else
+            throw std::runtime_error("Invalid type");
+    }
+    riddle::arith_expr solver_core::new_subtraction(std::vector<riddle::arith_expr> &&xprs)
+    {
+        assert(xprs.size() > 1);
+        utils::lin sub = static_cast<const riddle::arith_item &>(*xprs[0]).get_lin();
+        for (size_t i = 1; i < xprs.size(); i++)
+            sub -= static_cast<const riddle::arith_item &>(*xprs[i]).get_lin();
+        auto &tp = type_promotion(xprs);
+        if (tp.get_name() == riddle::int_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(sub));
+        else if (tp.get_name() == riddle::real_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(sub));
+        else
+            throw std::runtime_error("Invalid type");
+    }
+    riddle::arith_expr solver_core::new_product(std::vector<riddle::arith_expr> &&xprs)
+    {
+        assert(xprs.size() > 1);
+        utils::lin prod;
+        for (const riddle::arith_expr &xpr : xprs)
+            if (static_cast<const riddle::arith_item &>(*xpr).get_lin().vars.empty())
+                prod *= static_cast<const riddle::arith_item &>(*xpr).get_lin().known_term;
+            else
+                throw std::runtime_error("Non-linear arithmetic not supported");
+        auto &tp = type_promotion(xprs);
+        if (tp.get_name() == riddle::int_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(prod));
+        else if (tp.get_name() == riddle::real_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(prod));
+        else
+            throw std::runtime_error("Invalid type");
+    }
+    riddle::arith_expr solver_core::new_division(std::vector<riddle::arith_expr> &&xprs)
+    {
+        assert(xprs.size() > 1);
+        utils::lin div = static_cast<const riddle::arith_item &>(*xprs[0]).get_lin();
+        for (size_t i = 1; i < xprs.size(); i++)
+            if (static_cast<const riddle::arith_item &>(*xprs[i]).get_lin().vars.empty())
+                div /= static_cast<const riddle::arith_item &>(*xprs[i]).get_lin().known_term;
+            else
+                throw std::runtime_error("Non-linear arithmetic not supported");
+        auto &tp = type_promotion(xprs);
+        if (tp.get_name() == riddle::int_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), std::move(div));
+        else if (tp.get_name() == riddle::real_kw)
+            return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(div));
+        else
+            throw std::runtime_error("Invalid type");
+    }
 } // namespace ratio

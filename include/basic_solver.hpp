@@ -18,7 +18,7 @@ namespace ratio
   class flaw
   {
   public:
-    flaw(basic_solver &slv) noexcept;
+    flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept;
     flaw(const flaw &) = delete;
     virtual ~flaw() = default;
 
@@ -26,7 +26,8 @@ namespace ratio
     virtual void compute_resolvers() = 0;
 
   protected:
-    basic_solver &slv; // The solver managing this flaw..
+    basic_solver &slv;                                    // The solver managing this flaw..
+    std::vector<std::reference_wrapper<resolver>> causes; // The causes of this flaw..
   };
 
   class resolver
@@ -50,6 +51,9 @@ namespace ratio
     basic_solver() noexcept;
 
     [[nodiscard]] riddle::expr new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values) override;
+
+    void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
+    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
 
     /**
      * @brief Creates a new flaw of the given type.
@@ -113,14 +117,16 @@ namespace ratio
 #endif
 
   private:
-    std::vector<std::unique_ptr<flaw>> flaws;         // The set of flaws
-    std::vector<std::unique_ptr<resolver>> resolvers; // The set of resolvers
+    std::vector<std::unique_ptr<flaw>> flaws;              // The set of flaws
+    std::vector<std::unique_ptr<resolver>> resolvers;      // The set of resolvers
+    std::optional<std::reference_wrapper<flaw>> c_flaw;    // The current flaw..
+    std::optional<std::reference_wrapper<resolver>> c_res; // The current resolver..
   };
 
   class enum_flaw final : public flaw
   {
   public:
-    enum_flaw(basic_solver &slv, riddle::enum_expr var) noexcept;
+    enum_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::enum_expr var) noexcept;
 
     [[nodiscard]] const riddle::enum_expr &get_var() const noexcept { return var; }
 
@@ -129,5 +135,33 @@ namespace ratio
 
   private:
     riddle::enum_expr var;
+  };
+
+  class clause_flaw final : public flaw
+  {
+  public:
+    clause_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause, const bool &exclusive = false) noexcept;
+
+    [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
+
+  private:
+    void compute_resolvers() override;
+
+  private:
+    std::vector<riddle::bool_expr> clause;
+  };
+
+  class disjunction_flaw final : public flaw
+  {
+  public:
+    disjunction_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+
+    [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
+
+  private:
+    void compute_resolvers() override;
+
+  private:
+    std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
   };
 } // namespace ratio
