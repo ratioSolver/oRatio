@@ -53,7 +53,7 @@ namespace ratio
     riddle::string_expr solver::new_string(std::string &&value) { return std::make_shared<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
     std::string solver::string_value(const riddle::string_term &expr) const noexcept { return static_cast<const riddle::string_item &>(expr).get_string(); }
 
-    riddle::enum_expr solver::new_enum(riddle::component_type &tp, std::vector<std::reference_wrapper<const utils::enum_val>> &&values)
+    riddle::enum_expr solver::new_enum(riddle::component_type &tp, std::vector<std::reference_wrapper<utils::enum_val>> &&values)
     {
         assert(!values.empty());
         std::vector<std::reference_wrapper<resolver>> causes;
@@ -168,7 +168,7 @@ namespace ratio
             for (const riddle::bool_expr &expr : exprs)
                 clause.push_back(static_cast<const riddle::bool_item &>(*expr).get_lit());
 
-            auto ac_cnstr = ac_slv.new_clause(std::move(clause));
+            auto &ac_cnstr = ac_slv.new_clause(std::move(clause));
             if (c_res) // if there is a current resolver, add the expression to it..
                 c_res->get().ac_cnsts.push_back(ac_cnstr);
             else
@@ -305,7 +305,7 @@ namespace ratio
         {
             if (auto b_xpr = dynamic_cast<riddle::bool_item *>(n_xpr->get_arg().get()))
             {
-                auto a_cnstr = ac_slv.new_assign(utils::variable(b_xpr->get_lit()), utils::sign(b_xpr->get_lit()) ? arc_consistency::solver::False : arc_consistency::solver::True);
+                auto &a_cnstr = ac_slv.new_assign(utils::variable(b_xpr->get_lit()), utils::sign(b_xpr->get_lit()) ? arc_consistency::solver::False : arc_consistency::solver::True);
                 ac_slv.add_constraint(a_cnstr);
                 if (c_res)
                     c_res->get().ac_cnsts.push_back(a_cnstr);
@@ -330,7 +330,7 @@ namespace ratio
                     return lhs_sxpr->get_string() != static_cast<riddle::string_item &>(*eq_xpr->get_rhs()).get_string();
                 else if (auto lhs_bxpr = dynamic_cast<riddle::bool_item *>(eq_xpr->get_lhs().get())) // we are dealing with a boolean constraint..
                 {
-                    auto neq_cnstr = ac_slv.new_distinct(utils::variable(lhs_bxpr->get_lit()), utils::variable(static_cast<riddle::bool_item &>(*eq_xpr->get_rhs()).get_lit()));
+                    auto &neq_cnstr = ac_slv.new_distinct(utils::variable(lhs_bxpr->get_lit()), utils::variable(static_cast<riddle::bool_item &>(*eq_xpr->get_rhs()).get_lit()));
                     ac_slv.add_constraint(neq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
                         c_res->get().ac_cnsts.push_back(neq_cnstr);
@@ -340,7 +340,7 @@ namespace ratio
                 {
                     if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(eq_xpr->get_rhs().get()))
                     { // both sides are enum items..
-                        auto neq_cnstr = ac_slv.new_distinct(lhs_enum_xpr->get_var(), rhs_enum_xpr->get_var());
+                        auto &neq_cnstr = ac_slv.new_distinct(lhs_enum_xpr->get_var(), rhs_enum_xpr->get_var());
                         ac_slv.add_constraint(neq_cnstr);
                         if (c_res) // if there is a current resolver, add the expression to it..
                             c_res->get().ac_cnsts.push_back(neq_cnstr);
@@ -348,7 +348,7 @@ namespace ratio
                     }
                     else
                     {
-                        auto neq_cnstr = ac_slv.new_forbid(lhs_enum_xpr->get_var(), *eq_xpr->get_rhs());
+                        auto &neq_cnstr = ac_slv.new_forbid(lhs_enum_xpr->get_var(), *eq_xpr->get_rhs());
                         ac_slv.add_constraint(neq_cnstr);
                         if (c_res) // if there is a current resolver, add the expression to it..
                             c_res->get().ac_cnsts.push_back(neq_cnstr);
@@ -357,7 +357,7 @@ namespace ratio
                 }
                 else if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(eq_xpr->get_rhs().get()))
                 {
-                    auto neq_cnstr = ac_slv.new_forbid(rhs_enum_xpr->get_var(), *eq_xpr->get_lhs());
+                    auto &neq_cnstr = ac_slv.new_forbid(rhs_enum_xpr->get_var(), *eq_xpr->get_lhs());
                     ac_slv.add_constraint(neq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
                         c_res->get().ac_cnsts.push_back(neq_cnstr);
@@ -394,7 +394,7 @@ namespace ratio
         {
             if (auto b_xpr = dynamic_cast<riddle::bool_item *>(expr.get()))
             {
-                auto a_cnstr = ac_slv.new_assign(utils::variable(b_xpr->get_lit()), utils::sign(b_xpr->get_lit()) ? arc_consistency::solver::True : arc_consistency::solver::False);
+                auto &a_cnstr = ac_slv.new_assign(utils::variable(b_xpr->get_lit()), utils::sign(b_xpr->get_lit()) ? arc_consistency::solver::True : arc_consistency::solver::False);
                 ac_slv.add_constraint(a_cnstr);
                 if (c_res)
                     c_res->get().ac_cnsts.push_back(a_cnstr);
@@ -416,7 +416,7 @@ namespace ratio
                     return lhs_sxpr->get_string() == static_cast<riddle::string_item &>(*eq_xpr->get_rhs()).get_string();
                 else if (auto lhs_bxpr = dynamic_cast<riddle::bool_item *>(eq_xpr->get_lhs().get())) // we are dealing with a boolean constraint..
                 {
-                    auto eq_cnstr = ac_slv.new_equal(utils::variable(lhs_bxpr->get_lit()), utils::variable(static_cast<riddle::bool_item &>(*eq_xpr->get_rhs()).get_lit()));
+                    auto &eq_cnstr = ac_slv.new_equal(utils::variable(lhs_bxpr->get_lit()), utils::variable(static_cast<riddle::bool_item &>(*eq_xpr->get_rhs()).get_lit()));
                     ac_slv.add_constraint(eq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
                         c_res->get().ac_cnsts.push_back(eq_cnstr);
@@ -426,7 +426,7 @@ namespace ratio
                 {
                     if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(eq_xpr->get_rhs().get()))
                     { // both sides are enum items..
-                        auto eq_cnstr = ac_slv.new_equal(lhs_enum_xpr->get_var(), rhs_enum_xpr->get_var());
+                        auto &eq_cnstr = ac_slv.new_equal(lhs_enum_xpr->get_var(), rhs_enum_xpr->get_var());
                         ac_slv.add_constraint(eq_cnstr);
                         if (c_res) // if there is a current resolver, add the expression to it..
                             c_res->get().ac_cnsts.push_back(eq_cnstr);
@@ -434,7 +434,7 @@ namespace ratio
                     }
                     else
                     {
-                        auto eq_cnstr = ac_slv.new_assign(lhs_enum_xpr->get_var(), *eq_xpr->get_rhs());
+                        auto &eq_cnstr = ac_slv.new_assign(lhs_enum_xpr->get_var(), *eq_xpr->get_rhs());
                         ac_slv.add_constraint(eq_cnstr);
                         if (c_res) // if there is a current resolver, add the expression to it..
                             c_res->get().ac_cnsts.push_back(eq_cnstr);
@@ -443,7 +443,7 @@ namespace ratio
                 }
                 else if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(eq_xpr->get_rhs().get()))
                 {
-                    auto eq_cnstr = ac_slv.new_assign(rhs_enum_xpr->get_var(), *eq_xpr->get_lhs());
+                    auto &eq_cnstr = ac_slv.new_assign(rhs_enum_xpr->get_var(), *eq_xpr->get_lhs());
                     ac_slv.add_constraint(eq_cnstr);
                     if (c_res) // if there is a current resolver, add the expression to it..
                         c_res->get().ac_cnsts.push_back(eq_cnstr);

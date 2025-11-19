@@ -65,7 +65,7 @@ namespace ratio
     {
         f.slv.lin_slv.retract(cnst);
         for (auto &ac_cnst : ac_cnsts)
-            f.slv.ac_slv.retract(ac_cnst);
+            f.slv.ac_slv.retract(ac_cnst.get());
     }
     void resolver::on_domain_changed(const utils::var v) noexcept
     {
@@ -75,7 +75,7 @@ namespace ratio
     bool resolver::execute(const riddle::bool_expr &expr) noexcept { return f.get_solver().execute(expr); }
     void resolver::new_clause(std::vector<utils::lit> &&lits)
     {
-        auto clause = get_solver().ac_slv.new_clause(std::move(lits));
+        auto &clause = get_solver().ac_slv.new_clause(std::move(lits));
         ac_cnsts.push_back(clause);
         get_solver().ac_slv.add_constraint(clause);
     }
