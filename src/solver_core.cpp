@@ -116,4 +116,40 @@ namespace ratio
         else
             throw std::runtime_error("Invalid type");
     }
+
+    bool solver_core::match(riddle::term &lhs, riddle::term &rhs) const
+    {
+        if (&lhs == &rhs) // the terms are the same, so they match..
+            return true;
+        else if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the terms cannot match..
+            return false;
+        else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with arithmetic terms..
+            return lin_slv.match(lhs_xpr->get_lin(), static_cast<riddle::arith_item &>(rhs).get_lin());
+        else if (auto lhs_bxpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with boolean terms..
+            return ac_slv.match(lhs_bxpr->get_lit(), static_cast<riddle::bool_item &>(rhs).get_lit());
+        else if (auto lhs_enum_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with enum terms..
+        {
+            if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
+                return ac_slv.match(lhs_enum_xpr->get_var(), rhs_enum_xpr->get_var());
+            else
+                return ac_slv.allows(lhs_enum_xpr->get_var(), rhs);
+        }
+        else if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with enum terms..
+            return ac_slv.allows(rhs_enum_xpr->get_var(), lhs);
+        else
+            throw std::runtime_error("Matching not supported for this term type");
+    }
+
+    riddle::atom_state solver_core::get_atom_state(const riddle::atom_term &atm) const noexcept
+    {
+        switch (ac_slv.sat_val(static_cast<const riddle::atom &>(atm).get_sigma()))
+        {
+        case utils::True:
+            return riddle::active;
+        case utils::False:
+            return riddle::unified;
+        default:
+            return riddle::inactive;
+        }
+    }
 } // namespace ratio

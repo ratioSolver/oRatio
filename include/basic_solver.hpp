@@ -99,6 +99,11 @@ namespace ratio
 
     void solve() override;
 
+  private:
+    [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
+
+    [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept;
+
 #ifdef ORATIO_ENABLE_LISTENERS
   private:
     /**
@@ -144,7 +149,7 @@ namespace ratio
   class clause_flaw final : public flaw
   {
   public:
-    clause_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause, const bool &exclusive = false) noexcept;
+    clause_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
 
     [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
 
@@ -167,5 +172,19 @@ namespace ratio
 
   private:
     std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
+  };
+
+  class atom_flaw final : public flaw
+  {
+  public:
+    atom_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept;
+
+    [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
+
+  private:
+    void compute_resolvers() override;
+
+  private:
+    riddle::atom_expr atm;
   };
 } // namespace ratio

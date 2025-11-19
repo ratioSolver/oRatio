@@ -45,8 +45,9 @@ namespace ratio
 
     virtual void solve() = 0;
 
+    [[nodiscard]] bool match(riddle::term &lhs, riddle::term &rhs) const;
+
   private:
-    [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
     [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;
 
   protected:
