@@ -85,6 +85,17 @@ namespace ratio
             current_node->open_flaws.erase(flaw_it);
             // Compute the resolvers for the selected flaw..
             compute_resolvers(flw);
+            if (flw.get_resolvers().size() == 1 && !current_node->open_flaws.empty() && ac_slv.propagate() && lin_slv.check())
+                fringe.push_back(current_node); // No branching, continue from here..
+            else if (flw.get_resolvers().size() > 1)
+                for (auto &res : flw.get_resolvers())
+                { // Create a new child node for each resolver..
+                    auto child_node = std::make_shared<Node>();
+                    child_node->parent = current_node;
+                    child_node->res = res;
+                    child_node->open_flaws = current_node->open_flaws;
+                    fringe.push_back(child_node);
+                }
         }
     }
 
@@ -159,14 +170,14 @@ namespace ratio
             {
                 if (a == atm)
                     continue; // the current atom cannot unify with itself..
-                if (slv.match(*atm, *a))
-                    slv.new_resolver<unify_atom>(*this, a);
+                if (get_solver().match(*atm, *a))
+                    get_solver().new_resolver<unify_atom>(*this, a);
             }
 
         if (atm->is_fact())
-            slv.new_resolver<activate_fact>(*this);
+            get_solver().new_resolver<activate_fact>(*this);
         else
-            slv.new_resolver<activate_goal>(*this);
+            get_solver().new_resolver<activate_goal>(*this);
     }
 
     json::json atom_flaw::to_json() const
@@ -178,9 +189,7 @@ namespace ratio
     }
 
     activate_fact::activate_fact(atom_flaw &f) noexcept : resolver(f, utils::rational(1)) {}
-    void activate_fact::apply()
-    {
-    }
+    void activate_fact::apply() { add_ac_constraint(get_ac().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::True)); }
 
     json::json activate_fact::to_json() const
     {
@@ -192,6 +201,8 @@ namespace ratio
     activate_goal::activate_goal(atom_flaw &f) noexcept : resolver(f, utils::rational(1)) {}
     void activate_goal::apply()
     {
+        add_ac_constraint(get_ac().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::True));
+        static_cast<riddle::predicate &>(static_cast<atom_flaw &>(flw).get_atom()->get_type()).call(static_cast<atom_flaw &>(flw).get_atom());
     }
 
     json::json activate_goal::to_json() const
@@ -204,6 +215,8 @@ namespace ratio
     unify_atom::unify_atom(atom_flaw &f, riddle::atom_expr atm) noexcept : resolver(f, utils::rational(2)), atm(std::move(atm)) {}
     void unify_atom::apply()
     {
+        execute(get_solver().new_eq(static_cast<atom_flaw &>(flw).get_atom(), atm));
+        add_ac_constraint(get_ac().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::False));
     }
 
     json::json unify_atom::to_json() const

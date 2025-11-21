@@ -18,6 +18,8 @@ namespace ratio
         for (auto &c : this->causes)
             c.get().preconditions.push_back(*this);
     }
+    linspire::solver &flaw::get_lin() const noexcept { return slv.lin_slv; }
+    arc_consistency::solver &flaw::get_ac() const noexcept { return slv.ac_slv; }
 
     json::json flaw::to_json() const
     {
@@ -33,6 +35,11 @@ namespace ratio
     }
 
     resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) noexcept : flw(flw), intrinsic_cost(std::move(intrinsic_cost)) { flw.resolvers.push_back(*this); }
+    void resolver::execute(const riddle::bool_expr &expr)
+    {
+        if (!get_solver().execute(expr))
+            throw std::runtime_error("Failed to execute expression in resolver");
+    }
 
     json::json resolver::to_json() const
     {
@@ -178,8 +185,27 @@ namespace ratio
         }
         else if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with enum terms..
             return ac_slv.allows(rhs_enum_xpr->get_var(), lhs);
-        else
-            throw std::runtime_error("Matching not supported for this term type");
+        else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
+        { // we are dealing with atoms..
+            auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
+            if (&lhs_xpr->get_type().get_scope() != &rhs_xpr->get_type().get_scope().get_core() && !match(*lhs_xpr->get(riddle::tau_kw), *rhs_xpr->get(riddle::tau_kw)))
+                return false; // the atoms are not in the same scope, so they cannot match..
+            // we check if the atoms' fields match..
+            std::queue<riddle::predicate *> q;
+            q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
+            while (!q.empty())
+            {
+                for (const auto &[f_name, f] : q.front()->get_fields())
+                    if (!match(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name)))
+                        return false;
+                for (const auto &pp : q.front()->get_parents())
+                    q.push(&pp.get());
+                q.pop();
+            }
+            return true;
+        }
+        else // we are dealing with components (and we have already checked their are not the same)..
+            return false;
     }
 
     bool solver_core::execute(const riddle::bool_expr &expr) noexcept
@@ -356,8 +382,10 @@ namespace ratio
         case 0:
             break;
         case 1:
+            c_res = flw.resolvers[0];
             CURRENT_RESOLVER(flw.resolvers[0].get());
             flw.resolvers[0].get().apply();
+            apply_resolver(flw.resolvers[0].get());
             break;
         default:
             for (auto &res : flw.resolvers)

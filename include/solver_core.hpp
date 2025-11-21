@@ -26,13 +26,16 @@ namespace ratio
 
     [[nodiscard]] virtual json::json to_json() const;
 
+  protected:
+    [[nodiscard]] solver_core &get_solver() const noexcept { return slv; }
+    [[nodiscard]] linspire::solver &get_lin() const noexcept;
+    [[nodiscard]] arc_consistency::solver &get_ac() const noexcept;
+
   private:
     virtual void compute_resolvers() = 0;
 
-  protected:
-    solver_core &slv; // The solver managing this flaw..
-
   private:
+    solver_core &slv;                                        // The solver managing this flaw..
     std::vector<std::reference_wrapper<resolver>> causes;    // The causes of this flaw..
     std::vector<std::reference_wrapper<resolver>> resolvers; // The resolvers for this flaw..
   };
@@ -55,6 +58,11 @@ namespace ratio
 
   protected:
     [[nodiscard]] solver_core &get_solver() const noexcept { return flw.slv; }
+    [[nodiscard]] linspire::solver &get_lin() const noexcept { return flw.get_lin(); }
+    [[nodiscard]] linspire::constraint &get_lin_constraint() noexcept { return cnst; }
+    [[nodiscard]] arc_consistency::solver &get_ac() const noexcept { return flw.get_ac(); }
+    void add_ac_constraint(arc_consistency::constraint &c) noexcept { ac_cnsts.push_back(c); }
+    void execute(const riddle::bool_expr &expr);
 
   private:
     virtual void apply() = 0;
@@ -71,6 +79,9 @@ namespace ratio
 
   class solver_core : public riddle::core
   {
+    friend class flaw;
+    friend class resolver;
+
   public:
     solver_core(std::string_view name = "oRatio") noexcept;
 
