@@ -18,6 +18,13 @@ namespace ratio
     void on_ws_close(network::ws_server_session_base &ws);
     void on_ws_error(network::ws_server_session_base &ws, const std::error_code &);
 
+    void state_changed() noexcept override;
+    void flaw_created(const flaw &f) noexcept override;
+    void resolver_created(const ratio::resolver &r) noexcept override;
+
+    void current_flaw(std::optional<std::reference_wrapper<ratio::flaw>> f) noexcept override;
+    void current_resolver(std::optional<std::reference_wrapper<ratio::resolver>> r) noexcept override;
+
   private:
     std::unordered_set<network::ws_server_session_base *> clients;
   };

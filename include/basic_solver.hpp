@@ -19,8 +19,21 @@ namespace ratio
   private:
     [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
 
+    struct Node
+    {
+      std::shared_ptr<Node> parent;                        // The parent node..
+      std::optional<std::reference_wrapper<resolver>> res; // The resolver applied to reach this node..
+      std::unordered_set<flaw *> open_flaws;               // The set of open flaws..
+    };
+    std::shared_ptr<Node> find_common_ancestor(std::shared_ptr<Node> a, std::shared_ptr<Node> b) const;
+
+    void backtrack_to(const std::shared_ptr<Node> &lca);
+
+    void go_to(const std::shared_ptr<Node> &target);
+
   private:
-    std::unordered_set<flaw *> open_flaws; // The set of open flaws..
+    std::shared_ptr<Node> current_node;        // The current node in the search tree..
+    std::vector<std::shared_ptr<Node>> fringe; // The fringe of the search tree..
   };
 
   class enum_flaw final : public flaw
@@ -71,6 +84,8 @@ namespace ratio
     atom_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept;
 
     [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
+
+    [[nodiscard]] json::json to_json() const override;
 
   private:
     void compute_resolvers() override;

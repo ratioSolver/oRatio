@@ -4,14 +4,6 @@
 #include "linspire.hpp"
 #include "arc_consistency.hpp"
 
-#ifdef ORATIO_ENABLE_LISTENERS
-#define NEW_FLAW(f) flaw_created(f)
-#define NEW_RESOLVER(r) resolver_created(r)
-#else
-#define NEW_FLAW(f)
-#define NEW_RESOLVER(r)
-#endif
-
 namespace ratio
 {
   class solver_core;
@@ -19,17 +11,29 @@ namespace ratio
 
   class flaw
   {
+    friend class solver_core;
+
   public:
     flaw(solver_core &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept;
     flaw(const flaw &) = delete;
     virtual ~flaw() = default;
 
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_causes() const noexcept { return causes; }
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_resolvers() const noexcept { return resolvers; }
+
+    [[nodiscard]] virtual json::json to_json() const;
+
   private:
     virtual void compute_resolvers() = 0;
 
   protected:
-    solver_core &slv;                                     // The solver managing this flaw..
-    std::vector<std::reference_wrapper<resolver>> causes; // The causes of this flaw..
+    solver_core &slv; // The solver managing this flaw..
+
+  private:
+    std::vector<std::reference_wrapper<resolver>> causes;    // The causes of this flaw..
+    std::vector<std::reference_wrapper<resolver>> resolvers; // The resolvers for this flaw..
   };
 
   class resolver
@@ -41,14 +45,23 @@ namespace ratio
     resolver(const resolver &) = delete;
     virtual ~resolver() = default;
 
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+
+    [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+
+    [[nodiscard]] virtual json::json to_json() const;
+
   private:
     virtual void apply() = 0;
 
   protected:
-    flaw &flw;                                                                 // The flaw this resolver addresses..
-    utils::rational intrinsic_cost;                                            // The intrinsic cost of applying this resolver..
+    flaw &flw;                            // The flaw this resolver addresses..
+    const utils::rational intrinsic_cost; // The intrinsic cost of applying this resolver..
+
+  private:
     linspire::constraint cnst;                                                 // The constraint associated with this resolver..
     std::vector<std::reference_wrapper<arc_consistency::constraint>> ac_cnsts; // The arc consistency constraints associated with this resolver..
+    std::vector<std::reference_wrapper<flaw>> preconditions;                   // The preconditions of this resolver..
   };
 
   class solver_core : public riddle::core
@@ -102,7 +115,9 @@ namespace ratio
       static_assert(std::is_base_of_v<flaw, Tp>, "Tp must be a subclass of flaw");
       auto f = std::make_unique<Tp>(std::forward<Args>(args)...);
       auto &f_ref = *f;
-      NEW_FLAW(f_ref);
+#ifdef ORATIO_ENABLE_LISTENERS
+      flaw_created(f_ref);
+#endif
       flaws.emplace_back(std::move(f));
       return f_ref;
     }
@@ -121,7 +136,9 @@ namespace ratio
       static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
       auto r = std::make_unique<Tp>(std::forward<Args>(args)...);
       auto &r_ref = *r;
-      NEW_RESOLVER(r_ref);
+#ifdef ORATIO_ENABLE_LISTENERS
+      resolver_created(r_ref);
+#endif
       resolvers.emplace_back(std::move(r));
       return r_ref;
     }
@@ -137,11 +154,26 @@ namespace ratio
 
     std::vector<std::reference_wrapper<resolver>> get_causes() const noexcept;
 
+    void compute_resolvers(flaw &flw) noexcept;
+
+    void apply_resolver(resolver &res) noexcept;
+
+    void retract_resolver(resolver &res) noexcept;
+
   private:
     [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;
 
 #ifdef ORATIO_ENABLE_LISTENERS
   private:
+    /**
+     * @brief This function is called when the state of the solver changes.
+     *
+     * This function should be overridden by derived classes to handle the state change event.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void state_changed() noexcept {}
+
     /**
      * @brief Notifies that a new flaw has been created.
      *
@@ -149,7 +181,7 @@ namespace ratio
      *
      * @param f The newly created flaw.
      */
-    virtual void flaw_created([[maybe_unused]] flaw &f) noexcept {}
+    virtual void flaw_created([[maybe_unused]] const flaw &f) noexcept {}
 
     /**
      * @brief Notifies that a new resolver has been created.
@@ -158,7 +190,25 @@ namespace ratio
      *
      * @param r The newly created resolver.
      */
-    virtual void resolver_created([[maybe_unused]] resolver &r) noexcept {}
+    virtual void resolver_created([[maybe_unused]] const resolver &r) noexcept {}
+
+    /**
+     * @brief Notifies about the current flaw being processed.
+     *
+     * This function is called to inform about the current flaw being processed in the solver.
+     *
+     * @param The current flaw being processed.
+     */
+    virtual void current_flaw([[maybe_unused]] std::optional<std::reference_wrapper<ratio::flaw>>) noexcept {}
+
+    /**
+     * @brief Notifies about the current resolver being applied.
+     *
+     * This function is called to inform about the current resolver being applied in the solver.
+     *
+     * @param The current resolver being applied.
+     */
+    virtual void current_resolver([[maybe_unused]] std::optional<std::reference_wrapper<ratio::resolver>>) noexcept {}
 #endif
 
   protected:

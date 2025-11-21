@@ -39,4 +39,54 @@ namespace ratio
         clients.erase(&ws);
         LOG_DEBUG("Connected clients: " + std::to_string(clients.size()));
     }
+
+    void server::state_changed() noexcept
+    {
+        auto j_msg = riddle::core::to_json();
+        j_msg["msg_type"] = "state_changed";
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+
+    void server::flaw_created(const ratio::flaw &f) noexcept
+    {
+        auto j_msg = f.to_json();
+        j_msg["id"] = static_cast<uint64_t>(f.get_id());
+        j_msg["cost"] = linspire::to_json(utils::rational::zero);
+        j_msg["state"] = "active";
+        j_msg["msg_type"] = "flaw_created";
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+    void server::current_flaw(std::optional<std::reference_wrapper<ratio::flaw>> f) noexcept
+    {
+        auto j_msg = json::json{{"msg_type", "current_flaw"}};
+        if (f)
+            j_msg["id"] = f.value().get().get_id();
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+
+    void server::resolver_created(const ratio::resolver &r) noexcept
+    {
+        auto j_msg = r.to_json();
+        j_msg["id"] = r.get_id();
+        j_msg["state"] = "active";
+        j_msg["msg_type"] = "resolver_created";
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+    void server::current_resolver(std::optional<std::reference_wrapper<ratio::resolver>> r) noexcept
+    {
+        auto j_msg = json::json{{"msg_type", "current_resolver"}};
+        if (r)
+            j_msg["id"] = r.value().get().get_id();
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
 } // namespace ratio

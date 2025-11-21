@@ -3,11 +3,45 @@
 #include "logging.hpp"
 #include <cassert>
 
+#ifdef ORATIO_ENABLE_LISTENERS
+#define CURRENT_FLAW(f) current_flaw(f)
+#define CURRENT_RESOLVER(r) current_resolver(r)
+#else
+#define CURRENT_FLAW(f)
+#define CURRENT_RESOLVER(r)
+#endif
+
 namespace ratio
 {
     flaw::flaw(solver_core &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept : slv(slv), causes(std::move(causes)) {}
 
+    json::json flaw::to_json() const
+    {
+        json::json j_flaw;
+        if (!causes.empty())
+        {
+            json::json j_causes(json::json_type::array);
+            for (const auto &c : causes)
+                j_causes.push_back(c.get().get_id());
+            j_flaw["causes"] = std::move(j_causes);
+        }
+        return j_flaw;
+    }
+
     resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) noexcept : flw(flw), intrinsic_cost(std::move(intrinsic_cost)) {}
+
+    json::json resolver::to_json() const
+    {
+        json::json j_resolver{{"flaw", flw.get_id()}, {"intrinsic_cost", linspire::to_json(intrinsic_cost)}};
+        if (!preconditions.empty())
+        {
+            json::json j_preconditions(json::json_type::array);
+            for (const auto &p : preconditions)
+                j_preconditions.push_back(p.get().get_id());
+            j_resolver["preconditions"] = std::move(j_preconditions);
+        }
+        return j_resolver;
+    }
 
     solver_core::solver_core(std::string_view name) noexcept : riddle::core(name) {}
 
@@ -306,6 +340,47 @@ namespace ratio
             return {c_res->get()};
         else
             return {};
+    }
+
+    void solver_core::compute_resolvers(flaw &flw) noexcept
+    {
+        c_flaw = flw;
+        CURRENT_FLAW(flw);
+        flw.compute_resolvers();
+        switch (flw.resolvers.size())
+        {
+        case 0:
+            break;
+        case 1:
+            CURRENT_RESOLVER(flw.resolvers[0].get());
+            flw.resolvers[0].get().apply();
+            break;
+        default:
+            for (auto &res : flw.resolvers)
+            {
+                c_res = res;
+                CURRENT_RESOLVER(res.get());
+                res.get().apply();
+            }
+        }
+        c_res = std::nullopt;
+        CURRENT_RESOLVER(std::nullopt);
+        c_flaw = std::nullopt;
+        CURRENT_FLAW(std::nullopt);
+    }
+
+    void solver_core::apply_resolver(resolver &res) noexcept
+    {
+        lin_slv.add_constraint(res.cnst);
+        for (auto &ac_cnst : res.ac_cnsts)
+            ac_slv.add_constraint(ac_cnst);
+    }
+
+    void solver_core::retract_resolver(resolver &res) noexcept
+    {
+        lin_slv.retract(res.cnst);
+        for (auto &ac_cnst : res.ac_cnsts)
+            ac_slv.retract(ac_cnst);
     }
 
     riddle::atom_state solver_core::get_atom_state(const riddle::atom_term &atm) const noexcept
