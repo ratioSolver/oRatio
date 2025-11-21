@@ -151,13 +151,66 @@ namespace ratio
 
     atom_flaw::atom_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<riddle::atom>(pred, is_fact, std::move(args), std::move(sigma))) {}
 
-    void atom_flaw::compute_resolvers() {}
+    void atom_flaw::compute_resolvers()
+    {
+        assert(atm->get_state() == riddle::atom_state::inactive);
+        for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
+            if (a->get_state() == riddle::atom_state::active)
+            {
+                if (a == atm)
+                    continue; // the current atom cannot unify with itself..
+                if (slv.match(*atm, *a))
+                    slv.new_resolver<unify_atom>(*this, a);
+            }
+
+        if (atm->is_fact())
+            slv.new_resolver<activate_fact>(*this);
+        else
+            slv.new_resolver<activate_goal>(*this);
+    }
 
     json::json atom_flaw::to_json() const
     {
         auto j = flaw::to_json();
         j["data"]["type"] = "atom";
         j["data"]["atom"] = {{"id", atm->get_id()}, {"is_fact", atm->is_fact()}, {"predicate", atm->get_type().get_name()}};
+        return j;
+    }
+
+    activate_fact::activate_fact(atom_flaw &f) noexcept : resolver(f, utils::rational(1)) {}
+    void activate_fact::apply()
+    {
+    }
+
+    json::json activate_fact::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "activate_fact";
+        return j;
+    }
+
+    activate_goal::activate_goal(atom_flaw &f) noexcept : resolver(f, utils::rational(1)) {}
+    void activate_goal::apply()
+    {
+    }
+
+    json::json activate_goal::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "activate_goal";
+        return j;
+    }
+
+    unify_atom::unify_atom(atom_flaw &f, riddle::atom_expr atm) noexcept : resolver(f, utils::rational(2)), atm(std::move(atm)) {}
+    void unify_atom::apply()
+    {
+    }
+
+    json::json unify_atom::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "unify_atom";
+        j["data"]["atom_id"] = atm->get_id();
         return j;
     }
 } // namespace ratio

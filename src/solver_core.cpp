@@ -13,7 +13,11 @@
 
 namespace ratio
 {
-    flaw::flaw(solver_core &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept : slv(slv), causes(std::move(causes)) {}
+    flaw::flaw(solver_core &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept : slv(slv), causes(std::move(causes))
+    {
+        for (auto &c : this->causes)
+            c.get().preconditions.push_back(*this);
+    }
 
     json::json flaw::to_json() const
     {
@@ -28,7 +32,7 @@ namespace ratio
         return j_flaw;
     }
 
-    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) noexcept : flw(flw), intrinsic_cost(std::move(intrinsic_cost)) {}
+    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) noexcept : flw(flw), intrinsic_cost(std::move(intrinsic_cost)) { flw.resolvers.push_back(*this); }
 
     json::json resolver::to_json() const
     {

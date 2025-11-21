@@ -12,6 +12,7 @@ namespace ratio
   class flaw
   {
     friend class solver_core;
+    friend class resolver;
 
   public:
     flaw(solver_core &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept;
@@ -39,6 +40,7 @@ namespace ratio
   class resolver
   {
     friend class solver_core;
+    friend class flaw;
 
   public:
     resolver(flaw &flw, utils::rational &&intrinsic_cost) noexcept;
@@ -50,6 +52,9 @@ namespace ratio
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
 
     [[nodiscard]] virtual json::json to_json() const;
+
+  protected:
+    [[nodiscard]] solver_core &get_solver() const noexcept { return flw.slv; }
 
   private:
     virtual void apply() = 0;

@@ -93,4 +93,40 @@ namespace ratio
   private:
     riddle::atom_expr atm;
   };
+
+  class activate_fact final : public resolver
+  {
+  public:
+    activate_fact(atom_flaw &f) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+  };
+
+  class activate_goal final : public resolver
+  {
+  public:
+    activate_goal(atom_flaw &f) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+  };
+
+  class unify_atom final : public resolver
+  {
+  public:
+    unify_atom(atom_flaw &f, riddle::atom_expr atm) noexcept;
+
+  private:
+    void apply() override;
+
+    json::json to_json() const override;
+
+  private:
+    riddle::atom_expr atm; // the atom to unify with..
+  };
 } // namespace ratio
