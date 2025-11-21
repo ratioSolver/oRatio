@@ -384,16 +384,31 @@ namespace ratio
         case 1:
             c_res = flw.resolvers[0];
             CURRENT_RESOLVER(flw.resolvers[0].get());
-            flw.resolvers[0].get().apply();
-            apply_resolver(flw.resolvers[0].get());
+            try
+            {
+                flw.resolvers[0].get().apply();
+                apply_resolver(flw.resolvers[0].get());
+            }
+            catch (std::exception &)
+            { // if applying the resolver fails, we retract it..
+                retract_resolver(flw.resolvers[0].get());
+                flw.resolvers.clear();
+            }
             break;
         default:
-            for (auto &res : flw.resolvers)
-            {
-                c_res = res;
-                CURRENT_RESOLVER(res.get());
-                res.get().apply();
-            }
+            for (auto it = flw.resolvers.begin(); it != flw.resolvers.end();)
+                try
+                {
+                    it->get().apply();
+                    apply_resolver(it->get());
+                    ++it;
+                }
+                catch (std::exception &)
+                { // if applying the resolver fails, we retract it and remove it from the list..
+                    retract_resolver(it->get());
+                    it = flw.resolvers.erase(it);
+                }
+            break;
         }
         c_res = std::nullopt;
         CURRENT_RESOLVER(std::nullopt);
