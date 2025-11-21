@@ -85,9 +85,17 @@ namespace ratio
             current_node->open_flaws.erase(flaw_it);
             // Compute the resolvers for the selected flaw..
             compute_resolvers(flw);
-            if (flw.get_resolvers().size() == 1 && !current_node->open_flaws.empty() && ac_slv.propagate() && lin_slv.check())
-                fringe.push_back(current_node); // No branching, continue from here..
-            else if (flw.get_resolvers().size() > 1)
+            switch (flw.get_resolvers().size())
+            {
+            case 0: // This node is a dead end..
+                if (fringe.empty())
+                    throw std::runtime_error("No solution found");
+                break;
+            case 1: // No branching, continue from here..
+                if (ac_slv.propagate() && lin_slv.check() && !current_node->open_flaws.empty())
+                    fringe.push_back(current_node);
+                break;
+            default: // Create a new child node for each resolver..
                 for (auto &res : flw.get_resolvers())
                 { // Create a new child node for each resolver..
                     auto child_node = std::make_shared<Node>();
@@ -96,6 +104,7 @@ namespace ratio
                     child_node->open_flaws = current_node->open_flaws;
                     fringe.push_back(child_node);
                 }
+            }
         }
     }
 
