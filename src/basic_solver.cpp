@@ -24,6 +24,7 @@ namespace ratio
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
             auto &ef = new_flaw<enum_flaw>(*this, get_causes(), std::make_shared<riddle::enum_item>(tp, std::move(values), ev));
+            open_flaws.insert(&ef);
             return ef.get_var();
         }
     }
@@ -44,20 +45,27 @@ namespace ratio
                 clause.push_back(static_cast<const riddle::bool_item &>(*expr).get_lit());
 
             add_constraint(ac_slv.new_clause(std::move(clause)));
-            new_flaw<clause_flaw>(*this, get_causes(), std::move(exprs));
+            auto &cf = new_flaw<clause_flaw>(*this, get_causes(), std::move(exprs));
+            open_flaws.insert(&cf);
         }
     }
     void basic_solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
-        new_flaw<disjunction_flaw>(*this, get_causes(), std::move(disjuncts));
+        auto &df = new_flaw<disjunction_flaw>(*this, get_causes(), std::move(disjuncts));
+        open_flaws.insert(&df);
     }
 
-    void basic_solver::solve() {}
+    void basic_solver::solve()
+    {
+        if (!ac_slv.propagate() || !lin_slv.check())
+            throw std::runtime_error("Unsatisfiable constraints");
+    }
 
     riddle::atom_expr basic_solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
         auto &af = new_flaw<atom_flaw>(*this, get_causes(), is_fact, pred, std::move(args), ac_slv.new_sat());
+        open_flaws.insert(&af);
         return af.get_atom();
     }
 

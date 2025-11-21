@@ -18,6 +18,9 @@ namespace ratio
 
   private:
     [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
+
+  private:
+    std::unordered_set<flaw *> open_flaws; // The set of open flaws..
   };
 
   class enum_flaw final : public flaw
