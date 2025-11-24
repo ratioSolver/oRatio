@@ -85,19 +85,15 @@ namespace ratio
             current_node->open_flaws.erase(flaw_it);
             // Compute the resolvers for the selected flaw..
             compute_resolvers(flw);
-            switch (flw.get_resolvers().size())
-            {
-            case 0: // This node is a dead end..
-                if (fringe.empty())
-                    throw std::runtime_error("No solution found");
-                break;
-            case 1: // No branching, continue from here..
-                if (ac_slv.propagate() && lin_slv.check() && !current_node->open_flaws.empty())
-                    fringe.push_back(current_node);
-                break;
-            default: // Create a new child node for each resolver..
+            if (flw.get_resolvers().size() == 1 && ac_slv.propagate() && lin_slv.check())
+            { // If there is only one resolver and applying it does not lead to a conflict, continue from the current node..
+                fringe.push_back(current_node);
+                continue;
+            }
+            else if (flw.get_resolvers().size() > 1)
+            { // Create a new child node for each resolver..
                 for (auto &res : flw.get_resolvers())
-                { // Create a new child node for each resolver..
+                {
                     auto child_node = std::make_shared<Node>();
                     child_node->parent = current_node;
                     child_node->res = res;
@@ -106,6 +102,7 @@ namespace ratio
                 }
             }
         }
+        throw std::runtime_error("No solution found");
     }
 
     riddle::atom_expr basic_solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
