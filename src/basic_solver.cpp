@@ -219,7 +219,7 @@ namespace ratio
     { // Create a unify resolver for each inactive ancestor atom..
         assert(atm->get_state() == riddle::atom_state::inactive);
         for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
-            if (static_cast<atom &>(*a).get_flaw().is_expanded() && !have_common_ancestors(a, atm))
+            if (static_cast<atom &>(*a).get_flaw().is_expanded() && !have_common_ancestors(a, atm) && get_solver().match(*atm, *a))
                 get_solver().new_resolver<unify_atom>(*this, a);
 
         // Create an activate resolver..

@@ -25,6 +25,7 @@ namespace ratio
 
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_causes() const noexcept { return causes; }
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_resolvers() const noexcept { return resolvers; }
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_supports() const noexcept { return supports; }
 
     [[nodiscard]] virtual json::json to_json() const;
 
@@ -41,6 +42,7 @@ namespace ratio
     bool expanded = false;                                   // Whether the flaw has been expanded..
     std::vector<std::reference_wrapper<resolver>> causes;    // The causes of this flaw..
     std::vector<std::reference_wrapper<resolver>> resolvers; // The resolvers for this flaw..
+    std::vector<std::reference_wrapper<resolver>> supports;  // The resolvers supported by this flaw..
   };
 
   class resolver
