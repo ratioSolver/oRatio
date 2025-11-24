@@ -1,6 +1,6 @@
 {
   "name": "@ratiosolver/solver",
-  "version": "0.0.45",
+  "version": "0.0.47",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

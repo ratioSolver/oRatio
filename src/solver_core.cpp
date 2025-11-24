@@ -399,6 +399,8 @@ namespace ratio
             for (auto it = flw.resolvers.begin(); it != flw.resolvers.end();)
                 try
                 {
+                    c_res = *it;
+                    CURRENT_RESOLVER(*it);
                     it->get().apply();
                     apply_resolver(it->get());
                     ++it;

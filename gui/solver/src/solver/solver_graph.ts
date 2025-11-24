@@ -106,9 +106,13 @@ export class SolverGraph extends PayloadComponent<HTMLDivElement, solver.Solver>
   flaw_created(flaw: solver.graph.Flaw): void {
     this.create_flaw_node(flaw);
 
-    for (const cause of flaw.get_supports()) {
+    for (const cause of flaw.get_causes()) {
       this.cy!.add({ group: 'edges', data: { id: `${flaw.get_id()}-${cause.get_id()}`, source: flaw.get_id(), target: cause.get_id(), stroke: stroke_style(flaw) } });
       this.cy!.$id(cause.get_id().toString()).data('color', this.color(cause));
+    }
+    for (const support of flaw.get_supports()) {
+      this.cy!.add({ group: 'edges', data: { id: `${flaw.get_id()}-${support.get_id()}`, source: flaw.get_id(), target: support.get_id(), stroke: stroke_style(flaw) } });
+      this.cy!.$id(support.get_id().toString()).data('color', this.color(support));
     }
     this.cy!.layout(this.layout).run();
   }
@@ -126,8 +130,10 @@ export class SolverGraph extends PayloadComponent<HTMLDivElement, solver.Solver>
         this.cy!.$id(r.get_id().toString()).data('color', this.color(r));
     } else {
       this.cy!.$id(flaw.get_id().toString()).data('color', this.color(flaw));
-      for (const cause of flaw.get_supports())
+      for (const cause of flaw.get_causes())
         this.cy!.$id(cause.get_id().toString()).data('color', this.color(cause));
+      for (const support of flaw.get_supports())
+        this.cy!.$id(support.get_id().toString()).data('color', this.color(support));
     }
   }
 
