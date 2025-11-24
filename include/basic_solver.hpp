@@ -103,6 +103,18 @@ namespace ratio
     std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
   };
 
+  class choose_conjunction final : public resolver
+  {
+  public:
+    choose_conjunction(disjunction_flaw &f, riddle::conjunction &conj) noexcept;
+
+  private:
+    void apply() override;
+
+  private:
+    riddle::conjunction &conj;
+  };
+
   class atom_flaw final : public flaw
   {
   public:

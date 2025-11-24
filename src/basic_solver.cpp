@@ -195,7 +195,14 @@ namespace ratio
 
     disjunction_flaw::disjunction_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 
-    void disjunction_flaw::compute_resolvers() {}
+    void disjunction_flaw::compute_resolvers()
+    {
+        for (const auto &disjunct : disjuncts)
+            get_solver().new_resolver<choose_conjunction>(*this, *disjunct);
+    }
+
+    choose_conjunction::choose_conjunction(disjunction_flaw &f, riddle::conjunction &conj) noexcept : resolver(f, utils::rational(1)), conj(conj) {}
+    void choose_conjunction::apply() { conj.execute(); }
 
     atom_flaw::atom_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<riddle::atom>(pred, is_fact, std::move(args), std::move(sigma))) {}
 
