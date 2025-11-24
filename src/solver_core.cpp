@@ -390,6 +390,7 @@ namespace ratio
                 CURRENT_RESOLVER(flw.resolvers[0].get());
                 flw.resolvers[0].get().apply();
                 apply_resolver(flw.resolvers[0].get());
+                retract_resolver(flw.resolvers[0].get());
             }
             catch (std::exception &)
             { // if applying the resolver fails, we retract it..
@@ -405,6 +406,7 @@ namespace ratio
                     CURRENT_RESOLVER(*it);
                     it->get().apply();
                     apply_resolver(it->get());
+                    retract_resolver(it->get());
                     ++it;
                 }
                 catch (std::exception &)

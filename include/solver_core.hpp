@@ -59,6 +59,8 @@ namespace ratio
 
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
 
+    [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
+
     [[nodiscard]] virtual json::json to_json() const;
 
   protected:

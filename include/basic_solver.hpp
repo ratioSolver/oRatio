@@ -20,6 +20,8 @@ namespace ratio
 
   class basic_solver : public solver_core
   {
+    static constexpr const char *INIT_STRING = "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end, real duration) { start >= origin; duration == end - start; duration >= 0.0; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;";
+
   public:
     basic_solver() noexcept;
 
@@ -35,6 +37,7 @@ namespace ratio
 
     struct Node
     {
+      std::size_t id = 0;                                  // The unique identifier of the node..
       std::shared_ptr<Node> parent;                        // The parent node..
       std::optional<std::reference_wrapper<resolver>> res; // The resolver applied to reach this node..
       std::unordered_set<flaw *> open_flaws;               // The set of open flaws..

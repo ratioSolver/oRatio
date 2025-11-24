@@ -7,6 +7,7 @@ namespace ratio
 {
     basic_solver::basic_solver() noexcept : solver_core("oRatio Basic Solver")
     {
+        read(INIT_STRING);
         // Initialize the root node..
         current_node = std::make_shared<Node>();
         fringe.push_back(current_node);
@@ -28,7 +29,8 @@ namespace ratio
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
             auto &ef = new_flaw<enum_flaw>(*this, get_causes(), std::make_shared<riddle::enum_item>(tp, std::move(values), ev));
-            current_node->open_flaws.insert(&ef);
+            if (ef.get_causes().empty())
+                current_node->open_flaws.insert(&ef);
             return ef.get_var();
         }
     }
@@ -50,25 +52,28 @@ namespace ratio
 
             add_constraint(ac_slv.new_clause(std::move(clause)));
             auto &cf = new_flaw<clause_flaw>(*this, get_causes(), std::move(exprs));
-            current_node->open_flaws.insert(&cf);
+            if (cf.get_causes().empty())
+                current_node->open_flaws.insert(&cf);
         }
     }
     void basic_solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
         auto &df = new_flaw<disjunction_flaw>(*this, get_causes(), std::move(disjuncts));
-        current_node->open_flaws.insert(&df);
+        if (df.get_causes().empty())
+            current_node->open_flaws.insert(&df);
     }
 
     void basic_solver::solve()
     {
+        std::size_t node_id_counter = 0;
         while (!fringe.empty())
         {
             // Select the node with the least number of open flaws..
             auto min_it = std::min_element(fringe.begin(), fringe.end(),
                                            [](const std::shared_ptr<Node> &a, const std::shared_ptr<Node> &b)
                                            { return a->open_flaws.size() < b->open_flaws.size(); });
-            LOG_DEBUG(min_it->get()->open_flaws.size() << " open flaws remaining..");
+            LOG_DEBUG("Expanding node " << (*min_it)->id << " with " << (*min_it)->open_flaws.size() << " open flaws.");
             if (current_node != *min_it)
             { // Backtrack to the common ancestor..
                 backtrack_to(find_common_ancestor(current_node, *min_it));
@@ -85,23 +90,34 @@ namespace ratio
             auto flaw_it = current_node->open_flaws.begin();
             auto &flw = **flaw_it;
             current_node->open_flaws.erase(flaw_it);
+            LOG_DEBUG(flw.to_json().dump());
             // Compute the resolvers for the selected flaw..
             if (!flw.is_expanded())
                 compute_resolvers(flw);
-            if (flw.get_resolvers().size() == 1 && ac_slv.propagate() && lin_slv.check())
+            if (flw.get_resolvers().size() == 1)
             { // If there is only one resolver and applying it does not lead to a conflict, continue from the current node..
-                fringe.push_back(current_node);
-                continue;
+                auto &res = flw.get_resolvers().front().get();
+                apply_resolver(res);
+                if (ac_slv.propagate() && lin_slv.check())
+                {
+                    for (auto pre : res.get_preconditions())
+                        current_node->open_flaws.insert(&pre.get());
+                    fringe.push_back(current_node);
+                }
             }
             else if (flw.get_resolvers().size() > 1) // Create a new child node for each resolver..
                 for (auto &res : flw.get_resolvers())
                 {
                     auto child_node = std::make_shared<Node>();
+                    child_node->id = ++node_id_counter;
                     child_node->parent = current_node;
                     child_node->res = res;
                     child_node->open_flaws = current_node->open_flaws;
+                    for (auto pre : res.get().get_preconditions())
+                        child_node->open_flaws.insert(&pre.get());
                     fringe.push_back(child_node);
                 }
+            LOG_TRACE(to_json().dump());
         }
         throw std::runtime_error("No solution found");
     }
@@ -109,7 +125,8 @@ namespace ratio
     riddle::atom_expr basic_solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
         auto &af = new_flaw<atom_flaw>(*this, get_causes(), is_fact, pred, std::move(args), ac_slv.new_sat());
-        current_node->open_flaws.insert(&af);
+        if (af.get_causes().empty())
+            current_node->open_flaws.insert(&af);
         return af.get_atom();
     }
 
