@@ -376,16 +376,18 @@ namespace ratio
     {
         c_flaw = flw;
         CURRENT_FLAW(flw);
+        assert(!flw.is_expanded());
         flw.compute_resolvers();
+        flw.expanded = true;
         switch (flw.resolvers.size())
         {
         case 0:
             break;
         case 1:
-            c_res = flw.resolvers[0];
-            CURRENT_RESOLVER(flw.resolvers[0].get());
             try
             {
+                c_res = flw.resolvers[0];
+                CURRENT_RESOLVER(flw.resolvers[0].get());
                 flw.resolvers[0].get().apply();
                 apply_resolver(flw.resolvers[0].get());
             }

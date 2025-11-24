@@ -21,6 +21,8 @@ namespace ratio
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
+    [[nodiscard]] bool is_expanded() const noexcept { return expanded; }
+
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_causes() const noexcept { return causes; }
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_resolvers() const noexcept { return resolvers; }
 
@@ -36,6 +38,7 @@ namespace ratio
 
   private:
     solver_core &slv;                                        // The solver managing this flaw..
+    bool expanded = false;                                   // Whether the flaw has been expanded..
     std::vector<std::reference_wrapper<resolver>> causes;    // The causes of this flaw..
     std::vector<std::reference_wrapper<resolver>> resolvers; // The resolvers for this flaw..
   };
@@ -51,6 +54,8 @@ namespace ratio
     virtual ~resolver() = default;
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+
+    [[nodiscard]] flaw &get_flaw() const noexcept { return flw; }
 
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
 

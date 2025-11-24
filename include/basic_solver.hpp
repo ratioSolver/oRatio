@@ -1,9 +1,23 @@
 #pragma once
 
 #include "solver_core.hpp"
+#include "items.hpp"
 
 namespace ratio
 {
+  class atom_flaw;
+
+  class atom : public riddle::atom
+  {
+  public:
+    atom(riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma, atom_flaw &flaw) noexcept : riddle::atom(pred, is_fact, std::move(args), std::move(sigma)), flaw(flaw) {}
+
+    [[nodiscard]] atom_flaw &get_flaw() noexcept { return flaw; }
+
+  private:
+    atom_flaw &flaw; // the flaw associated with this atom..
+  };
+
   class basic_solver : public solver_core
   {
   public:
@@ -126,6 +140,8 @@ namespace ratio
 
   private:
     void compute_resolvers() override;
+
+    [[nodiscard]] static bool is_ancestor_atom(const riddle::atom_expr &ancestor, const riddle::atom_expr &descendant);
 
   private:
     riddle::atom_expr atm;
