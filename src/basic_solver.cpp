@@ -1,6 +1,7 @@
 #include "basic_solver.hpp"
 #include "conjunction.hpp"
 #include "logging.hpp"
+#include <stack>
 #include <cassert>
 
 namespace ratio
@@ -93,7 +94,10 @@ namespace ratio
             LOG_DEBUG(flw.to_json().dump());
             // Compute the resolvers for the selected flaw..
             if (!flw.is_expanded())
+            {
                 compute_resolvers(flw);
+                compute_flaw_cost(flw);
+            }
             if (flw.get_resolvers().size() == 1)
             { // If there is only one resolver and applying it does not lead to a conflict, continue from the current node..
                 auto &res = flw.get_resolvers().front().get();
@@ -128,6 +132,33 @@ namespace ratio
         if (af.get_causes().empty())
             current_node->open_flaws.insert(&af);
         return af.get_atom();
+    }
+
+    void basic_solver::compute_flaw_cost(flaw &f) noexcept
+    {
+        std::stack<std::pair<flaw *, std::unordered_set<flaw *>>> stk;
+        stk.push({&f, {}}); // we push the flaw in the stack..
+
+        while (!stk.empty())
+        {
+            auto c_f = stk.top();
+            stk.pop();
+
+            utils::rational c_cost = utils::rational::positive_infinite;
+            for (const auto &res : c_f.first->get_resolvers())
+                c_cost = std::min(c_cost, res.get().get_estimated_cost());
+
+            if (c_f.first->get_estimated_cost() != c_cost) // we update the cost of the flaw..
+            {
+                set_flaw_cost(*c_f.first, c_cost);
+                // we propagate the cost to the causes..
+                for (auto &cause : c_f.first->get_causes())
+                    stk.push({&cause.get().get_flaw(), c_f.second}); // we push the cause flaw in the stack..
+                // we propagate the cost to the supported resolvers..
+                for (auto &support : c_f.first->get_supports())
+                    stk.push({&support.get().get_flaw(), c_f.second}); // we push the supported flaw in the stack..
+            }
+        }
     }
 
     std::shared_ptr<basic_solver::Node> basic_solver::find_common_ancestor(std::shared_ptr<Node> a, std::shared_ptr<Node> b) const

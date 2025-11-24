@@ -27,6 +27,8 @@ namespace ratio
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_resolvers() const noexcept { return resolvers; }
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_supports() const noexcept { return supports; }
 
+    [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
+
     [[nodiscard]] virtual json::json to_json() const;
 
   protected:
@@ -38,11 +40,12 @@ namespace ratio
     virtual void compute_resolvers() = 0;
 
   private:
-    solver_core &slv;                                        // The solver managing this flaw..
-    bool expanded = false;                                   // Whether the flaw has been expanded..
-    std::vector<std::reference_wrapper<resolver>> causes;    // The causes of this flaw..
-    std::vector<std::reference_wrapper<resolver>> resolvers; // The resolvers for this flaw..
-    std::vector<std::reference_wrapper<resolver>> supports;  // The resolvers supported by this flaw..
+    solver_core &slv;                                              // The solver managing this flaw..
+    bool expanded = false;                                         // Whether the flaw has been expanded..
+    std::vector<std::reference_wrapper<resolver>> causes;          // The causes of this flaw..
+    std::vector<std::reference_wrapper<resolver>> resolvers;       // The resolvers for this flaw..
+    std::vector<std::reference_wrapper<resolver>> supports;        // The resolvers supported by this flaw..
+    utils::rational est_cost = utils::rational::positive_infinite; // The estimated cost to resolve this flaw..
   };
 
   class resolver
@@ -60,6 +63,8 @@ namespace ratio
     [[nodiscard]] flaw &get_flaw() const noexcept { return flw; }
 
     [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+
+    [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
 
     [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
 
@@ -187,6 +192,8 @@ namespace ratio
 
     void retract_resolver(resolver &res) noexcept;
 
+    void set_flaw_cost(flaw &f, const utils::rational &cost) noexcept;
+
   private:
     [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;
 
@@ -211,6 +218,15 @@ namespace ratio
     virtual void flaw_created([[maybe_unused]] const flaw &f) noexcept {}
 
     /**
+     * @brief Notifies when the cost of a flaw has changed.
+     *
+     * This function is called when the cost of a flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when a flaw's cost changes.
+     *
+     * @param f The flaw whose cost has changed.
+     */
+    virtual void flaw_cost_changed([[maybe_unused]] const flaw &f) {}
+
+    /**
      * @brief Notifies that a new resolver has been created.
      *
      * This function is called whenever a new resolver is created in the solver.
@@ -224,28 +240,28 @@ namespace ratio
      *
      * This function is called to inform about the current flaw being processed in the solver.
      *
-     * @param The current flaw being processed.
+     * @param f The current flaw being processed.
      */
-    virtual void current_flaw([[maybe_unused]] std::optional<std::reference_wrapper<ratio::flaw>>) noexcept {}
+    virtual void current_flaw([[maybe_unused]] std::optional<std::reference_wrapper<ratio::flaw>> f) noexcept {}
 
     /**
      * @brief Notifies about the current resolver being applied.
      *
      * This function is called to inform about the current resolver being applied in the solver.
      *
-     * @param The current resolver being applied.
+     * @param r The current resolver being applied.
      */
-    virtual void current_resolver([[maybe_unused]] std::optional<std::reference_wrapper<ratio::resolver>>) noexcept {}
+    virtual void current_resolver([[maybe_unused]] std::optional<std::reference_wrapper<ratio::resolver>> r) noexcept {}
 
     /**
      * @brief Notifies when a causal link has been added.
      *
      * This function is called when a causal link has been added. It is a virtual function that can be overridden by derived classes to perform specific actions when a causal link is added.
      *
-     * @param flaw The flaw that is the source of the causal link.
-     * @param resolver The resolver that is the destination of the causal link.
+     * @param f The flaw that is the source of the causal link.
+     * @param r The resolver that is the destination of the causal link.
      */
-    virtual void causal_link_added([[maybe_unused]] const flaw &, [[maybe_unused]] const resolver &) {}
+    virtual void causal_link_added([[maybe_unused]] const flaw &f, [[maybe_unused]] const resolver &r) {}
 #endif
 
   protected:

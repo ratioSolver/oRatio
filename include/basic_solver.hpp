@@ -35,6 +35,8 @@ namespace ratio
   private:
     [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
 
+    void compute_flaw_cost(flaw &f) noexcept;
+
     struct Node
     {
       std::size_t id = 0;                                  // The unique identifier of the node..

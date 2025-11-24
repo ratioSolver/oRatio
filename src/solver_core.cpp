@@ -5,10 +5,12 @@
 
 #ifdef ORATIO_ENABLE_LISTENERS
 #define CURRENT_FLAW(f) current_flaw(f)
+#define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
 #define CURRENT_RESOLVER(r) current_resolver(r)
 #define NEW_CAUSAL_LINK(f, r) causal_link_added(f, r)
 #else
 #define CURRENT_FLAW(f)
+#define FLAW_COST_CHANGED(f)
 #define CURRENT_RESOLVER(r)
 #define NEW_CAUSAL_LINK(f, r)
 #endif
@@ -25,7 +27,7 @@ namespace ratio
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw;
+        json::json j_flaw{{"cost", linspire::to_json(est_cost)}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);
@@ -41,6 +43,24 @@ namespace ratio
     {
         if (!get_solver().execute(expr))
             throw std::runtime_error("Failed to execute expression in resolver");
+    }
+
+    utils::rational resolver::resolver::get_estimated_cost() const noexcept
+    {
+        if (preconditions.empty())
+            return intrinsic_cost;
+#ifdef H_ADD
+        // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
+        return std::accumulate(preconditions.begin(), preconditions.end(), intrinsic_cost, [](const auto &lhs, const auto &prec)
+                               { return lhs + prec.get().get_estimated_cost(); });
+#endif
+#ifdef H_MAX
+        // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
+        return intrinsic_cost + (*std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
+                                                   { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); }))
+                                    .get()
+                                    .get_estimated_cost();
+#endif
     }
 
     json::json resolver::to_json() const
@@ -443,6 +463,15 @@ namespace ratio
         lin_slv.retract(res.cnst);
         for (auto &ac_cnst : res.ac_cnsts)
             ac_slv.retract(ac_cnst);
+    }
+
+    void solver_core::set_flaw_cost(flaw &flw, const utils::rational &cost) noexcept
+    {
+        if (flw.est_cost != cost)
+        {
+            flw.est_cost = cost;
+            FLAW_COST_CHANGED(flw);
+        }
     }
 
     riddle::atom_state solver_core::get_atom_state(const riddle::atom_term &atm) const noexcept

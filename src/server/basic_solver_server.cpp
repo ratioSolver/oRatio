@@ -53,18 +53,15 @@ namespace ratio
     {
         auto j_msg = f.to_json();
         j_msg["id"] = static_cast<uint64_t>(f.get_id());
-        j_msg["cost"] = linspire::to_json(utils::rational::zero);
         j_msg["state"] = "active";
         j_msg["msg_type"] = "flaw_created";
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
-    void server::current_flaw(std::optional<std::reference_wrapper<ratio::flaw>> f) noexcept
+    void server::flaw_cost_changed(const ratio::flaw &f) noexcept
     {
-        auto j_msg = json::json{{"msg_type", "current_flaw"}};
-        if (f)
-            j_msg["id"] = f.value().get().get_id();
+        auto j_msg = json::json{{"msg_type", "flaw_cost_changed"}, {"id", f.get_id()}, {"cost", linspire::to_json(f.get_estimated_cost())}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
@@ -76,6 +73,16 @@ namespace ratio
         j_msg["id"] = r.get_id();
         j_msg["state"] = "active";
         j_msg["msg_type"] = "resolver_created";
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+
+    void server::current_flaw(std::optional<std::reference_wrapper<ratio::flaw>> f) noexcept
+    {
+        auto j_msg = json::json{{"msg_type", "current_flaw"}};
+        if (f)
+            j_msg["id"] = f.value().get().get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
