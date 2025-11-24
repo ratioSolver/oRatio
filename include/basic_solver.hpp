@@ -64,6 +64,18 @@ namespace ratio
     std::vector<riddle::bool_expr> clause;
   };
 
+  class choose_lit final : public resolver
+  {
+  public:
+    choose_lit(clause_flaw &f, const utils::lit &conj) noexcept;
+
+  private:
+    void apply() override;
+
+  private:
+    utils::lit conj; // the literal to choose..
+  };
+
   class disjunction_flaw final : public flaw
   {
   public:

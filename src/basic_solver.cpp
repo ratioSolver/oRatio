@@ -160,7 +160,15 @@ namespace ratio
 
     clause_flaw::clause_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
 
-    void clause_flaw::compute_resolvers() {}
+    void clause_flaw::compute_resolvers()
+    {
+        for (const auto &lit : clause)
+            if (get_solver().bool_value(*lit) != utils::False) // we prune false literals..
+                get_solver().new_resolver<choose_lit>(*this, static_cast<const riddle::bool_item &>(*lit).get_lit());
+    }
+
+    choose_lit::choose_lit(clause_flaw &f, const utils::lit &conj) noexcept : resolver(f, utils::rational(1)), conj(conj) {}
+    void choose_lit::apply() { add_ac_constraint(get_ac().new_assign(utils::variable(conj), utils::sign(conj) ? arc_consistency::solver::True : arc_consistency::solver::False)); }
 
     disjunction_flaw::disjunction_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 
