@@ -63,6 +63,7 @@ namespace ratio
 
     void basic_solver::solve()
     {
+        int iteration = 0;
         if (!ac_slv.propagate() || !lin_slv.check())
             throw std::runtime_error("Unsatisfiable constraints");
         if (current_node->open_flaws.empty())
@@ -73,10 +74,13 @@ namespace ratio
             auto min_it = std::min_element(fringe.begin(), fringe.end(),
                                            [](const std::shared_ptr<Node> &a, const std::shared_ptr<Node> &b)
                                            { return a->open_flaws.size() < b->open_flaws.size(); });
-            fringe.erase(min_it);
+            LOG_DEBUG(min_it->get()->open_flaws.size() << " open flaws remaining..");
             auto lca = find_common_ancestor(current_node, *min_it);
             backtrack_to(lca);
             go_to(*min_it);
+            fringe.erase(min_it);
+            if (!ac_slv.propagate() || !lin_slv.check())
+                continue; // Conflict detected, backtrack..
             if (current_node->open_flaws.empty())
                 return; // Solution found..
             // Select an open flaw to resolve..
@@ -95,6 +99,7 @@ namespace ratio
                 for (auto &res : flw.get_resolvers())
                 {
                     auto child_node = std::make_shared<Node>();
+                    child_node->index = ++iteration;
                     child_node->parent = current_node;
                     child_node->res = res;
                     child_node->open_flaws = current_node->open_flaws;
@@ -156,7 +161,21 @@ namespace ratio
 
     enum_flaw::enum_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::enum_expr var) noexcept : flaw(slv, std::move(causes)), var(std::move(var)) {}
 
-    void enum_flaw::compute_resolvers() {}
+    void enum_flaw::compute_resolvers()
+    {
+        auto &e_item = static_cast<riddle::enum_item &>(*var);
+        auto &dom = get_ac().domain(e_item.get_var());
+        for (auto &val : e_item.get_values())
+            if (dom.count(static_cast<utils::enum_val *>(val.get())))
+                get_solver().new_resolver<choose_val>(*this, val);
+    }
+
+    choose_val::choose_val(enum_flaw &f, riddle::expr val) noexcept : resolver(f, utils::rational(1)), val(std::move(val)) {}
+    void choose_val::apply()
+    {
+        auto &e_item = static_cast<riddle::enum_item &>(*static_cast<enum_flaw &>(flw).get_var());
+        add_ac_constraint(get_ac().new_assign(utils::variable(e_item.get_var()), static_cast<utils::enum_val &>(*val)));
+    }
 
     clause_flaw::clause_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
 
@@ -164,11 +183,15 @@ namespace ratio
     {
         for (const auto &lit : clause)
             if (get_solver().bool_value(*lit) != utils::False) // we prune false literals..
-                get_solver().new_resolver<choose_lit>(*this, static_cast<const riddle::bool_item &>(*lit).get_lit());
+                get_solver().new_resolver<choose_lit>(*this, lit);
     }
 
-    choose_lit::choose_lit(clause_flaw &f, const utils::lit &conj) noexcept : resolver(f, utils::rational(1)), conj(conj) {}
-    void choose_lit::apply() { add_ac_constraint(get_ac().new_assign(utils::variable(conj), utils::sign(conj) ? arc_consistency::solver::True : arc_consistency::solver::False)); }
+    choose_lit::choose_lit(clause_flaw &f, riddle::bool_expr lit) noexcept : resolver(f, utils::rational(1)), lit(lit) {}
+    void choose_lit::apply()
+    {
+        auto &c_lit = static_cast<const riddle::bool_item &>(*lit).get_lit();
+        add_ac_constraint(get_ac().new_assign(utils::variable(c_lit), utils::sign(c_lit) ? arc_consistency::solver::True : arc_consistency::solver::False));
+    }
 
     disjunction_flaw::disjunction_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 

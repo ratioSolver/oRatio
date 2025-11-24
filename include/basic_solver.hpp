@@ -21,6 +21,7 @@ namespace ratio
 
     struct Node
     {
+      int index = 0;                                       // The index of the node..
       std::shared_ptr<Node> parent;                        // The parent node..
       std::optional<std::reference_wrapper<resolver>> res; // The resolver applied to reach this node..
       std::unordered_set<flaw *> open_flaws;               // The set of open flaws..
@@ -50,6 +51,18 @@ namespace ratio
     riddle::enum_expr var;
   };
 
+  class choose_val final : public resolver
+  {
+  public:
+    choose_val(enum_flaw &f, riddle::expr val) noexcept;
+
+  private:
+    void apply() override;
+
+  private:
+    riddle::expr val;
+  };
+
   class clause_flaw final : public flaw
   {
   public:
@@ -67,13 +80,13 @@ namespace ratio
   class choose_lit final : public resolver
   {
   public:
-    choose_lit(clause_flaw &f, const utils::lit &conj) noexcept;
+    choose_lit(clause_flaw &f, riddle::bool_expr lit) noexcept;
 
   private:
     void apply() override;
 
   private:
-    utils::lit conj; // the literal to choose..
+    riddle::bool_expr lit; // the literal to choose..
   };
 
   class disjunction_flaw final : public flaw
