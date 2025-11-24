@@ -62,11 +62,6 @@ namespace ratio
 
     void basic_solver::solve()
     {
-        int iteration = 0;
-        if (!ac_slv.propagate() || !lin_slv.check())
-            throw std::runtime_error("Unsatisfiable constraints");
-        if (current_node->open_flaws.empty())
-            return; // Problem already solved..
         while (!fringe.empty())
         {
             // Select the node with the least number of open flaws..
@@ -74,9 +69,13 @@ namespace ratio
                                            [](const std::shared_ptr<Node> &a, const std::shared_ptr<Node> &b)
                                            { return a->open_flaws.size() < b->open_flaws.size(); });
             LOG_DEBUG(min_it->get()->open_flaws.size() << " open flaws remaining..");
-            auto lca = find_common_ancestor(current_node, *min_it);
-            backtrack_to(lca);
-            go_to(*min_it);
+            if (current_node != *min_it)
+            { // Backtrack to the common ancestor..
+                backtrack_to(find_common_ancestor(current_node, *min_it));
+                // Move to the selected node..
+                go_to(*min_it);
+            }
+            // Remove the selected node from the fringe..
             fringe.erase(min_it);
             if (!ac_slv.propagate() || !lin_slv.check())
                 continue; // Conflict detected, backtrack..
@@ -94,18 +93,15 @@ namespace ratio
                 fringe.push_back(current_node);
                 continue;
             }
-            else if (flw.get_resolvers().size() > 1)
-            { // Create a new child node for each resolver..
+            else if (flw.get_resolvers().size() > 1) // Create a new child node for each resolver..
                 for (auto &res : flw.get_resolvers())
                 {
                     auto child_node = std::make_shared<Node>();
-                    child_node->index = ++iteration;
                     child_node->parent = current_node;
                     child_node->res = res;
                     child_node->open_flaws = current_node->open_flaws;
                     fringe.push_back(child_node);
                 }
-            }
         }
         throw std::runtime_error("No solution found");
     }
@@ -206,7 +202,7 @@ namespace ratio
     { // Create a unify resolver for each inactive ancestor atom..
         assert(atm->get_state() == riddle::atom_state::inactive);
         for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
-            if (!is_ancestor_atom(a, atm))
+            if (static_cast<atom &>(*a).get_flaw().is_expanded() && !have_common_ancestors(a, atm))
                 get_solver().new_resolver<unify_atom>(*this, a);
 
         // Create an activate resolver..
@@ -216,16 +212,24 @@ namespace ratio
             get_solver().new_resolver<activate_goal>(*this);
     }
 
-    bool atom_flaw::is_ancestor_atom(const riddle::atom_expr &ancestor, const riddle::atom_expr &descendant)
+    bool atom_flaw::have_common_ancestors(const riddle::atom_expr &ancestor, const riddle::atom_expr &descendant)
     {
         flaw *curr_f = &static_cast<atom &>(*descendant).get_flaw();
-        flaw *anc_f = &static_cast<atom &>(*ancestor).get_flaw();
+        std::unordered_set<flaw *> visited;
         while (curr_f)
         {
-            if (curr_f == anc_f)
+            visited.insert(curr_f);
+            if (curr_f == &static_cast<atom &>(*ancestor).get_flaw())
                 return true;
-            // Move to the parent atom if it exists..
             curr_f = curr_f->get_causes().empty() ? nullptr : &curr_f->get_causes().front().get().get_flaw();
+        }
+
+        flaw *anc_f = &static_cast<atom &>(*ancestor).get_flaw();
+        while (anc_f)
+        {
+            if (visited.count(anc_f))
+                return true;
+            anc_f = anc_f->get_causes().empty() ? nullptr : &anc_f->get_causes().front().get().get_flaw();
         }
         return false;
     }

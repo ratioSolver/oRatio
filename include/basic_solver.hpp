@@ -35,7 +35,6 @@ namespace ratio
 
     struct Node
     {
-      int index = 0;                                       // The index of the node..
       std::shared_ptr<Node> parent;                        // The parent node..
       std::optional<std::reference_wrapper<resolver>> res; // The resolver applied to reach this node..
       std::unordered_set<flaw *> open_flaws;               // The set of open flaws..
@@ -141,7 +140,7 @@ namespace ratio
   private:
     void compute_resolvers() override;
 
-    [[nodiscard]] static bool is_ancestor_atom(const riddle::atom_expr &ancestor, const riddle::atom_expr &descendant);
+    [[nodiscard]] static bool have_common_ancestors(const riddle::atom_expr &ancestor, const riddle::atom_expr &descendant);
 
   private:
     riddle::atom_expr atm;
