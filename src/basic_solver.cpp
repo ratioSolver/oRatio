@@ -288,6 +288,7 @@ namespace ratio
     {
         execute(get_solver().new_eq(static_cast<atom_flaw &>(flw).get_atom(), atm));
         add_ac_constraint(get_ac().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::False));
+        get_solver().add_causal_link(static_cast<atom &>(*atm).get_flaw(), *this);
     }
 
     json::json unify_atom::to_json() const

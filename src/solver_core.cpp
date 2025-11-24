@@ -6,9 +6,11 @@
 #ifdef ORATIO_ENABLE_LISTENERS
 #define CURRENT_FLAW(f) current_flaw(f)
 #define CURRENT_RESOLVER(r) current_resolver(r)
+#define NEW_CAUSAL_LINK(f, r) causal_link_added(f, r)
 #else
 #define CURRENT_FLAW(f)
 #define CURRENT_RESOLVER(r)
+#define NEW_CAUSAL_LINK(f, r)
 #endif
 
 namespace ratio
@@ -164,6 +166,13 @@ namespace ratio
             return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(div));
         else
             throw std::runtime_error("Invalid type");
+    }
+
+    void solver_core::add_causal_link(flaw &f, resolver &r) noexcept
+    {
+        f.supports.push_back(r);
+        r.preconditions.push_back(f);
+        NEW_CAUSAL_LINK(f, r);
     }
 
     bool solver_core::match(riddle::term &lhs, riddle::term &rhs) const

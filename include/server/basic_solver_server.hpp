@@ -25,6 +25,8 @@ namespace ratio
     void current_flaw(std::optional<std::reference_wrapper<ratio::flaw>> f) noexcept override;
     void current_resolver(std::optional<std::reference_wrapper<ratio::resolver>> r) noexcept override;
 
+    void causal_link_added(const flaw &f, const resolver &r) override;
+    
   private:
     std::unordered_set<network::ws_server_session_base *> clients;
   };

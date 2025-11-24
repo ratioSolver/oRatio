@@ -89,4 +89,12 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
+
+    void server::causal_link_added(const ratio::flaw &f, const ratio::resolver &r)
+    {
+        auto j_msg = json::json{{"msg_type", "causal_link_added"}, {"flaw", f.get_id()}, {"resolver", r.get_id()}};
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
 } // namespace ratio

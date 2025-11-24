@@ -168,6 +168,8 @@ namespace ratio
       return r_ref;
     }
 
+    virtual void add_causal_link(flaw &f, resolver &r) noexcept;
+
     virtual void solve() = 0;
 
     [[nodiscard]] bool match(riddle::term &lhs, riddle::term &rhs) const;
@@ -234,6 +236,16 @@ namespace ratio
      * @param The current resolver being applied.
      */
     virtual void current_resolver([[maybe_unused]] std::optional<std::reference_wrapper<ratio::resolver>>) noexcept {}
+
+    /**
+     * @brief Notifies when a causal link has been added.
+     *
+     * This function is called when a causal link has been added. It is a virtual function that can be overridden by derived classes to perform specific actions when a causal link is added.
+     *
+     * @param flaw The flaw that is the source of the causal link.
+     * @param resolver The resolver that is the destination of the causal link.
+     */
+    virtual void causal_link_added([[maybe_unused]] const flaw &, [[maybe_unused]] const resolver &) {}
 #endif
 
   protected:
