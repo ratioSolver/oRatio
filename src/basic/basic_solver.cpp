@@ -172,7 +172,7 @@ namespace ratio
 
     json::json solver::to_json() const
     {
-        json::json j;
+        json::json j = core::to_json();
         json::json j_nodes(json::json_type::array);
         for (const auto &n : nodes)
             j_nodes.push_back(n->to_json());
