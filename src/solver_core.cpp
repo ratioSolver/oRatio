@@ -410,56 +410,51 @@ namespace ratio
         assert(!flw.is_expanded());
         flw.compute_resolvers();
         flw.expanded = true;
-        switch (flw.resolvers.size())
-        {
-        case 0:
-            break;
-        case 1:
+        for (auto it = flw.resolvers.begin(); it != flw.resolvers.end();)
             try
             {
-                c_res = flw.resolvers[0];
-                CURRENT_RESOLVER(flw.resolvers[0].get());
-                flw.resolvers[0].get().apply();
-                apply_resolver(flw.resolvers[0].get());
-                retract_resolver(flw.resolvers[0].get());
+                c_res = *it;
+                CURRENT_RESOLVER(*it);
+                c_res->get().apply();
+                if (!apply_resolver(c_res->get()))
+                    it = flw.resolvers.erase(it);
+                else
+                    ++it;
+                retract_resolver(c_res->get());
             }
             catch (std::exception &)
-            { // if applying the resolver fails, we retract it..
-                retract_resolver(flw.resolvers[0].get());
-                flw.resolvers.clear();
+            { // if applying the resolver fails, we retract it and remove it from the list..
+                retract_resolver(it->get());
+                it = flw.resolvers.erase(it);
             }
-            break;
-        default:
-            for (auto it = flw.resolvers.begin(); it != flw.resolvers.end();)
-                try
-                {
-                    c_res = *it;
-                    CURRENT_RESOLVER(*it);
-                    it->get().apply();
-                    apply_resolver(it->get());
-                    retract_resolver(it->get());
-                    ++it;
-                }
-                catch (std::exception &)
-                { // if applying the resolver fails, we retract it and remove it from the list..
-                    retract_resolver(it->get());
-                    it = flw.resolvers.erase(it);
-                }
-            break;
-        }
         c_res = std::nullopt;
         CURRENT_RESOLVER(std::nullopt);
         c_flaw = std::nullopt;
         CURRENT_FLAW(std::nullopt);
     }
 
-    void solver_core::apply_resolver(resolver &res)
+    bool solver_core::apply_resolver(resolver &res)
     {
         if (!lin_slv.add_constraint(res.cnst))
-            throw std::runtime_error("Failed to apply linear constraint");
+        {
+            lin_slv.retract(res.cnst);
+            return false;
+        }
+        if (!lin_slv.check())
+        {
+            lin_slv.retract(res.cnst);
+            return false;
+        }
         for (auto &ac_cnst : res.ac_cnsts)
             ac_slv.add_constraint(ac_cnst);
+        if (!ac_slv.propagate())
+        {
+            for (auto &ac_cnst : res.ac_cnsts)
+                ac_slv.retract(ac_cnst);
+            return false;
+        }
         STATE_CHANGED();
+        return true;
     }
 
     void solver_core::retract_resolver(resolver &res) noexcept
