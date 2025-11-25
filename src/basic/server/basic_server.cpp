@@ -62,6 +62,7 @@ namespace ratio
         auto j_msg = f.to_json();
         j_msg["msg_type"] = "flaw_created";
         j_msg["node_id"] = n.get_id();
+        j_msg["id"] = f.get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

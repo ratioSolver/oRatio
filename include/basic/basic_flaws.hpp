@@ -83,7 +83,7 @@ namespace ratio
     [[nodiscard]] arc_consistency::solver &get_ac_solver() noexcept { return flw.slv.ac_slv; }
 
   private:
-    virtual bool apply() noexcept = 0;
+    [[nodiscard]] virtual bool apply() noexcept = 0;
 
   protected:
     flaw &flw;   // the flaw solved by this resolver..

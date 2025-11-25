@@ -155,18 +155,38 @@ namespace ratio
             case 0:
                 continue; // No resolvers available, backtrack..
             case 1:
-                if (c_node->get().res)
-                    if (!apply_resolver(*c_node->get().res))
-                        continue; // Conflict detected, backtrack..
-                fringe.push_back(c_node->get());
+                if (c_flw->resolvers.at(0)->apply())
+                {
+                    if (c_node->get().res)
+                        if (!apply_resolver(*c_node->get().res))
+                            continue; // Conflict detected, backtrack..
+                    fringe.push_back(c_node->get());
+                }
+                else if (c_node->get().res)
+                {
+                    lin_slv.retract(c_node->get().res->ctx.lin_cnsts);
+                    for (auto &ac_cnst : c_node->get().res->ctx.ac_cnsts)
+                        ac_slv.retract(ac_cnst.get());
+                }
                 break;
             default:
                 for (auto &res : c_flw->resolvers)
                 {
                     auto n = std::make_unique<node>(c_node->get(), res);
                     NEW_NODE(*n);
-                    fringe.push_back(*n);
-                    nodes.push_back(std::move(n));
+                    c_node = *n;
+                    CURRENT_NODE(*n);
+                    bool apply = res->apply();
+                    lin_slv.retract(res->ctx.lin_cnsts);
+                    for (auto &ac_cnst : res->ctx.ac_cnsts)
+                        ac_slv.retract(ac_cnst.get());
+                    c_node = n->parent;
+                    CURRENT_NODE(c_node);
+                    if (apply)
+                    {
+                        fringe.push_back(*n);
+                        nodes.push_back(std::move(n));
+                    }
                 }
                 break;
             }
@@ -265,7 +285,6 @@ namespace ratio
                 ac_slv.retract(ac_cnst.get());
             return false;
         }
-        return true;
         return true;
     }
 } // namespace ratio

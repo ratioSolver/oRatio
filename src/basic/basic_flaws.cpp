@@ -205,8 +205,15 @@ namespace ratio
     bool activate_goal::apply() noexcept
     {
         ctx.ac_cnsts.push_back(get_ac_solver().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::True));
-        static_cast<riddle::predicate &>(static_cast<atom_flaw &>(flw).get_atom()->get_type()).call(static_cast<atom_flaw &>(flw).get_atom());
-        return true;
+        try
+        {
+            static_cast<riddle::predicate &>(static_cast<atom_flaw &>(flw).get_atom()->get_type()).call(static_cast<atom_flaw &>(flw).get_atom());
+            return true;
+        }
+        catch (const std::exception &e)
+        {
+            return false;
+        }
     }
 
     json::json activate_goal::to_json() const
