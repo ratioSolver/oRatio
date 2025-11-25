@@ -26,11 +26,11 @@ namespace ratio
     friend class solver;
 
   public:
-    node(std::shared_ptr<node> parent = nullptr, std::optional<std::reference_wrapper<resolver>> res = std::nullopt) noexcept : parent(std::move(parent)), res(res)
-    {
-      if (this->parent) // If there is a parent, inherit its open flaws..
-        this->open_flaws = this->parent->open_flaws;
-    }
+    node(std::shared_ptr<node> parent = nullptr, std::optional<std::reference_wrapper<resolver>> res = std::nullopt) noexcept;
+
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+
+    [[nodiscard]] json::json to_json() const noexcept;
 
   private:
     std::shared_ptr<node> parent;                         // The parent node..

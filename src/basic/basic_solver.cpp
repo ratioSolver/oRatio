@@ -16,6 +16,26 @@
 
 namespace ratio
 {
+    node::node(std::shared_ptr<node> parent, std::optional<std::reference_wrapper<resolver>> res) noexcept : parent(std::move(parent)), res(res)
+    {
+        if (this->parent) // If there is a parent, inherit its open flaws..
+            this->open_flaws = this->parent->open_flaws;
+    }
+
+    json::json node::to_json() const noexcept
+    {
+        json::json j{{"id", get_id()}};
+        if (parent)
+            j["parent"] = parent->get_id();
+        if (res)
+            j["resolver"] = res->get().to_json();
+        json::json j_flaws(json::json_type::array);
+        for (const auto &flw : open_flaws)
+            j_flaws.push_back(flw->to_json());
+        j["flaws"] = std::move(j_flaws);
+        return j;
+    }
+
     solver::solver() noexcept : solver_core("oRatio Basic Solver")
     {
         read(INIT_STRING);
