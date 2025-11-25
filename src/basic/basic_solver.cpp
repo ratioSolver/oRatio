@@ -139,14 +139,13 @@ namespace ratio
             if (c_node->get().open_flaws.empty())
                 return; // Solution found..
             // Select an open flaw to resolve..
-            auto flaw_it = c_node->get().open_flaws.begin();
-            auto &flw = **flaw_it;
-            c_node->get().open_flaws.erase(flaw_it);
-            LOG_DEBUG(flw.to_json().dump());
+            auto c_flw = *c_node->get().open_flaws.begin();
+            c_node->get().open_flaws.erase(c_flw);
+            LOG_DEBUG(c_flw->to_json().dump());
             // Compute the resolvers for the selected flaw..
-            flw.compute_resolvers();
-            LOG_DEBUG("Flaw has " << flw.resolvers.size() << " resolvers.");
-            switch (flw.resolvers.size())
+            c_flw->compute_resolvers();
+            LOG_DEBUG("Flaw has " << c_flw->resolvers.size() << " resolvers.");
+            switch (c_flw->resolvers.size())
             {
             case 0:
                 continue; // No resolvers available, backtrack..
@@ -157,7 +156,7 @@ namespace ratio
                 fringe.push_back(c_node->get());
                 break;
             default:
-                for (auto &res : flw.resolvers)
+                for (auto &res : c_flw->resolvers)
                 {
                     auto n = std::make_unique<node>(c_node->get(), *res);
                     NEW_NODE(*n);
