@@ -46,9 +46,9 @@ namespace ratio
     };
     std::shared_ptr<Node> find_common_ancestor(std::shared_ptr<Node> a, std::shared_ptr<Node> b) const;
 
-    void backtrack_to(const std::shared_ptr<Node> &lca);
+    void backtrack_to(const std::shared_ptr<Node> &lca) noexcept;
 
-    [[nodiscard]] bool go_to(const std::shared_ptr<Node> &target);
+    void go_to(const std::shared_ptr<Node> &target);
 
   private:
     std::shared_ptr<Node> current_node;        // The current node in the search tree..

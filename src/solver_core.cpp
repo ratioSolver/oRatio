@@ -4,11 +4,13 @@
 #include <cassert>
 
 #ifdef ORATIO_ENABLE_LISTENERS
+#define STATE_CHANGED() state_changed()
 #define CURRENT_FLAW(f) current_flaw(f)
 #define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
 #define CURRENT_RESOLVER(r) current_resolver(r)
 #define NEW_CAUSAL_LINK(f, r) causal_link_added(f, r)
 #else
+#define STATE_CHANGED()
 #define CURRENT_FLAW(f)
 #define FLAW_COST_CHANGED(f)
 #define CURRENT_RESOLVER(r)
@@ -451,13 +453,13 @@ namespace ratio
         CURRENT_FLAW(std::nullopt);
     }
 
-    bool solver_core::apply_resolver(resolver &res) noexcept
+    void solver_core::apply_resolver(resolver &res)
     {
         if (!lin_slv.add_constraint(res.cnst))
-            return false;
+            throw std::runtime_error("Failed to apply linear constraint");
         for (auto &ac_cnst : res.ac_cnsts)
             ac_slv.add_constraint(ac_cnst);
-        return true;
+        STATE_CHANGED();
     }
 
     void solver_core::retract_resolver(resolver &res) noexcept
