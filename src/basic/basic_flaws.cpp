@@ -35,13 +35,14 @@ namespace ratio
         // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
         return std::accumulate(preconditions.begin(), preconditions.end(), intrinsic_cost, [](const auto &lhs, const auto &prec)
                                { return lhs + prec.get().get_estimated_cost(); });
-#endif
-#ifdef H_MAX
+#elif defined(H_MAX)
         // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
         return intrinsic_cost + (*std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
                                                    { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); }))
                                     .get()
                                     .get_estimated_cost();
+#else
+        static_assert(false, "No heuristic defined for resolver cost estimation");
 #endif
     }
 

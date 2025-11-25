@@ -9,24 +9,26 @@
 #ifdef ORATIO_ENABLE_LISTENERS
 #define STATE_CHANGED() state_changed()
 #define NEW_NODE(n) node_created(n)
+#define CURRENT_NODE(n) current_node(n)
 #else
 #define STATE_CHANGED()
 #define NEW_NODE(n)
+#define CURRENT_NODE(n)
 #endif
 
 namespace ratio
 {
-    node::node(std::shared_ptr<node> parent, std::optional<std::reference_wrapper<resolver>> res) noexcept : parent(std::move(parent)), res(res)
+    node::node(std::optional<std::reference_wrapper<node>> parent, std::optional<std::reference_wrapper<resolver>> res) noexcept : parent(std::move(parent)), res(res)
     {
         if (this->parent) // If there is a parent, inherit its open flaws..
-            this->open_flaws = this->parent->open_flaws;
+            this->open_flaws = this->parent->get().open_flaws;
     }
 
     json::json node::to_json() const noexcept
     {
         json::json j{{"id", get_id()}};
         if (parent)
-            j["parent"] = parent->get_id();
+            j["parent"] = parent->get().get_id();
         if (res)
             j["resolver"] = res->get().to_json();
         json::json j_flaws(json::json_type::array);
@@ -45,8 +47,11 @@ namespace ratio
         add_type(std::make_unique<basic_consumable_resource>(*this));
 
         // Initialize the root node..
-        current_node = std::make_shared<node>();
-        fringe.push_back(current_node);
+        auto root = std::make_unique<node>();
+        NEW_NODE(*root);
+        c_node = *root;
+        fringe.push_back(*root);
+        nodes.push_back(std::move(root));
     }
 
     riddle::expr solver::new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values)
@@ -65,10 +70,10 @@ namespace ratio
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
             std::vector<std::reference_wrapper<resolver>> causes;
-            if (current_node->res)
-                causes.push_back(current_node->res->get());
+            if (c_node->get().res)
+                causes.push_back(c_node->get().res->get());
             auto ef = std::make_shared<enum_flaw>(*this, std::move(causes), std::make_shared<riddle::enum_item>(tp, std::move(values), ev));
-            current_node->open_flaws.insert(ef);
+            c_node->get().open_flaws.insert(ef);
             return ef->get_var();
         }
     }
@@ -89,25 +94,25 @@ namespace ratio
                 clause.push_back(static_cast<const riddle::bool_item &>(*expr).get_lit());
 
             auto &c = ac_slv.new_clause(std::move(clause));
-            if (current_node->res)
-                current_node->res->get().ctx.ac_cnsts.push_back(std::ref(c));
+            if (c_node->get().res)
+                c_node->get().res->get().ctx.ac_cnsts.push_back(std::ref(c));
             else
                 ac_slv.add_constraint(c);
             std::vector<std::reference_wrapper<resolver>> causes;
-            if (current_node->res)
-                causes.push_back(current_node->res->get());
+            if (c_node->get().res)
+                causes.push_back(c_node->get().res->get());
             auto cf = std::make_shared<clause_flaw>(*this, std::move(causes), std::move(exprs));
-            current_node->open_flaws.insert(cf);
+            c_node->get().open_flaws.insert(cf);
         }
     }
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
         std::vector<std::reference_wrapper<resolver>> causes;
-        if (current_node->res)
-            causes.push_back(current_node->res->get());
+        if (c_node->get().res)
+            causes.push_back(c_node->get().res->get());
         auto df = std::make_shared<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
-        current_node->open_flaws.insert(df);
+        c_node->get().open_flaws.insert(df);
     }
 
     void solver::solve()
@@ -115,11 +120,11 @@ namespace ratio
         while (!fringe.empty())
         {
             // Select the node with the least number of open flaws..
-            auto min_it = std::min_element(fringe.begin(), fringe.end(), [](const std::shared_ptr<node> &a, const std::shared_ptr<node> &b)
-                                           { return a->open_flaws.size() < b->open_flaws.size(); });
-            if (current_node != *min_it)
+            auto min_it = std::min_element(fringe.begin(), fringe.end(), [](const auto &a, const auto &b)
+                                           { return a.get().open_flaws.size() < b.get().open_flaws.size(); });
+            if (&c_node->get() != &min_it->get())
             { // Backtrack to the common ancestor..
-                backtrack_to(find_common_ancestor(current_node, *min_it));
+                backtrack_to(find_common_ancestor(c_node->get(), min_it->get()));
                 // Move to the selected node..
                 if (!go_to(*min_it))
                 {
@@ -131,12 +136,12 @@ namespace ratio
             fringe.erase(min_it);
             if (!ac_slv.propagate() || !lin_slv.check())
                 continue; // Conflict detected, backtrack..
-            if (current_node->open_flaws.empty())
+            if (c_node->get().open_flaws.empty())
                 return; // Solution found..
             // Select an open flaw to resolve..
-            auto flaw_it = current_node->open_flaws.begin();
+            auto flaw_it = c_node->get().open_flaws.begin();
             auto &flw = **flaw_it;
-            current_node->open_flaws.erase(flaw_it);
+            c_node->get().open_flaws.erase(flaw_it);
             LOG_DEBUG(flw.to_json().dump());
             // Compute the resolvers for the selected flaw..
             flw.compute_resolvers();
@@ -146,17 +151,18 @@ namespace ratio
             case 0:
                 continue; // No resolvers available, backtrack..
             case 1:
-                if (current_node->res)
-                    if (!apply_resolver(current_node->res->get()))
+                if (c_node->get().res)
+                    if (!apply_resolver(c_node->get().res->get()))
                         continue; // Conflict detected, backtrack..
-                fringe.push_back(current_node);
+                fringe.push_back(c_node->get());
                 break;
             default:
                 for (auto &res : flw.resolvers)
                 {
-                    auto n = std::make_shared<node>(current_node, *res);
+                    auto n = std::make_unique<node>(c_node->get(), *res);
                     NEW_NODE(*n);
-                    fringe.push_back(n);
+                    fringe.push_back(*n);
+                    nodes.push_back(std::move(n));
                 }
                 break;
             }
@@ -165,57 +171,71 @@ namespace ratio
         throw std::runtime_error("No solution found");
     }
 
+    json::json solver::to_json() const
+    {
+        json::json j;
+        json::json j_nodes(json::json_type::array);
+        for (const auto &n : nodes)
+            j_nodes.push_back(n->to_json());
+        j["nodes"] = std::move(j_nodes);
+        return j;
+    }
+
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
         std::vector<std::reference_wrapper<resolver>> causes;
-        if (current_node->res)
-            causes.push_back(current_node->res->get());
+        if (c_node->get().res)
+            causes.push_back(c_node->get().res->get());
         auto af = std::make_shared<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), ac_slv.new_sat());
         return af->get_atom();
     }
 
-    std::shared_ptr<node> solver::find_common_ancestor(std::shared_ptr<node> a, std::shared_ptr<node> b) const
+    const node &solver::find_common_ancestor(const node &a, const node &b) const
     {
-        std::unordered_set<std::shared_ptr<node>> ancestors;
-        while (a)
+        std::unordered_set<const node *> ancestors;
+        auto c_a = &a;
+        while (c_a)
         {
-            ancestors.insert(a);
-            a = a->parent;
+            ancestors.insert(c_a);
+            c_a = &c_a->parent->get();
         }
-        while (b)
+        auto c_b = &b;
+        while (c_b)
         {
-            if (ancestors.count(b))
-                return b;
-            b = b->parent;
+            if (ancestors.count(c_b))
+                return *c_b;
+            c_b = &c_b->parent->get();
         }
-        return nullptr;
+        throw std::runtime_error("No common ancestor found");
     }
 
-    void solver::backtrack_to(const std::shared_ptr<node> &lca) noexcept
+    void solver::backtrack_to(const node &lca) noexcept
     {
-        while (current_node != lca)
+        while (&c_node->get() != &lca)
         {
-            lin_slv.retract(current_node->res->get().ctx.lin_cnsts);
-            for (auto &ac_cnst : current_node->res->get().ctx.ac_cnsts)
+            lin_slv.retract(c_node->get().res->get().ctx.lin_cnsts);
+            for (auto &ac_cnst : c_node->get().res->get().ctx.ac_cnsts)
                 ac_slv.retract(ac_cnst.get());
-            current_node = current_node->parent;
+            c_node = *c_node->get().parent;
+            CURRENT_NODE(c_node);
         }
     }
 
-    bool solver::go_to(const std::shared_ptr<node> &target) noexcept
+    bool solver::go_to(const node &target) noexcept
     {
-        std::vector<std::shared_ptr<node>> path;
-        auto temp_node = target;
-        while (temp_node != current_node)
+        std::vector<const node *> path;
+        auto temp_node = &target;
+        while (temp_node != &c_node->get())
         {
             path.push_back(temp_node);
-            temp_node = temp_node->parent;
+            temp_node = &temp_node->parent->get();
         }
         for (auto it = path.rbegin(); it != path.rend(); ++it)
         {
             if (!apply_resolver((*it)->res->get()))
                 return false;
-            current_node = *it;
+            c_node = std::ref(const_cast<ratio::node &>(**it));
+            CURRENT_NODE(c_node);
         }
         return true;
     }

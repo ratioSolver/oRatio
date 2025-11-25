@@ -26,14 +26,14 @@ namespace ratio
     friend class solver;
 
   public:
-    node(std::shared_ptr<node> parent = nullptr, std::optional<std::reference_wrapper<resolver>> res = std::nullopt) noexcept;
+    node(std::optional<std::reference_wrapper<node>> parent = std::nullopt, std::optional<std::reference_wrapper<resolver>> res = std::nullopt) noexcept;
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
     [[nodiscard]] json::json to_json() const noexcept;
 
   private:
-    std::shared_ptr<node> parent;                         // The parent node..
+    std::optional<std::reference_wrapper<node>> parent;   // The parent node..
     std::optional<std::reference_wrapper<resolver>> res;  // The resolver applied to
     std::unordered_set<std::shared_ptr<flaw>> open_flaws; // The set of open flaws..
   };
@@ -54,14 +54,16 @@ namespace ratio
 
     void solve() override;
 
+    [[nodiscard]] json::json to_json() const override;
+
   private:
     [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
 
-    std::shared_ptr<node> find_common_ancestor(std::shared_ptr<node> a, std::shared_ptr<node> b) const;
+    const node &find_common_ancestor(const node &a, const node &b) const;
 
-    void backtrack_to(const std::shared_ptr<node> &lca) noexcept;
+    void backtrack_to(const node &lca) noexcept;
 
-    [[nodiscard]] bool go_to(const std::shared_ptr<node> &target) noexcept;
+    [[nodiscard]] bool go_to(const node &target) noexcept;
 
     [[nodiscard]] bool apply_resolver(resolver &res) noexcept;
 
@@ -85,10 +87,21 @@ namespace ratio
      * @note This is a virtual function and can be overridden by derived classes.
      */
     virtual void node_created([[maybe_unused]] const node &n) noexcept {}
+    /**
+     * @brief This function is called when the current node changes.
+     *
+     * This function should be overridden by derived classes to handle the event of a current node change.
+     *
+     * @param n The new current node.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void current_node([[maybe_unused]] std::optional<std::reference_wrapper<node>> n) noexcept {}
 #endif
 
   private:
-    std::shared_ptr<node> current_node;        // The current node in the search tree..
-    std::vector<std::shared_ptr<node>> fringe; // The fringe of the search tree..
+    std::vector<std::unique_ptr<node>> nodes;           // All nodes created during the solving process..
+    std::optional<std::reference_wrapper<node>> c_node; // The current node in the search tree..
+    std::vector<std::reference_wrapper<node>> fringe;   // The fringe of the search tree..
   };
 } // namespace ratio

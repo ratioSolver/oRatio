@@ -59,9 +59,9 @@ if(ORATIO_ENABLE_LISTENERS)
 endif()
 
 if(${HEURISTIC_TYPE} STREQUAL "h_max")
-    target_compile_definitions(oRatioLib PRIVATE H_MAX)
+    target_compile_definitions(oRatioLib PUBLIC H_MAX)
 elseif(${HEURISTIC_TYPE} STREQUAL "h_add")
-    target_compile_definitions(oRatioLib PRIVATE H_ADD)
+    target_compile_definitions(oRatioLib PUBLIC H_ADD)
 endif()
 
 if(${SOLVER_TYPE} STREQUAL "basic")

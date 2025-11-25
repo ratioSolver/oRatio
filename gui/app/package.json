@@ -1,7 +1,7 @@
 {
   "name": "gui",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@ratiosolver/flick": "^0.1.13",
-    "@ratiosolver/solver": "^0.0.48",
+    "@ratiosolver/solver": "^0.1.0",
     "bootstrap": "^5.3.6"
   }
 }

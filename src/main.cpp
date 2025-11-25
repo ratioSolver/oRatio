@@ -4,7 +4,9 @@
 #endif
 #include <thread>
 #else
-#include "solver.hpp"
+#ifdef SOLVER_BASIC
+#include "basic_solver.hpp"
+#endif
 #include <fstream>
 #endif
 #include "logging.hpp"
