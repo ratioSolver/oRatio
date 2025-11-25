@@ -32,6 +32,8 @@ export namespace solver {
     _items: Map<number, values.Item> = new Map();
     _atoms: Map<number, values.Atom> = new Map();
     private timelines: Map<number, timeline.Timeline<timeline.TimelineValue>> = new Map();
+    private tree: Map<number, tree.Node> = new Map();
+    private c_node: tree.Node | null = null;
     private flaws: Map<number, graph.Flaw> = new Map();
     private resolvers: Map<number, graph.Resolver> = new Map();
     private c_flaw: graph.Flaw | null = null;
@@ -52,6 +54,10 @@ export namespace solver {
     get_timelines(): Map<number, timeline.Timeline<timeline.TimelineValue>> { return this.timelines; }
     get_current_time(): values.Rational { return this.current_time; }
 
+    get_tree(): Map<number, tree.Node> { return this.tree; }
+    get_node(id: number): tree.Node { return this.tree.get(id)!; }
+    get_current_node(): tree.Node | null { return this.c_node; }
+
     get_flaws(): Map<number, graph.Flaw> { return this.flaws; }
     get_flaw(id: number): graph.Flaw { return this.flaws.get(id)!; }
     get_resolvers(): Map<number, graph.Resolver> { return this.resolvers; }
@@ -62,6 +68,16 @@ export namespace solver {
     state_changed(): void {
       for (const listener of this.solver_listeners) listener.state_changed();
     }
+
+    node_created(n: tree.Node): void {
+      this.tree.set(n.get_id(), n);
+      for (const listener of this.solver_listeners) listener.node_created(n);
+    }
+    current_node(n: tree.Node | null): void {
+      this.c_node = n;
+      for (const listener of this.solver_listeners) listener.current_node(n);
+    }
+
     flaw_created(flaw: graph.Flaw): void {
       this.flaws.set(flaw.get_id(), flaw);
       for (const listener of this.solver_listeners) listener.flaw_created(flaw);
@@ -111,6 +127,7 @@ export namespace solver {
       const solver = new Solver(get_id(solver_message.solver_id), solver_message.name, ExecutionState[solver_message.state as keyof typeof ExecutionState], solver_message.current_time ? values.Rational.make_rational(solver_message.current_time) : new values.Rational(0, 1));
 
       solver._set_state(solver_message);
+      solver._set_tree(solver_message);
       solver._set_graph(solver_message);
 
       return solver;
@@ -155,6 +172,25 @@ export namespace solver {
       this.state_changed();
     }
 
+    _set_tree(tree_message: SolverMessage) {
+      if (tree_message.nodes) { // we create the nodes..
+        for (const [id, nm] of Object.entries(tree_message.nodes)) {
+          const flaws: Map<number, graph.Flaw> = new Map();
+          const slv = this;
+          for (const [fid, fm] of Object.entries(nm.flaws))
+            flaws.set(Number(fid), new graph.Flaw(slv, Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
+          this.tree.set(Number(id), new tree.Node(this, Number(id), flaws));
+        }
+        for (const [id, nm] of Object.entries(tree_message.nodes)) {
+          const node = this.tree.get(Number(id))!;
+          if (nm.parent) {
+            node._parent = this.get_node(nm.parent);
+            node._resolver = new graph.Resolver(this, nm.resolver!.id!, nm.resolver!.rho!, [], node._parent!.get_flaw(nm.resolver!.flaw!), graph.State[nm.resolver!.state as keyof typeof graph.State], nm.resolver!.intrinsic_cost!, nm.resolver!.data);
+          }
+        }
+      }
+    }
+
     _set_graph(solver_message: SolverMessage) {
       if (solver_message.flaws) // we create the flaws..
         for (const [id, fm] of Object.entries(solver_message.flaws))
@@ -180,6 +216,9 @@ export namespace solver {
   export interface SolverListener {
 
     state_changed(): void;
+
+    node_created(n: tree.Node): void;
+    current_node(n: tree.Node | null): void;
 
     flaw_created(flaw: graph.Flaw): void;
     flaw_state_changed(flaw: graph.Flaw): void;
@@ -253,6 +292,23 @@ export namespace solver {
           case 'state_changed':
             const scm = message as StateChangedMessage;
             this.solvers.get(get_id(scm.solver_id))!._set_state(scm);
+            break;
+          case 'node_created':
+            const ncm = message as NodeCreatedMessage;
+            const flaws: Map<number, graph.Flaw> = new Map();
+            const nc_slv = this.solvers.get(get_id(ncm.solver_id))!;
+            for (const [id, fm] of Object.entries(ncm.flaws))
+              flaws.set(Number(id), new graph.Flaw(nc_slv, ncm.id, fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
+            const new_node = new tree.Node(nc_slv, ncm.id, flaws);
+            if (ncm.parent) {
+              new_node._parent = nc_slv.get_node(ncm.parent);
+              new_node._resolver = new graph.Resolver(nc_slv, ncm.resolver!.id!, ncm.resolver!.rho!, [], new_node._parent!.get_flaw(ncm.resolver!.flaw!), graph.State[ncm.resolver!.state as keyof typeof graph.State], ncm.resolver!.intrinsic_cost!, ncm.resolver!.data);
+            }
+            nc_slv.node_created(new_node);
+            break;
+          case 'current_node':
+            const cnm = message as CurrentNodeMessage;
+            this.solvers.get(get_id(cnm.solver_id))!.current_node(this.solvers.get(get_id(cnm.solver_id))!.get_node(cnm.id));
             break;
           case 'flaw_created':
             const fcm = message as FlawCreatedMessage;
@@ -344,6 +400,38 @@ export namespace solver {
     solver_created(solver: Solver): void;
 
     solver_deleted(id: number): void;
+  }
+
+  export namespace tree {
+
+    export class Node {
+
+      private readonly solver: solver.Solver;
+      private readonly id: number;
+      _parent?: Node;
+      _resolver?: graph.Resolver;
+      private readonly flaws: Map<number, graph.Flaw> = new Map();
+
+      constructor(solver: solver.Solver, id: number, flaws: Map<number, graph.Flaw>) {
+        this.solver = solver;
+        this.id = id;
+        this.flaws = flaws;
+      }
+
+      get_solver(): solver.Solver { return this.solver; }
+      get_id(): number { return this.id; }
+      get_parent(): Node | undefined { return this._parent; }
+      get_resolver(): graph.Resolver | undefined { return this._resolver; }
+      get_flaws(): Map<number, graph.Flaw> { return this.flaws; }
+      get_flaw(id: number): graph.Flaw { return this.flaws.get(id)!; }
+
+      to_string(expressive = false): string {
+        if (this._resolver)
+          return this._resolver.to_string(expressive);
+        else
+          return 'root';
+      }
+    }
   }
 
   export namespace graph {
@@ -997,6 +1085,18 @@ interface StateChangedMessage extends StateMessage {
   solver_id?: number;
 }
 
+interface NodeCreatedMessage extends NodeMessage {
+
+  solver_id?: number;
+  id: number;
+}
+
+interface CurrentNodeMessage {
+
+  solver_id?: number;
+  id: number;
+}
+
 interface FlawCreatedMessage extends FlawMessage {
 
   solver_id?: number;
@@ -1106,8 +1206,9 @@ interface SolverMessage extends StateMessage {
   name: string;
   state: string;
   current_time?: RationalMessage;
-  flaws?: Record<string, FlawMessage>;
-  resolvers?: Record<string, ResolverMessage>;
+  nodes?: Record<number, NodeMessage>;
+  flaws?: Record<number, FlawMessage>;
+  resolvers?: Record<number, ResolverMessage>;
   current_flaw?: number;
   current_resolver?: number;
 }
@@ -1209,6 +1310,14 @@ interface AtomValueMessage {
 }
 
 type ValueMessage = BoolMessage | IntMessage | RealMessage | TimeMessage | StringMessage | EnumMessage | ItemValueMessage | AtomValueMessage;
+
+interface NodeMessage {
+
+  id?: number;
+  parent?: number;
+  resolver?: ResolverMessage;
+  flaws: Record<number, FlawMessage>;
+}
 
 interface FlawMessage {
 

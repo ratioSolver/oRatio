@@ -84,7 +84,7 @@ namespace ratio
      *
      * @note This is a virtual function and can be overridden by derived classes.
      */
-    virtual void new_node([[maybe_unused]] const node &n) noexcept {}
+    virtual void node_created([[maybe_unused]] const node &n) noexcept {}
 #endif
 
   private:

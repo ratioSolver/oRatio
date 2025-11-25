@@ -14,6 +14,8 @@ export class SolverElement extends ListItemComponent<solver.Solver> implements s
   }
 
   state_changed(): void { }
+  node_created(_n: solver.tree.Node): void { }
+  current_node(_n: solver.tree.Node | null): void { }
   flaw_created(_flaw: solver.graph.Flaw): void { }
   flaw_state_changed(_flaw: solver.graph.Flaw): void { }
   flaw_position_changed(_flaw: solver.graph.Flaw): void { }

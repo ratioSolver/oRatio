@@ -19,7 +19,7 @@ namespace ratio
     void on_ws_error(network::ws_server_session_base &ws, const std::error_code &);
 
     void state_changed() noexcept override;
-    void new_node(const node &n) noexcept override;
+    void node_created(const node &n) noexcept override;
 
   private:
     std::unordered_set<network::ws_server_session_base *> clients;

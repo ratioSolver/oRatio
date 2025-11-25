@@ -22,6 +22,7 @@ import {
 } from '@floating-ui/dom';
 
 export { solver } from './solver/solver';
+export { SolverTree } from './solver/solver_tree';
 export { SolverGraph } from './solver/solver_graph';
 export { TimelinesChart } from './solver/solver_timelines';
 export * from './solver/solver_components';

@@ -48,7 +48,7 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
-    void server::new_node(const node &n) noexcept
+    void server::node_created(const node &n) noexcept
     {
         auto j_msg = n.to_json();
         j_msg["msg_type"] = "new_node";

@@ -8,7 +8,7 @@
 
 #ifdef ORATIO_ENABLE_LISTENERS
 #define STATE_CHANGED() state_changed()
-#define NEW_NODE(n) new_node(n)
+#define NEW_NODE(n) node_created(n)
 #else
 #define STATE_CHANGED()
 #define NEW_NODE(n)
