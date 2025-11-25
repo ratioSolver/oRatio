@@ -30,11 +30,26 @@ namespace ratio
             get_solver().new_resolver<choose_lit>(*this, lit);
     }
 
+    json::json clause_flaw::to_json() const
+    {
+        auto j = flaw::to_json();
+        j["data"]["type"] = "clause";
+        return j;
+    }
+
     choose_lit::choose_lit(clause_flaw &f, riddle::bool_expr lit) noexcept : resolver(f, utils::rational(1)), lit(lit) {}
     void choose_lit::apply()
     {
         auto &c_lit = static_cast<const riddle::bool_item &>(*lit).get_lit();
         add_ac_constraint(get_ac().new_assign(utils::variable(c_lit), utils::sign(c_lit) ? arc_consistency::solver::True : arc_consistency::solver::False));
+    }
+
+    json::json choose_lit::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "lit";
+        j["data"]["lit"] = to_string(static_cast<const riddle::bool_item &>(*lit).get_lit());
+        return j;
     }
 
     disjunction_flaw::disjunction_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
@@ -45,8 +60,22 @@ namespace ratio
             get_solver().new_resolver<choose_conjunction>(*this, *disjunct);
     }
 
+    json::json disjunction_flaw::to_json() const
+    {
+        auto j = flaw::to_json();
+        j["data"]["type"] = "disjunction";
+        return j;
+    }
+
     choose_conjunction::choose_conjunction(disjunction_flaw &f, riddle::conjunction &conj) noexcept : resolver(f, utils::rational(1)), conj(conj) {}
     void choose_conjunction::apply() { conj.execute(); }
+
+    json::json choose_conjunction::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "disjunct";
+        return j;
+    }
 
     atom_flaw::atom_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<atom>(pred, is_fact, std::move(args), std::move(sigma), *this)) {}
 

@@ -42,6 +42,8 @@ namespace ratio
   private:
     void compute_resolvers() override;
 
+    [[nodiscard]] json::json to_json() const override;
+
   private:
     std::vector<riddle::bool_expr> clause;
   };
@@ -53,6 +55,8 @@ namespace ratio
 
   private:
     void apply() override;
+
+    [[nodiscard]] json::json to_json() const override;
 
   private:
     riddle::bool_expr lit; // the literal to choose..
@@ -68,6 +72,8 @@ namespace ratio
   private:
     void compute_resolvers() override;
 
+    [[nodiscard]] json::json to_json() const override;
+
   private:
     std::vector<std::unique_ptr<riddle::conjunction>> disjuncts;
   };
@@ -80,6 +86,8 @@ namespace ratio
   private:
     void apply() override;
 
+    [[nodiscard]] json::json to_json() const override;
+
   private:
     riddle::conjunction &conj;
   };
@@ -91,12 +99,12 @@ namespace ratio
 
     [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
 
-    [[nodiscard]] json::json to_json() const override;
-
   private:
     void compute_resolvers() override;
 
     [[nodiscard]] static bool have_common_ancestors(const riddle::atom_expr &ancestor, const riddle::atom_expr &descendant);
+
+    [[nodiscard]] json::json to_json() const override;
 
   private:
     riddle::atom_expr atm;

@@ -397,6 +397,10 @@ export namespace solver {
             switch (this.data.type) {
               case 'atom':
                 return this.phi + ' ' + (this.data.atom.is_fact ? 'fact' : 'goal') + ' ' + this.data.atom.predicate.split(':').pop() + ' ' + (this._cost.num / this._cost.den);
+              case 'disjunction':
+                return this.phi + ' disjunction ' + (this._cost.num / this._cost.den);
+              case 'clause':
+                return this.phi + ' clause ' + (this._cost.num / this._cost.den);
               default:
                 return this.phi + ' ' + (this._cost.num / this._cost.den);
             }
@@ -408,6 +412,10 @@ export namespace solver {
             switch (this.data.type) {
               case 'atom':
                 return (this.data.atom.is_fact ? 'fact' : 'goal') + ' ' + this.data.atom.predicate.split(':').pop();
+              case 'disjunction':
+                return 'disjunction';
+              case 'clause':
+                return 'clause';
               default:
                 return this.phi;
             }
@@ -461,6 +469,10 @@ export namespace solver {
                 return this.rho + ' activate ' + this.get_cost();
               case 'unify_atom':
                 return this.rho + ' unify ' + this.get_cost();
+              case 'disjunct':
+                return this.rho + ' disjunct ' + this.get_cost();
+              case 'lit':
+                return this.rho + ' ' + this.data.lit + ' ' + this.get_cost();
               default:
                 return this.rho + ' ' + this.get_cost();
             }
@@ -475,6 +487,10 @@ export namespace solver {
                 return 'activate';
               case 'unify_atom':
                 return 'unify';
+              case 'disjunct':
+                return 'disjunct';
+              case 'lit':
+                return this.data.lit;
               default:
                 return this.rho;
             }
