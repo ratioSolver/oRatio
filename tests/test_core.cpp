@@ -3,7 +3,7 @@
 
 void test_basic_core()
 {
-    ratio::basic_solver slv;
+    ratio::solver slv;
 
     auto i0 = slv.new_int();
     auto i1 = slv.new_int();

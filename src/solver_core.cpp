@@ -19,65 +19,6 @@
 
 namespace ratio
 {
-    flaw::flaw(solver_core &slv, std::vector<std::reference_wrapper<resolver>> &&causes) noexcept : slv(slv), causes(std::move(causes))
-    {
-        for (auto &c : this->causes)
-            c.get().preconditions.push_back(*this);
-    }
-    linspire::solver &flaw::get_lin() const noexcept { return slv.lin_slv; }
-    arc_consistency::solver &flaw::get_ac() const noexcept { return slv.ac_slv; }
-
-    json::json flaw::to_json() const
-    {
-        json::json j_flaw{{"cost", linspire::to_json(est_cost)}};
-        if (!causes.empty())
-        {
-            json::json j_causes(json::json_type::array);
-            for (const auto &c : causes)
-                j_causes.push_back(c.get().get_id());
-            j_flaw["causes"] = std::move(j_causes);
-        }
-        return j_flaw;
-    }
-
-    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) noexcept : flw(flw), intrinsic_cost(std::move(intrinsic_cost)) { flw.resolvers.push_back(*this); }
-    void resolver::execute(const riddle::bool_expr &expr)
-    {
-        if (!get_solver().execute(expr))
-            throw std::runtime_error("Failed to execute expression in resolver");
-    }
-
-    utils::rational resolver::resolver::get_estimated_cost() const noexcept
-    {
-        if (preconditions.empty())
-            return intrinsic_cost;
-#ifdef H_ADD
-        // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
-        return std::accumulate(preconditions.begin(), preconditions.end(), intrinsic_cost, [](const auto &lhs, const auto &prec)
-                               { return lhs + prec.get().get_estimated_cost(); });
-#endif
-#ifdef H_MAX
-        // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
-        return intrinsic_cost + (*std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
-                                                   { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); }))
-                                    .get()
-                                    .get_estimated_cost();
-#endif
-    }
-
-    json::json resolver::to_json() const
-    {
-        json::json j_resolver{{"flaw", flw.get_id()}, {"intrinsic_cost", linspire::to_json(intrinsic_cost)}};
-        if (!preconditions.empty())
-        {
-            json::json j_preconditions(json::json_type::array);
-            for (const auto &p : preconditions)
-                j_preconditions.push_back(p.get().get_id());
-            j_resolver["preconditions"] = std::move(j_preconditions);
-        }
-        return j_resolver;
-    }
-
     solver_core::solver_core(std::string_view name) noexcept : riddle::core(name) {}
 
     riddle::bool_expr solver_core::new_bool() { return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ac_slv.new_sat()); }
@@ -188,13 +129,6 @@ namespace ratio
             return std::make_shared<riddle::arith_item>(static_cast<riddle::real_type &>(get_type(riddle::real_kw)), std::move(div));
         else
             throw std::runtime_error("Invalid type");
-    }
-
-    void solver_core::add_causal_link(flaw &f, resolver &r) noexcept
-    {
-        f.supports.push_back(r);
-        r.preconditions.push_back(f);
-        NEW_CAUSAL_LINK(f, r);
     }
 
     bool solver_core::match(riddle::term &lhs, riddle::term &rhs) const
@@ -424,92 +358,6 @@ namespace ratio
                 return lin_slv.new_gt(static_cast<riddle::arith_item *>(gt_xpr->get_lhs().get())->get_lin(), static_cast<riddle::arith_item *>(gt_xpr->get_rhs().get())->get_lin(), true, ctx ? std::make_optional(std::ref(ctx->get().lin_cnsts)) : std::nullopt);
             else
                 return false; // unsupported expression, just return false..
-        }
-    }
-
-    void solver_core::add_constraint(arc_consistency::constraint &c) noexcept
-    {
-        if (c_res)
-            c_res->get().ac_cnsts.push_back(c);
-        else
-            ac_slv.add_constraint(c);
-    }
-
-    std::vector<std::reference_wrapper<resolver>> solver_core::get_causes() const noexcept
-    {
-        if (c_res)
-            return {c_res->get()};
-        else
-            return {};
-    }
-
-    void solver_core::compute_resolvers(flaw &flw) noexcept
-    {
-        c_flaw = flw;
-        CURRENT_FLAW(flw);
-        assert(!flw.is_expanded());
-        flw.compute_resolvers();
-        flw.expanded = true;
-        for (auto it = flw.resolvers.begin(); it != flw.resolvers.end();)
-            try
-            {
-                c_res = *it;
-                CURRENT_RESOLVER(*it);
-                c_res->get().apply();
-                if (!apply_resolver(c_res->get()))
-                    it = flw.resolvers.erase(it);
-                else
-                    ++it;
-                retract_resolver(c_res->get());
-            }
-            catch (std::exception &)
-            { // if applying the resolver fails, we retract it and remove it from the list..
-                retract_resolver(it->get());
-                it = flw.resolvers.erase(it);
-            }
-        c_res = std::nullopt;
-        CURRENT_RESOLVER(std::nullopt);
-        c_flaw = std::nullopt;
-        CURRENT_FLAW(std::nullopt);
-    }
-
-    bool solver_core::apply_resolver(resolver &res)
-    {
-        if (!lin_slv.add_constraint(res.cnst))
-        {
-            lin_slv.retract(res.cnst);
-            return false;
-        }
-        if (!lin_slv.check())
-        {
-            lin_slv.retract(res.cnst);
-            return false;
-        }
-        for (auto &ac_cnst : res.ac_cnsts)
-            ac_slv.add_constraint(ac_cnst);
-        if (!ac_slv.propagate())
-        {
-            for (auto &ac_cnst : res.ac_cnsts)
-                ac_slv.retract(ac_cnst);
-            return false;
-        }
-        STATE_CHANGED();
-        return true;
-    }
-
-    void solver_core::retract_resolver(resolver &res) noexcept
-    {
-        lin_slv.retract(res.cnst);
-        for (auto &ac_cnst : res.ac_cnsts)
-            ac_slv.retract(ac_cnst);
-    }
-
-    void solver_core::set_flaw_cost(flaw &flw, const utils::rational &cost) noexcept
-    {
-        if (flw.est_cost != cost)
-        {
-            flw.est_cost = cost;
-            FLAW_COST_CHANGED(flw);
         }
     }
 

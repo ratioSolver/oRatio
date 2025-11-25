@@ -5,7 +5,7 @@
 
 namespace ratio
 {
-  class server : public network::server, public basic_solver
+  class server : public network::server, public solver
   {
   public:
     server();

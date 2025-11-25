@@ -3,11 +3,11 @@
 
 namespace ratio
 {
-    basic_component_type::basic_component_type(basic_solver &slv) noexcept : slv(slv) {}
+    basic_component_type::basic_component_type(solver &slv) noexcept : slv(slv) {}
 
-    basic_state_variable::basic_state_variable(basic_solver &slv) noexcept : state_variable(slv), basic_component_type(slv) {}
+    basic_state_variable::basic_state_variable(solver &slv) noexcept : state_variable(slv), basic_component_type(slv) {}
 
-    basic_reusable_resource::basic_reusable_resource(basic_solver &slv) noexcept : reusable_resource(slv), basic_component_type(slv) {}
+    basic_reusable_resource::basic_reusable_resource(solver &slv) noexcept : reusable_resource(slv), basic_component_type(slv) {}
 
-    basic_consumable_resource::basic_consumable_resource(basic_solver &slv) noexcept : consumable_resource(slv), basic_component_type(slv) {}
+    basic_consumable_resource::basic_consumable_resource(solver &slv) noexcept : consumable_resource(slv), basic_component_type(slv) {}
 } // namespace ratio

@@ -1,15 +1,103 @@
 #pragma once
 
-#include "solver_core.hpp"
+#include "basic_solver.hpp"
 
 namespace ratio
 {
-  class basic_solver;
+  class solver;
+  class resolver;
+
+  class flaw
+  {
+    friend class solver;
+    friend class resolver;
+
+  public:
+    flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes);
+    flaw(const flaw &) = delete;
+    virtual ~flaw() = default;
+
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_causes() const noexcept { return causes; }
+
+    [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
+
+    [[nodiscard]] virtual json::json to_json() const;
+
+    [[nodiscard]] size_t get_position() const noexcept { return position; }
+
+  protected:
+    arc_consistency::solver &get_ac() noexcept { return slv.ac_slv; }
+
+    template <typename Tp, typename... Args>
+    Tp &new_resolver(Args &&...args) noexcept
+    {
+      static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
+      auto r = std::make_unique<Tp>(std::forward<Args>(args)...);
+      auto &r_ref = *r;
+      resolvers.emplace_back(std::move(r));
+      return r_ref;
+    }
+
+  private:
+    virtual void compute_resolvers() = 0;
+
+  protected:
+    solver &slv; // the solver this flaw belongs to..
+
+  private:
+    std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
+    std::vector<std::unique_ptr<resolver>> resolvers;              // the resolvers for this flaw..
+    utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
+    size_t position = 0;                                           // the position of the flaw in the solver..
+  };
+
+  class resolver
+  {
+    friend class solver;
+    friend class flaw;
+
+  public:
+    resolver(flaw &flw, utils::rational &&intrinsic_cost);
+    resolver(const resolver &) = delete;
+    virtual ~resolver() = default;
+
+    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
+
+    [[nodiscard]] flaw &get_flaw() const noexcept { return flw; }
+
+    [[nodiscard]] const utils::rational &get_intrinsic_cost() const noexcept { return intrinsic_cost; }
+
+    [[nodiscard]] const std::vector<std::reference_wrapper<flaw>> &get_preconditions() const noexcept { return preconditions; }
+
+    [[nodiscard]] utils::rational get_estimated_cost() const noexcept;
+
+    [[nodiscard]] virtual json::json to_json() const;
+
+  protected:
+    [[nodiscard]] solver &get_solver() noexcept { return flw.slv; }
+    [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept { return get_solver().execute(expr, ctx); }
+
+    [[nodiscard]] linspire::solver &get_lin_solver() noexcept { return flw.slv.lin_slv; }
+    [[nodiscard]] arc_consistency::solver &get_ac_solver() noexcept { return flw.slv.ac_slv; }
+
+  private:
+    virtual bool apply() noexcept = 0;
+
+  protected:
+    flaw &flw;   // the flaw solved by this resolver..
+    context ctx; // the context in which this resolver is applied..
+
+  private:
+    utils::rational intrinsic_cost;                          // the intrinsic cost of this resolver..
+    std::vector<std::reference_wrapper<flaw>> preconditions; // the preconditions of this resolver..
+  };
 
   class enum_flaw final : public flaw
   {
   public:
-    enum_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::enum_expr var) noexcept;
+    enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::enum_expr var) noexcept;
 
     [[nodiscard]] const riddle::enum_expr &get_var() const noexcept { return var; }
 
@@ -26,7 +114,7 @@ namespace ratio
     choose_val(enum_flaw &f, riddle::expr val) noexcept;
 
   private:
-    void apply() override;
+    bool apply() noexcept override;
 
   private:
     riddle::expr val;
@@ -35,7 +123,7 @@ namespace ratio
   class clause_flaw final : public flaw
   {
   public:
-    clause_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
+    clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
 
     [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
 
@@ -54,7 +142,7 @@ namespace ratio
     choose_lit(clause_flaw &f, riddle::bool_expr lit) noexcept;
 
   private:
-    void apply() override;
+    bool apply() noexcept override;
 
     [[nodiscard]] json::json to_json() const override;
 
@@ -65,7 +153,7 @@ namespace ratio
   class disjunction_flaw final : public flaw
   {
   public:
-    disjunction_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+    disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
 
     [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
 
@@ -84,7 +172,7 @@ namespace ratio
     choose_conjunction(disjunction_flaw &f, riddle::conjunction &conj) noexcept;
 
   private:
-    void apply() override;
+    bool apply() noexcept override;
 
     [[nodiscard]] json::json to_json() const override;
 
@@ -95,7 +183,7 @@ namespace ratio
   class atom_flaw final : public flaw
   {
   public:
-    atom_flaw(basic_solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept;
+    atom_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept;
 
     [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
 
@@ -116,7 +204,7 @@ namespace ratio
     activate_fact(atom_flaw &f) noexcept;
 
   private:
-    void apply() override;
+    bool apply() noexcept override;
 
     json::json to_json() const override;
   };
@@ -127,7 +215,7 @@ namespace ratio
     activate_goal(atom_flaw &f) noexcept;
 
   private:
-    void apply() override;
+    bool apply() noexcept override;
 
     json::json to_json() const override;
   };
@@ -138,7 +226,7 @@ namespace ratio
     unify_atom(atom_flaw &f, riddle::atom_expr atm) noexcept;
 
   private:
-    void apply() override;
+    bool apply() noexcept override;
 
     json::json to_json() const override;
 

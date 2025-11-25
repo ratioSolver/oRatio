@@ -8,7 +8,7 @@
 
 namespace ratio
 {
-    basic_solver::basic_solver() noexcept : solver_core("oRatio Basic Solver")
+    solver::solver() noexcept : solver_core("oRatio Basic Solver")
     {
         read(INIT_STRING);
 
@@ -21,7 +21,7 @@ namespace ratio
         fringe.push_back(current_node);
     }
 
-    riddle::expr basic_solver::new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values)
+    riddle::expr solver::new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values)
     {
         assert(!values.empty());
         if (values.size() == 1)
@@ -43,7 +43,7 @@ namespace ratio
         }
     }
 
-    void basic_solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
+    void solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
     {
         assert(!exprs.empty());
         if (exprs.size() == 1)
@@ -64,7 +64,7 @@ namespace ratio
                 current_node->open_flaws.insert(&cf);
         }
     }
-    void basic_solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
+    void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
         auto &df = new_flaw<disjunction_flaw>(*this, get_causes(), std::move(disjuncts));
@@ -72,7 +72,7 @@ namespace ratio
             current_node->open_flaws.insert(&df);
     }
 
-    void basic_solver::solve()
+    void solver::solve()
     {
         std::size_t node_id_counter = 0;
         while (!fringe.empty())
@@ -142,7 +142,7 @@ namespace ratio
         throw std::runtime_error("No solution found");
     }
 
-    riddle::atom_expr basic_solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
+    riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
         auto &af = new_flaw<atom_flaw>(*this, get_causes(), is_fact, pred, std::move(args), ac_slv.new_sat());
         if (af.get_causes().empty())
@@ -150,34 +150,7 @@ namespace ratio
         return af.get_atom();
     }
 
-    void basic_solver::compute_flaw_cost(flaw &f) noexcept
-    {
-        std::stack<std::pair<flaw *, std::unordered_set<flaw *>>> stk;
-        stk.push({&f, {}}); // we push the flaw in the stack..
-
-        while (!stk.empty())
-        {
-            auto c_f = stk.top();
-            stk.pop();
-
-            utils::rational c_cost = utils::rational::positive_infinite;
-            for (const auto &res : c_f.first->get_resolvers())
-                c_cost = std::min(c_cost, res.get().get_estimated_cost());
-
-            if (c_f.first->get_estimated_cost() != c_cost) // we update the cost of the flaw..
-            {
-                set_flaw_cost(*c_f.first, c_cost);
-                // we propagate the cost to the causes..
-                for (auto &cause : c_f.first->get_causes())
-                    stk.push({&cause.get().get_flaw(), c_f.second}); // we push the cause flaw in the stack..
-                // we propagate the cost to the supported resolvers..
-                for (auto &support : c_f.first->get_supports())
-                    stk.push({&support.get().get_flaw(), c_f.second}); // we push the supported flaw in the stack..
-            }
-        }
-    }
-
-    std::shared_ptr<basic_solver::Node> basic_solver::find_common_ancestor(std::shared_ptr<Node> a, std::shared_ptr<Node> b) const
+    std::shared_ptr<solver::Node> solver::find_common_ancestor(std::shared_ptr<Node> a, std::shared_ptr<Node> b) const
     {
         std::unordered_set<std::shared_ptr<Node>> ancestors;
         while (a)
@@ -194,7 +167,7 @@ namespace ratio
         return nullptr;
     }
 
-    void basic_solver::backtrack_to(const std::shared_ptr<Node> &lca) noexcept
+    void solver::backtrack_to(const std::shared_ptr<Node> &lca) noexcept
     {
         while (current_node != lca)
         {
@@ -203,7 +176,7 @@ namespace ratio
         }
     }
 
-    void basic_solver::go_to(const std::shared_ptr<Node> &target)
+    void solver::go_to(const std::shared_ptr<Node> &target)
     {
         std::vector<std::shared_ptr<Node>> path;
         auto temp_node = target;
