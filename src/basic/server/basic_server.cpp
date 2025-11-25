@@ -1,4 +1,4 @@
-#include "basic_solver_server.hpp"
+#include "basic_server.hpp"
 #include "logging.hpp"
 
 namespace ratio
