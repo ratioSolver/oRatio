@@ -86,7 +86,8 @@ namespace ratio
             { // Backtrack to the common ancestor..
                 backtrack_to(find_common_ancestor(current_node, *min_it));
                 // Move to the selected node..
-                go_to(*min_it);
+                if (!go_to(*min_it))
+                    continue; // Conflict detected, backtrack..
             }
             // Remove the selected node from the fringe..
             fringe.erase(min_it);
@@ -108,8 +109,7 @@ namespace ratio
             if (flw.get_resolvers().size() == 1)
             { // If there is only one resolver and applying it does not lead to a conflict, continue from the current node..
                 auto &res = flw.get_resolvers().front().get();
-                apply_resolver(res);
-                if (ac_slv.propagate() && lin_slv.check())
+                if (apply_resolver(res) && ac_slv.propagate() && lin_slv.check())
                 {
                     for (auto pre : res.get_preconditions())
                         current_node->open_flaws.insert(&pre.get());
@@ -194,7 +194,7 @@ namespace ratio
         }
     }
 
-    void basic_solver::go_to(const std::shared_ptr<Node> &target)
+    bool basic_solver::go_to(const std::shared_ptr<Node> &target)
     {
         std::vector<std::shared_ptr<Node>> path;
         auto temp_node = target;
@@ -204,9 +204,10 @@ namespace ratio
             temp_node = temp_node->parent;
         }
         for (auto it = path.rbegin(); it != path.rend(); ++it)
-        {
-            apply_resolver((*it)->res->get());
-            current_node = *it;
-        }
+            if (apply_resolver((*it)->res->get()))
+                current_node = *it;
+            else
+                return false;
+        return true;
     }
 } // namespace ratio

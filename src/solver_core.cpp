@@ -451,11 +451,13 @@ namespace ratio
         CURRENT_FLAW(std::nullopt);
     }
 
-    void solver_core::apply_resolver(resolver &res) noexcept
+    bool solver_core::apply_resolver(resolver &res) noexcept
     {
-        lin_slv.add_constraint(res.cnst);
+        if (!lin_slv.add_constraint(res.cnst))
+            return false;
         for (auto &ac_cnst : res.ac_cnsts)
             ac_slv.add_constraint(ac_cnst);
+        return true;
     }
 
     void solver_core::retract_resolver(resolver &res) noexcept

@@ -188,7 +188,7 @@ namespace ratio
 
     void compute_resolvers(flaw &flw) noexcept;
 
-    void apply_resolver(resolver &res) noexcept;
+    [[nodiscard]] bool apply_resolver(resolver &res) noexcept;
 
     void retract_resolver(resolver &res) noexcept;
 

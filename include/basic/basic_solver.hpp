@@ -48,7 +48,7 @@ namespace ratio
 
     void backtrack_to(const std::shared_ptr<Node> &lca);
 
-    void go_to(const std::shared_ptr<Node> &target);
+    [[nodiscard]] bool go_to(const std::shared_ptr<Node> &target);
 
   private:
     std::shared_ptr<Node> current_node;        // The current node in the search tree..
