@@ -73,6 +73,7 @@ export namespace solver {
       this.tree.set(n.get_id(), n);
       for (const listener of this.solver_listeners) listener.node_created(n);
     }
+    node_updated(n: tree.Node): void { for (const listener of this.solver_listeners) listener.node_updated(n); }
     current_node(n: tree.Node | null): void {
       this.c_node = n;
       for (const listener of this.solver_listeners) listener.current_node(n);
@@ -218,6 +219,7 @@ export namespace solver {
     state_changed(): void;
 
     node_created(n: tree.Node): void;
+    node_updated(n: tree.Node): void;
     current_node(n: tree.Node | null): void;
 
     flaw_created(flaw: graph.Flaw): void;
@@ -312,10 +314,16 @@ export namespace solver {
             break;
           case 'flaw_created':
             const fcm = message as FlawCreatedMessage;
-            const causes: graph.Resolver[] = fcm.causes ? fcm.causes.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
-            const supports: graph.Resolver[] = fcm.supports ? fcm.supports.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
             const fc_slv = this.solvers.get(get_id(fcm.solver_id))!;
-            fc_slv.flaw_created(new graph.Flaw(fc_slv, fcm.id, fcm.phi, causes, supports, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
+            if (fcm.node_id) {
+              const node = this.solvers.get(get_id(fcm.solver_id))!.get_node(fcm.node_id);
+              node._add_flaw(new graph.Flaw(this.solvers.get(get_id(fcm.solver_id))!, fcm.id, fcm.phi, [], [], graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
+              fc_slv.node_updated(node);
+            } else {
+              const causes: graph.Resolver[] = fcm.causes ? fcm.causes.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
+              const supports: graph.Resolver[] = fcm.supports ? fcm.supports.map((id: number) => this.solvers.get(get_id(fcm.solver_id))!.get_resolver(id)) : [];
+              fc_slv.flaw_created(new graph.Flaw(fc_slv, fcm.id, fcm.phi, causes, supports, graph.State[fcm.state as keyof typeof graph.State], fcm.cost, fcm.position, fcm.data));
+            }
             break;
           case 'flaw_state_changed':
             const fscm = message as FlawStateChangedMessage;
@@ -422,14 +430,22 @@ export namespace solver {
       get_id(): number { return this.id; }
       get_parent(): Node | undefined { return this._parent; }
       get_resolver(): graph.Resolver | undefined { return this._resolver; }
-      get_flaws(): Map<number, graph.Flaw> { return this.flaws; }
+      _add_flaw(flaw: graph.Flaw) { this.flaws.set(flaw.get_id(), flaw); }
       get_flaw(id: number): graph.Flaw { return this.flaws.get(id)!; }
 
       to_string(expressive = false): string {
-        if (this._resolver)
-          return this._resolver.to_string(expressive);
-        else
-          return 'root';
+        if (expressive) {
+          if (this._resolver)
+            return this._resolver.to_string(expressive) + ' [' + Array.from(this.flaws.values()).map(flaw => flaw.to_string(expressive)).join(', ') + ']';
+          else
+            return 'root' + ' [' + Array.from(this.flaws.values()).map(flaw => flaw.to_string(expressive)).join(', ') + ']';
+        }
+        else {
+          if (this._resolver)
+            return this._resolver.to_string(expressive) + ' (' + this.flaws.size + ')';
+          else
+            return 'root' + ' (' + this.flaws.size + ')';
+        }
       }
     }
   }
@@ -1100,6 +1116,7 @@ interface CurrentNodeMessage {
 interface FlawCreatedMessage extends FlawMessage {
 
   solver_id?: number;
+  node_id?: number;
   id: number;
 }
 

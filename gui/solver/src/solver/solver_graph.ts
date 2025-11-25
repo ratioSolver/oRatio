@@ -103,6 +103,7 @@ export class SolverGraph extends PayloadComponent<HTMLDivElement, solver.Solver>
 
   state_changed(): void { }
   node_created(_n: solver.tree.Node): void { }
+  node_updated(_n: solver.tree.Node): void { }
   current_node(_n: solver.tree.Node | null): void { }
 
   flaw_created(flaw: solver.graph.Flaw): void {

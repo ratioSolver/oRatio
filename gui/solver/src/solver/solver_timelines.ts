@@ -66,7 +66,9 @@ export class TimelinesChart extends PayloadComponent<HTMLDivElement, solver.Solv
 
     Plotly.react(this.node, data.flat(), this.layout, this.config);
   }
+
   node_created(_n: solver.tree.Node): void { }
+  node_updated(_n: solver.tree.Node): void { }
   current_node(_n: solver.tree.Node | null): void { }
   flaw_created(_flaw: solver.graph.Flaw): void { }
   flaw_state_changed(_flaw: solver.graph.Flaw): void { }

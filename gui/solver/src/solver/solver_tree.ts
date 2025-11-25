@@ -74,6 +74,11 @@ export class SolverTree extends PayloadComponent<HTMLDivElement, solver.Solver> 
     this.cy!.add({ group: 'edges', data: { id: `${node.get_parent()!.get_id()}-${node.get_id()}`, source: node.get_parent()!.get_id(), target: node.get_id(), stroke: 'solid' } });
     this.cy!.layout(this.layout).run();
   }
+  node_updated(node: solver.tree.Node): void {
+    const cy_node = this.cy!.$id(node.get_id().toString());
+    cy_node.data('label', node.to_string());
+    this.cy!.layout(this.layout).run();
+  }
   current_node(node: solver.tree.Node | null): void {
     if (this.c_node)
       this.cy!.$id(this.c_node.get_id().toString()).removeClass('current');

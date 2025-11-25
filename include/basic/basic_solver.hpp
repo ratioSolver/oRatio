@@ -88,6 +88,17 @@ namespace ratio
      */
     virtual void node_created([[maybe_unused]] const node &n) noexcept {}
     /**
+     * @brief This function is called when a new flaw is created on a node.
+     *
+     * This function should be overridden by derived classes to handle the event of a new flaw creation.
+     *
+     * @param n The node on which the flaw was created.
+     * @param f The newly created flaw.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void flaw_created([[maybe_unused]] const node &n, [[maybe_unused]] const flaw &f) noexcept {}
+    /**
      * @brief This function is called when the current node changes.
      *
      * This function should be overridden by derived classes to handle the event of a current node change.

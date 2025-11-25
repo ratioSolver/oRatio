@@ -9,10 +9,12 @@
 #ifdef ORATIO_ENABLE_LISTENERS
 #define STATE_CHANGED() state_changed()
 #define NEW_NODE(n) node_created(n)
+#define FLAW_CREATED(n, f) flaw_created(n, f)
 #define CURRENT_NODE(n) current_node(n)
 #else
 #define STATE_CHANGED()
 #define NEW_NODE(n)
+#define FLAW_CREATED(n, f)
 #define CURRENT_NODE(n)
 #endif
 
@@ -31,9 +33,9 @@ namespace ratio
             j["parent"] = parent->get().get_id();
         if (res)
             j["resolver"] = res->get().to_json();
-        json::json j_flaws(json::json_type::array);
+        json::json j_flaws;
         for (const auto &flw : open_flaws)
-            j_flaws.push_back(flw->to_json());
+            j_flaws[std::to_string(flw->get_id())] = flw->to_json();
         j["flaws"] = std::move(j_flaws);
         return j;
     }
@@ -74,6 +76,7 @@ namespace ratio
                 causes.push_back(c_node->get().res->get());
             auto ef = std::make_shared<enum_flaw>(*this, std::move(causes), std::make_shared<riddle::enum_item>(tp, std::move(values), ev));
             c_node->get().open_flaws.insert(ef);
+            FLAW_CREATED(c_node->get(), *ef);
             return ef->get_var();
         }
     }
@@ -103,6 +106,7 @@ namespace ratio
                 causes.push_back(c_node->get().res->get());
             auto cf = std::make_shared<clause_flaw>(*this, std::move(causes), std::move(exprs));
             c_node->get().open_flaws.insert(cf);
+            FLAW_CREATED(c_node->get(), *cf);
         }
     }
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
@@ -113,6 +117,7 @@ namespace ratio
             causes.push_back(c_node->get().res->get());
         auto df = std::make_shared<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
         c_node->get().open_flaws.insert(df);
+        FLAW_CREATED(c_node->get(), *df);
     }
 
     void solver::solve()
@@ -173,9 +178,9 @@ namespace ratio
     json::json solver::to_json() const
     {
         json::json j = core::to_json();
-        json::json j_nodes(json::json_type::array);
+        json::json j_nodes;
         for (const auto &n : nodes)
-            j_nodes.push_back(n->to_json());
+            j_nodes[std::to_string(n->get_id())] = n->to_json();
         j["nodes"] = std::move(j_nodes);
         return j;
     }
@@ -186,6 +191,8 @@ namespace ratio
         if (c_node->get().res)
             causes.push_back(c_node->get().res->get());
         auto af = std::make_shared<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), ac_slv.new_sat());
+        c_node->get().open_flaws.insert(af);
+        FLAW_CREATED(c_node->get(), *af);
         return af->get_atom();
     }
 
@@ -196,14 +203,14 @@ namespace ratio
         while (c_a)
         {
             ancestors.insert(c_a);
-            c_a = &c_a->parent->get();
+            c_a = c_a->parent ? &c_a->parent->get() : nullptr;
         }
         auto c_b = &b;
         while (c_b)
         {
             if (ancestors.count(c_b))
                 return *c_b;
-            c_b = &c_b->parent->get();
+            c_b = c_b->parent ? &c_b->parent->get() : nullptr;
         }
         throw std::runtime_error("No common ancestor found");
     }

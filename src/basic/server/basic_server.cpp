@@ -1,4 +1,5 @@
 #include "basic_server.hpp"
+#include "basic_flaws.hpp"
 #include "logging.hpp"
 
 namespace ratio
@@ -51,7 +52,26 @@ namespace ratio
     void server::node_created(const node &n) noexcept
     {
         auto j_msg = n.to_json();
-        j_msg["msg_type"] = "new_node";
+        j_msg["msg_type"] = "node_created";
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+    void server::flaw_created(const node &n, const flaw &f) noexcept
+    {
+        auto j_msg = f.to_json();
+        j_msg["msg_type"] = "flaw_created";
+        j_msg["node_id"] = n.get_id();
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+    void server::current_node(std::optional<std::reference_wrapper<node>> n) noexcept
+    {
+        json::json j_msg;
+        j_msg["msg_type"] = "current_node";
+        if (n.has_value())
+            j_msg["id"] = n->get().get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

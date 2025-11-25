@@ -20,6 +20,8 @@ namespace ratio
 
     void state_changed() noexcept override;
     void node_created(const node &n) noexcept override;
+    void flaw_created(const node &n, const flaw &f) noexcept override;
+    void current_node(std::optional<std::reference_wrapper<node>> n) noexcept override;
 
   private:
     std::unordered_set<network::ws_server_session_base *> clients;
