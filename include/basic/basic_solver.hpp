@@ -50,7 +50,9 @@ namespace ratio
 
     void backtrack_to(const std::shared_ptr<Node> &lca) noexcept;
 
-    void go_to(const std::shared_ptr<Node> &target);
+    [[nodiscard]] bool go_to(const std::shared_ptr<Node> &target) noexcept;
+
+    [[nodiscard]] bool apply_resolver(resolver &res) noexcept;
 
   private:
     std::shared_ptr<Node> current_node;        // The current node in the search tree..
