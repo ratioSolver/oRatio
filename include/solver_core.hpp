@@ -6,6 +6,11 @@
 
 namespace ratio
 {
+  struct context
+  {
+    linspire::constraint lin_cnsts;                                            // The linear constraints in the current context..
+    std::vector<std::reference_wrapper<arc_consistency::constraint>> ac_cnsts; // The arc consistency constraints in the current context..
+  };
   class solver_core;
   class resolver;
 
@@ -180,7 +185,7 @@ namespace ratio
     [[nodiscard]] bool match(riddle::term &lhs, riddle::term &rhs) const;
 
   protected:
-    [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept;
+    [[nodiscard]] bool execute(const riddle::bool_expr &expr, std::optional<std::reference_wrapper<context>> ctx = std::nullopt) noexcept;
 
     void add_constraint(arc_consistency::constraint &c) noexcept;
 
