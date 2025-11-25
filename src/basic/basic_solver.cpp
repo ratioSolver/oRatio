@@ -20,7 +20,7 @@
 
 namespace ratio
 {
-    node::node(std::optional<std::reference_wrapper<node>> parent, std::optional<std::reference_wrapper<resolver>> res) noexcept : parent(std::move(parent)), res(res)
+    node::node(std::optional<std::reference_wrapper<node>> parent, std::shared_ptr<resolver> res) noexcept : parent(std::move(parent)), res(res)
     {
         if (this->parent) // If there is a parent, inherit its open flaws..
             this->open_flaws = this->parent->get().open_flaws;
@@ -32,7 +32,7 @@ namespace ratio
         if (parent)
             j["parent"] = parent->get().get_id();
         if (res)
-            j["resolver"] = res->get().to_json();
+            j["resolver"] = res->to_json();
         json::json j_flaws;
         for (const auto &flw : open_flaws)
             j_flaws[std::to_string(flw->get_id())] = flw->to_json();
@@ -73,7 +73,7 @@ namespace ratio
             // .. and create a new enum flaw to manage the variable..
             std::vector<std::reference_wrapper<resolver>> causes;
             if (c_node->get().res)
-                causes.push_back(c_node->get().res->get());
+                causes.push_back(*c_node->get().res);
             auto ef = std::make_shared<enum_flaw>(*this, std::move(causes), std::make_shared<riddle::enum_item>(tp, std::move(values), ev));
             c_node->get().open_flaws.insert(ef);
             FLAW_CREATED(c_node->get(), *ef);
@@ -98,12 +98,12 @@ namespace ratio
 
             auto &c = ac_slv.new_clause(std::move(clause));
             if (c_node->get().res)
-                c_node->get().res->get().ctx.ac_cnsts.push_back(std::ref(c));
+                c_node->get().res->ctx.ac_cnsts.push_back(std::ref(c));
             else
                 ac_slv.add_constraint(c);
             std::vector<std::reference_wrapper<resolver>> causes;
             if (c_node->get().res)
-                causes.push_back(c_node->get().res->get());
+                causes.push_back(*c_node->get().res);
             auto cf = std::make_shared<clause_flaw>(*this, std::move(causes), std::move(exprs));
             c_node->get().open_flaws.insert(cf);
             FLAW_CREATED(c_node->get(), *cf);
@@ -114,7 +114,7 @@ namespace ratio
         assert(disjuncts.size() > 1);
         std::vector<std::reference_wrapper<resolver>> causes;
         if (c_node->get().res)
-            causes.push_back(c_node->get().res->get());
+            causes.push_back(*c_node->get().res);
         auto df = std::make_shared<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
         c_node->get().open_flaws.insert(df);
         FLAW_CREATED(c_node->get(), *df);
@@ -156,14 +156,14 @@ namespace ratio
                 continue; // No resolvers available, backtrack..
             case 1:
                 if (c_node->get().res)
-                    if (!apply_resolver(c_node->get().res->get()))
+                    if (!apply_resolver(*c_node->get().res))
                         continue; // Conflict detected, backtrack..
                 fringe.push_back(c_node->get());
                 break;
             default:
                 for (auto &res : c_flw->resolvers)
                 {
-                    auto n = std::make_unique<node>(c_node->get(), *res);
+                    auto n = std::make_unique<node>(c_node->get(), res);
                     NEW_NODE(*n);
                     fringe.push_back(*n);
                     nodes.push_back(std::move(n));
@@ -189,7 +189,7 @@ namespace ratio
     {
         std::vector<std::reference_wrapper<resolver>> causes;
         if (c_node->get().res)
-            causes.push_back(c_node->get().res->get());
+            causes.push_back(*c_node->get().res);
         auto af = std::make_shared<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), ac_slv.new_sat());
         c_node->get().open_flaws.insert(af);
         FLAW_CREATED(c_node->get(), *af);
@@ -219,8 +219,8 @@ namespace ratio
     {
         while (&c_node->get() != &lca)
         {
-            lin_slv.retract(c_node->get().res->get().ctx.lin_cnsts);
-            for (auto &ac_cnst : c_node->get().res->get().ctx.ac_cnsts)
+            lin_slv.retract(c_node->get().res->ctx.lin_cnsts);
+            for (auto &ac_cnst : c_node->get().res->ctx.ac_cnsts)
                 ac_slv.retract(ac_cnst.get());
             c_node = *c_node->get().parent;
             CURRENT_NODE(c_node);
@@ -238,7 +238,7 @@ namespace ratio
         }
         for (auto it = path.rbegin(); it != path.rend(); ++it)
         {
-            if (!apply_resolver((*it)->res->get()))
+            if (!apply_resolver(*(*it)->res))
                 return false;
             c_node = std::ref(const_cast<ratio::node &>(**it));
             CURRENT_NODE(c_node);

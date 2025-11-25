@@ -34,7 +34,7 @@ namespace ratio
     Tp &new_resolver(Args &&...args) noexcept
     {
       static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
-      auto r = std::make_unique<Tp>(std::forward<Args>(args)...);
+      auto r = std::make_shared<Tp>(std::forward<Args>(args)...);
       auto &r_ref = *r;
       resolvers.emplace_back(std::move(r));
       return r_ref;
@@ -48,7 +48,7 @@ namespace ratio
 
   private:
     std::vector<std::reference_wrapper<resolver>> causes;          // the causes of this flaw..
-    std::vector<std::unique_ptr<resolver>> resolvers;              // the resolvers for this flaw..
+    std::vector<std::shared_ptr<resolver>> resolvers;              // the resolvers for this flaw..
     utils::rational est_cost = utils::rational::positive_infinite; // the current estimated cost of the flaw..
     size_t position = 0;                                           // the position of the flaw in the solver..
   };

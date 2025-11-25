@@ -26,7 +26,7 @@ namespace ratio
     friend class solver;
 
   public:
-    node(std::optional<std::reference_wrapper<node>> parent = std::nullopt, std::optional<std::reference_wrapper<resolver>> res = std::nullopt) noexcept;
+    node(std::optional<std::reference_wrapper<node>> parent = std::nullopt, std::shared_ptr<resolver> res = nullptr) noexcept;
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
@@ -34,7 +34,7 @@ namespace ratio
 
   private:
     std::optional<std::reference_wrapper<node>> parent;   // The parent node..
-    std::optional<std::reference_wrapper<resolver>> res;  // The resolver applied to
+    std::shared_ptr<resolver> res;                        // The resolver applied to
     std::unordered_set<std::shared_ptr<flaw>> open_flaws; // The set of open flaws..
   };
 
