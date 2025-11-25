@@ -59,18 +59,6 @@ namespace ratio
   private:
     [[nodiscard]] riddle::atom_state get_atom_state(const riddle::atom_term &atom) const noexcept override;
 
-#ifdef ORATIO_ENABLE_LISTENERS
-  private:
-    /**
-     * @brief This function is called when the state of the solver changes.
-     *
-     * This function should be overridden by derived classes to handle the state change event.
-     *
-     * @note This is a virtual function and can be overridden by derived classes.
-     */
-    virtual void state_changed() noexcept {}
-#endif
-
   protected:
     arc_consistency::solver ac_slv; // The arc consistency solver..
     linspire::solver lin_slv;       // The linear programming solver..

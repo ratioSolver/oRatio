@@ -3,20 +3,6 @@
 #include "logging.hpp"
 #include <cassert>
 
-#ifdef ORATIO_ENABLE_LISTENERS
-#define STATE_CHANGED() state_changed()
-#define CURRENT_FLAW(f) current_flaw(f)
-#define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
-#define CURRENT_RESOLVER(r) current_resolver(r)
-#define NEW_CAUSAL_LINK(f, r) causal_link_added(f, r)
-#else
-#define STATE_CHANGED()
-#define CURRENT_FLAW(f)
-#define FLAW_COST_CHANGED(f)
-#define CURRENT_RESOLVER(r)
-#define NEW_CAUSAL_LINK(f, r)
-#endif
-
 namespace ratio
 {
     solver_core::solver_core(std::string_view name) noexcept : riddle::core(name) {}

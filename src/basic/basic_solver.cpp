@@ -6,6 +6,14 @@
 #include <stack>
 #include <cassert>
 
+#ifdef ORATIO_ENABLE_LISTENERS
+#define STATE_CHANGED() state_changed()
+#define NEW_NODE(n) new_node(n)
+#else
+#define STATE_CHANGED()
+#define NEW_NODE(n)
+#endif
+
 namespace ratio
 {
     solver::solver() noexcept : solver_core("oRatio Basic Solver")
@@ -17,7 +25,7 @@ namespace ratio
         add_type(std::make_unique<basic_consumable_resource>(*this));
 
         // Initialize the root node..
-        current_node = std::make_shared<Node>();
+        current_node = std::make_shared<node>();
         fringe.push_back(current_node);
     }
 
@@ -84,14 +92,11 @@ namespace ratio
 
     void solver::solve()
     {
-        std::size_t node_id_counter = 0;
         while (!fringe.empty())
         {
             // Select the node with the least number of open flaws..
-            auto min_it = std::min_element(fringe.begin(), fringe.end(),
-                                           [](const std::shared_ptr<Node> &a, const std::shared_ptr<Node> &b)
+            auto min_it = std::min_element(fringe.begin(), fringe.end(), [](const std::shared_ptr<node> &a, const std::shared_ptr<node> &b)
                                            { return a->open_flaws.size() < b->open_flaws.size(); });
-            LOG_DEBUG("Expanding node " << (*min_it)->id << " with " << (*min_it)->open_flaws.size() << " open flaws.");
             if (current_node != *min_it)
             { // Backtrack to the common ancestor..
                 backtrack_to(find_common_ancestor(current_node, *min_it));
@@ -129,16 +134,13 @@ namespace ratio
             default:
                 for (auto &res : flw.resolvers)
                 {
-                    auto child_node = std::make_shared<Node>();
-                    child_node->id = ++node_id_counter;
-                    child_node->parent = current_node;
-                    child_node->res = *res;
-                    child_node->open_flaws = current_node->open_flaws;
-                    fringe.push_back(child_node);
+                    auto n = std::make_shared<node>(current_node, *res);
+                    NEW_NODE(*n);
+                    fringe.push_back(n);
                 }
                 break;
             }
-            LOG_TRACE(to_json().dump());
+            STATE_CHANGED();
         }
         throw std::runtime_error("No solution found");
     }
@@ -152,9 +154,9 @@ namespace ratio
         return af->get_atom();
     }
 
-    std::shared_ptr<solver::Node> solver::find_common_ancestor(std::shared_ptr<Node> a, std::shared_ptr<Node> b) const
+    std::shared_ptr<node> solver::find_common_ancestor(std::shared_ptr<node> a, std::shared_ptr<node> b) const
     {
-        std::unordered_set<std::shared_ptr<Node>> ancestors;
+        std::unordered_set<std::shared_ptr<node>> ancestors;
         while (a)
         {
             ancestors.insert(a);
@@ -169,7 +171,7 @@ namespace ratio
         return nullptr;
     }
 
-    void solver::backtrack_to(const std::shared_ptr<Node> &lca) noexcept
+    void solver::backtrack_to(const std::shared_ptr<node> &lca) noexcept
     {
         while (current_node != lca)
         {
@@ -180,9 +182,9 @@ namespace ratio
         }
     }
 
-    bool solver::go_to(const std::shared_ptr<Node> &target) noexcept
+    bool solver::go_to(const std::shared_ptr<node> &target) noexcept
     {
-        std::vector<std::shared_ptr<Node>> path;
+        std::vector<std::shared_ptr<node>> path;
         auto temp_node = target;
         while (temp_node != current_node)
         {

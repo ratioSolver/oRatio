@@ -8,6 +8,7 @@ namespace ratio
   class flaw;
   class resolver;
   class atom_flaw;
+  class solver;
 
   class atom : public riddle::atom
   {
@@ -18,6 +19,23 @@ namespace ratio
 
   private:
     atom_flaw &flaw; // the flaw associated with this atom..
+  };
+
+  class node
+  {
+    friend class solver;
+
+  public:
+    node(std::shared_ptr<node> parent = nullptr, std::optional<std::reference_wrapper<resolver>> res = std::nullopt) noexcept : parent(std::move(parent)), res(res)
+    {
+      if (this->parent) // If there is a parent, inherit its open flaws..
+        this->open_flaws = this->parent->open_flaws;
+    }
+
+  private:
+    std::shared_ptr<node> parent;                         // The parent node..
+    std::optional<std::reference_wrapper<resolver>> res;  // The resolver applied to
+    std::unordered_set<std::shared_ptr<flaw>> open_flaws; // The set of open flaws..
   };
 
   class solver : public solver_core
@@ -39,23 +57,38 @@ namespace ratio
   private:
     [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
 
-    struct Node
-    {
-      std::size_t id = 0;                                   // The unique identifier of the node..
-      std::shared_ptr<Node> parent;                         // The parent node..
-      std::optional<std::reference_wrapper<resolver>> res;  // The resolver applied to reach this node..
-      std::unordered_set<std::shared_ptr<flaw>> open_flaws; // The set of open flaws..
-    };
-    std::shared_ptr<Node> find_common_ancestor(std::shared_ptr<Node> a, std::shared_ptr<Node> b) const;
+    std::shared_ptr<node> find_common_ancestor(std::shared_ptr<node> a, std::shared_ptr<node> b) const;
 
-    void backtrack_to(const std::shared_ptr<Node> &lca) noexcept;
+    void backtrack_to(const std::shared_ptr<node> &lca) noexcept;
 
-    [[nodiscard]] bool go_to(const std::shared_ptr<Node> &target) noexcept;
+    [[nodiscard]] bool go_to(const std::shared_ptr<node> &target) noexcept;
 
     [[nodiscard]] bool apply_resolver(resolver &res) noexcept;
 
+#ifdef ORATIO_ENABLE_LISTENERS
   private:
-    std::shared_ptr<Node> current_node;        // The current node in the search tree..
-    std::vector<std::shared_ptr<Node>> fringe; // The fringe of the search tree..
+    /**
+     * @brief This function is called when the state of the solver changes.
+     *
+     * This function should be overridden by derived classes to handle the state change event.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void state_changed() noexcept {}
+    /**
+     * @brief This function is called when a new node is created.
+     *
+     * This function should be overridden by derived classes to handle the event of a new node creation.
+     *
+     * @param n The newly created node.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void new_node([[maybe_unused]] const node &n) noexcept {}
+#endif
+
+  private:
+    std::shared_ptr<node> current_node;        // The current node in the search tree..
+    std::vector<std::shared_ptr<node>> fringe; // The fringe of the search tree..
   };
 } // namespace ratio
