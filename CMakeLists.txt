@@ -66,7 +66,7 @@ endif()
 
 if(${SOLVER_TYPE} STREQUAL "basic")
     target_include_directories(oRatioLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/basic>)
-    target_sources(oRatioLib PRIVATE src/basic/basic_solver.cpp src/basic/basic_flaws.cpp)
+    target_sources(oRatioLib PRIVATE src/basic/basic_solver.cpp src/basic/basic_flaws.cpp src/basic/basic_types.cpp)
 elseif(${SOLVER_TYPE} STREQUAL "local_search")
 endif()
 

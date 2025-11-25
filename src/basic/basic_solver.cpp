@@ -1,5 +1,6 @@
 #include "basic_solver.hpp"
 #include "basic_flaws.hpp"
+#include "basic_types.hpp"
 #include "conjunction.hpp"
 #include "logging.hpp"
 #include <stack>
@@ -10,6 +11,11 @@ namespace ratio
     basic_solver::basic_solver() noexcept : solver_core("oRatio Basic Solver")
     {
         read(INIT_STRING);
+
+        add_type(std::make_unique<basic_state_variable>(*this));
+        add_type(std::make_unique<basic_reusable_resource>(*this));
+        add_type(std::make_unique<basic_consumable_resource>(*this));
+
         // Initialize the root node..
         current_node = std::make_shared<Node>();
         fringe.push_back(current_node);
