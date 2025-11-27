@@ -10,11 +10,15 @@
 #define STATE_CHANGED() state_changed()
 #define NEW_NODE(n) node_created(n)
 #define FLAW_CREATED(n, f) flaw_created(n, f)
+#define RESOLVER_APPLIED(n, r) resolver_applied(n, r)
+#define INCONSISTENT_NODE(n) inconsistent_node(n)
 #define CURRENT_NODE(n) current_node(n)
 #else
 #define STATE_CHANGED()
 #define NEW_NODE(n)
 #define FLAW_CREATED(n, f)
+#define RESOLVER_APPLIED(n, r)
+#define INCONSISTENT_NODE(n)
 #define CURRENT_NODE(n)
 #endif
 
@@ -146,13 +150,11 @@ namespace ratio
         json::json j{{"id", get_id()}};
         if (parent)
             j["parent"] = parent->get().get_id();
-        if (!ress.empty())
-        {
-            json::json j_ress(json::json_type::array);
-            for (const auto &res : ress)
-                j_ress.push_back(res->to_json());
-            j["resolvers"] = std::move(j_ress);
-        }
+        j["consistent"] = consistent;
+        json::json j_ress;
+        for (const auto &res : resolvers)
+            j_ress[res->get_id()] = res->to_json();
+        j["resolvers"] = std::move(j_ress);
         json::json j_flaws;
         for (const auto &flw : open_flaws)
             j_flaws[std::to_string(flw->get_id())] = flw->to_json();
@@ -192,8 +194,8 @@ namespace ratio
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
             std::vector<std::reference_wrapper<resolver>> causes;
-            if (!c_node->get().ress.empty())
-                causes.push_back(*c_node->get().ress.back());
+            if (!c_node->get().resolvers.empty())
+                causes.push_back(*c_node->get().resolvers.back());
             auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
             return ef.get_var();
         }
@@ -215,13 +217,13 @@ namespace ratio
                 clause.push_back(static_cast<const riddle::bool_item &>(*expr).get_lit());
 
             auto &c = ac_slv.new_clause(std::move(clause));
-            if (!c_node->get().ress.empty())
-                c_node->get().ress.back()->ctx.ac_cnsts.push_back(std::ref(c));
+            if (!c_node->get().resolvers.empty())
+                c_node->get().resolvers.back()->ctx.ac_cnsts.push_back(std::ref(c));
             else
                 ac_slv.add_constraint(c);
             std::vector<std::reference_wrapper<resolver>> causes;
-            if (!c_node->get().ress.empty())
-                causes.push_back(*c_node->get().ress.back());
+            if (!c_node->get().resolvers.empty())
+                causes.push_back(*c_node->get().resolvers.back());
             new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
         }
     }
@@ -229,8 +231,8 @@ namespace ratio
     {
         assert(disjuncts.size() > 1);
         std::vector<std::reference_wrapper<resolver>> causes;
-        if (!c_node->get().ress.empty())
-            causes.push_back(*c_node->get().ress.back());
+        if (!c_node->get().resolvers.empty())
+            causes.push_back(*c_node->get().resolvers.back());
         new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
     }
 
@@ -275,11 +277,13 @@ namespace ratio
             case 1: // Only one resolver, apply it directly..
                 if (c_flw->resolvers.at(0)->apply())
                 {
-                    c_node->get().ress.push_back(c_flw->resolvers.at(0));
+                    RESOLVER_APPLIED(c_node->get(), *c_flw->resolvers.at(0));
+                    c_node->get().resolvers.push_back(c_flw->resolvers.at(0));
                     fringe.push_back(c_node->get());
                 }
                 else
                 {
+                    INCONSISTENT_NODE(c_node->get());
                     lin_slv.retract(c_flw->resolvers.at(0)->ctx.lin_cnsts);
                     for (auto &ac_cnst : c_flw->resolvers.at(0)->ctx.ac_cnsts)
                         ac_slv.retract(ac_cnst.get());
@@ -300,7 +304,7 @@ namespace ratio
                     CURRENT_NODE(c_node);
                     if (apply)
                     {
-                        n->ress.push_back(res);
+                        n->resolvers.push_back(res);
                         fringe.push_back(*n);
                         nodes.push_back(std::move(n));
                     }
@@ -326,8 +330,8 @@ namespace ratio
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
         std::vector<std::reference_wrapper<resolver>> causes;
-        if (!c_node->get().ress.empty())
-            causes.push_back(*c_node->get().ress.back());
+        if (!c_node->get().resolvers.empty())
+            causes.push_back(*c_node->get().resolvers.back());
         auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), ac_slv.new_sat());
         return af.get_atom();
     }
@@ -355,7 +359,7 @@ namespace ratio
     {
         while (&c_node->get() != &lca)
         {
-            for (auto &res : c_node->get().ress)
+            for (auto &res : c_node->get().resolvers)
             {
                 lin_slv.retract(res->ctx.lin_cnsts);
                 for (auto &ac_cnst : res->ctx.ac_cnsts)
@@ -377,7 +381,7 @@ namespace ratio
         }
         for (auto it = path.rbegin(); it != path.rend(); ++it)
         {
-            for (auto &res : (*it)->ress)
+            for (auto &res : (*it)->resolvers)
                 if (!apply_resolver(*res))
                     return false;
             c_node = std::ref(const_cast<ratio::node &>(**it));

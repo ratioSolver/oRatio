@@ -51,6 +51,13 @@ export class SolverTree extends PayloadComponent<HTMLDivElement, solver.Solver> 
             'border-width': '3px',
             'border-color': '#919'
           }
+        },
+        {
+          selector: 'node.inconsistent',
+          style: {
+            'background-color': '#F44336',
+            'border-color': '#B71C1C'
+          }
         }
       ]
     });
@@ -71,12 +78,16 @@ export class SolverTree extends PayloadComponent<HTMLDivElement, solver.Solver> 
 
   node_created(node: solver.tree.Node): void {
     this.create_tree_node(node);
-    this.cy!.add({ group: 'edges', data: { id: `${node.get_parent()!.get_id()}-${node.get_id()}`, source: node.get_parent()!.get_id(), target: node.get_id(), stroke: 'solid' } });
+    const n = this.cy!.add({ group: 'edges', data: { id: `${node.get_parent()!.get_id()}-${node.get_id()}`, source: node.get_parent()!.get_id(), target: node.get_id(), stroke: 'solid' } });
+    if (!node.is_consistent())
+      n.addClass('inconsistent');
     this.cy!.layout(this.layout).run();
   }
   node_updated(node: solver.tree.Node): void {
     const cy_node = this.cy!.$id(node.get_id().toString());
     cy_node.data('label', node.to_string());
+    if (!node.is_consistent())
+      cy_node.addClass('inconsistent');
     this.cy!.layout(this.layout).run();
   }
   current_node(node: solver.tree.Node | null): void {

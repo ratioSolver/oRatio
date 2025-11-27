@@ -181,10 +181,9 @@ export namespace solver {
           for (const [fid, fm] of Object.entries(nm.flaws))
             flaws.set(Number(fid), new graph.Flaw(slv, Number(id), fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
           const resolvers: Map<number, graph.Resolver> = new Map();
-          if (nm.resolvers)
-            for (const [rid, rm] of Object.entries(nm.resolvers))
-              resolvers.set(Number(rid), new graph.Resolver(slv, Number(rid), rm.rho, [], flaws.get(rm.flaw!)!, graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
-          this.tree.set(Number(id), new tree.Node(this, Number(id), flaws, resolvers));
+          for (const [rid, rm] of Object.entries(nm.resolvers))
+            resolvers.set(Number(rid), new graph.Resolver(slv, Number(rid), rm.rho, [], flaws.get(rm.flaw!)!, graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
+          this.tree.set(Number(id), new tree.Node(this, Number(id), nm.consistent, flaws, resolvers));
         }
         for (const [id, nm] of Object.entries(tree_message.nodes))
           if (nm.parent)
@@ -302,13 +301,18 @@ export namespace solver {
             for (const [id, fm] of Object.entries(ncm.flaws))
               flaws.set(Number(id), new graph.Flaw(nc_slv, ncm.id, fm.phi, [], [], graph.State[fm.state as keyof typeof graph.State], fm.cost, fm.position, fm.data));
             const resolvers: Map<number, graph.Resolver> = new Map();
-            if (ncm.resolvers)
-              for (const [id, rm] of Object.entries(ncm.resolvers))
-                resolvers.set(Number(id), new graph.Resolver(nc_slv, Number(id), rm.rho, [], flaws.get(rm.flaw!)!, graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
-            const new_node = new tree.Node(nc_slv, ncm.id, flaws, resolvers);
+            for (const [id, rm] of Object.entries(ncm.resolvers))
+              resolvers.set(Number(id), new graph.Resolver(nc_slv, Number(id), rm.rho, [], flaws.get(rm.flaw!)!, graph.State[rm.state as keyof typeof graph.State], rm.intrinsic_cost, rm.data));
+            const new_node = new tree.Node(nc_slv, ncm.id, ncm.consistent, flaws, resolvers);
             if (ncm.parent)
               new_node._parent = nc_slv.get_node(ncm.parent);
             nc_slv.node_created(new_node);
+            break;
+          case 'inconsistent_node':
+            const inm = message as InconsistentNodeMessage;
+            const inc_node = this.solvers.get(get_id(inm.solver_id))!.get_node(inm.id);
+            inc_node._consistent = true;
+            this.solvers.get(get_id(inm.solver_id))!.node_updated(inc_node);
             break;
           case 'current_node':
             const cnm = message as CurrentNodeMessage;
@@ -348,6 +352,13 @@ export namespace solver {
           case 'current_flaw':
             const cfm = message as CurrentFlawMessage;
             this.solvers.get(get_id(cfm.solver_id))!.current_flaw(cfm.id ? this.solvers.get(get_id(cfm.solver_id))!.get_flaw(cfm.id) : null);
+            break;
+          case 'resolver_applied':
+            const ram = message as ResolverAppliedMessage;
+            const ra_slv = this.solvers.get(get_id(ram.solver_id))!;
+            const ra_node = ra_slv.get_node(ram.node_id);
+            ra_node._add_resolver(new graph.Resolver(ra_slv, ram.resolver.id!, ram.resolver.rho, [], ra_node.get_flaw(ram.resolver.flaw!), graph.State[ram.resolver.state as keyof typeof graph.State], ram.resolver.intrinsic_cost, ram.resolver.data));
+            ra_slv.node_updated(ra_node);
             break;
           case 'resolver_created':
             const rcm = message as ResolverCreatedMessage;
@@ -419,12 +430,14 @@ export namespace solver {
       private readonly solver: solver.Solver;
       private readonly id: number;
       _parent?: Node;
+      _consistent: boolean;
       private readonly flaws: Map<number, graph.Flaw> = new Map();
       private readonly resolvers: Map<number, graph.Resolver> = new Map();
 
-      constructor(solver: solver.Solver, id: number, flaws: Map<number, graph.Flaw>, resolvers: Map<number, graph.Resolver>) {
+      constructor(solver: solver.Solver, id: number, consistent: boolean, flaws: Map<number, graph.Flaw>, resolvers: Map<number, graph.Resolver>) {
         this.solver = solver;
         this.id = id;
+        this._consistent = consistent;
         this.flaws = flaws;
         this.resolvers = resolvers;
       }
@@ -432,8 +445,10 @@ export namespace solver {
       get_solver(): solver.Solver { return this.solver; }
       get_id(): number { return this.id; }
       get_parent(): Node | undefined { return this._parent; }
+      is_consistent(): boolean { return this._consistent; }
       _add_flaw(flaw: graph.Flaw) { this.flaws.set(flaw.get_id(), flaw); }
       get_flaw(id: number): graph.Flaw { return this.flaws.get(id)!; }
+      _add_resolver(resolver: graph.Resolver) { this.resolvers.set(resolver.get_id(), resolver); }
 
       to_string(expressive = false): string {
         if (expressive) {
@@ -1115,6 +1130,12 @@ interface CurrentNodeMessage {
   id: number;
 }
 
+interface InconsistentNodeMessage {
+
+  solver_id?: number;
+  id: number;
+}
+
 interface FlawCreatedMessage extends FlawMessage {
 
   solver_id?: number;
@@ -1147,6 +1168,13 @@ interface CurrentFlawMessage {
 
   solver_id?: number;
   id: number;
+}
+
+interface ResolverAppliedMessage {
+
+  solver_id?: number;
+  node_id: number;
+  resolver: ResolverMessage;
 }
 
 interface ResolverCreatedMessage extends ResolverMessage {
@@ -1334,7 +1362,8 @@ interface NodeMessage {
 
   id?: number;
   parent?: number;
-  resolvers?: ResolverMessage[];
+  consistent: boolean;
+  resolvers: Record<number, ResolverMessage>;
   flaws: Record<number, FlawMessage>;
 }
 

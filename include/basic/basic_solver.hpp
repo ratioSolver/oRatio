@@ -50,7 +50,8 @@ namespace ratio
 
   private:
     std::optional<std::reference_wrapper<node>> parent;     // The parent node..
-    std::vector<std::shared_ptr<resolver>> ress;            // The resolvers applied within this node..
+    bool consistent = true;                                 // Whether the node is consistent..
+    std::vector<std::shared_ptr<resolver>> resolvers;       // The resolvers applied within this node..
     std::unordered_set<std::shared_ptr<flaw>> open_flaws;   // The set of open flaws..
     std::unordered_set<std::shared_ptr<flaw>> closed_flaws; // The set of closed flaws..
   };
@@ -138,6 +139,17 @@ namespace ratio
      */
     virtual void flaw_created([[maybe_unused]] const node &n, [[maybe_unused]] const flaw &f) noexcept {}
     /**
+     * @brief This function is called when a resolver is applied on a node.
+     *
+     * This function should be overridden by derived classes to handle the event of a resolver application.
+     *
+     * @param n The node on which the resolver was applied.
+     * @param r The applied resolver.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void resolver_applied([[maybe_unused]] const node &n, [[maybe_unused]] const resolver &r) noexcept {}
+    /**
      * @brief This function is called when the current node changes.
      *
      * This function should be overridden by derived classes to handle the event of a current node change.
@@ -147,6 +159,16 @@ namespace ratio
      * @note This is a virtual function and can be overridden by derived classes.
      */
     virtual void current_node([[maybe_unused]] std::optional<std::reference_wrapper<node>> n) noexcept {}
+    /**
+     * @brief This function is called when a node is found to be inconsistent.
+     *
+     * This function should be overridden by derived classes to handle the event of an inconsistent node.
+     *
+     * @param n The inconsistent node.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void inconsistent_node([[maybe_unused]] const node &n) noexcept {}
 #endif
 
   private:
