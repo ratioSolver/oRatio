@@ -49,7 +49,7 @@ namespace ratio
         { // we create a new boolean item..
             auto b = std::dynamic_pointer_cast<riddle::bool_item>(get_core().new_bool());
             // we force the variable to assume the same value of the referenced bools according to the value of the enum..
-            for (auto res : flw.get_resolvers())
+            for (auto &res : flw.get_resolvers())
             {
                 auto &er = static_cast<choose_val &>(*res);
                 auto &erv = static_cast<riddle::bool_item &>(*std::dynamic_pointer_cast<riddle::env>(er.get_value())->get(name));
@@ -98,7 +98,7 @@ namespace ratio
             { // we need to create a new variable..
                 auto ai = std::dynamic_pointer_cast<riddle::arith_item>(is_int(tp) ? get_core().new_int() : get_core().new_real());
                 // we force the variable to assume the same value of the referenced ariths according to the value of the enum..
-                for (auto res : flw.get_resolvers())
+                for (auto &res : flw.get_resolvers())
                 {
                     auto &er = static_cast<choose_val &>(*res);
                     auto &erv = static_cast<riddle::arith_item &>(*std::dynamic_pointer_cast<riddle::env>(er.get_value())->get(name));
@@ -116,7 +116,7 @@ namespace ratio
             for (const auto &val : matching_values)
                 vals.push_back(val);
             auto e = get_core().new_enum(static_cast<riddle::component_type &>(tp), std::move(vals));
-            for (auto res : flw.get_resolvers())
+            for (auto &res : flw.get_resolvers())
             {
                 auto &er = static_cast<choose_val &>(*res);
                 auto &erv = static_cast<utils::enum_val &>(*std::dynamic_pointer_cast<riddle::env>(er.get_value())->get(name));
@@ -127,7 +127,7 @@ namespace ratio
         }
     }
 
-    node::node(std::optional<std::reference_wrapper<node>> parent, std::shared_ptr<resolver> res) noexcept : parent(std::move(parent)), res(res)
+    node::node(std::optional<std::reference_wrapper<node>> parent) noexcept : parent(std::move(parent))
     {
         if (this->parent) // If there is a parent, inherit its open flaws..
             this->open_flaws = this->parent->get().open_flaws;
@@ -146,8 +146,13 @@ namespace ratio
         json::json j{{"id", get_id()}};
         if (parent)
             j["parent"] = parent->get().get_id();
-        if (res)
-            j["resolver"] = res->to_json();
+        if (!ress.empty())
+        {
+            json::json j_ress(json::json_type::array);
+            for (const auto &res : ress)
+                j_ress.push_back(res->to_json());
+            j["resolvers"] = std::move(j_ress);
+        }
         json::json j_flaws;
         for (const auto &flw : open_flaws)
             j_flaws[std::to_string(flw->get_id())] = flw->to_json();
@@ -187,8 +192,8 @@ namespace ratio
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
             std::vector<std::reference_wrapper<resolver>> causes;
-            if (c_node->get().res)
-                causes.push_back(*c_node->get().res);
+            if (!c_node->get().ress.empty())
+                causes.push_back(*c_node->get().ress.back());
             auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
             return ef.get_var();
         }
@@ -210,13 +215,13 @@ namespace ratio
                 clause.push_back(static_cast<const riddle::bool_item &>(*expr).get_lit());
 
             auto &c = ac_slv.new_clause(std::move(clause));
-            if (c_node->get().res)
-                c_node->get().res->ctx.ac_cnsts.push_back(std::ref(c));
+            if (!c_node->get().ress.empty())
+                c_node->get().ress.back()->ctx.ac_cnsts.push_back(std::ref(c));
             else
                 ac_slv.add_constraint(c);
             std::vector<std::reference_wrapper<resolver>> causes;
-            if (c_node->get().res)
-                causes.push_back(*c_node->get().res);
+            if (!c_node->get().ress.empty())
+                causes.push_back(*c_node->get().ress.back());
             new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
         }
     }
@@ -224,8 +229,8 @@ namespace ratio
     {
         assert(disjuncts.size() > 1);
         std::vector<std::reference_wrapper<resolver>> causes;
-        if (c_node->get().res)
-            causes.push_back(*c_node->get().res);
+        if (!c_node->get().ress.empty())
+            causes.push_back(*c_node->get().ress.back());
         new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
     }
 
@@ -256,7 +261,9 @@ namespace ratio
             auto flw_it = std::min_element(c_node->get().open_flaws.begin(), c_node->get().open_flaws.end(), [](const auto &a, const auto &b)
                                            { return a->get_estimated_cost() < b->get_estimated_cost(); });
             auto c_flw = *flw_it;
+            // Move the selected flaw to the closed flaws..
             c_node->get().open_flaws.erase(c_flw);
+            c_node->get().closed_flaws.insert(c_flw);
             LOG_DEBUG(c_flw->to_json().dump());
             // Compute the resolvers for the selected flaw..
             c_flw->compute_resolvers();
@@ -267,7 +274,10 @@ namespace ratio
                 continue;
             case 1: // Only one resolver, apply it directly..
                 if (c_flw->resolvers.at(0)->apply())
+                {
+                    c_node->get().ress.push_back(c_flw->resolvers.at(0));
                     fringe.push_back(c_node->get());
+                }
                 else
                 {
                     lin_slv.retract(c_flw->resolvers.at(0)->ctx.lin_cnsts);
@@ -278,7 +288,7 @@ namespace ratio
             default: // Multiple resolvers, create a new node for each..
                 for (auto &res : c_flw->resolvers)
                 {
-                    auto n = std::make_unique<node>(c_node->get(), res);
+                    auto n = std::make_unique<node>(c_node->get());
                     NEW_NODE(*n);
                     c_node = *n;
                     CURRENT_NODE(*n);
@@ -290,12 +300,14 @@ namespace ratio
                     CURRENT_NODE(c_node);
                     if (apply)
                     {
+                        n->ress.push_back(res);
                         fringe.push_back(*n);
                         nodes.push_back(std::move(n));
                     }
                 }
                 break;
             }
+            c_flw->resolvers.clear();
             STATE_CHANGED();
         }
         throw std::runtime_error("No solution found");
@@ -314,8 +326,8 @@ namespace ratio
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
         std::vector<std::reference_wrapper<resolver>> causes;
-        if (c_node->get().res)
-            causes.push_back(*c_node->get().res);
+        if (!c_node->get().ress.empty())
+            causes.push_back(*c_node->get().ress.back());
         auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), ac_slv.new_sat());
         return af.get_atom();
     }
@@ -343,9 +355,12 @@ namespace ratio
     {
         while (&c_node->get() != &lca)
         {
-            lin_slv.retract(c_node->get().res->ctx.lin_cnsts);
-            for (auto &ac_cnst : c_node->get().res->ctx.ac_cnsts)
-                ac_slv.retract(ac_cnst.get());
+            for (auto &res : c_node->get().ress)
+            {
+                lin_slv.retract(res->ctx.lin_cnsts);
+                for (auto &ac_cnst : res->ctx.ac_cnsts)
+                    ac_slv.retract(ac_cnst.get());
+            }
             c_node = *c_node->get().parent;
             CURRENT_NODE(c_node);
         }
@@ -362,8 +377,9 @@ namespace ratio
         }
         for (auto it = path.rbegin(); it != path.rend(); ++it)
         {
-            if (!apply_resolver(*(*it)->res))
-                return false;
+            for (auto &res : (*it)->ress)
+                if (!apply_resolver(*res))
+                    return false;
             c_node = std::ref(const_cast<ratio::node &>(**it));
             CURRENT_NODE(c_node);
         }

@@ -36,7 +36,7 @@ namespace ratio
     Tp &new_resolver(Args &&...args) noexcept
     {
       static_assert(std::is_base_of_v<resolver, Tp>, "Tp must be a subclass of resolver");
-      auto r = std::make_shared<Tp>(std::forward<Args>(args)...);
+      auto r = std::make_unique<Tp>(std::forward<Args>(args)...);
       auto &r_ref = *r;
       resolvers.emplace_back(std::move(r));
       return r_ref;
