@@ -20,6 +20,7 @@ namespace ratio
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
     [[nodiscard]] const std::vector<std::reference_wrapper<resolver>> &get_causes() const noexcept { return causes; }
+    [[nodiscard]] const std::vector<std::shared_ptr<resolver>> &get_resolvers() const noexcept { return resolvers; }
 
     [[nodiscard]] const utils::rational &get_estimated_cost() const noexcept { return est_cost; }
 
@@ -28,7 +29,8 @@ namespace ratio
     [[nodiscard]] size_t get_position() const noexcept { return position; }
 
   protected:
-    arc_consistency::solver &get_ac() noexcept { return slv.ac_slv; }
+    [[nodiscard]] linspire::solver &get_lin() noexcept { return slv.lin_slv; }
+    [[nodiscard]] arc_consistency::solver &get_ac() noexcept { return slv.ac_slv; }
 
     template <typename Tp, typename... Args>
     Tp &new_resolver(Args &&...args) noexcept
@@ -96,8 +98,10 @@ namespace ratio
 
   class enum_flaw final : public flaw
   {
+    friend class enum_item;
+
   public:
-    enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::enum_expr var) noexcept;
+    enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept;
 
     [[nodiscard]] const riddle::enum_expr &get_var() const noexcept { return var; }
 
@@ -105,13 +109,18 @@ namespace ratio
     void compute_resolvers() override;
 
   private:
+    bool expanded = false; // whether the resolvers have been computed..
     riddle::enum_expr var;
   };
 
   class choose_val final : public resolver
   {
+    friend class enum_item;
+
   public:
     choose_val(enum_flaw &f, riddle::expr val) noexcept;
+
+    [[nodiscard]] riddle::expr get_value() const noexcept { return val; }
 
   private:
     bool apply() noexcept override;

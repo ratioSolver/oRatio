@@ -59,14 +59,18 @@ namespace ratio
         return j_resolver;
     }
 
-    enum_flaw::enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::enum_expr var) noexcept : flaw(slv, std::move(causes)), var(std::move(var)) {}
+    enum_flaw::enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept : flaw(slv, std::move(causes)), var(std::make_shared<enum_item>(tp, std::move(values), ev, *this)) {}
 
     void enum_flaw::compute_resolvers()
-    { // Create a resolver for each possible value..
+    {
+        if (expanded)
+            return;
+        // Create a resolver for each possible value..
         auto &dom = get_ac().domain(utils::variable(static_cast<const riddle::enum_item &>(*var).get_var()));
         for (auto &val : var->get_values())
             if (dom.count(&static_cast<const utils::enum_val &>(*val)))
                 new_resolver<choose_val>(*this, val);
+        expanded = true;
     }
 
     choose_val::choose_val(enum_flaw &flw, riddle::expr val) noexcept : resolver(flw, utils::rational(1)), val(std::move(val)) {}

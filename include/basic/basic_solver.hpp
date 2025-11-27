@@ -8,7 +8,21 @@ namespace ratio
   class flaw;
   class resolver;
   class atom_flaw;
+  class enum_flaw;
   class solver;
+
+  class enum_item : public riddle::enum_item
+  {
+  public:
+    enum_item(riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev, enum_flaw &flw) noexcept : riddle::enum_item(tp, std::move(values), ev), flw(flw) {}
+
+    [[nodiscard]] enum_flaw &get_flaw() noexcept { return flw; }
+
+    riddle::expr get(std::string_view name) override;
+
+  private:
+    enum_flaw &flw; // the flaw associated with this enum..
+  };
 
   class atom : public riddle::atom
   {
@@ -42,6 +56,7 @@ namespace ratio
   {
     friend class flaw;
     friend class resolver;
+    friend class enum_item;
     static constexpr const char *INIT_STRING = "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end, real duration) { start >= origin; duration == end - start; duration >= 0.0; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;";
 
   public:
@@ -57,6 +72,27 @@ namespace ratio
     [[nodiscard]] json::json to_json() const override;
 
   private:
+    /**
+     * @brief Creates a new flaw of the given type.
+     *
+     * @tparam Tp The type of the flaw to create.
+     * @tparam Args The types of the arguments to pass to the flaw
+     * @param args The arguments to pass to the flaw
+     * @return Tp& The created flaw
+     */
+    template <typename Tp, typename... Args>
+    Tp &new_flaw(Args &&...args) noexcept
+    {
+      static_assert(std::is_base_of_v<flaw, Tp>, "Tp must be a subclass of flaw");
+      auto f = std::make_shared<Tp>(std::forward<Args>(args)...);
+      auto &f_ref = *f;
+      c_node->get().open_flaws.insert(f);
+#ifdef ORATIO_ENABLE_LISTENERS
+      flaw_created(c_node->get(), f_ref);
+#endif
+      return f_ref;
+    }
+
     [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args) override;
 
     const node &find_common_ancestor(const node &a, const node &b) const;
