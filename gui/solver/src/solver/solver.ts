@@ -308,15 +308,15 @@ export namespace solver {
               new_node._parent = nc_slv.get_node(ncm.parent);
             nc_slv.node_created(new_node);
             break;
+          case 'current_node':
+            const cnm = message as CurrentNodeMessage;
+            this.solvers.get(get_id(cnm.solver_id))!.current_node(this.solvers.get(get_id(cnm.solver_id))!.get_node(cnm.id));
+            break;
           case 'inconsistent_node':
             const inm = message as InconsistentNodeMessage;
             const inc_node = this.solvers.get(get_id(inm.solver_id))!.get_node(inm.id);
             inc_node._consistent = true;
             this.solvers.get(get_id(inm.solver_id))!.node_updated(inc_node);
-            break;
-          case 'current_node':
-            const cnm = message as CurrentNodeMessage;
-            this.solvers.get(get_id(cnm.solver_id))!.current_node(this.solvers.get(get_id(cnm.solver_id))!.get_node(cnm.id));
             break;
           case 'flaw_created':
             const fcm = message as FlawCreatedMessage;
@@ -353,19 +353,19 @@ export namespace solver {
             const cfm = message as CurrentFlawMessage;
             this.solvers.get(get_id(cfm.solver_id))!.current_flaw(cfm.id ? this.solvers.get(get_id(cfm.solver_id))!.get_flaw(cfm.id) : null);
             break;
-          case 'resolver_applied':
-            const ram = message as ResolverAppliedMessage;
-            const ra_slv = this.solvers.get(get_id(ram.solver_id))!;
-            const ra_node = ra_slv.get_node(ram.node_id);
-            ra_node._add_resolver(new graph.Resolver(ra_slv, ram.resolver.id!, ram.resolver.rho, [], ra_node.get_flaw(ram.resolver.flaw!), graph.State[ram.resolver.state as keyof typeof graph.State], ram.resolver.intrinsic_cost, ram.resolver.data));
-            ra_slv.node_updated(ra_node);
-            break;
           case 'resolver_created':
             const rcm = message as ResolverCreatedMessage;
             const preconditions: graph.Flaw[] = rcm.preconditions ? rcm.preconditions.map((id: number) => this.solvers.get(get_id(rcm.solver_id))!.get_flaw(id)) : [];
             const flaw = this.solvers.get(get_id(rcm.solver_id))!.get_flaw(rcm.flaw);
             const rc_slv = this.solvers.get(get_id(rcm.solver_id))!;
             rc_slv.resolver_created(new graph.Resolver(rc_slv, rcm.id, rcm.rho, preconditions, flaw, graph.State[rcm.state as keyof typeof graph.State], rcm.intrinsic_cost, rcm.data));
+            break;
+          case 'resolver_applied':
+            const ram = message as ResolverAppliedMessage;
+            const ra_slv = this.solvers.get(get_id(ram.solver_id))!;
+            const ra_node = ra_slv.get_node(ram.node_id);
+            ra_node._add_resolver(new graph.Resolver(ra_slv, ram.id!, ram.rho, [], ra_node.get_flaw(ram.flaw!), graph.State[ram.state as keyof typeof graph.State], ram.intrinsic_cost, ram.data));
+            ra_slv.node_updated(ra_node);
             break;
           case 'resolver_state_changed':
             const rscm = message as ResolverStateChangedMessage;
@@ -1170,11 +1170,10 @@ interface CurrentFlawMessage {
   id: number;
 }
 
-interface ResolverAppliedMessage {
+interface ResolverAppliedMessage extends ResolverMessage {
 
   solver_id?: number;
   node_id: number;
-  resolver: ResolverMessage;
 }
 
 interface ResolverCreatedMessage extends ResolverMessage {

@@ -35,12 +35,13 @@ namespace ratio
     atom_flaw &flaw; // the flaw associated with this atom..
   };
 
-  class node
+  class node final
   {
     friend class solver;
 
   public:
     node(std::optional<std::reference_wrapper<node>> parent = std::nullopt) noexcept;
+    node(const node &) = delete;
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 

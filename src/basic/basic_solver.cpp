@@ -153,7 +153,7 @@ namespace ratio
         j["consistent"] = consistent;
         json::json j_ress;
         for (const auto &res : resolvers)
-            j_ress[res->get_id()] = res->to_json();
+            j_ress[std::to_string(res->get_id())] = res->to_json();
         j["resolvers"] = std::move(j_ress);
         json::json j_flaws;
         for (const auto &flw : open_flaws)
@@ -292,7 +292,7 @@ namespace ratio
             default: // Multiple resolvers, create a new node for each..
                 for (auto &res : c_flw->resolvers)
                 {
-                    auto n = std::make_unique<node>(c_node->get());
+                    auto n = std::make_unique<node>(std::make_optional<std::reference_wrapper<node>>(c_node->get()));
                     NEW_NODE(*n);
                     c_node = *n;
                     CURRENT_NODE(*n);

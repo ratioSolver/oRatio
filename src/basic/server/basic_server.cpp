@@ -49,6 +49,7 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
+
     void server::node_created(const node &n) noexcept
     {
         auto j_msg = n.to_json();
@@ -57,6 +58,7 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
+
     void server::flaw_created(const node &n, const flaw &f) noexcept
     {
         auto j_msg = f.to_json();
@@ -67,12 +69,31 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
+    void server::resolver_applied(const node &n, const resolver &r) noexcept
+    {
+        auto j_msg = r.to_json();
+        j_msg["msg_type"] = "resolver_applied";
+        j_msg["node_id"] = n.get_id();
+        j_msg["id"] = r.get_id();
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+
     void server::current_node(std::optional<std::reference_wrapper<node>> n) noexcept
     {
         json::json j_msg;
         j_msg["msg_type"] = "current_node";
         if (n.has_value())
             j_msg["id"] = n->get().get_id();
+        auto msg = j_msg.dump();
+        for (auto client : clients)
+            client->send(msg);
+    }
+    void server::inconsistent_node(const node &n) noexcept
+    {
+        auto j_msg = n.to_json();
+        j_msg["msg_type"] = "inconsistent_node";
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
