@@ -133,6 +133,14 @@ namespace ratio
             this->open_flaws = this->parent->get().open_flaws;
     }
 
+    double node::get_estimated_cost() const noexcept
+    {
+        std::size_t depth = 0;
+        for (auto p = parent; p; p = p->get().parent)
+            ++depth;
+        return depth + open_flaws.size();
+    }
+
     json::json node::to_json() const noexcept
     {
         json::json j{{"id", get_id()}};
@@ -225,9 +233,9 @@ namespace ratio
     {
         while (!fringe.empty())
         {
-            // Select the node with the least number of open flaws..
+            // Select the node with the least estimated cost..
             auto min_it = std::min_element(fringe.begin(), fringe.end(), [](const auto &a, const auto &b)
-                                           { return a.get().open_flaws.size() < b.get().open_flaws.size(); });
+                                           { return a.get().get_estimated_cost() < b.get().get_estimated_cost(); });
             if (&c_node->get() != &min_it->get())
             { // Backtrack to the common ancestor..
                 backtrack_to(find_common_ancestor(c_node->get(), min_it->get()));
@@ -244,8 +252,10 @@ namespace ratio
                 continue; // Conflict detected, backtrack..
             if (c_node->get().open_flaws.empty())
                 return; // Solution found..
-            // Select an open flaw to resolve..
-            auto c_flw = *c_node->get().open_flaws.begin();
+            // Select the open flaw with the least estimated cost..
+            auto flw_it = std::min_element(c_node->get().open_flaws.begin(), c_node->get().open_flaws.end(), [](const auto &a, const auto &b)
+                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
+            auto c_flw = *flw_it;
             c_node->get().open_flaws.erase(c_flw);
             LOG_DEBUG(c_flw->to_json().dump());
             // Compute the resolvers for the selected flaw..

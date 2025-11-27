@@ -16,7 +16,7 @@ namespace ratio
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", linspire::to_json(est_cost)}, {"position", position}};
+        json::json j_flaw{{"cost", linspire::to_json(get_estimated_cost())}, {"position", position}};
         if (!causes.empty())
         {
             json::json j_causes(json::json_type::array);
@@ -61,6 +61,8 @@ namespace ratio
 
     enum_flaw::enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept : flaw(slv, std::move(causes)), var(std::make_shared<enum_item>(tp, std::move(values), ev, *this)) {}
 
+    utils::rational enum_flaw::get_estimated_cost() const noexcept { return get_ac().domain(utils::variable(static_cast<const riddle::enum_item &>(*var).get_var())).size(); }
+
     void enum_flaw::compute_resolvers()
     {
         if (expanded)
@@ -82,6 +84,8 @@ namespace ratio
     }
 
     clause_flaw::clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
+
+    utils::rational clause_flaw::get_estimated_cost() const noexcept { return clause.size(); }
 
     void clause_flaw::compute_resolvers()
     { // Create a resolver for each literal in the clause..
@@ -118,6 +122,8 @@ namespace ratio
 
     disjunction_flaw::disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 
+    utils::rational disjunction_flaw::get_estimated_cost() const noexcept { return disjuncts.size(); }
+
     void disjunction_flaw::compute_resolvers()
     { // Create a resolver for each disjunct..
         for (const auto &disjunct : disjuncts)
@@ -146,6 +152,16 @@ namespace ratio
     }
 
     atom_flaw::atom_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<atom>(pred, is_fact, std::move(args), std::move(sigma), *this)) {}
+
+    utils::rational atom_flaw::get_estimated_cost() const noexcept
+    {
+        // Estimate the cost as the number of active ancestor atoms that can be unified with this atom plus one for activation..
+        std::size_t count = 0;
+        for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
+            if (a->get_state() == riddle::active && !have_common_ancestors(a, atm) && slv.match(*atm, *a))
+                ++count;
+        return utils::rational(count + 1);
+    }
 
     void atom_flaw::compute_resolvers()
     { // Create a unify resolver for each inactive ancestor atom..

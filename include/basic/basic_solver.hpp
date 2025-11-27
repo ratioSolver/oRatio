@@ -44,6 +44,8 @@ namespace ratio
 
     [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
 
+    [[nodiscard]] double get_estimated_cost() const noexcept;
+
     [[nodiscard]] json::json to_json() const noexcept;
 
   private:
