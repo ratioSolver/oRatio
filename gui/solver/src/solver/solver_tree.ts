@@ -78,9 +78,7 @@ export class SolverTree extends PayloadComponent<HTMLDivElement, solver.Solver> 
 
   node_created(node: solver.tree.Node): void {
     this.create_tree_node(node);
-    const n = this.cy!.add({ group: 'edges', data: { id: `${node.get_parent()!.get_id()}-${node.get_id()}`, source: node.get_parent()!.get_id(), target: node.get_id(), stroke: 'solid' } });
-    if (!node.is_consistent())
-      n.addClass('inconsistent');
+    this.cy!.add({ group: 'edges', data: { id: `${node.get_parent()!.get_id()}-${node.get_id()}`, source: node.get_parent()!.get_id(), target: node.get_id(), stroke: 'solid' } });
     this.cy!.layout(this.layout).run();
   }
   node_updated(node: solver.tree.Node): void {
@@ -122,6 +120,8 @@ export class SolverTree extends PayloadComponent<HTMLDivElement, solver.Solver> 
 
   private create_tree_node(node: solver.tree.Node): cytoscape.CollectionReturnValue {
     const fn = this.cy!.add({ group: 'nodes', data: { id: node.get_id().toString(), label: node.to_string() } });
+    if (!node.is_consistent())
+      fn.addClass('inconsistent');
     fn.on('mouseover', () => {
       const popper = fn.popper({
         content: () => {

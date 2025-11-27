@@ -322,7 +322,7 @@ export namespace solver {
           case 'inconsistent_node':
             const inm = message as InconsistentNodeMessage;
             const inc_node = this.solvers.get(get_id(inm.solver_id))!.get_node(inm.id);
-            inc_node._consistent = true;
+            inc_node._consistent = false;
             this.solvers.get(get_id(inm.solver_id))!.node_updated(inc_node);
             break;
           case 'flaw_created':

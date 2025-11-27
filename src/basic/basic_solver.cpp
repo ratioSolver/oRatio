@@ -249,6 +249,8 @@ namespace ratio
                 // Move to the selected node..
                 if (!go_to(*min_it))
                 {
+                    min_it->get().consistent = false;
+                    INCONSISTENT_NODE(min_it->get());
                     fringe.erase(min_it);
                     continue; // Conflict detected, backtrack..
                 }
@@ -283,6 +285,7 @@ namespace ratio
                 }
                 else
                 {
+                    c_node->get().consistent = false;
                     INCONSISTENT_NODE(c_node->get());
                     lin_slv.retract(c_flw->resolvers.at(0)->ctx.lin_cnsts);
                     for (auto &ac_cnst : c_flw->resolvers.at(0)->ctx.ac_cnsts)
@@ -307,6 +310,11 @@ namespace ratio
                     {
                         fringe.push_back(*n);
                         nodes.push_back(std::move(n));
+                    }
+                    else
+                    {
+                        n->consistent = false;
+                        INCONSISTENT_NODE(*n);
                     }
                 }
                 break;
