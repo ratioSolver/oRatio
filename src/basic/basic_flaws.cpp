@@ -79,7 +79,7 @@ namespace ratio
     bool choose_val::apply() noexcept
     {
         auto &e_item = static_cast<riddle::enum_item &>(*static_cast<enum_flaw &>(flw).get_var());
-        ctx.ac_cnsts.push_back(get_ac_solver().new_assign(utils::variable(e_item.get_var()), static_cast<utils::enum_val &>(*val)));
+        add_constraint(get_ac().new_assign(utils::variable(e_item.get_var()), static_cast<utils::enum_val &>(*val)));
         return true;
     }
 
@@ -108,7 +108,7 @@ namespace ratio
     bool choose_lit::apply() noexcept
     {
         auto &c_lit = static_cast<const riddle::bool_item &>(*lit).get_lit();
-        ctx.ac_cnsts.push_back(get_ac_solver().new_assign(utils::variable(c_lit), utils::sign(c_lit) ? arc_consistency::solver::True : arc_consistency::solver::False));
+        add_constraint(get_ac().new_assign(utils::variable(c_lit), utils::sign(c_lit) ? arc_consistency::solver::True : arc_consistency::solver::False));
         return true;
     }
 
@@ -154,11 +154,11 @@ namespace ratio
     atom_flaw::atom_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<atom>(pred, is_fact, std::move(args), std::move(sigma), *this)) {}
 
     utils::rational atom_flaw::get_estimated_cost() const noexcept
-    {
-        // Estimate the cost as the number of active ancestor atoms that can be unified with this atom plus one for activation..
+    { // Estimate the cost as the number of active ancestor atoms that can be unified with this atom plus one for activation..
+        assert(atm->get_state() == riddle::atom_state::inactive);
         std::size_t count = 0;
         for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
-            if (a->get_state() == riddle::active && !have_common_ancestors(a, atm) && slv.match(*atm, *a))
+            if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a, atm) && slv.match(*atm, *a))
                 ++count;
         return utils::rational(count + 1);
     }
@@ -167,7 +167,7 @@ namespace ratio
     { // Create a unify resolver for each inactive ancestor atom..
         assert(atm->get_state() == riddle::atom_state::inactive);
         for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
-            if (a->get_state() == riddle::active && !have_common_ancestors(a, atm) && slv.match(*atm, *a))
+            if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a, atm) && slv.match(*atm, *a))
                 new_resolver<unify_atom>(*this, a);
 
         // Create an activate resolver..
@@ -210,7 +210,7 @@ namespace ratio
     activate_fact::activate_fact(atom_flaw &flw) noexcept : resolver(flw, utils::rational(1)) {}
     bool activate_fact::apply() noexcept
     {
-        ctx.ac_cnsts.push_back(get_ac_solver().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::True));
+        add_constraint(get_ac().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::True));
         return true;
     }
 
@@ -224,7 +224,7 @@ namespace ratio
     activate_goal::activate_goal(atom_flaw &flw) noexcept : resolver(flw, utils::rational(1)) {}
     bool activate_goal::apply() noexcept
     {
-        ctx.ac_cnsts.push_back(get_ac_solver().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::True));
+        add_constraint(get_ac().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::True));
         try
         {
             static_cast<riddle::predicate &>(static_cast<atom_flaw &>(flw).get_atom()->get_type()).call(static_cast<atom_flaw &>(flw).get_atom());
@@ -246,7 +246,7 @@ namespace ratio
     unify_atom::unify_atom(atom_flaw &flw, riddle::atom_expr atm) noexcept : resolver(flw, utils::rational(2)), atm(std::move(atm)) {}
     bool unify_atom::apply() noexcept
     {
-        ctx.ac_cnsts.push_back(get_ac_solver().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::False));
+        add_constraint(get_ac().new_assign(utils::variable(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()), arc_consistency::solver::False));
         return execute(get_solver().new_eq(static_cast<atom_flaw &>(flw).get_atom(), atm));
     }
 

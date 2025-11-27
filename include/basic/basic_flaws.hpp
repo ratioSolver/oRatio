@@ -80,8 +80,13 @@ namespace ratio
     [[nodiscard]] solver &get_solver() noexcept { return flw.slv; }
     [[nodiscard]] bool execute(const riddle::bool_expr &expr) noexcept { return get_solver().execute(expr, ctx); }
 
-    [[nodiscard]] linspire::solver &get_lin_solver() noexcept { return flw.slv.lin_slv; }
-    [[nodiscard]] arc_consistency::solver &get_ac_solver() noexcept { return flw.slv.ac_slv; }
+    [[nodiscard]] linspire::solver &get_lin() noexcept { return flw.slv.lin_slv; }
+    [[nodiscard]] arc_consistency::solver &get_ac() noexcept { return flw.slv.ac_slv; }
+    void add_constraint(arc_consistency::constraint &cnstr) noexcept
+    {
+      ctx.ac_cnsts.push_back(cnstr);
+      get_ac().add_constraint(cnstr);
+    }
 
   private:
     [[nodiscard]] virtual bool apply() noexcept = 0;

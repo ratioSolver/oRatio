@@ -263,24 +263,19 @@ namespace ratio
             LOG_DEBUG("Flaw has " << c_flw->resolvers.size() << " resolvers.");
             switch (c_flw->resolvers.size())
             {
-            case 0:
-                continue; // No resolvers available, backtrack..
-            case 1:
+            case 0: // No resolvers available, backtrack..
+                continue;
+            case 1: // Only one resolver, apply it directly..
                 if (c_flw->resolvers.at(0)->apply())
-                {
-                    if (c_node->get().res)
-                        if (!apply_resolver(*c_node->get().res))
-                            continue; // Conflict detected, backtrack..
                     fringe.push_back(c_node->get());
-                }
-                else if (c_node->get().res)
+                else
                 {
-                    lin_slv.retract(c_node->get().res->ctx.lin_cnsts);
-                    for (auto &ac_cnst : c_node->get().res->ctx.ac_cnsts)
+                    lin_slv.retract(c_flw->resolvers.at(0)->ctx.lin_cnsts);
+                    for (auto &ac_cnst : c_flw->resolvers.at(0)->ctx.ac_cnsts)
                         ac_slv.retract(ac_cnst.get());
                 }
                 break;
-            default:
+            default: // Multiple resolvers, create a new node for each..
                 for (auto &res : c_flw->resolvers)
                 {
                     auto n = std::make_unique<node>(c_node->get(), res);
