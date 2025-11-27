@@ -188,6 +188,8 @@ export namespace solver {
         for (const [id, nm] of Object.entries(tree_message.nodes))
           if (nm.parent)
             this.tree.get(Number(id))!._parent = this.get_node(nm.parent);
+        if (tree_message.current_node)
+          this.c_node = this.tree.get(tree_message.current_node)!;
       }
     }
 
@@ -210,6 +212,11 @@ export namespace solver {
             for (const support of fm.supports) // we set the supports for the flaws..
               this.flaws.get(Number(id))!._supports.push(this.get_resolver(support));
         }
+
+      if (solver_message.current_flaw)
+        this.c_flaw = this.flaws.get(solver_message.current_flaw)!;
+      if (solver_message.current_resolver)
+        this.c_resolver = this.resolvers.get(solver_message.current_resolver)!;
     }
   }
 
@@ -451,18 +458,10 @@ export namespace solver {
       _add_resolver(resolver: graph.Resolver) { this.resolvers.set(resolver.get_id(), resolver); }
 
       to_string(expressive = false): string {
-        if (expressive) {
-          if (this.resolvers.size)
-            return Array.from(this.resolvers.values()).map(resolver => resolver.to_string(expressive)).join(', ') + ' [' + Array.from(this.flaws.values()).map(flaw => flaw.to_string(expressive)).join(', ') + ']';
-          else
-            return 'root' + ' [' + Array.from(this.flaws.values()).map(flaw => flaw.to_string(expressive)).join(', ') + ']';
-        }
-        else {
-          if (this.resolvers.size)
-            return Array.from(this.resolvers.values()).map(resolver => resolver.to_string(expressive)).join(', ') + ' (' + (this.flaws.size - this.resolvers.size) + ')';
-          else
-            return 'root' + ' (' + (this.flaws.size - this.resolvers.size) + ')';
-        }
+        if (expressive)
+          return Array.from(this.flaws.values()).filter(flw => !Array.from(this.resolvers.values()).some(resolver => resolver.get_flaw() === flw)).map(flw => flw.to_string(expressive)).join(', ');
+        else
+          return (this.flaws.size ? '(' + (this.flaws.size - this.resolvers.size) + ') ' : '') + Array.from(this.resolvers.values()).map(resolver => resolver.to_string(expressive)).join(', ');
       }
     }
   }
@@ -1253,6 +1252,7 @@ interface SolverMessage extends StateMessage {
   state: string;
   current_time?: RationalMessage;
   nodes?: Record<number, NodeMessage>;
+  current_node?: number;
   flaws?: Record<number, FlawMessage>;
   resolvers?: Record<number, ResolverMessage>;
   current_flaw?: number;

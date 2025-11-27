@@ -293,6 +293,7 @@ namespace ratio
                 for (auto &res : c_flw->resolvers)
                 {
                     auto n = std::make_unique<node>(std::make_optional<std::reference_wrapper<node>>(c_node->get()));
+                    n->resolvers.push_back(res);
                     NEW_NODE(*n);
                     c_node = *n;
                     CURRENT_NODE(*n);
@@ -304,7 +305,6 @@ namespace ratio
                     CURRENT_NODE(c_node);
                     if (apply)
                     {
-                        n->resolvers.push_back(res);
                         fringe.push_back(*n);
                         nodes.push_back(std::move(n));
                     }
@@ -324,6 +324,8 @@ namespace ratio
         for (const auto &n : nodes)
             j_nodes[std::to_string(n->get_id())] = n->to_json();
         j["nodes"] = std::move(j_nodes);
+        if (c_node)
+            j["current_node"] = c_node->get().get_id();
         return j;
     }
 
