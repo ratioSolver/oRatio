@@ -146,7 +146,8 @@ namespace ratio
 
     utils::rational atom_flaw::get_estimated_cost() const noexcept
     { // Estimate the cost as the number of active ancestor atoms that can be unified with this atom plus one for activation..
-        assert(atm->get_state() == riddle::atom_state::inactive);
+        if (atm->is_fact())
+            return utils::rational::zero; // activating a fact has zero cost
         std::size_t count = 0;
         for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
             if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a, atm) && slv.match(*atm, *a))

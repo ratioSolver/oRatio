@@ -250,8 +250,10 @@ namespace ratio
             if (!ac_slv.propagate() || !lin_slv.check())
                 continue; // Conflict detected, backtrack..
             if (c_node->get().open_flaws.empty())
+            {
+                STATE_CHANGED();
                 return; // Solution found..
-            // Select the open flaw with the least estimated cost..
+            } // Select the open flaw with the least estimated cost..
             auto flw_it = std::min_element(c_node->get().open_flaws.begin(), c_node->get().open_flaws.end(), [](const auto &a, const auto &b)
                                            { return a->get_estimated_cost() < b->get_estimated_cost(); });
             auto c_flw = *flw_it;
