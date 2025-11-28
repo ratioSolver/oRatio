@@ -43,7 +43,7 @@ namespace ratio
 
     void server::state_changed() noexcept
     {
-        auto j_msg = riddle::core::to_json();
+        auto j_msg = to_json();
         j_msg["msg_type"] = "state_changed";
         auto msg = j_msg.dump();
         for (auto client : clients)

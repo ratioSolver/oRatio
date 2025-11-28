@@ -13,7 +13,13 @@ namespace ratio
         auto l = value ? utils::TRUE_lit : utils::FALSE_lit;
         return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), std::move(l));
     }
-    utils::lbool solver_core::bool_value(const riddle::bool_term &expr) const noexcept { return ac_slv.sat_val(static_cast<const riddle::bool_item &>(expr).get_lit()); }
+    utils::lbool solver_core::bool_value(const riddle::bool_term &expr) const noexcept
+    {
+        if (auto bi = dynamic_cast<const riddle::bool_item *>(&expr))
+            return ac_slv.sat_val(bi->get_lit());
+        else
+            return utils::Undefined;
+    }
 
     riddle::arith_expr solver_core::new_int() { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(lin_slv.new_var(), utils::rational::one)); }
     riddle::arith_expr solver_core::new_int(const INT_TYPE value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::rational(value)); }

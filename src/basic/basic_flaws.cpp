@@ -90,11 +90,7 @@ namespace ratio
     void clause_flaw::compute_resolvers()
     { // Create a resolver for each literal in the clause..
         for (const auto &lit : clause)
-        {
-            auto &c_lit = static_cast<const riddle::bool_item &>(*lit).get_lit();
-            if (get_ac().allows(utils::variable(c_lit), utils::sign(c_lit) ? arc_consistency::solver::True : arc_consistency::solver::False))
-                new_resolver<choose_lit>(*this, lit);
-        }
+            new_resolver<choose_lit>(*this, lit);
     }
 
     json::json clause_flaw::to_json() const
@@ -105,18 +101,13 @@ namespace ratio
     }
 
     choose_lit::choose_lit(clause_flaw &flw, riddle::bool_expr lit) noexcept : resolver(flw, utils::rational(1)), lit(lit) {}
-    bool choose_lit::apply() noexcept
-    {
-        auto &c_lit = static_cast<const riddle::bool_item &>(*lit).get_lit();
-        add_constraint(get_ac().new_assign(utils::variable(c_lit), utils::sign(c_lit) ? arc_consistency::solver::True : arc_consistency::solver::False));
-        return true;
-    }
+    bool choose_lit::apply() noexcept { return execute(lit); }
 
     json::json choose_lit::to_json() const
     {
         auto j = resolver::to_json();
         j["data"]["type"] = "lit";
-        j["data"]["lit"] = to_string(static_cast<const riddle::bool_item &>(*lit).get_lit());
+        j["data"]["lit"] = lit->to_string();
         return j;
     }
 

@@ -211,16 +211,6 @@ namespace ratio
         }
         else
         { // otherwise, create a new clause flaw..
-            std::vector<utils::lit> clause;
-            clause.reserve(exprs.size());
-            for (const riddle::bool_expr &expr : exprs)
-                clause.push_back(static_cast<const riddle::bool_item &>(*expr).get_lit());
-
-            auto &c = ac_slv.new_clause(std::move(clause));
-            if (!c_node->get().resolvers.empty())
-                c_node->get().resolvers.back()->ctx.ac_cnsts.push_back(std::ref(c));
-            else
-                ac_slv.add_constraint(c);
             std::vector<std::reference_wrapper<resolver>> causes;
             if (!c_node->get().resolvers.empty())
                 causes.push_back(*c_node->get().resolvers.back());
