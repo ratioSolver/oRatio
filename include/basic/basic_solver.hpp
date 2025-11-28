@@ -1,60 +1,34 @@
 #pragma once
 
 #include "solver_core.hpp"
+#include "a_star.hpp"
+#include "flaw.hpp"
+#include "resolver.hpp"
 #include "items.hpp"
 
 namespace ratio
 {
-  class flaw;
-  class resolver;
   class atom_flaw;
   class enum_flaw;
   class solver;
 
-  class enum_item : public riddle::enum_item
-  {
-  public:
-    enum_item(riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev, enum_flaw &flw) noexcept : riddle::enum_item(tp, std::move(values), ev), flw(flw) {}
-
-    [[nodiscard]] enum_flaw &get_flaw() noexcept { return flw; }
-
-    riddle::expr get(std::string_view name) override;
-
-  private:
-    enum_flaw &flw; // the flaw associated with this enum..
-  };
-
-  class atom : public riddle::atom
-  {
-  public:
-    atom(riddle::predicate &pred, bool is_fact, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma, atom_flaw &flaw) noexcept : riddle::atom(pred, is_fact, std::move(args), std::move(sigma)), flaw(flaw) {}
-
-    [[nodiscard]] atom_flaw &get_flaw() noexcept { return flaw; }
-
-  private:
-    atom_flaw &flaw; // the flaw associated with this atom..
-  };
-
-  class node final
+  class node final : public utils::node<double>
   {
     friend class solver;
 
   public:
-    node(std::optional<std::reference_wrapper<node>> parent = std::nullopt) noexcept;
+    node(std::weak_ptr<node> parent = {}) noexcept;
     node(const node &) = delete;
 
-    [[nodiscard]] uintptr_t get_id() const noexcept { return reinterpret_cast<uintptr_t>(this); }
-
-    [[nodiscard]] double get_estimated_cost() const noexcept;
+    [[nodiscard]] double h_cost() const noexcept override;
 
     [[nodiscard]] json::json to_json() const noexcept;
 
   private:
-    std::optional<std::reference_wrapper<node>> parent;     // The parent node..
-    bool consistent = true;                                 // Whether the node is consistent..
-    std::vector<std::shared_ptr<resolver>> resolvers;       // The resolvers applied within this node..
-    std::unordered_set<std::shared_ptr<flaw>> open_flaws;   // The set of open flaws..
-    std::unordered_set<std::shared_ptr<flaw>> closed_flaws; // The set of closed flaws..
+    bool consistent = true;                                         // Whether the node is consistent..
+    std::vector<std::shared_ptr<riddle::resolver>> resolvers;       // The resolvers applied within this node..
+    std::unordered_set<std::shared_ptr<riddle::flaw>> open_flaws;   // The set of open flaws..
+    std::unordered_set<std::shared_ptr<riddle::flaw>> closed_flaws; // The set of closed flaws..
   };
 
   class solver : public solver_core
@@ -88,7 +62,7 @@ namespace ratio
     template <typename Tp, typename... Args>
     Tp &new_flaw(Args &&...args) noexcept
     {
-      static_assert(std::is_base_of_v<flaw, Tp>, "Tp must be a subclass of flaw");
+      static_assert(std::is_base_of_v<riddle::flaw, Tp>, "Tp must be a subclass of flaw");
       auto f = std::make_shared<Tp>(std::forward<Args>(args)...);
       auto &f_ref = *f;
       c_node->get().open_flaws.insert(f);
@@ -106,7 +80,7 @@ namespace ratio
 
     [[nodiscard]] bool go_to(const node &target) noexcept;
 
-    [[nodiscard]] bool apply_resolver(resolver &res) noexcept;
+    [[nodiscard]] bool apply_resolver(riddle::resolver &res) noexcept;
 
 #ifdef ORATIO_ENABLE_LISTENERS
   private:
@@ -138,7 +112,7 @@ namespace ratio
      *
      * @note This is a virtual function and can be overridden by derived classes.
      */
-    virtual void flaw_created([[maybe_unused]] const node &n, [[maybe_unused]] const flaw &f) noexcept {}
+    virtual void flaw_created([[maybe_unused]] const node &n, [[maybe_unused]] const riddle::flaw &f) noexcept {}
     /**
      * @brief This function is called when a resolver is applied on a node.
      *
@@ -149,7 +123,7 @@ namespace ratio
      *
      * @note This is a virtual function and can be overridden by derived classes.
      */
-    virtual void resolver_applied([[maybe_unused]] const node &n, [[maybe_unused]] const resolver &r) noexcept {}
+    virtual void resolver_applied([[maybe_unused]] const node &n, [[maybe_unused]] const riddle::resolver &r) noexcept {}
     /**
      * @brief This function is called when the current node changes.
      *

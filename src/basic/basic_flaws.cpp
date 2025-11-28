@@ -3,63 +3,24 @@
 #include "conjunction.hpp"
 #include "logging.hpp"
 #include <stack>
+#include <numeric>
 #include <cassert>
 
 namespace ratio
 {
 
-    flaw::flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes) : slv(slv), causes(causes)
-    {
-        for (auto &cause : causes)
-            cause.get().preconditions.push_back(*this); // this flaw is a precondition of its `cause` cause..
-    }
+    flaw::flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes) : riddle::flaw(slv, std::move(causes)) {}
 
     json::json flaw::to_json() const
     {
-        json::json j_flaw{{"cost", linspire::to_json(get_estimated_cost())}, {"position", position}};
-        if (!causes.empty())
-        {
-            json::json j_causes(json::json_type::array);
-            for (const auto &c : causes)
-                j_causes.push_back(c.get().get_id());
-            j_flaw["causes"] = std::move(j_causes);
-        }
+        json::json j_flaw = riddle::flaw::to_json();
+        j_flaw["position"] = 0;
         return j_flaw;
     }
 
-    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) : flw(flw), intrinsic_cost(intrinsic_cost) {}
+    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) : riddle::resolver(flw, std::move(intrinsic_cost)) {}
 
-    utils::rational resolver::resolver::get_estimated_cost() const noexcept
-    {
-#ifdef H_ADD
-        // we compute the cost of the resolver as the sum of its intrinsic cost and the estimated costs of its preconditions..
-        return std::accumulate(preconditions.begin(), preconditions.end(), intrinsic_cost, [](const auto &lhs, const auto &prec)
-                               { return lhs + prec.get().get_estimated_cost(); });
-#elif defined(H_MAX)
-        // we compute the cost of the resolver as the sum of its intrinsic cost and the maximum of its preconditions' estimated costs..
-        return intrinsic_cost + (*std::max_element(preconditions.begin(), preconditions.end(), [](const auto &lhs, const auto &rhs)
-                                                   { return lhs.get().get_estimated_cost() < rhs.get().get_estimated_cost(); }))
-                                    .get()
-                                    .get_estimated_cost();
-#else
-        static_assert(false, "No heuristic defined for resolver cost estimation");
-#endif
-    }
-
-    json::json resolver::to_json() const
-    {
-        json::json j_resolver{{"flaw", flw.get_id()}, {"intrinsic_cost", linspire::to_json(intrinsic_cost)}};
-        if (!preconditions.empty())
-        {
-            json::json j_preconditions(json::json_type::array);
-            for (const auto &p : preconditions)
-                j_preconditions.push_back(p.get().get_id());
-            j_resolver["preconditions"] = std::move(j_preconditions);
-        }
-        return j_resolver;
-    }
-
-    enum_flaw::enum_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept : flaw(slv, std::move(causes)), var(std::make_shared<enum_item>(tp, std::move(values), ev, *this)) {}
+    enum_flaw::enum_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept : flaw(slv, std::move(causes)), var(std::make_shared<riddle::enum_item>(*this, tp, std::move(values), ev, *this)) {}
 
     utils::rational enum_flaw::get_estimated_cost() const noexcept { return get_ac().domain(utils::variable(static_cast<const riddle::enum_item &>(*var).get_var())).size(); }
 
@@ -83,7 +44,7 @@ namespace ratio
         return true;
     }
 
-    clause_flaw::clause_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
+    clause_flaw::clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
 
     utils::rational clause_flaw::get_estimated_cost() const noexcept { return clause.size(); }
 
@@ -111,7 +72,7 @@ namespace ratio
         return j;
     }
 
-    disjunction_flaw::disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
+    disjunction_flaw::disjunction_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 
     utils::rational disjunction_flaw::get_estimated_cost() const noexcept { return disjuncts.size(); }
 
@@ -142,7 +103,7 @@ namespace ratio
         return j;
     }
 
-    atom_flaw::atom_flaw(solver &slv, std::vector<std::reference_wrapper<resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<atom>(pred, is_fact, std::move(args), std::move(sigma), *this)) {}
+    atom_flaw::atom_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<riddle::atom>(*this, pred, is_fact, std::move(args), std::move(sigma), *this)) {}
 
     utils::rational atom_flaw::get_estimated_cost() const noexcept
     { // Estimate the cost as the number of active ancestor atoms that can be unified with this atom plus one for activation..
@@ -150,7 +111,7 @@ namespace ratio
             return utils::rational::zero; // activating a fact has zero cost
         std::size_t count = 0;
         for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
-            if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a, atm) && slv.match(*atm, *a))
+            if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a->get_flaw(), atm->get_flaw()) && static_cast<solver &>(get_core()).match(*atm, *a))
                 ++count;
         return utils::rational(count + 1);
     }
@@ -159,7 +120,7 @@ namespace ratio
     { // Create a unify resolver for each inactive ancestor atom..
         assert(atm->get_state() == riddle::atom_state::inactive);
         for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
-            if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a, atm) && slv.match(*atm, *a))
+            if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a->get_flaw(), atm->get_flaw()) && static_cast<solver &>(get_core()).match(*atm, *a))
                 new_resolver<unify_atom>(*this, a);
 
         // Create an activate resolver..
@@ -167,28 +128,6 @@ namespace ratio
             new_resolver<activate_fact>(*this);
         else
             new_resolver<activate_goal>(*this);
-    }
-
-    bool atom_flaw::have_common_ancestors(const riddle::atom_expr &ancestor, const riddle::atom_expr &descendant)
-    {
-        flaw *curr_f = &static_cast<atom &>(*descendant).get_flaw();
-        std::unordered_set<flaw *> visited;
-        while (curr_f)
-        {
-            visited.insert(curr_f);
-            if (curr_f == &static_cast<atom &>(*ancestor).get_flaw())
-                return true;
-            curr_f = curr_f->get_causes().empty() ? nullptr : &curr_f->get_causes().front().get().get_flaw();
-        }
-
-        flaw *anc_f = &static_cast<atom &>(*ancestor).get_flaw();
-        while (anc_f)
-        {
-            if (visited.count(anc_f))
-                return true;
-            anc_f = anc_f->get_causes().empty() ? nullptr : &anc_f->get_causes().front().get().get_flaw();
-        }
-        return false;
     }
 
     json::json atom_flaw::to_json() const

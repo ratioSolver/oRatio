@@ -59,7 +59,7 @@ namespace ratio
             client->send(msg);
     }
 
-    void server::flaw_created(const node &n, const flaw &f) noexcept
+    void server::flaw_created(const node &n, const riddle::flaw &f) noexcept
     {
         auto j_msg = f.to_json();
         j_msg["msg_type"] = "flaw_created";
@@ -69,7 +69,7 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
-    void server::resolver_applied(const node &n, const resolver &r) noexcept
+    void server::resolver_applied(const node &n, const riddle::resolver &r) noexcept
     {
         auto j_msg = r.to_json();
         j_msg["msg_type"] = "resolver_applied";

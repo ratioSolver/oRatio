@@ -24,132 +24,19 @@
 
 namespace ratio
 {
-    riddle::expr enum_item::get(std::string_view name)
+    node::node(std::weak_ptr<node> parent) noexcept : utils::node<double>(std::move(parent), 1)
     {
-        assert(get_values().size() > 1); // should not be a singleton..
-
-        if (auto it = items.find(name.data()); it != items.end())
-            return it->second;
-
-        // different referenced values can represent the same item, so we group them by the item they represent..
-        std::unordered_set<riddle::expr> matching_values;
-        for (const auto &v : get_values())
-            matching_values.emplace(std::dynamic_pointer_cast<riddle::env>(v)->get(name));
-        assert(!matching_values.empty());
-
-        if (matching_values.size() == 1)
-        { // we are lucky!
-            items.emplace(name, *matching_values.begin());
-            return *matching_values.begin();
-        }
-        // we have to create a new variable :(
-
-        auto &tp = static_cast<riddle::component_type &>(get_type()).get_field(name).get_type(); // the target type..
-
-        if (flw.get_resolvers().empty())
-            flw.compute_resolvers();
-
-        if (is_bool(tp))
-        { // we create a new boolean item..
-            auto b = std::dynamic_pointer_cast<riddle::bool_item>(get_core().new_bool());
-            // we force the variable to assume the same value of the referenced bools according to the value of the enum..
-            for (auto &res : flw.get_resolvers())
-            {
-                auto &er = static_cast<choose_val &>(*res);
-                auto &erv = static_cast<riddle::bool_item &>(*std::dynamic_pointer_cast<riddle::env>(er.get_value())->get(name));
-                if (utils::sign(erv.get_lit()) == utils::sign(b->get_lit()))
-                    er.ctx.ac_cnsts.push_back(flw.get_ac().new_equal(utils::variable(erv.get_lit()), utils::variable(b->get_lit())));
-                else
-                    er.ctx.ac_cnsts.push_back(flw.get_ac().new_distinct(utils::variable(erv.get_lit()), utils::variable(b->get_lit())));
-            }
-            items.emplace(name, b);
-            return b;
-        }
-        else if (is_int(tp) || is_real(tp))
-        {
-            auto min = utils::inf_rational(utils::rational::positive_infinite);
-            auto max = utils::inf_rational(utils::rational::negative_infinite);
-            for (const auto &val : matching_values)
-            {
-                const auto &a_itm = static_cast<riddle::arith_item &>(*val);
-                const auto c_min = static_cast<solver &>(get_core()).lin_slv.lb(a_itm.get_lin());
-                if (min < c_min)
-                    min = c_min;
-                const auto c_max = static_cast<solver &>(get_core()).lin_slv.ub(a_itm.get_lin());
-                if (max > c_max)
-                    max = c_max;
-            }
-            if (min == max)
-            { // we are lucky! we have a constant..
-                if (is_int(tp))
-                {
-                    assert(min.get_infinitesimal() == 0);
-                    assert(min.get_rational().denominator() == 1);
-                    auto i = get_core().new_int(min.get_rational().numerator());
-                    items.emplace(name, i);
-                    return i;
-                }
-                else
-                {
-                    assert(is_real(tp));
-                    assert(min.get_infinitesimal() == 0);
-                    auto i = get_core().new_real(min.get_rational());
-                    items.emplace(name, i);
-                    return i;
-                }
-            }
-            else
-            { // we need to create a new variable..
-                auto ai = std::dynamic_pointer_cast<riddle::arith_item>(is_int(tp) ? get_core().new_int() : get_core().new_real());
-                // we force the variable to assume the same value of the referenced ariths according to the value of the enum..
-                for (auto &res : flw.get_resolvers())
-                {
-                    auto &er = static_cast<choose_val &>(*res);
-                    auto &erv = static_cast<riddle::arith_item &>(*std::dynamic_pointer_cast<riddle::env>(er.get_value())->get(name));
-                    [[maybe_unused]] bool valid = flw.get_lin().new_eq(erv.get_lin(), ai->get_lin(), er.ctx.lin_cnsts);
-                    assert(valid);
-                    flw.get_lin().retract(er.ctx.lin_cnsts);
-                }
-                items.emplace(name, ai);
-                return ai;
-            }
-        }
-        else
-        {
-            std::vector<riddle::expr> vals;
-            for (const auto &val : matching_values)
-                vals.push_back(val);
-            auto e = get_core().new_enum(static_cast<riddle::component_type &>(tp), std::move(vals));
-            for (auto &res : flw.get_resolvers())
-            {
-                auto &er = static_cast<choose_val &>(*res);
-                auto &erv = static_cast<utils::enum_val &>(*std::dynamic_pointer_cast<riddle::env>(er.get_value())->get(name));
-                er.ctx.ac_cnsts.push_back(flw.get_ac().new_assign(static_cast<const riddle::enum_item &>(*e).get_var(), erv));
-            }
-            items.emplace(name, e);
-            return e;
-        }
+        if (get_parent()) // If there is a parent, inherit its open flaws..
+            this->open_flaws = static_cast<node &>(*get_parent()).open_flaws;
     }
 
-    node::node(std::optional<std::reference_wrapper<node>> parent) noexcept : parent(std::move(parent))
-    {
-        if (this->parent) // If there is a parent, inherit its open flaws..
-            this->open_flaws = this->parent->get().open_flaws;
-    }
-
-    double node::get_estimated_cost() const noexcept
-    {
-        std::size_t depth = 0;
-        for (auto p = parent; p; p = p->get().parent)
-            ++depth;
-        return depth + open_flaws.size();
-    }
+    double node::h_cost() const noexcept { return open_flaws.size(); }
 
     json::json node::to_json() const noexcept
     {
         json::json j{{"id", get_id()}};
-        if (parent)
-            j["parent"] = parent->get().get_id();
+        if (get_parent())
+            j["parent"] = get_parent()->get_id();
         j["consistent"] = consistent;
         json::json j_ress;
         for (const auto &res : resolvers)
@@ -193,9 +80,9 @@ namespace ratio
                 ev_refs.emplace_back(*ev_ptr);
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
-            std::vector<std::reference_wrapper<resolver>> causes;
+            std::vector<std::shared_ptr<riddle::resolver>> causes;
             if (!c_node->get().resolvers.empty())
-                causes.push_back(*c_node->get().resolvers.back());
+                causes.push_back(c_node->get().resolvers.back());
             auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
             return ef.get_var();
         }
@@ -211,18 +98,18 @@ namespace ratio
         }
         else
         { // otherwise, create a new clause flaw..
-            std::vector<std::reference_wrapper<resolver>> causes;
+            std::vector<std::shared_ptr<riddle::resolver>> causes;
             if (!c_node->get().resolvers.empty())
-                causes.push_back(*c_node->get().resolvers.back());
+                causes.push_back(c_node->get().resolvers.back());
             new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
         }
     }
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
-        std::vector<std::reference_wrapper<resolver>> causes;
+        std::vector<std::shared_ptr<riddle::resolver>> causes;
         if (!c_node->get().resolvers.empty())
-            causes.push_back(*c_node->get().resolvers.back());
+            causes.push_back(c_node->get().resolvers.back());
         new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
     }
 
@@ -331,9 +218,9 @@ namespace ratio
 
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args)
     {
-        std::vector<std::reference_wrapper<resolver>> causes;
+        std::vector<std::shared_ptr<riddle::resolver>> causes;
         if (!c_node->get().resolvers.empty())
-            causes.push_back(*c_node->get().resolvers.back());
+            causes.push_back(c_node->get().resolvers.back());
         auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), ac_slv.new_sat());
         return af.get_atom();
     }
