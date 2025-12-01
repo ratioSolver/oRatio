@@ -39,7 +39,7 @@ add_subdirectory(extern/linspire)
 set(ARCCONSISTENCY_ENABLE_LISTENERS ON CACHE BOOL "Enable listener functionality in ArcConsistency" FORCE)
 add_subdirectory(extern/ac)
 
-add_library(oRatioLib src/solver_core.cpp)
+add_library(oRatioLib src/solver.cpp)
 target_compile_features(oRatioLib PUBLIC cxx_std_17)
 add_dependencies(oRatioLib RiDDLe LinSpire ArcConsistency)
 target_link_libraries(oRatioLib PUBLIC RiDDLe LinSpire ArcConsistency)

@@ -1,4 +1,4 @@
-#include "solver_core.hpp"
+#pragma once
 
 namespace ratio
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "solver_core.hpp"
+#include "solver.hpp"
 #include "a_star.hpp"
 
 namespace ratio

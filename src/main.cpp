@@ -10,7 +10,7 @@
 // #include <fstream>
 // #endif
 // #include "logging.hpp"
-#include "solver_core.hpp"
+#include "solver.hpp"
 
 int main(int argc, char const *argv[])
 {

@@ -1,0 +1,3 @@
+namespace ratio
+{
+} // namespace ratio
