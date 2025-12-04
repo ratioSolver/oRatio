@@ -1,12 +1,43 @@
 #pragma once
 
 #include "core.hpp"
+#include "flaw.hpp"
 #include "linspire.hpp"
 #include "arc_consistency.hpp"
 
 namespace ratio
 {
   static constexpr const char *INIT_STRING = "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end, real duration) { start >= origin; duration == end - start; duration >= 0.0; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;";
+
+  class solver;
+
+  class flaw : public riddle::flaw
+  {
+    friend class solver;
+    friend class resolver;
+
+  public:
+    flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes);
+
+  private:
+    virtual void compute_resolvers() = 0;
+  };
+
+  class resolver : public riddle::resolver
+  {
+    friend class solver;
+    friend class flaw;
+
+  public:
+    resolver(flaw &flw, utils::rational &&intrinsic_cost);
+
+  private:
+    [[nodiscard]] virtual bool apply() noexcept = 0;
+
+  protected:
+    linspire::constraint lin_cnsts;                                            // The linear constraints in the current context..
+    std::vector<std::reference_wrapper<arc_consistency::constraint>> ac_cnsts; // The arc consistency constraints in the current context..
+  };
 
   class solver : public riddle::core
   {
@@ -46,11 +77,15 @@ namespace ratio
     [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::arith_expr> &&xprs) override;
     [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::arith_expr> &&xprs) override;
 
-    riddle::atom_state get_atom_state(const riddle::atom_term &) const noexcept override { return riddle::atom_state::active; }
+    riddle::atom_state get_atom_state(const riddle::atom_term &) const noexcept override;
 
     virtual void solve() = 0;
 
     [[nodiscard]] bool match(riddle::term &lhs, riddle::term &rhs) const;
+
+  protected:
+    void compute_resolvers(flaw &flw) { flw.compute_resolvers(); }
+    bool apply_resolver(resolver &res) noexcept { return res.apply(); }
 
   private:
     bool mk_assign(const riddle::bool_term &, utils::lbool) noexcept override;
@@ -68,7 +103,8 @@ namespace ratio
     bool mk_neq(const riddle::enum_term &, const riddle::enum_term &) noexcept override;
 
   protected:
-    arc_consistency::solver ac_slv; // The arc consistency solver..
-    linspire::solver lin_slv;       // The linear programming solver..
+    arc_consistency::solver ac_slv;          // The arc consistency solver..
+    linspire::solver lin_slv;                // The linear programming solver..
+    std::shared_ptr<resolver> ctx = nullptr; // The current resolver context..
   };
 } // namespace ratio

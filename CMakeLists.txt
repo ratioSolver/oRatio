@@ -33,6 +33,9 @@ if(ORATIO_BUILD_SERVER)
     message(STATUS "Client directory: ${CLIENT_DIR}")
 endif()
 
+set(UTILS_A_STAR_ENABLE_LISTENERS ON CACHE BOOL "Enable listener callbacks for the A* solver in utils" FORCE)
+set(UTILS_A_STAR_ENABLE_NAVIGATION ON CACHE BOOL "Enable navigation hooks for the A* solver in utils" FORCE)
+
 add_subdirectory(extern/riddle)
 set(LINSPIRE_ENABLE_LISTENERS ON CACHE BOOL "Enable listener functionality in LinSpire" FORCE)
 add_subdirectory(extern/linspire)

@@ -5,6 +5,10 @@
 
 namespace ratio
 {
+    flaw::flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes) : riddle::flaw(slv, std::move(causes)) {}
+
+    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) : riddle::resolver(flw, std::move(intrinsic_cost)) {}
+
     solver::solver(std::string_view name) noexcept : riddle::core(name) {}
 
     riddle::bool_expr solver::new_bool() { return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ac_slv.new_sat()); }
@@ -123,4 +127,81 @@ namespace ratio
         else
             throw std::runtime_error("Invalid type");
     }
+
+    bool solver::match(riddle::term &lhs, riddle::term &rhs) const
+    {
+        if (&lhs == &rhs) // the terms are the same, so they match..
+            return true;
+        else if (&lhs.get_type() != &rhs.get_type()) // the types are different, so the terms cannot match..
+            return false;
+        else if (auto lhs_xpr = dynamic_cast<riddle::arith_item *>(&lhs)) // we are dealing with arithmetic terms..
+            return lin_slv.match(lhs_xpr->get_lin(), static_cast<riddle::arith_item &>(rhs).get_lin());
+        else if (auto lhs_bxpr = dynamic_cast<riddle::bool_item *>(&lhs)) // we are dealing with boolean terms..
+            return ac_slv.match(lhs_bxpr->get_lit(), static_cast<riddle::bool_item &>(rhs).get_lit());
+        else if (auto lhs_enum_xpr = dynamic_cast<riddle::enum_item *>(&lhs)) // we are dealing with enum terms..
+        {
+            if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(&rhs))
+                return ac_slv.match(lhs_enum_xpr->get_var(), rhs_enum_xpr->get_var());
+            else
+                return ac_slv.allows(lhs_enum_xpr->get_var(), rhs);
+        }
+        else if (auto rhs_enum_xpr = dynamic_cast<riddle::enum_item *>(&rhs)) // we are dealing with enum terms..
+            return ac_slv.allows(rhs_enum_xpr->get_var(), lhs);
+        else if (auto lhs_xpr = dynamic_cast<riddle::atom_term *>(&lhs))
+        { // we are dealing with atoms..
+            auto rhs_xpr = static_cast<riddle::atom_term *>(&rhs);
+            if (&lhs_xpr->get_type().get_scope() != &rhs_xpr->get_type().get_scope().get_core() && !match(*lhs_xpr->get(riddle::tau_kw), *rhs_xpr->get(riddle::tau_kw)))
+                return false; // the atoms are not in the same scope, so they cannot match..
+            // we check if the atoms' fields match..
+            std::queue<riddle::predicate *> q;
+            q.push(static_cast<riddle::predicate *>(&lhs_xpr->get_type()));
+            while (!q.empty())
+            {
+                for (const auto &[f_name, f] : q.front()->get_fields())
+                    if (!match(*lhs_xpr->get(f_name), *rhs_xpr->get(f_name)))
+                        return false;
+                for (const auto &pp : q.front()->get_parents())
+                    q.push(&pp.get());
+                q.pop();
+            }
+            return true;
+        }
+        else // we are dealing with components (and we have already checked their are not the same)..
+            return false;
+    }
+
+    riddle::atom_state solver::get_atom_state(const riddle::atom_term &atm) const noexcept
+    {
+        switch (ac_slv.sat_val(static_cast<const riddle::atom &>(atm).get_sigma()))
+        {
+        case utils::True:
+            return riddle::active;
+        case utils::False:
+            return riddle::unified;
+        default:
+            return riddle::inactive;
+        }
+    }
+
+    bool solver::mk_assign(const riddle::bool_term &xpr, utils::lbool) noexcept
+    {
+        auto &lit = static_cast<const riddle::bool_item &>(xpr).get_lit();
+        auto &c = ac_slv.new_assign(utils::variable(lit), utils::sign(lit) ? arc_consistency::solver::False : arc_consistency::solver::True);
+        if (ctx)
+            static_cast<resolver &>(*ctx).ac_cnsts.push_back(c);
+        else
+            ac_slv.add_constraint(c);
+    }
+    bool solver::mk_eq(const riddle::bool_term &, const riddle::bool_term &) noexcept {}
+    bool solver::mk_neq(const riddle::bool_term &, const riddle::bool_term &) noexcept {}
+
+    bool solver::mk_lt(const riddle::arith_term &, const riddle::arith_term &) noexcept {}
+    bool solver::mk_le(const riddle::arith_term &, const riddle::arith_term &) noexcept {}
+    bool solver::mk_eq(const riddle::arith_term &, const riddle::arith_term &) noexcept {}
+    bool solver::mk_neq(const riddle::arith_term &, const riddle::arith_term &) noexcept {}
+
+    bool solver::mk_assign(const riddle::enum_term &, const utils::enum_val &) noexcept {}
+    bool solver::mk_forbid(const riddle::enum_term &, const utils::enum_val &) noexcept {}
+    bool solver::mk_eq(const riddle::enum_term &, const riddle::enum_term &) noexcept {}
+    bool solver::mk_neq(const riddle::enum_term &, const riddle::enum_term &) noexcept {}
 } // namespace ratio
