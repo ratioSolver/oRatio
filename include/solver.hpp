@@ -68,7 +68,7 @@ namespace ratio
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
     [[nodiscard]] std::string string_value(riddle::const_string_expr expr) const noexcept override;
 
-    [[nodiscard]] std::vector<riddle::expr> enum_value(riddle::const_enum_expr expr) const noexcept override;
+    [[nodiscard]] std::unordered_set<riddle::expr> enum_value(riddle::const_enum_expr expr) const noexcept override;
 
     [[nodiscard]] riddle::arith_expr new_negation(riddle::const_arith_expr xpr) override;
 

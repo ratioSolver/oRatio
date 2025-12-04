@@ -7,6 +7,21 @@ namespace ratio
 
     utils::rational enum_flaw::get_estimated_cost() const noexcept { return get_core().enum_value(var).size(); }
 
+    void enum_flaw::compute_resolvers()
+    {
+        if (expanded)
+            return;
+        // Create a resolver for each possible value..
+        auto dom = get_core().enum_value(var);
+        for (auto &val : var->get_values())
+            if (dom.count(val))
+                new_resolver<select_value>(*this, val);
+        expanded = true;
+    }
+
+    select_value::select_value(enum_flaw &flw, riddle::expr val) noexcept : ratio::resolver(flw, utils::rational(1)), riddle::select_value(flw, std::move(val)) {}
+    bool select_value::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<enum_flaw &>(ratio::resolver::flw).get_var(), get_value())); }
+
     clause_flaw::clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::const_bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
 
     utils::rational clause_flaw::get_estimated_cost() const noexcept { return clause.size(); }

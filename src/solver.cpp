@@ -39,13 +39,13 @@ namespace ratio
     riddle::string_expr solver::new_string(std::string &&value) { return std::make_shared<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
     std::string solver::string_value(riddle::const_string_expr expr) const noexcept { return std::static_pointer_cast<const riddle::string_item>(expr)->get_string(); }
 
-    std::vector<riddle::expr> solver::enum_value(riddle::const_enum_expr expr) const noexcept
+    std::unordered_set<riddle::expr> solver::enum_value(riddle::const_enum_expr expr) const noexcept
     {
         auto &dom = ac_slv.domain(std::static_pointer_cast<const riddle::enum_item>(expr)->get_var());
-        std::vector<riddle::expr> values;
+        std::unordered_set<riddle::expr> values;
         for (auto ev_ptr : expr->get_values())
             if (dom.find(&*ev_ptr) != dom.end())
-                values.push_back(ev_ptr);
+                values.insert(ev_ptr);
         return values;
     };
 
