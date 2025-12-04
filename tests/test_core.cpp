@@ -14,9 +14,9 @@ void test_basic_core()
 
     slv.solve();
 
-    assert(slv.arith_value(i0) >= 10);
-    assert(slv.arith_value(i1) == slv.arith_value(i0));
-    assert(slv.arith_value(i2) == 0);
+    assert(slv.arith_value(*i0) >= 10);
+    assert(slv.arith_value(*i1) == slv.arith_value(*i0));
+    assert(slv.arith_value(*i2) == 0);
 }
 
 int main()

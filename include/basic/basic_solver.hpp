@@ -42,7 +42,7 @@ namespace ratio
     [[nodiscard]] riddle::expr new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values) override;
 
     void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&) override;
-    void new_clause(std::vector<riddle::const_bool_expr> &&) override;
+    void new_clause(std::vector<riddle::bool_expr> &&) override;
 
     void solve() override;
 

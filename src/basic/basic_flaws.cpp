@@ -1,36 +1,88 @@
 #include "basic_flaws.hpp"
 #include "items.hpp"
+#include <cassert>
 
 namespace ratio
 {
     enum_flaw::enum_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept : flaw(slv, std::move(causes)), var(std::make_shared<riddle::enum_item>(*this, tp, std::move(values), ev)) {}
 
-    utils::rational enum_flaw::get_estimated_cost() const noexcept { return get_core().enum_value(var).size(); }
+    utils::rational enum_flaw::get_estimated_cost() const noexcept { return get_core().enum_value(*var).size(); }
 
     void enum_flaw::compute_resolvers()
     {
         if (expanded)
             return;
         // Create a resolver for each possible value..
-        auto dom = get_core().enum_value(var);
-        for (auto &val : var->get_values())
+        auto dom = get_core().enum_value(*var);
+        for (auto val : var->get_values())
             if (dom.count(val))
                 new_resolver<select_value>(*this, val);
         expanded = true;
     }
 
-    select_value::select_value(enum_flaw &flw, riddle::expr val) noexcept : ratio::resolver(flw, utils::rational(1)), riddle::select_value(flw, std::move(val)) {}
+    select_value::select_value(enum_flaw &flw, riddle::expr val) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(1)), riddle::select_value(flw, std::move(val)) {}
     bool select_value::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<enum_flaw &>(ratio::resolver::flw).get_var(), get_value())); }
 
-    clause_flaw::clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::const_bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
+    clause_flaw::clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
 
     utils::rational clause_flaw::get_estimated_cost() const noexcept { return clause.size(); }
+
+    void clause_flaw::compute_resolvers()
+    { // Create a resolver for each literal in the clause..
+        for (auto lit : clause)
+            new_resolver<choose_lit>(*this, lit);
+    }
+
+    json::json clause_flaw::to_json() const
+    {
+        auto j = flaw::to_json();
+        j["data"]["type"] = "clause";
+        return j;
+    }
+
+    choose_lit::choose_lit(clause_flaw &flw, riddle::bool_expr lit) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(1)), lit(lit) {}
+    bool choose_lit::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(lit, ratio::resolver::get_flaw().get_core().new_bool(true))); }
+
+    json::json choose_lit::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "lit";
+        j["data"]["lit"] = lit->to_string();
+        return j;
+    }
 
     disjunction_flaw::disjunction_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 
     utils::rational disjunction_flaw::get_estimated_cost() const noexcept { return disjuncts.size(); }
 
-    atom_flaw::atom_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<riddle::atom>(*this, pred, is_fact, std::move(args), std::move(sigma))) {}
+    void disjunction_flaw::compute_resolvers()
+    { // Create a resolver for each disjunct..
+        for (const auto &disjunct : disjuncts)
+            new_resolver<choose_conjunction>(*this, *disjunct);
+    }
+
+    json::json disjunction_flaw::to_json() const
+    {
+        auto j = flaw::to_json();
+        j["data"]["type"] = "disjunction";
+        return j;
+    }
+
+    choose_conjunction::choose_conjunction(disjunction_flaw &flw, riddle::conjunction &conj) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(1)), conj(conj) {}
+    bool choose_conjunction::apply() noexcept
+    {
+        conj.execute();
+        return true;
+    }
+
+    json::json choose_conjunction::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "disjunct";
+        return j;
+    }
+
+    atom_flaw::atom_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<riddle::atom>(*this, pred, is_fact, std::move(args), std::move(sigma))) {}
 
     utils::rational atom_flaw::get_estimated_cost() const noexcept
     { // Estimate the cost as the number of active ancestor atoms that can be unified with this atom plus one for activation..
@@ -41,5 +93,76 @@ namespace ratio
             if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a->get_flaw(), atm->get_flaw()) && static_cast<solver &>(get_core()).match(*atm, *a))
                 ++count;
         return utils::rational(count + 1);
+    }
+
+    void atom_flaw::compute_resolvers()
+    { // Create a unify resolver for each inactive ancestor atom..
+        assert(atm->get_state() == riddle::atom_state::inactive);
+        for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
+            if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a->get_flaw(), atm->get_flaw()) && static_cast<solver &>(get_core()).match(*atm, *a))
+                new_resolver<unify_atom>(*this, a);
+
+        // Create an activate resolver..
+        if (atm->is_fact())
+            new_resolver<activate_fact>(*this);
+        else
+            new_resolver<activate_goal>(*this);
+    }
+
+    json::json atom_flaw::to_json() const
+    {
+        auto j = flaw::to_json();
+        j["data"]["type"] = "atom";
+        j["data"]["atom"] = {{"id", atm->get_id()}, {"is_fact", atm->is_fact()}, {"predicate", atm->get_type().get_name()}};
+        return j;
+    }
+
+    activate_fact::activate_fact(atom_flaw &flw) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(1)) {}
+    bool activate_fact::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma(), ratio::resolver::get_flaw().get_core().new_bool(true))); }
+
+    json::json activate_fact::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "activate_fact";
+        return j;
+    }
+
+    activate_goal::activate_goal(atom_flaw &flw) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(1)) {}
+    bool activate_goal::apply() noexcept
+    {
+        if (!ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma(), ratio::resolver::get_flaw().get_core().new_bool(true))))
+            return false;
+        try
+        {
+            static_cast<riddle::predicate &>(static_cast<atom_flaw &>(flw).get_atom()->get_type()).call(static_cast<atom_flaw &>(flw).get_atom());
+            return true;
+        }
+        catch (const std::exception &e)
+        {
+            return false;
+        }
+    }
+
+    json::json activate_goal::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "activate_goal";
+        return j;
+    }
+
+    unify_atom::unify_atom(atom_flaw &flw, riddle::atom_expr atm) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(2)), atm(std::move(atm)) {}
+    bool unify_atom::apply() noexcept
+    {
+        if (!ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma(), ratio::resolver::get_flaw().get_core().new_bool(false))))
+            return false;
+        return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<atom_flaw &>(flw).get_atom(), atm));
+    }
+
+    json::json unify_atom::to_json() const
+    {
+        auto j = resolver::to_json();
+        j["data"]["type"] = "unify_atom";
+        j["data"]["atom_id"] = atm->get_id();
+        return j;
     }
 } // namespace ratio

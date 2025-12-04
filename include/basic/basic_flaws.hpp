@@ -36,11 +36,11 @@ namespace ratio
   class clause_flaw final : public flaw
   {
   public:
-    clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::const_bool_expr> &&clause) noexcept;
+    clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
 
     utils::rational get_estimated_cost() const noexcept override;
 
-    [[nodiscard]] const std::vector<riddle::const_bool_expr> &get_clause() const noexcept { return clause; }
+    [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
 
   private:
     void compute_resolvers() override;
@@ -48,7 +48,7 @@ namespace ratio
     [[nodiscard]] json::json to_json() const override;
 
   private:
-    std::vector<riddle::const_bool_expr> clause;
+    std::vector<riddle::bool_expr> clause;
   };
 
   class choose_lit final : public resolver
@@ -100,7 +100,7 @@ namespace ratio
   class atom_flaw final : public flaw
   {
   public:
-    atom_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, utils::lit &&sigma) noexcept;
+    atom_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept;
 
     utils::rational get_estimated_cost() const noexcept override;
 

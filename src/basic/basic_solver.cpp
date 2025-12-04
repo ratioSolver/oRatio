@@ -43,7 +43,7 @@ namespace ratio
                 return {};
             case 1: // Only one resolver, apply it directly..
             {
-                auto res = std::static_pointer_cast<resolver>(c_flw->get_resolvers().front());
+                auto res = std::dynamic_pointer_cast<resolver>(c_flw->get_resolvers().front());
                 if (slv.apply_resolver(*res))
                 {
                     resolvers.push_back(res);
@@ -62,7 +62,7 @@ namespace ratio
                 std::unordered_map<std::shared_ptr<utils::node<double>>, double> successors;
                 for (const auto &res_ptr : c_flw->get_resolvers())
                 {
-                    auto res = std::static_pointer_cast<resolver>(res_ptr);
+                    auto res = std::dynamic_pointer_cast<resolver>(res_ptr);
                     auto succ = std::make_shared<node>(slv);
                     // Copy open and closed flaws to the successor..
                     succ->open_flaws = open_flaws;
@@ -135,7 +135,7 @@ namespace ratio
         }
     }
 
-    void basic_solver::new_clause(std::vector<riddle::const_bool_expr> &&exprs)
+    void basic_solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
     {
         assert(!exprs.empty());
         if (exprs.size() == 1)
@@ -186,7 +186,7 @@ namespace ratio
         std::vector<std::shared_ptr<riddle::resolver>> causes;
         if (!static_cast<node &>(get_current_node()).resolvers.empty())
             causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
-        auto af = std::make_shared<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), ac_slv.new_sat());
+        auto af = std::make_shared<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), new_bool());
         static_cast<node &>(get_current_node()).open_flaws.insert(af);
         return af->get_atom();
     }

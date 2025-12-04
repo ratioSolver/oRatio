@@ -17,7 +17,7 @@ namespace ratio
         auto l = value ? utils::TRUE_lit : utils::FALSE_lit;
         return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), std::move(l));
     }
-    utils::lbool solver::bool_value(riddle::const_bool_expr expr) const noexcept { return ac_slv.sat_val(std::static_pointer_cast<const riddle::bool_item>(expr)->get_lit()); }
+    utils::lbool solver::bool_value(const riddle::bool_term &expr) const noexcept { return ac_slv.sat_val(static_cast<const riddle::bool_item &>(expr).get_lit()); }
 
     riddle::arith_expr solver::new_int() { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::lin(lin_slv.new_var(), utils::rational::one)); }
     riddle::arith_expr solver::new_int(const INT_TYPE value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), utils::rational(value)); }
@@ -32,24 +32,24 @@ namespace ratio
     riddle::arith_expr solver::new_time() { return std::make_shared<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), utils::lin(lin_slv.new_var(), utils::rational::one)); }
     riddle::arith_expr solver::new_time(utils::rational &&value) { return std::make_shared<riddle::arith_item>(static_cast<riddle::time_type &>(get_type(riddle::time_kw)), std::move(value)); }
 
-    utils::inf_rational solver::arith_value(riddle::const_arith_expr expr) const noexcept { return lin_slv.val(std::static_pointer_cast<const riddle::arith_item>(expr)->get_lin()); }
-    bool solver::is_constant(riddle::const_arith_expr expr) const noexcept { return lin_slv.lb(std::static_pointer_cast<const riddle::arith_item>(expr)->get_lin()) == lin_slv.ub(std::static_pointer_cast<const riddle::arith_item>(expr)->get_lin()); }
+    utils::inf_rational solver::arith_value(const riddle::arith_term &xpr) const noexcept { return lin_slv.val(static_cast<const riddle::arith_item &>(xpr).get_lin()); }
+    bool solver::is_constant(const riddle::arith_term &xpr) const noexcept { return lin_slv.lb(static_cast<const riddle::arith_item &>(xpr).get_lin()) == lin_slv.ub(static_cast<const riddle::arith_item &>(xpr).get_lin()); }
 
     riddle::string_expr solver::new_string() { return std::make_shared<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), ""); }
     riddle::string_expr solver::new_string(std::string &&value) { return std::make_shared<riddle::string_item>(static_cast<riddle::string_type &>(get_type(riddle::string_kw)), std::move(value)); }
-    std::string solver::string_value(riddle::const_string_expr expr) const noexcept { return std::static_pointer_cast<const riddle::string_item>(expr)->get_string(); }
+    std::string solver::string_value(const riddle::string_term &xpr) const noexcept { return static_cast<const riddle::string_item &>(xpr).get_string(); }
 
-    std::unordered_set<riddle::expr> solver::enum_value(riddle::const_enum_expr expr) const noexcept
+    std::unordered_set<riddle::expr> solver::enum_value(const riddle::enum_term &xpr) const noexcept
     {
-        auto &dom = ac_slv.domain(std::static_pointer_cast<const riddle::enum_item>(expr)->get_var());
+        auto &dom = ac_slv.domain(static_cast<const riddle::enum_item &>(xpr).get_var());
         std::unordered_set<riddle::expr> values;
-        for (auto ev_ptr : expr->get_values())
+        for (auto ev_ptr : xpr.get_values())
             if (dom.find(&*ev_ptr) != dom.end())
                 values.insert(ev_ptr);
         return values;
     };
 
-    riddle::arith_expr solver::new_negation(riddle::const_arith_expr xpr)
+    riddle::arith_expr solver::new_negation(riddle::arith_expr xpr)
     {
         if (xpr->get_type().get_name() == riddle::int_kw)
             return std::make_shared<riddle::arith_item>(static_cast<riddle::int_type &>(get_type(riddle::int_kw)), -static_cast<const riddle::arith_item &>(*xpr).get_lin());
@@ -59,7 +59,7 @@ namespace ratio
             throw std::runtime_error("Invalid type");
     }
 
-    riddle::arith_expr solver::new_sum(std::vector<riddle::const_arith_expr> &&xprs)
+    riddle::arith_expr solver::new_sum(std::vector<riddle::arith_expr> &&xprs)
     {
         assert(xprs.size() > 1);
         utils::lin sum;
@@ -73,7 +73,7 @@ namespace ratio
         else
             throw std::runtime_error("Invalid type");
     }
-    riddle::arith_expr solver::new_subtraction(std::vector<riddle::const_arith_expr> &&xprs)
+    riddle::arith_expr solver::new_subtraction(std::vector<riddle::arith_expr> &&xprs)
     {
         assert(xprs.size() > 1);
         utils::lin sub = static_cast<const riddle::arith_item &>(*xprs[0]).get_lin();
@@ -87,7 +87,7 @@ namespace ratio
         else
             throw std::runtime_error("Invalid type");
     }
-    riddle::arith_expr solver::new_product(std::vector<riddle::const_arith_expr> &&xprs)
+    riddle::arith_expr solver::new_product(std::vector<riddle::arith_expr> &&xprs)
     {
         assert(xprs.size() > 1);
         utils::lin prod;
@@ -104,7 +104,7 @@ namespace ratio
         else
             throw std::runtime_error("Invalid type");
     }
-    riddle::arith_expr solver::new_division(std::vector<riddle::const_arith_expr> &&xprs)
+    riddle::arith_expr solver::new_division(std::vector<riddle::arith_expr> &&xprs)
     {
         assert(xprs.size() > 1);
         utils::lin div = static_cast<const riddle::arith_item &>(*xprs[0]).get_lin();
@@ -164,9 +164,9 @@ namespace ratio
             return false;
     }
 
-    riddle::atom_state solver::get_atom_state(riddle::const_atom_expr atm) const noexcept
+    riddle::atom_state solver::get_atom_state(const riddle::atom_term &atm) const noexcept
     {
-        switch (ac_slv.sat_val(std::static_pointer_cast<const riddle::atom>(atm)->get_sigma()))
+        switch (bool_value(*static_cast<const riddle::atom &>(atm).get_sigma()))
         {
         case utils::True:
             return riddle::active;
@@ -177,7 +177,7 @@ namespace ratio
         }
     }
 
-    bool solver::mk_assign(riddle::const_bool_expr xpr, utils::lbool val) noexcept
+    bool solver::mk_assign(riddle::bool_expr xpr, utils::lbool val) noexcept
     {
         auto &c = ac_slv.new_assign(utils::variable(std::static_pointer_cast<const riddle::bool_item>(xpr)->get_lit()), val ? arc_consistency::solver::False : arc_consistency::solver::True);
         if (ctx)
@@ -186,7 +186,7 @@ namespace ratio
             ac_slv.add_constraint(c);
         return true;
     }
-    bool solver::mk_eq(riddle::const_bool_expr lhs, riddle::const_bool_expr rhs) noexcept
+    bool solver::mk_eq(riddle::bool_expr lhs, riddle::bool_expr rhs) noexcept
     {
         auto &c = ac_slv.new_equal(utils::variable(std::static_pointer_cast<const riddle::bool_item>(lhs)->get_lit()), utils::variable(std::static_pointer_cast<const riddle::bool_item>(rhs)->get_lit()));
         if (ctx)
@@ -195,7 +195,7 @@ namespace ratio
             ac_slv.add_constraint(c);
         return true;
     }
-    bool solver::mk_neq(riddle::const_bool_expr lhs, riddle::const_bool_expr rhs) noexcept
+    bool solver::mk_neq(riddle::bool_expr lhs, riddle::bool_expr rhs) noexcept
     {
         auto &c = ac_slv.new_distinct(utils::variable(std::static_pointer_cast<const riddle::bool_item>(lhs)->get_lit()), utils::variable(std::static_pointer_cast<const riddle::bool_item>(rhs)->get_lit()));
         if (ctx)
@@ -205,16 +205,16 @@ namespace ratio
         return true;
     }
 
-    bool solver::mk_lt(riddle::const_arith_expr lhs, riddle::const_arith_expr rhs) noexcept { return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin()); }
-    bool solver::mk_le(riddle::const_arith_expr lhs, riddle::const_arith_expr rhs) noexcept { return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), true); }
-    bool solver::mk_eq(riddle::const_arith_expr lhs, riddle::const_arith_expr rhs) noexcept { return lin_slv.new_eq(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin()); }
-    bool solver::mk_neq(riddle::const_arith_expr lhs, riddle::const_arith_expr rhs) noexcept
+    bool solver::mk_lt(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept { return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin()); }
+    bool solver::mk_le(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept { return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), true); }
+    bool solver::mk_eq(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept { return lin_slv.new_eq(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin()); }
+    bool solver::mk_neq(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept
     {
         new_clause({new_lt(lhs, rhs), new_lt(rhs, lhs)});
         return true;
     }
 
-    bool solver::mk_assign(riddle::const_enum_expr lhs, const utils::enum_val &val) noexcept
+    bool solver::mk_assign(riddle::enum_expr lhs, const utils::enum_val &val) noexcept
     {
         auto &c = ac_slv.new_assign(std::static_pointer_cast<const riddle::enum_item>(lhs)->get_var(), val);
         if (ctx)
@@ -223,7 +223,7 @@ namespace ratio
             ac_slv.add_constraint(c);
         return true;
     }
-    bool solver::mk_forbid(riddle::const_enum_expr lhs, const utils::enum_val &val) noexcept
+    bool solver::mk_forbid(riddle::enum_expr lhs, const utils::enum_val &val) noexcept
     {
         auto &c = ac_slv.new_forbid(std::static_pointer_cast<const riddle::enum_item>(lhs)->get_var(), val);
         if (ctx)
@@ -232,7 +232,7 @@ namespace ratio
             ac_slv.add_constraint(c);
         return true;
     }
-    bool solver::mk_eq(riddle::const_enum_expr lhs, riddle::const_enum_expr rhs) noexcept
+    bool solver::mk_eq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept
     {
         auto &c = ac_slv.new_equal(std::static_pointer_cast<const riddle::enum_item>(lhs)->get_var(), std::static_pointer_cast<const riddle::enum_item>(rhs)->get_var());
         if (ctx)
@@ -241,7 +241,7 @@ namespace ratio
             ac_slv.add_constraint(c);
         return true;
     }
-    bool solver::mk_neq(riddle::const_enum_expr lhs, riddle::const_enum_expr rhs) noexcept
+    bool solver::mk_neq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept
     {
         auto &c = ac_slv.new_distinct(std::static_pointer_cast<const riddle::enum_item>(lhs)->get_var(), std::static_pointer_cast<const riddle::enum_item>(rhs)->get_var());
         if (ctx)
