@@ -46,7 +46,7 @@ namespace ratio
 
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
-    [[nodiscard]] utils::lbool bool_value(const riddle::bool_term &expr) const noexcept override;
+    [[nodiscard]] utils::lbool bool_value(riddle::const_bool_expr expr) const noexcept override;
 
     [[nodiscard]] riddle::arith_expr new_int() override;
     [[nodiscard]] riddle::arith_expr new_int(const INT_TYPE value) override;
@@ -61,23 +61,23 @@ namespace ratio
     [[nodiscard]] riddle::arith_expr new_time() override;
     [[nodiscard]] riddle::arith_expr new_time(utils::rational &&value) override;
 
-    [[nodiscard]] utils::inf_rational arith_value(const riddle::arith_term &expr) const noexcept override;
-    bool is_constant(const riddle::arith_term &) const noexcept override;
+    [[nodiscard]] utils::inf_rational arith_value(riddle::const_arith_expr expr) const noexcept override;
+    bool is_constant(riddle::const_arith_expr expr) const noexcept override;
 
     [[nodiscard]] riddle::string_expr new_string() override;
     [[nodiscard]] riddle::string_expr new_string(std::string &&value) override;
-    [[nodiscard]] std::string string_value(const riddle::string_term &expr) const noexcept override;
+    [[nodiscard]] std::string string_value(riddle::const_string_expr expr) const noexcept override;
 
-    [[nodiscard]] std::vector<riddle::expr> enum_value(const riddle::enum_term &expr) const noexcept override;
+    [[nodiscard]] std::vector<riddle::expr> enum_value(riddle::const_enum_expr expr) const noexcept override;
 
-    [[nodiscard]] riddle::arith_expr new_negation(riddle::arith_expr xpr) override;
+    [[nodiscard]] riddle::arith_expr new_negation(riddle::const_arith_expr xpr) override;
 
-    [[nodiscard]] riddle::arith_expr new_sum(std::vector<riddle::arith_expr> &&xprs) override;
-    [[nodiscard]] riddle::arith_expr new_subtraction(std::vector<riddle::arith_expr> &&xprs) override;
-    [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::arith_expr> &&xprs) override;
-    [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_sum(std::vector<riddle::const_arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_subtraction(std::vector<riddle::const_arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::const_arith_expr> &&xprs) override;
+    [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::const_arith_expr> &&xprs) override;
 
-    riddle::atom_state get_atom_state(const riddle::atom_term &) const noexcept override;
+    riddle::atom_state get_atom_state(riddle::const_atom_expr atm) const noexcept override;
 
     virtual void solve() = 0;
 
@@ -88,19 +88,19 @@ namespace ratio
     bool apply_resolver(resolver &res) noexcept { return res.apply(); }
 
   private:
-    bool mk_assign(const riddle::bool_term &, utils::lbool) noexcept override;
-    bool mk_eq(const riddle::bool_term &, const riddle::bool_term &) noexcept override;
-    bool mk_neq(const riddle::bool_term &, const riddle::bool_term &) noexcept override;
+    bool mk_assign(riddle::const_bool_expr xpr, utils::lbool val) noexcept override;
+    bool mk_eq(riddle::const_bool_expr lhs, riddle::const_bool_expr rhs) noexcept override;
+    bool mk_neq(riddle::const_bool_expr lhs, riddle::const_bool_expr rhs) noexcept override;
 
-    bool mk_lt(const riddle::arith_term &, const riddle::arith_term &) noexcept override;
-    bool mk_le(const riddle::arith_term &, const riddle::arith_term &) noexcept override;
-    bool mk_eq(const riddle::arith_term &, const riddle::arith_term &) noexcept override;
-    bool mk_neq(const riddle::arith_term &, const riddle::arith_term &) noexcept override;
+    bool mk_lt(riddle::const_arith_expr lhs, riddle::const_arith_expr rhs) noexcept override;
+    bool mk_le(riddle::const_arith_expr lhs, riddle::const_arith_expr rhs) noexcept override;
+    bool mk_eq(riddle::const_arith_expr lhs, riddle::const_arith_expr rhs) noexcept override;
+    bool mk_neq(riddle::const_arith_expr lhs, riddle::const_arith_expr rhs) noexcept override;
 
-    bool mk_assign(const riddle::enum_term &, const utils::enum_val &) noexcept override;
-    bool mk_forbid(const riddle::enum_term &, const utils::enum_val &) noexcept override;
-    bool mk_eq(const riddle::enum_term &, const riddle::enum_term &) noexcept override;
-    bool mk_neq(const riddle::enum_term &, const riddle::enum_term &) noexcept override;
+    bool mk_assign(riddle::const_enum_expr xpr, const utils::enum_val &val) noexcept override;
+    bool mk_forbid(riddle::const_enum_expr xpr, const utils::enum_val &val) noexcept override;
+    bool mk_eq(riddle::const_enum_expr lhs, riddle::const_enum_expr rhs) noexcept override;
+    bool mk_neq(riddle::const_enum_expr lhs, riddle::const_enum_expr rhs) noexcept override;
 
   protected:
     arc_consistency::solver ac_slv;          // The arc consistency solver..

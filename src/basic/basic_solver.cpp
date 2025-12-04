@@ -135,7 +135,7 @@ namespace ratio
         }
     }
 
-    void basic_solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
+    void basic_solver::new_clause(std::vector<riddle::const_bool_expr> &&exprs)
     {
         assert(!exprs.empty());
         if (exprs.size() == 1)

@@ -24,11 +24,11 @@ namespace ratio
   class clause_flaw final : public flaw
   {
   public:
-    clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
+    clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::const_bool_expr> &&clause) noexcept;
 
     utils::rational get_estimated_cost() const noexcept override;
 
-    [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
+    [[nodiscard]] const std::vector<riddle::const_bool_expr> &get_clause() const noexcept { return clause; }
 
   private:
     void compute_resolvers() override;
@@ -36,7 +36,7 @@ namespace ratio
     [[nodiscard]] json::json to_json() const override;
 
   private:
-    std::vector<riddle::bool_expr> clause;
+    std::vector<riddle::const_bool_expr> clause;
   };
 
   class disjunction_flaw final : public flaw
