@@ -96,6 +96,8 @@ namespace ratio
     bool mk_le(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept override;
     bool mk_eq(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept override;
     bool mk_neq(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept override;
+    bool mk_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept override;
+    bool mk_gt(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept override;
 
     bool mk_assign(riddle::enum_expr xpr, const utils::enum_val &val) noexcept override;
     bool mk_forbid(riddle::enum_expr xpr, const utils::enum_val &val) noexcept override;
@@ -103,8 +105,7 @@ namespace ratio
     bool mk_neq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept override;
 
   protected:
-    arc_consistency::solver ac_slv;          // The arc consistency solver..
-    linspire::solver lin_slv;                // The linear programming solver..
-    std::shared_ptr<resolver> ctx = nullptr; // The current resolver context..
+    arc_consistency::solver ac_slv; // The arc consistency solver..
+    linspire::solver lin_slv;       // The linear programming solver..
   };
 } // namespace ratio
