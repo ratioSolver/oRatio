@@ -6,7 +6,7 @@
 #ifdef ORATIO_ENABLE_LISTENERS
 #define STATE_CHANGED() state_changed()
 #define NEW_NODE(n) slv.node_created(n)
-#define FLAW_CREATED(n, f) slv.flaw_created(n, f)
+#define FLAW_CREATED(n, f) flaw_created(n, f)
 #define RESOLVER_APPLIED(n, r) slv.resolver_applied(n, r)
 #define INCONSISTENT_NODE(n) slv.inconsistent_node(n)
 #define CURRENT_NODE(n) slv.current_node(n)
@@ -63,7 +63,7 @@ namespace ratio
                 for (const auto &res_ptr : c_flw->get_resolvers())
                 {
                     auto res = std::dynamic_pointer_cast<resolver>(res_ptr);
-                    auto succ = std::make_shared<node>(slv);
+                    auto succ = std::make_shared<node>(slv, shared_from_this());
                     // Copy open and closed flaws to the successor..
                     succ->open_flaws = open_flaws;
                     succ->closed_flaws = closed_flaws;
@@ -130,6 +130,7 @@ namespace ratio
             if (!static_cast<node &>(get_current_node()).resolvers.empty())
                 causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
             auto ef = std::make_shared<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
+            FLAW_CREATED(get_current_node(), *ef);
             static_cast<node &>(get_current_node()).open_flaws.insert(ef);
             return ef->get_var();
         }
@@ -148,7 +149,9 @@ namespace ratio
             std::vector<std::shared_ptr<riddle::resolver>> causes;
             if (!static_cast<node &>(get_current_node()).resolvers.empty())
                 causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
-            static_cast<node &>(get_current_node()).open_flaws.insert(std::make_shared<clause_flaw>(*this, std::move(causes), std::move(exprs)));
+            auto cf = std::make_shared<clause_flaw>(*this, std::move(causes), std::move(exprs));
+            FLAW_CREATED(get_current_node(), *cf);
+            static_cast<node &>(get_current_node()).open_flaws.insert(cf);
         }
     }
     void basic_solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
@@ -157,7 +160,9 @@ namespace ratio
         std::vector<std::shared_ptr<riddle::resolver>> causes;
         if (!static_cast<node &>(get_current_node()).resolvers.empty())
             causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
-        static_cast<node &>(get_current_node()).open_flaws.insert(std::make_shared<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts)));
+        auto df = std::make_shared<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
+        FLAW_CREATED(get_current_node(), *df);
+        static_cast<node &>(get_current_node()).open_flaws.insert(df);
     }
 
     void basic_solver::solve()
@@ -187,6 +192,7 @@ namespace ratio
         if (!static_cast<node &>(get_current_node()).resolvers.empty())
             causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
         auto af = std::make_shared<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), new_bool());
+        FLAW_CREATED(get_current_node(), *af);
         static_cast<node &>(get_current_node()).open_flaws.insert(af);
         return af->get_atom();
     }
