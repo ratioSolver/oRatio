@@ -54,6 +54,29 @@ namespace ratio
     void retract(const utils::node<double> &) noexcept override {}
     bool expand(utils::node<double> &) noexcept override { return true; }
 
+//     /**
+//      * @brief Creates a new flaw of the given type.
+//      *
+//      * @tparam Tp The type of the flaw to create.
+//      * @tparam Args The types of the arguments to pass to the flaw
+//      * @param args The arguments to pass to the flaw
+//      * @return Tp& The created flaw
+//      */
+//     template <typename Tp, typename... Args>
+//     Tp &new_flaw(Args &&...args) noexcept
+//     {
+//       static_assert(std::is_base_of_v<riddle::flaw, Tp>, "Tp must be a subclass of flaw");
+//       auto f = std::make_shared<Tp>(std::forward<Args>(args)...);
+//       for (auto &c : f->get_causes())
+//         c->preconditions.push_back(f); // this flaw is a precondition of its `c` cause..
+//       auto &f_ref = *f;
+//       static_cast<node &>(get_current_node()).open_flaws.insert(f);
+// #ifdef ORATIO_ENABLE_LISTENERS
+//       flaw_created(get_current_node(), f_ref);
+// #endif
+//       return f_ref;
+//     }
+
 #ifdef ORATIO_ENABLE_LISTENERS
   private:
     /**

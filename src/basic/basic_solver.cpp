@@ -28,8 +28,12 @@ namespace ratio
     {
         while (true)
         { // Select the open flaw with the least estimated cost..
-            auto flw_it = std::min_element(open_flaws.begin(), open_flaws.end(), [](const auto &a, const auto &b)
-                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
+            // Prioritize facts..
+            auto flw_it = std::find_if(open_flaws.begin(), open_flaws.end(), [](const auto &flw)
+                                       { auto af = std::dynamic_pointer_cast<atom_flaw>(flw); return af && af->get_atom()->is_fact(); });
+            if (flw_it == open_flaws.end()) // Otherwise, select the open flaw with the least estimated cost
+                flw_it = std::min_element(open_flaws.begin(), open_flaws.end(), [](const auto &a, const auto &b)
+                                          { return a->get_estimated_cost() < b->get_estimated_cost(); });
             auto c_flw = std::static_pointer_cast<flaw>(*flw_it);
             open_flaws.erase(flw_it);
             closed_flaws.insert(c_flw);
@@ -129,9 +133,8 @@ namespace ratio
             std::vector<std::shared_ptr<riddle::resolver>> causes;
             if (!static_cast<node &>(get_current_node()).resolvers.empty())
                 causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
-            auto ef = std::make_shared<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
+            auto ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
             FLAW_CREATED(get_current_node(), *ef);
-            static_cast<node &>(get_current_node()).open_flaws.insert(ef);
             return ef->get_var();
         }
     }
@@ -149,9 +152,8 @@ namespace ratio
             std::vector<std::shared_ptr<riddle::resolver>> causes;
             if (!static_cast<node &>(get_current_node()).resolvers.empty())
                 causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
-            auto cf = std::make_shared<clause_flaw>(*this, std::move(causes), std::move(exprs));
+            auto cf = new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
             FLAW_CREATED(get_current_node(), *cf);
-            static_cast<node &>(get_current_node()).open_flaws.insert(cf);
         }
     }
     void basic_solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
@@ -160,9 +162,8 @@ namespace ratio
         std::vector<std::shared_ptr<riddle::resolver>> causes;
         if (!static_cast<node &>(get_current_node()).resolvers.empty())
             causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
-        auto df = std::make_shared<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
+        auto df = new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
         FLAW_CREATED(get_current_node(), *df);
-        static_cast<node &>(get_current_node()).open_flaws.insert(df);
     }
 
     void basic_solver::solve()
@@ -191,9 +192,8 @@ namespace ratio
         std::vector<std::shared_ptr<riddle::resolver>> causes;
         if (!static_cast<node &>(get_current_node()).resolvers.empty())
             causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
-        auto af = std::make_shared<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), new_bool());
+        auto af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), new_bool());
         FLAW_CREATED(get_current_node(), *af);
-        static_cast<node &>(get_current_node()).open_flaws.insert(af);
         return af->get_atom();
     }
 } // namespace ratio
