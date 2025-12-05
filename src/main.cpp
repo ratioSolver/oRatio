@@ -33,7 +33,7 @@ int main(int argc, char const *argv[])
     LOG_DEBUG("setting solution file: " + sol_name);
 
 #ifdef ORATIO_BUILD_SERVER
-    ratio::server solver;
+    ratio::basic_server solver;
     LOG_INFO("starting oRatio server");
     auto srv_ft = std::async(std::launch::async, [&solver]
                              { solver.start(); });

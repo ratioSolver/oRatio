@@ -53,5 +53,69 @@ namespace ratio
 
     void retract(const utils::node<double> &) noexcept override {}
     bool expand(utils::node<double> &) noexcept override { return true; }
+
+#ifdef ORATIO_ENABLE_LISTENERS
+  private:
+    /**
+     * @brief This function is called when the state of the solver changes.
+     *
+     * This function should be overridden by derived classes to handle the state change event.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void state_changed() noexcept {}
+    /**
+     * @brief This function is called when a new node is created.
+     *
+     * This function should be overridden by derived classes to handle the event of a new node creation.
+     *
+     * @param n The newly created node.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void node_created([[maybe_unused]] const utils::node<double> &n) noexcept {}
+    /**
+     * @brief This function is called when a new flaw is created on a node.
+     *
+     * This function should be overridden by derived classes to handle the event of a new flaw creation.
+     *
+     * @param n The node on which the flaw was created.
+     * @param f The newly created flaw.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void flaw_created([[maybe_unused]] const utils::node<double> &n, [[maybe_unused]] const riddle::flaw &f) noexcept {}
+    /**
+     * @brief This function is called when a resolver is applied on a node.
+     *
+     * This function should be overridden by derived classes to handle the event of a resolver application.
+     *
+     * @param n The node on which the resolver was applied.
+     * @param r The applied resolver.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void resolver_applied([[maybe_unused]] const utils::node<double> &n, [[maybe_unused]] const riddle::resolver &r) noexcept {}
+    /**
+     * @brief This function is called when the current node changes.
+     *
+     * This function should be overridden by derived classes to handle the event of a current node change.
+     *
+     * @param n The new current node.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void current_node([[maybe_unused]] const utils::node<double> &n) noexcept override {}
+    /**
+     * @brief This function is called when a node is found to be inconsistent.
+     *
+     * This function should be overridden by derived classes to handle the event of an inconsistent node.
+     *
+     * @param n The inconsistent node.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void inconsistent_node([[maybe_unused]] const utils::node<double> &n) noexcept override {}
+#endif
   };
 } // namespace ratio

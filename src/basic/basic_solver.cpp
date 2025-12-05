@@ -4,7 +4,7 @@
 #include <cassert>
 
 #ifdef ORATIO_ENABLE_LISTENERS
-#define STATE_CHANGED() slv.state_changed()
+#define STATE_CHANGED() state_changed()
 #define NEW_NODE(n) slv.node_created(n)
 #define FLAW_CREATED(n, f) slv.flaw_created(n, f)
 #define RESOLVER_APPLIED(n, r) slv.resolver_applied(n, r)
@@ -47,7 +47,7 @@ namespace ratio
                 if (slv.apply_resolver(*res))
                 {
                     resolvers.push_back(res);
-                    RESOLVER_APPLIED(*this, res);
+                    RESOLVER_APPLIED(*this, *res);
                     continue; // Continue to the next flaw..
                 }
                 else
@@ -70,11 +70,11 @@ namespace ratio
                     // Apply the resolver on the successor..
                     if (slv.apply_resolver(*res))
                     {
+                        NEW_NODE(*succ);
                         succ->resolvers = resolvers;
                         succ->resolvers.push_back(res);
-                        RESOLVER_APPLIED(*succ, res);
+                        RESOLVER_APPLIED(*succ, *res);
                         successors.emplace(succ, res->get_intrinsic_cost().numerator() / static_cast<double>(res->get_intrinsic_cost().denominator()));
-                        NEW_NODE(*succ);
                     }
                 }
                 return successors;
