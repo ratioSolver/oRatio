@@ -118,7 +118,7 @@ namespace ratio
     }
 
     activate_fact::activate_fact(atom_flaw &flw) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(1)) {}
-    bool activate_fact::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma(), ratio::resolver::get_flaw().get_core().new_bool(true))); }
+    bool activate_fact::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()); }
 
     json::json activate_fact::to_json() const
     {
@@ -130,7 +130,7 @@ namespace ratio
     activate_goal::activate_goal(atom_flaw &flw) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(1)) {}
     bool activate_goal::apply() noexcept
     {
-        if (!ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma(), ratio::resolver::get_flaw().get_core().new_bool(true))))
+        if (!ratio::resolver::get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()))
             return false;
         try
         {
@@ -153,7 +153,7 @@ namespace ratio
     unify_atom::unify_atom(atom_flaw &flw, riddle::atom_expr atm) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(2)), atm(std::move(atm)) {}
     bool unify_atom::apply() noexcept
     {
-        if (!ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma(), ratio::resolver::get_flaw().get_core().new_bool(false))))
+        if (!ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_not(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma())))
             return false;
         return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<atom_flaw &>(flw).get_atom(), atm));
     }

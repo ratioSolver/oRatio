@@ -179,7 +179,7 @@ namespace ratio
 
     bool solver::mk_assign(riddle::bool_expr xpr, utils::lbool val) noexcept
     {
-        auto &c = ac_slv.new_assign(utils::variable(std::static_pointer_cast<const riddle::bool_item>(xpr)->get_lit()), val ? arc_consistency::solver::False : arc_consistency::solver::True);
+        auto &c = ac_slv.new_assign(utils::variable(std::static_pointer_cast<const riddle::bool_item>(xpr)->get_lit()), val ? arc_consistency::solver::True : arc_consistency::solver::False);
         if (get_current_resolver())
             dynamic_cast<resolver &>(*get_current_resolver()).ac_cnsts.push_back(c);
         else

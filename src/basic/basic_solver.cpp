@@ -1,6 +1,7 @@
 #include "basic_solver.hpp"
 #include "types.hpp"
 #include "basic_flaws.hpp"
+#include "logging.hpp"
 #include <cassert>
 
 #ifdef ORATIO_ENABLE_LISTENERS
@@ -34,6 +35,7 @@ namespace ratio
             if (flw_it == open_flaws.end()) // Otherwise, select the open flaw with the least estimated cost
                 flw_it = std::min_element(open_flaws.begin(), open_flaws.end(), [](const auto &a, const auto &b)
                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
+            LOG_DEBUG(flw_it->get()->to_json().dump());
             auto c_flw = std::static_pointer_cast<flaw>(*flw_it);
             open_flaws.erase(flw_it);
             closed_flaws.insert(c_flw);
@@ -48,7 +50,7 @@ namespace ratio
             case 1: // Only one resolver, apply it directly..
             {
                 auto res = std::dynamic_pointer_cast<resolver>(c_flw->get_resolvers().front());
-                if (slv.apply_resolver(*res))
+                if (slv.apply_resolver(*res) && slv.ac_slv.propagate() && slv.lin_slv.check())
                 {
                     resolvers.push_back(res);
                     RESOLVER_APPLIED(*res);
