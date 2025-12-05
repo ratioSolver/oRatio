@@ -54,29 +54,6 @@ namespace ratio
     void retract(const utils::node<double> &) noexcept override {}
     bool expand(utils::node<double> &) noexcept override { return true; }
 
-//     /**
-//      * @brief Creates a new flaw of the given type.
-//      *
-//      * @tparam Tp The type of the flaw to create.
-//      * @tparam Args The types of the arguments to pass to the flaw
-//      * @param args The arguments to pass to the flaw
-//      * @return Tp& The created flaw
-//      */
-//     template <typename Tp, typename... Args>
-//     Tp &new_flaw(Args &&...args) noexcept
-//     {
-//       static_assert(std::is_base_of_v<riddle::flaw, Tp>, "Tp must be a subclass of flaw");
-//       auto f = std::make_shared<Tp>(std::forward<Args>(args)...);
-//       for (auto &c : f->get_causes())
-//         c->preconditions.push_back(f); // this flaw is a precondition of its `c` cause..
-//       auto &f_ref = *f;
-//       static_cast<node &>(get_current_node()).open_flaws.insert(f);
-// #ifdef ORATIO_ENABLE_LISTENERS
-//       flaw_created(get_current_node(), f_ref);
-// #endif
-//       return f_ref;
-//     }
-
 #ifdef ORATIO_ENABLE_LISTENERS
   private:
     /**
@@ -102,23 +79,21 @@ namespace ratio
      *
      * This function should be overridden by derived classes to handle the event of a new flaw creation.
      *
-     * @param n The node on which the flaw was created.
      * @param f The newly created flaw.
      *
      * @note This is a virtual function and can be overridden by derived classes.
      */
-    virtual void flaw_created([[maybe_unused]] const utils::node<double> &n, [[maybe_unused]] const riddle::flaw &f) noexcept {}
+    virtual void flaw_created([[maybe_unused]] const riddle::flaw &f) noexcept {}
     /**
      * @brief This function is called when a resolver is applied on a node.
      *
      * This function should be overridden by derived classes to handle the event of a resolver application.
      *
-     * @param n The node on which the resolver was applied.
      * @param r The applied resolver.
      *
      * @note This is a virtual function and can be overridden by derived classes.
      */
-    virtual void resolver_applied([[maybe_unused]] const utils::node<double> &n, [[maybe_unused]] const riddle::resolver &r) noexcept {}
+    virtual void resolver_applied([[maybe_unused]] const riddle::resolver &r) noexcept {}
     /**
      * @brief This function is called when the current node changes.
      *

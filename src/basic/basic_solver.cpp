@@ -6,15 +6,15 @@
 #ifdef ORATIO_ENABLE_LISTENERS
 #define STATE_CHANGED() state_changed()
 #define NEW_NODE(n) slv.node_created(n)
-#define FLAW_CREATED(n, f) flaw_created(n, f)
-#define RESOLVER_APPLIED(n, r) slv.resolver_applied(n, r)
+#define FLAW_CREATED(f) flaw_created(f)
+#define RESOLVER_APPLIED(r) slv.resolver_applied(r)
 #define INCONSISTENT_NODE(n) slv.inconsistent_node(n)
 #define CURRENT_NODE(n) slv.current_node(n)
 #else
 #define STATE_CHANGED()
 #define NEW_NODE(n)
-#define FLAW_CREATED(n, f)
-#define RESOLVER_APPLIED(n, r)
+#define FLAW_CREATED(f)
+#define RESOLVER_APPLIED(r)
 #define INCONSISTENT_NODE(n)
 #define CURRENT_NODE(n)
 #endif
@@ -51,7 +51,7 @@ namespace ratio
                 if (slv.apply_resolver(*res))
                 {
                     resolvers.push_back(res);
-                    RESOLVER_APPLIED(*this, *res);
+                    RESOLVER_APPLIED(*res);
                     continue; // Continue to the next flaw..
                 }
                 else
@@ -74,11 +74,9 @@ namespace ratio
                     // Apply the resolver on the successor..
                     if (slv.apply_resolver(*res))
                     {
-                        NEW_NODE(*succ);
-                        succ->resolvers = resolvers;
                         succ->resolvers.push_back(res);
-                        RESOLVER_APPLIED(*succ, *res);
                         successors.emplace(succ, res->get_intrinsic_cost().numerator() / static_cast<double>(res->get_intrinsic_cost().denominator()));
+                        NEW_NODE(*succ);
                     }
                 }
                 return successors;
@@ -134,7 +132,8 @@ namespace ratio
             if (!static_cast<node &>(get_current_node()).resolvers.empty())
                 causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
             auto ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
-            FLAW_CREATED(get_current_node(), *ef);
+            FLAW_CREATED(*ef);
+            static_cast<node &>(get_current_node()).open_flaws.insert(ef);
             return ef->get_var();
         }
     }
@@ -153,7 +152,8 @@ namespace ratio
             if (!static_cast<node &>(get_current_node()).resolvers.empty())
                 causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
             auto cf = new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
-            FLAW_CREATED(get_current_node(), *cf);
+            FLAW_CREATED(*cf);
+            static_cast<node &>(get_current_node()).open_flaws.insert(cf);
         }
     }
     void basic_solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
@@ -163,7 +163,8 @@ namespace ratio
         if (!static_cast<node &>(get_current_node()).resolvers.empty())
             causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
         auto df = new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
-        FLAW_CREATED(get_current_node(), *df);
+        FLAW_CREATED(*df);
+        static_cast<node &>(get_current_node()).open_flaws.insert(df);
     }
 
     void basic_solver::solve()
@@ -193,7 +194,8 @@ namespace ratio
         if (!static_cast<node &>(get_current_node()).resolvers.empty())
             causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
         auto af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), new_bool());
-        FLAW_CREATED(get_current_node(), *af);
+        FLAW_CREATED(*af);
+        static_cast<node &>(get_current_node()).open_flaws.insert(af);
         return af->get_atom();
     }
 } // namespace ratio

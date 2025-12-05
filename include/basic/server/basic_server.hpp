@@ -21,8 +21,8 @@ namespace ratio
     void state_changed() noexcept override;
     void node_created(const utils::node<double> &n) noexcept override;
 
-    void flaw_created(const utils::node<double> &n, const riddle::flaw &f) noexcept override;
-    void resolver_applied(const utils::node<double> &n, const riddle::resolver &r) noexcept override;
+    void flaw_created(const riddle::flaw &f) noexcept override;
+    void resolver_applied(const riddle::resolver &r) noexcept override;
 
     void current_node(const utils::node<double> &n) noexcept override;
     void inconsistent_node(const utils::node<double> &n) noexcept override;

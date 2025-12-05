@@ -59,21 +59,21 @@ namespace ratio
             client->send(msg);
     }
 
-    void basic_server::flaw_created(const utils::node<double> &n, const riddle::flaw &f) noexcept
+    void basic_server::flaw_created(const riddle::flaw &f) noexcept
     {
         auto j_msg = f.to_json();
         j_msg["msg_type"] = "flaw_created";
-        j_msg["node_id"] = static_cast<const node &>(n).get_id();
+        j_msg["node_id"] = static_cast<const node &>(get_current_node()).get_id();
         j_msg["id"] = f.get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
-    void basic_server::resolver_applied(const utils::node<double> &n, const riddle::resolver &r) noexcept
+    void basic_server::resolver_applied(const riddle::resolver &r) noexcept
     {
         auto j_msg = r.to_json();
         j_msg["msg_type"] = "resolver_applied";
-        j_msg["node_id"] = static_cast<const node &>(n).get_id();
+        j_msg["node_id"] = static_cast<const node &>(get_current_node()).get_id();
         j_msg["id"] = r.get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
