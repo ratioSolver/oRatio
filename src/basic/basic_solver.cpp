@@ -35,7 +35,6 @@ namespace ratio
             if (flw_it == open_flaws.end()) // Otherwise, select the open flaw with the least estimated cost
                 flw_it = std::min_element(open_flaws.begin(), open_flaws.end(), [](const auto &a, const auto &b)
                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
-            LOG_DEBUG(flw_it->get()->to_json().dump());
             auto c_flw = std::static_pointer_cast<flaw>(*flw_it);
             open_flaws.erase(flw_it);
             closed_flaws.insert(c_flw);
@@ -66,7 +65,7 @@ namespace ratio
             default: // Create a successor for each resolver..
             {
                 std::unordered_map<std::shared_ptr<utils::node<double>>, double> successors;
-                for (const auto &res_ptr : c_flw->get_resolvers())
+                for (auto &res_ptr : c_flw->get_resolvers())
                 {
                     auto res = std::dynamic_pointer_cast<resolver>(res_ptr);
                     auto succ = std::make_shared<node>(slv, shared_from_this());
@@ -74,12 +73,15 @@ namespace ratio
                     succ->open_flaws = open_flaws;
                     succ->closed_flaws = closed_flaws;
                     // Apply the resolver on the successor..
+                    auto tmp_res = slv.get_current_resolver();
+                    slv.set_current_resolver(res_ptr);
                     if (slv.apply_resolver(*res))
                     {
                         succ->resolvers.push_back(res);
                         successors.emplace(succ, res->get_intrinsic_cost().numerator() / static_cast<double>(res->get_intrinsic_cost().denominator()));
                         NEW_NODE(*succ);
                     }
+                    slv.set_current_resolver(tmp_res);
                 }
                 return successors;
             }
@@ -199,5 +201,31 @@ namespace ratio
         FLAW_CREATED(*af);
         static_cast<node &>(get_current_node()).open_flaws.insert(af);
         return af->get_atom();
+    }
+
+    void basic_solver::retract(const utils::node<double> &n) noexcept
+    {
+        for (auto &res : static_cast<const node &>(n).resolvers)
+        {
+            lin_slv.retract(dynamic_cast<resolver &>(*res).get_lin_constraints());
+            for (auto &ac_cnst : dynamic_cast<resolver &>(*res).get_ac_constraints())
+                ac_slv.retract(ac_cnst.get());
+        }
+        STATE_CHANGED();
+    }
+    bool basic_solver::expand(utils::node<double> &n) noexcept
+    {
+        for (auto &res : static_cast<const node &>(n).resolvers)
+        {
+            for (auto &ac_cnst : dynamic_cast<resolver &>(*res).get_ac_constraints())
+                ac_slv.add_constraint(ac_cnst.get());
+            if (!lin_slv.add_constraint(dynamic_cast<resolver &>(*res).get_lin_constraints()) || !lin_slv.check() || !ac_slv.propagate())
+            {
+                retract(n);
+                return false;
+            }
+        }
+        STATE_CHANGED();
+        return true;
     }
 } // namespace ratio

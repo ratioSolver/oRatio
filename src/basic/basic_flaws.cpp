@@ -13,10 +13,8 @@ namespace ratio
         if (expanded)
             return;
         // Create a resolver for each possible value..
-        auto dom = get_core().enum_value(*var);
         for (auto val : var->get_values())
-            if (dom.count(val))
-                new_resolver<select_value>(*this, val);
+            new_resolver<select_value>(*this, val);
         expanded = true;
     }
 
@@ -29,8 +27,10 @@ namespace ratio
 
     void clause_flaw::compute_resolvers()
     { // Create a resolver for each literal in the clause..
+        clear_resolvers();
         for (auto lit : clause)
-            new_resolver<choose_lit>(*this, lit);
+            if (get_core().bool_value(*lit) != utils::False)
+                new_resolver<choose_lit>(*this, lit);
     }
 
     json::json clause_flaw::to_json() const
@@ -57,6 +57,7 @@ namespace ratio
 
     void disjunction_flaw::compute_resolvers()
     { // Create a resolver for each disjunct..
+        clear_resolvers();
         for (const auto &disjunct : disjuncts)
             new_resolver<choose_conjunction>(*this, *disjunct);
     }
@@ -97,6 +98,7 @@ namespace ratio
 
     void atom_flaw::compute_resolvers()
     { // Create a unify resolver for each inactive ancestor atom..
+        clear_resolvers();
         assert(atm->get_state() == riddle::atom_state::inactive);
         for (auto &a : static_cast<riddle::predicate &>(atm->get_type()).get_atoms())
             if (atm != a && a->get_state() == riddle::active && !have_common_ancestors(a->get_flaw(), atm->get_flaw()) && static_cast<solver &>(get_core()).match(*atm, *a))
@@ -153,6 +155,8 @@ namespace ratio
     unify_atom::unify_atom(atom_flaw &flw, riddle::atom_expr atm) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(2)), atm(std::move(atm)) {}
     bool unify_atom::apply() noexcept
     {
+        if (!ratio::resolver::get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*atm).get_sigma()))
+            return false;
         if (!ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_not(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma())))
             return false;
         return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<atom_flaw &>(flw).get_atom(), atm));

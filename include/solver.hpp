@@ -31,6 +31,9 @@ namespace ratio
   public:
     resolver(flaw &flw, utils::rational &&intrinsic_cost);
 
+    linspire::constraint &get_lin_constraints() noexcept { return lin_cnsts; }
+    const std::vector<std::reference_wrapper<arc_consistency::constraint>> &get_ac_constraints() const noexcept { return ac_cnsts; }
+
   private:
     [[nodiscard]] virtual bool apply() noexcept = 0;
 

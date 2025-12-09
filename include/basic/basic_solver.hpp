@@ -51,8 +51,8 @@ namespace ratio
   private:
     riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) override;
 
-    void retract(const utils::node<double> &) noexcept override {}
-    bool expand(utils::node<double> &) noexcept override { return true; }
+    void retract(const utils::node<double> &) noexcept override;
+    bool expand(utils::node<double> &) noexcept override;
 
 #ifdef ORATIO_ENABLE_LISTENERS
   private:
