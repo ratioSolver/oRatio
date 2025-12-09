@@ -1,5 +1,4 @@
 #include "basic_solver.hpp"
-#include "types.hpp"
 #include "basic_flaws.hpp"
 #include "logging.hpp"
 #include <cassert>
@@ -35,7 +34,7 @@ namespace ratio
             if (flw_it == open_flaws.end()) // Otherwise, select the open flaw with the least estimated cost
                 flw_it = std::min_element(open_flaws.begin(), open_flaws.end(), [](const auto &a, const auto &b)
                                           { return a->get_estimated_cost() < b->get_estimated_cost(); });
-            auto c_flw = std::static_pointer_cast<flaw>(*flw_it);
+            auto c_flw = *flw_it;
             open_flaws.erase(flw_it);
             closed_flaws.insert(c_flw);
             // Compute the resolvers for the selected flaw..
@@ -48,8 +47,8 @@ namespace ratio
                 return {};
             case 1: // Only one resolver, apply it directly..
             {
-                auto res = std::dynamic_pointer_cast<resolver>(c_flw->get_resolvers().front());
-                if (slv.apply_resolver(*res) && slv.ac_slv.propagate() && slv.lin_slv.check())
+                auto res = c_flw->get_resolvers().front();
+                if (slv.apply_resolver(res) && slv.ac_slv.propagate() && slv.lin_slv.check())
                 {
                     resolvers.push_back(res);
                     RESOLVER_APPLIED(*res);
@@ -73,15 +72,12 @@ namespace ratio
                     succ->open_flaws = open_flaws;
                     succ->closed_flaws = closed_flaws;
                     // Apply the resolver on the successor..
-                    auto tmp_res = slv.get_current_resolver();
-                    slv.set_current_resolver(res_ptr);
-                    if (slv.apply_resolver(*res))
+                    if (slv.apply_resolver(res))
                     {
                         succ->resolvers.push_back(res);
                         successors.emplace(succ, res->get_intrinsic_cost().numerator() / static_cast<double>(res->get_intrinsic_cost().denominator()));
                         NEW_NODE(*succ);
                     }
-                    slv.set_current_resolver(tmp_res);
                 }
                 return successors;
             }
@@ -89,7 +85,42 @@ namespace ratio
         }
     }
 
-    bool node::is_goal() const noexcept { return open_flaws.empty() && consistent; }
+    bool node::is_goal() noexcept
+    {
+        if (open_flaws.empty() && consistent)
+        {
+            std::vector<std::shared_ptr<riddle::flaw>> incs;
+            std::queue<riddle::component_type *> q;
+            for (const auto &tp : slv.get_types())
+                if (auto ct = dynamic_cast<riddle::component_type *>(tp.second.get()))
+                    q.push(ct);
+            while (!q.empty())
+            {
+                auto tp = q.front();
+                q.pop();
+                for (const auto &etp : tp->get_types())
+                    if (auto ct = dynamic_cast<riddle::component_type *>(etp.second.get()))
+                        q.push(ct);
+
+                if (auto st_ct = dynamic_cast<riddle::flaw_aware_component_type *>(tp)) // we have a flawable component type..
+                {                                                                       // we extract the current inconsistencies..
+                    auto st_incs = st_ct->get_flaws();
+                    incs.insert(incs.end(), st_incs.begin(), st_incs.end());
+                }
+            };
+
+            if (incs.empty())
+                return true;
+            else
+            {
+                auto flw_it = std::min_element(incs.begin(), incs.end(), [](const auto &a, const auto &b)
+                                               { return a->get_estimated_cost() < b->get_estimated_cost(); });
+                open_flaws.insert(*flw_it);
+            }
+        }
+
+        return false;
+    }
 
     json::json node::to_json() const noexcept
     {
@@ -112,9 +143,9 @@ namespace ratio
     {
         read(INIT_STRING);
 
-        add_type(std::make_unique<riddle::state_variable>(*this));
-        add_type(std::make_unique<riddle::reusable_resource>(*this));
-        add_type(std::make_unique<riddle::consumable_resource>(*this));
+        add_type(std::make_unique<state_variable>(*this));
+        add_type(std::make_unique<reusable_resource>(*this));
+        add_type(std::make_unique<consumable_resource>(*this));
     }
 
     riddle::expr basic_solver::new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values)
@@ -228,4 +259,15 @@ namespace ratio
         STATE_CHANGED();
         return true;
     }
+
+    state_variable::state_variable(basic_solver &slv) noexcept : riddle::state_variable(slv) {}
+    std::shared_ptr<riddle::flaw> state_variable::new_peak(std::vector<riddle::atom_expr> &&atms) noexcept { return std::make_shared<sv_peak>(static_cast<basic_solver &>(get_core()), std::move(atms)); }
+
+    reusable_resource::reusable_resource(basic_solver &slv) noexcept : riddle::reusable_resource(slv) {}
+    std::shared_ptr<riddle::flaw> reusable_resource::new_peak(std::vector<riddle::atom_expr> &&atms) noexcept { return std::make_shared<rr_peak>(static_cast<basic_solver &>(get_core()), std::move(atms)); }
+
+    consumable_resource::consumable_resource(basic_solver &slv) noexcept : riddle::consumable_resource(slv) {}
+
+    std::shared_ptr<riddle::flaw> consumable_resource::new_overproduction(std::vector<riddle::atom_expr> &&prod_atms, std::vector<riddle::atom_expr> &&cons_atms) noexcept { return std::make_shared<cr_overproduction>(static_cast<basic_solver &>(get_core()), std::move(prod_atms), std::move(cons_atms)); }
+    std::shared_ptr<riddle::flaw> consumable_resource::new_overconsumption(std::vector<riddle::atom_expr> &&cons_atms, std::vector<riddle::atom_expr> &&prod_atms) noexcept { return std::make_shared<cr_overconsumption>(static_cast<basic_solver &>(get_core()), std::move(cons_atms), std::move(prod_atms)); }
 } // namespace ratio

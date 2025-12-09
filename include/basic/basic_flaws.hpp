@@ -5,7 +5,7 @@
 
 namespace ratio
 {
-  class enum_flaw final : public flaw
+  class enum_flaw final : public riddle::flaw
   {
   public:
     enum_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept;
@@ -33,7 +33,7 @@ namespace ratio
     bool apply() noexcept override;
   };
 
-  class clause_flaw final : public flaw
+  class clause_flaw final : public riddle::flaw
   {
   public:
     clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
@@ -65,7 +65,7 @@ namespace ratio
     riddle::bool_expr lit; // the literal to choose..
   };
 
-  class disjunction_flaw final : public flaw
+  class disjunction_flaw final : public riddle::flaw
   {
   public:
     disjunction_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
@@ -97,7 +97,7 @@ namespace ratio
     riddle::conjunction &conj;
   };
 
-  class atom_flaw final : public flaw
+  class atom_flaw final : public riddle::flaw
   {
   public:
     atom_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept;
@@ -149,5 +149,76 @@ namespace ratio
 
   private:
     riddle::atom_expr atm; // the atom to unify with..
+  };
+
+  class sv_peak final : public riddle::flaw
+  {
+  public:
+    sv_peak(basic_solver &slv, std::vector<riddle::atom_expr> &&atms) noexcept;
+
+    utils::rational get_estimated_cost() const noexcept override;
+
+  private:
+    void compute_resolvers() noexcept override;
+
+  private:
+    std::vector<riddle::atom_expr> atms;
+  };
+
+  class rr_peak final : public riddle::flaw
+  {
+  public:
+    rr_peak(basic_solver &slv, std::vector<riddle::atom_expr> &&atms) noexcept;
+
+    utils::rational get_estimated_cost() const noexcept override;
+
+  private:
+    void compute_resolvers() noexcept override;
+
+  private:
+    std::vector<riddle::atom_expr> atms;
+  };
+
+  class cr_overproduction final : public riddle::flaw
+  {
+  public:
+    cr_overproduction(basic_solver &slv, std::vector<riddle::atom_expr> &&prod_atms, std::vector<riddle::atom_expr> &&cons_atms) noexcept;
+
+    utils::rational get_estimated_cost() const noexcept override;
+
+  private:
+    void compute_resolvers() noexcept override;
+
+  private:
+    std::vector<riddle::atom_expr> prod_atms;
+    std::vector<riddle::atom_expr> cons_atms;
+  };
+
+  class cr_overconsumption final : public riddle::flaw
+  {
+  public:
+    cr_overconsumption(basic_solver &slv, std::vector<riddle::atom_expr> &&cons_atms, std::vector<riddle::atom_expr> &&prod_atms) noexcept;
+
+    utils::rational get_estimated_cost() const noexcept override;
+
+  private:
+    void compute_resolvers() noexcept override;
+
+  private:
+    std::vector<riddle::atom_expr> cons_atms;
+    std::vector<riddle::atom_expr> prod_atms;
+  };
+
+  class ordering final : public resolver
+  {
+  public:
+    ordering(riddle::flaw &flw, riddle::atom_expr before, riddle::atom_expr after) noexcept;
+
+  private:
+    bool apply() noexcept override;
+
+  private:
+    riddle::atom_expr before;
+    riddle::atom_expr after;
   };
 } // namespace ratio

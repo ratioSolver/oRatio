@@ -2,6 +2,7 @@
 
 #include "solver.hpp"
 #include "a_star.hpp"
+#include "types.hpp"
 
 namespace ratio
 {
@@ -19,7 +20,7 @@ namespace ratio
 
     [[nodiscard]] virtual double cost(std::shared_ptr<utils::node<double>> goal = nullptr) const noexcept override;
     [[nodiscard]] virtual std::unordered_map<std::shared_ptr<utils::node<double>>, double> get_successors() override;
-    [[nodiscard]] virtual bool is_goal() const noexcept override;
+    [[nodiscard]] virtual bool is_goal() noexcept override;
 
     [[nodiscard]] json::json to_json() const noexcept;
 
@@ -115,5 +116,33 @@ namespace ratio
      */
     virtual void inconsistent_node([[maybe_unused]] const utils::node<double> &n) noexcept override {}
 #endif
+  };
+
+  class state_variable final : public riddle::state_variable
+  {
+  public:
+    state_variable(basic_solver &slv) noexcept;
+
+  private:
+    std::shared_ptr<riddle::flaw> new_peak(std::vector<riddle::atom_expr> &&atms) noexcept override;
+  };
+
+  class reusable_resource final : public riddle::reusable_resource
+  {
+  public:
+    reusable_resource(basic_solver &slv) noexcept;
+
+  private:
+    std::shared_ptr<riddle::flaw> new_peak(std::vector<riddle::atom_expr> &&atms) noexcept override;
+  };
+
+  class consumable_resource final : public riddle::consumable_resource
+  {
+  public:
+    consumable_resource(basic_solver &slv) noexcept;
+
+  private:
+    std::shared_ptr<riddle::flaw> new_overproduction(std::vector<riddle::atom_expr> &&prod_atms, std::vector<riddle::atom_expr> &&cons_atms) noexcept override;
+    std::shared_ptr<riddle::flaw> new_overconsumption(std::vector<riddle::atom_expr> &&cons_atms, std::vector<riddle::atom_expr> &&prod_atms) noexcept override;
   };
 } // namespace ratio

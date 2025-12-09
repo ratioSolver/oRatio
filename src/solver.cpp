@@ -5,9 +5,7 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes) : riddle::flaw(slv, std::move(causes)) {}
-
-    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) : riddle::resolver(flw, std::move(intrinsic_cost)) {}
+    resolver::resolver(riddle::flaw &flw, utils::rational &&intrinsic_cost) : riddle::resolver(flw, std::move(intrinsic_cost)) {}
 
     solver::solver(std::string_view name) noexcept : riddle::core(name) {}
 

@@ -11,31 +11,16 @@ namespace ratio
 
   class solver;
 
-  class flaw : public riddle::flaw
-  {
-    friend class solver;
-    friend class resolver;
-
-  public:
-    flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes);
-
-  private:
-    virtual void compute_resolvers() = 0;
-  };
-
   class resolver : virtual public riddle::resolver
   {
     friend class solver;
     friend class flaw;
 
   public:
-    resolver(flaw &flw, utils::rational &&intrinsic_cost);
+    resolver(riddle::flaw &flw, utils::rational &&intrinsic_cost);
 
     linspire::constraint &get_lin_constraints() noexcept { return lin_cnsts; }
     const std::vector<std::reference_wrapper<arc_consistency::constraint>> &get_ac_constraints() const noexcept { return ac_cnsts; }
-
-  private:
-    [[nodiscard]] virtual bool apply() noexcept = 0;
 
   protected:
     linspire::constraint lin_cnsts;                                            // The linear constraints in the current context..
@@ -85,10 +70,6 @@ namespace ratio
     virtual void solve() = 0;
 
     [[nodiscard]] bool match(riddle::term &lhs, riddle::term &rhs) const;
-
-  protected:
-    void compute_resolvers(flaw &flw) { flw.compute_resolvers(); }
-    bool apply_resolver(resolver &res) noexcept { return res.apply(); }
 
   private:
     bool mk_assign(riddle::bool_expr xpr, utils::lbool val) noexcept override;

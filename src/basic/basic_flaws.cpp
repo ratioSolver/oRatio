@@ -1,5 +1,7 @@
 #include "basic_flaws.hpp"
 #include "items.hpp"
+#include "combinations.hpp"
+#include <cmath>
 #include <cassert>
 
 namespace ratio
@@ -169,4 +171,53 @@ namespace ratio
         j["data"]["atom_id"] = atm->get_id();
         return j;
     }
+
+    sv_peak::sv_peak(basic_solver &slv, std::vector<riddle::atom_expr> &&atms) noexcept : riddle::flaw(slv, riddle::causes_from_atoms(atms)), atms(std::move(atms)) {}
+    utils::rational sv_peak::get_estimated_cost() const noexcept { return std::pow(2.0, static_cast<double>(get_causes().size() - 1)); }
+    void sv_peak::compute_resolvers() noexcept
+    {
+        for (const auto &as : utils::combinations(std::vector<riddle::atom_expr>(atms.cbegin(), atms.cend()), 2))
+        {
+            new_resolver<ordering>(*this, as[0], as[1]);
+            new_resolver<ordering>(*this, as[1], as[0]);
+        }
+    }
+
+    rr_peak::rr_peak(basic_solver &slv, std::vector<riddle::atom_expr> &&atms) noexcept : riddle::flaw(slv, riddle::causes_from_atoms(atms)), atms(std::move(atms)) {}
+    utils::rational rr_peak::get_estimated_cost() const noexcept { return std::pow(2.0, static_cast<double>(get_causes().size() - 1)); }
+    void rr_peak::compute_resolvers() noexcept
+    {
+        for (const auto &as : utils::combinations(std::vector<riddle::atom_expr>(atms.cbegin(), atms.cend()), 2))
+        {
+            new_resolver<ordering>(*this, as[0], as[1]);
+            new_resolver<ordering>(*this, as[1], as[0]);
+        }
+    }
+
+    std::vector<std::shared_ptr<riddle::resolver>> merge_vectors(std::vector<std::shared_ptr<riddle::resolver>> &&a, const std::vector<std::shared_ptr<riddle::resolver>> &&b)
+    {
+        a.insert(a.end(), b.begin(), b.end());
+        return a;
+    }
+
+    cr_overproduction::cr_overproduction(basic_solver &slv, std::vector<riddle::atom_expr> &&prod_atms, std::vector<riddle::atom_expr> &&cons_atms) noexcept : riddle::flaw(slv, merge_vectors(riddle::causes_from_atoms(prod_atms), riddle::causes_from_atoms(cons_atms))), prod_atms(std::move(prod_atms)), cons_atms(std::move(cons_atms)) {}
+    utils::rational cr_overproduction::get_estimated_cost() const noexcept { return utils::rational(prod_atms.size() * cons_atms.size()); }
+    void cr_overproduction::compute_resolvers() noexcept
+    {
+        for (const auto &p : prod_atms)
+            for (const auto &c : cons_atms)
+                new_resolver<ordering>(*this, p, c);
+    }
+
+    cr_overconsumption::cr_overconsumption(basic_solver &slv, std::vector<riddle::atom_expr> &&cons_atms, std::vector<riddle::atom_expr> &&prod_atms) noexcept : riddle::flaw(slv, merge_vectors(riddle::causes_from_atoms(cons_atms), riddle::causes_from_atoms(prod_atms))), cons_atms(std::move(cons_atms)), prod_atms(std::move(prod_atms)) {}
+    utils::rational cr_overconsumption::get_estimated_cost() const noexcept { return utils::rational(cons_atms.size() * prod_atms.size()); }
+    void cr_overconsumption::compute_resolvers() noexcept
+    {
+        for (const auto &c : cons_atms)
+            for (const auto &p : prod_atms)
+                new_resolver<ordering>(*this, c, p);
+    }
+
+    ordering::ordering(riddle::flaw &flw, riddle::atom_expr before, riddle::atom_expr after) noexcept : riddle::resolver(flw, utils::rational(1)), resolver(flw, utils::rational(1)), before(std::move(before)), after(std::move(after)) {}
+    bool ordering::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_le(before->get<riddle::arith_term>(riddle::end_kw), after->get<riddle::arith_term>(riddle::start_kw))); }
 } // namespace ratio
