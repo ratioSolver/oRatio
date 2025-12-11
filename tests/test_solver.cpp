@@ -1,4 +1,8 @@
+#ifdef BASIC_SOLVER
 #include "basic_solver.hpp"
+#elif defined(LOCAL_SEARCH_SOLVER)
+#include "local_search_solver.hpp"
+#endif
 #include "logging.hpp"
 #include <chrono>
 #include <numeric>
@@ -28,7 +32,11 @@ int main(int argc, char const *argv[])
     {
         LOG_INFO("running test " + std::to_string(i + 1) + " of " + std::to_string(NUM_TESTS));
         auto start = std::chrono::high_resolution_clock::now();
+#ifdef BASIC_SOLVER
         ratio::basic_solver slv;
+#elif defined(LOCAL_SEARCH_SOLVER)
+        ratio::local_search_solver slv;
+#endif
         try
         {
             slv.read(prob_names);

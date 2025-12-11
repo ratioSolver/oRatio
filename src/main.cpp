@@ -1,11 +1,15 @@
 #ifdef ORATIO_BUILD_SERVER
-#ifdef SOLVER_BASIC
+#ifdef BASIC_SOLVER
 #include "basic_server.hpp"
+#elif defined(LOCAL_SEARCH_SOLVER)
+#include "local_search_server.hpp"
 #endif
 #include <thread>
 #else
-#ifdef SOLVER_BASIC
+#ifdef BASIC_SOLVER
 #include "basic_solver.hpp"
+#elif defined(LOCAL_SEARCH_SOLVER)
+#include "local_search_solver.hpp"
 #endif
 #include <fstream>
 #endif
@@ -33,13 +37,21 @@ int main(int argc, char const *argv[])
     LOG_DEBUG("setting solution file: " + sol_name);
 
 #ifdef ORATIO_BUILD_SERVER
+#ifdef BASIC_SOLVER
     ratio::basic_server solver;
+#elif defined(LOCAL_SEARCH_SOLVER)
+    ratio::local_search_server solver;
+#endif
     LOG_INFO("starting oRatio server");
     auto srv_ft = std::async(std::launch::async, [&solver]
                              { solver.start(); });
     std::this_thread::sleep_for(std::chrono::seconds(1));
 #else
+#ifdef BASIC_SOLVER
     ratio::basic_solver solver;
+#elif defined(LOCAL_SEARCH_SOLVER)
+    ratio::local_search_solver solver;
+#endif
 #endif
 
     solver.read(prob_names);
