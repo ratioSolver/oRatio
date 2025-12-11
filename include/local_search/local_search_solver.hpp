@@ -5,8 +5,12 @@
 
 namespace ratio
 {
+  class ls_flaw;
+
   class local_search_solver : public solver
   {
+    friend class ls_flaw;
+
   public:
     local_search_solver() noexcept;
 

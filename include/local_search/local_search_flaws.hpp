@@ -1,13 +1,14 @@
 #pragma once
 
-#include "solver.hpp"
+#include "local_search_solver.hpp"
+#include "conjunction.hpp"
 
 namespace ratio
 {
   class ls_flaw : public riddle::flaw
   {
   public:
-    ls_flaw(solver &cr, std::vector<std::shared_ptr<resolver>> &&causes, const utils::lit &phi);
+    ls_flaw(solver &cr, std::vector<std::shared_ptr<riddle::resolver>> &&causes, const utils::lit &phi);
 
     const utils::lit &get_phi() const noexcept { return phi; }
 
@@ -40,6 +41,17 @@ namespace ratio
 
   private:
     riddle::enum_expr var;
+  };
+
+  class select_value final : public ls_resolver, public riddle::select_value
+  {
+    friend class enum_item;
+
+  public:
+    select_value(enum_flaw &f, const utils::lit &rho, riddle::expr val) noexcept;
+
+  private:
+    bool apply() noexcept override;
   };
 
   class clause_flaw final : public ls_flaw
