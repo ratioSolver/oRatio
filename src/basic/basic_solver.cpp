@@ -173,6 +173,16 @@ namespace ratio
         }
     }
 
+    void basic_solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
+    {
+        assert(disjuncts.size() > 1);
+        std::vector<std::shared_ptr<riddle::resolver>> causes;
+        if (!static_cast<node &>(get_current_node()).resolvers.empty())
+            causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
+        auto df = new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
+        FLAW_CREATED(*df);
+        static_cast<node &>(get_current_node()).open_flaws.insert(df);
+    }
     void basic_solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
     {
         assert(!exprs.empty());
@@ -190,16 +200,6 @@ namespace ratio
             FLAW_CREATED(*cf);
             static_cast<node &>(get_current_node()).open_flaws.insert(cf);
         }
-    }
-    void basic_solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
-    {
-        assert(disjuncts.size() > 1);
-        std::vector<std::shared_ptr<riddle::resolver>> causes;
-        if (!static_cast<node &>(get_current_node()).resolvers.empty())
-            causes.push_back(static_cast<node &>(get_current_node()).resolvers.back());
-        auto df = new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
-        FLAW_CREATED(*df);
-        static_cast<node &>(get_current_node()).open_flaws.insert(df);
     }
 
     void basic_solver::solve()

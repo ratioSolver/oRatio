@@ -6,18 +6,20 @@
 namespace ratio
 {
   class ls_flaw;
+  class ls_resolver;
 
   class local_search_solver : public solver
   {
     friend class ls_flaw;
+    friend class ls_resolver;
 
   public:
     local_search_solver() noexcept;
 
     [[nodiscard]] riddle::expr new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values) override;
 
-    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&) override;
-    void new_clause(std::vector<riddle::bool_expr> &&) override;
+    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
+    void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
 
     void solve() override;
 
@@ -25,6 +27,9 @@ namespace ratio
 
   private:
     riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) override;
+
+    void new_clause(std::vector<utils::lit> &&lits);
+    utils::lbool sat_val(const utils::lit &l) const noexcept;
 
 #ifdef ORATIO_ENABLE_LISTENERS
   private:

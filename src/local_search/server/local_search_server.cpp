@@ -39,4 +39,17 @@ namespace ratio
         clients.erase(&ws);
         LOG_DEBUG("Connected clients: " + std::to_string(clients.size()));
     }
+
+    void local_search_server::state_changed() {}
+
+    void local_search_server::flaw_created(const riddle::flaw &) {}
+    void local_search_server::flaw_state_changed(const riddle::flaw &) {}
+    void local_search_server::flaw_cost_changed(const riddle::flaw &) {}
+    void local_search_server::current_flaw(std::shared_ptr<riddle::flaw>) {}
+
+    void local_search_server::resolver_created(const riddle::resolver &) {}
+    void local_search_server::resolver_state_changed(const riddle::resolver &) {}
+    void local_search_server::current_resolver(std::shared_ptr<riddle::resolver>) {}
+
+    void local_search_server::causal_link_added(const riddle::flaw &, const riddle::resolver &) {}
 } // namespace ratio

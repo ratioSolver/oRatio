@@ -25,7 +25,7 @@ int main(int argc, char const *argv[])
     }
 
     // the problem files..
-    std::vector<std::string> prob_names;
+    std::vector<std::filesystem::path> prob_names;
     for (int i = 1; i < argc - 1; i++)
     {
         LOG_DEBUG("adding problem file: " + std::string(argv[i]));
@@ -33,8 +33,8 @@ int main(int argc, char const *argv[])
     }
 
     // the solution file..
-    std::string sol_name = argv[argc - 1];
-    LOG_DEBUG("setting solution file: " + sol_name);
+    std::filesystem::path sol_name = argv[argc - 1];
+    LOG_DEBUG("setting solution file: " + sol_name.string());
 
 #ifdef ORATIO_BUILD_SERVER
 #ifdef BASIC_SOLVER

@@ -18,12 +18,12 @@ int main(int argc, char const *argv[])
     }
 
     // the problem files..
-    std::vector<std::string> prob_names;
+    std::vector<std::filesystem::path> prob_names;
     for (int i = 1; i < argc - 1; i++)
         prob_names.push_back(argv[i]);
 
     // the solution file..
-    std::string sol_name = argv[argc - 1];
+    std::filesystem::path sol_name = argv[argc - 1];
 
     LOG_INFO("starting oRatio");
     std::vector<bool> results;
