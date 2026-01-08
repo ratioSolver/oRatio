@@ -12,13 +12,11 @@ namespace ratio
 
   class flaw;
   class resolver;
-  class unify_atom;
 
   class solver : public riddle::core
   {
     friend class flaw;
     friend class resolver;
-    friend class unify_atom;
 
   public:
     solver(std::string_view name = "oRatio") noexcept;

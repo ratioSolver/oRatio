@@ -169,6 +169,7 @@ namespace ratio
     unify_atom::unify_atom(atom_flaw &flw, riddle::atom_expr atm) noexcept : riddle::resolver(flw, utils::rational(0)), ratio::resolver(flw, utils::rational(0)), atm(std::move(atm)) {}
     bool unify_atom::apply() noexcept
     {
+        get_flaw().get_core().add_causal_link(atm->get_flaw(), *this);
         if (!get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*atm).get_sigma()))
             return false;
         if (!get_flaw().get_core().assert_expr(get_flaw().get_core().new_not(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma())))
