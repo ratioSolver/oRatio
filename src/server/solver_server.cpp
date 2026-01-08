@@ -1,19 +1,19 @@
-#include "local_search_server.hpp"
-#include "local_search_flaws.hpp"
+#include "solver_server.hpp"
+#include "flaws.hpp"
 #include "logging.hpp"
 
 namespace ratio
 {
-    local_search_server::local_search_server()
+    solver_server::solver_server()
     {
-        add_route(network::Get, "^/$", std::bind(&local_search_server::index, this, network::placeholders::request));
-        add_route(network::Get, "^(/assets/.+)|/.+\\.ico|/.+\\.png", std::bind(&local_search_server::assets, this, network::placeholders::request));
+        add_route(network::Get, "^/$", std::bind(&solver_server::index, this, network::placeholders::request));
+        add_route(network::Get, "^(/assets/.+)|/.+\\.ico|/.+\\.png", std::bind(&solver_server::assets, this, network::placeholders::request));
 
-        add_ws_route("/ratio").on_open(std::bind(&local_search_server::on_ws_open, this, network::placeholders::request)).on_close(std::bind(&local_search_server::on_ws_close, this, network::placeholders::request)).on_error(std::bind(&local_search_server::on_ws_error, this, network::placeholders::request, std::placeholders::_2));
+        add_ws_route("/ratio").on_open(std::bind(&solver_server::on_ws_open, this, network::placeholders::request)).on_close(std::bind(&solver_server::on_ws_close, this, network::placeholders::request)).on_error(std::bind(&solver_server::on_ws_error, this, network::placeholders::request, std::placeholders::_2));
     }
 
-    std::unique_ptr<network::response> local_search_server::index(const network::request &) { return std::make_unique<network::file_response>(CLIENT_DIR "/index.html"); }
-    std::unique_ptr<network::response> local_search_server::assets(const network::request &req)
+    std::unique_ptr<network::response> solver_server::index(const network::request &) { return std::make_unique<network::file_response>(CLIENT_DIR "/index.html"); }
+    std::unique_ptr<network::response> solver_server::assets(const network::request &req)
     {
         std::string target = req.get_target();
         if (target.find('?') != std::string::npos)
@@ -21,7 +21,7 @@ namespace ratio
         return std::make_unique<network::file_response>(CLIENT_DIR + target);
     }
 
-    void local_search_server::on_ws_open(network::ws_server_session_base &ws)
+    void solver_server::on_ws_open(network::ws_server_session_base &ws)
     {
         clients.insert(&ws);
         auto j_slv = to_json();
@@ -29,19 +29,19 @@ namespace ratio
         ws.send(j_slv.dump());
         LOG_DEBUG("Connected clients: " + std::to_string(clients.size()));
     }
-    void local_search_server::on_ws_close(network::ws_server_session_base &ws)
+    void solver_server::on_ws_close(network::ws_server_session_base &ws)
     {
         clients.erase(&ws);
         LOG_DEBUG("Connected clients: " + std::to_string(clients.size()));
     }
-    void local_search_server::on_ws_error(network::ws_server_session_base &ws, const std::error_code &ec)
+    void solver_server::on_ws_error(network::ws_server_session_base &ws, const std::error_code &ec)
     {
         LOG_ERR("WebSocket error: " + ec.message());
         clients.erase(&ws);
         LOG_DEBUG("Connected clients: " + std::to_string(clients.size()));
     }
 
-    void local_search_server::state_changed()
+    void solver_server::state_changed()
     {
         auto j_msg = riddle::core::to_json();
         j_msg["msg_type"] = "state_changed";
@@ -50,7 +50,7 @@ namespace ratio
             client->send(msg);
     }
 
-    void local_search_server::flaw_created(const riddle::flaw &f)
+    void solver_server::flaw_created(const riddle::flaw &f)
     {
         auto j_msg = f.to_json();
         j_msg["id"] = static_cast<uint64_t>(f.get_id());
@@ -59,10 +59,10 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
-    void local_search_server::flaw_state_changed(const riddle::flaw &f)
+    void solver_server::flaw_state_changed(const riddle::flaw &f)
     {
         auto j_msg = json::json{{"msg_type", "flaw_state_changed"}, {"id", f.get_id()}};
-        switch (ac_slv.sat_val(static_cast<const ls_flaw &>(f).get_phi()))
+        switch (sat_val(static_cast<const flaw &>(f).get_phi()))
         {
         case utils::True:
             j_msg["state"] = "active";
@@ -78,14 +78,14 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
-    void local_search_server::flaw_cost_changed(const riddle::flaw &f)
+    void solver_server::flaw_cost_changed(const riddle::flaw &f)
     {
         auto j_msg = json::json{{"msg_type", "flaw_cost_changed"}, {"id", f.get_id()}, {"cost", riddle::to_json(f.get_estimated_cost())}};
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
-    void local_search_server::current_flaw(std::shared_ptr<riddle::flaw> f)
+    void solver_server::current_flaw(std::shared_ptr<riddle::flaw> f)
     {
         auto j_msg = json::json{{"msg_type", "current_flaw"}};
         if (f)
@@ -95,7 +95,7 @@ namespace ratio
             client->send(msg);
     }
 
-    void local_search_server::resolver_created(const riddle::resolver &r)
+    void solver_server::resolver_created(const riddle::resolver &r)
     {
         auto j_msg = r.to_json();
         j_msg["id"] = r.get_id();
@@ -104,10 +104,10 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
-    void local_search_server::resolver_state_changed(const riddle::resolver &r)
+    void solver_server::resolver_state_changed(const riddle::resolver &r)
     {
         auto j_msg = json::json{{"msg_type", "resolver_state_changed"}, {"id", r.get_id()}};
-        switch (ac_slv.sat_val(dynamic_cast<const ls_resolver &>(r).get_rho()))
+        switch (sat_val(dynamic_cast<const resolver &>(r).get_rho()))
         {
         case utils::True:
             j_msg["state"] = "applied";
@@ -123,7 +123,7 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
-    void local_search_server::current_resolver(std::shared_ptr<riddle::resolver> r)
+    void solver_server::current_resolver(std::shared_ptr<riddle::resolver> r)
     {
         auto j_msg = json::json{{"msg_type", "current_resolver"}};
         if (r)
@@ -133,7 +133,7 @@ namespace ratio
             client->send(msg);
     }
 
-    void local_search_server::causal_link_added(const riddle::flaw &f, const riddle::resolver &r)
+    void solver_server::causal_link_added(const riddle::flaw &f, const riddle::resolver &r)
     {
         auto j_msg = json::json{{"msg_type", "causal_link_added"}, {"flaw", f.get_id()}, {"resolver", r.get_id()}};
         auto msg = j_msg.dump();

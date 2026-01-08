@@ -4,31 +4,19 @@
 #include "flaw.hpp"
 #include "linspire.hpp"
 #include "arc_consistency.hpp"
+#include "types.hpp"
 
 namespace ratio
 {
   static constexpr const char *INIT_STRING = "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end, real duration) { start >= origin; duration == end - start; duration >= 0.0; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;";
 
-  class solver;
-
-  class resolver : virtual public riddle::resolver
-  {
-    friend class solver;
-    friend class flaw;
-
-  public:
-    resolver(riddle::flaw &flw, utils::rational &&intrinsic_cost);
-
-    linspire::constraint &get_lin_constraints() noexcept { return lin_cnsts; }
-    const std::vector<std::reference_wrapper<arc_consistency::constraint>> &get_ac_constraints() const noexcept { return ac_cnsts; }
-
-  protected:
-    linspire::constraint lin_cnsts;                                            // The linear constraints in the current context..
-    std::vector<std::reference_wrapper<arc_consistency::constraint>> ac_cnsts; // The arc consistency constraints in the current context..
-  };
+  class flaw;
 
   class solver : public riddle::core
   {
+    friend class flaw;
+    friend class resolver;
+
   public:
     solver(std::string_view name = "oRatio") noexcept;
 
@@ -67,9 +55,21 @@ namespace ratio
 
     riddle::atom_state get_atom_state(const riddle::atom_term &atm) const noexcept override;
 
-    virtual void solve() = 0;
+    [[nodiscard]] riddle::expr new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values) override;
+
+    void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
+    void new_clause(std::vector<riddle::bool_expr> &&exprs) override;
 
     [[nodiscard]] bool match(riddle::term &lhs, riddle::term &rhs) const;
+
+    void solve();
+
+  protected:
+    void new_clause(std::vector<utils::lit> &&lits);
+    utils::lbool sat_val(const utils::lit &l) const noexcept;
+
+  private:
+    riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) override;
 
   private:
     bool mk_assign(riddle::bool_expr xpr, utils::lbool val) noexcept override;
@@ -88,8 +88,115 @@ namespace ratio
     bool mk_eq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept override;
     bool mk_neq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept override;
 
-  protected:
+#ifdef ORATIO_ENABLE_LISTENERS
+  private:
+    /**
+     * @brief This function is called when the state of the solver changes.
+     *
+     * This function should be overridden by derived classes to handle the state change event.
+     *
+     * @note This is a virtual function and can be overridden by derived classes.
+     */
+    virtual void state_changed() {}
+    /**
+     * @brief Notifies when a flaw has been created.
+     *
+     * This function is called when a flaw has been created. It is a virtual function that can be overridden by derived classes to perform specific actions when a flaw is created.
+     *
+     * @param flaw The flaw that has been created.
+     */
+    virtual void flaw_created(const riddle::flaw &) {}
+    /**
+     * @brief Notifies when the state of a flaw has changed.
+     *
+     * This function is called when the state of a flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when a flaw's state changes.
+     *
+     * @param flaw The flaw whose state has changed.
+     */
+    virtual void flaw_state_changed(const riddle::flaw &) {}
+    /**
+     * @brief Notifies when the cost of a flaw has changed.
+     *
+     * This function is called when the cost of a flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when a flaw's cost changes.
+     *
+     * @param flaw The flaw whose cost has changed.
+     */
+    virtual void flaw_cost_changed(const riddle::flaw &) {}
+    /**
+     * @brief Notifies when the current flaw has changed.
+     *
+     * This function is called when the current flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when the current flaw changes.
+     *
+     * @param flaw The current flaw.
+     */
+    virtual void current_flaw(std::shared_ptr<riddle::flaw>) {}
+
+    /**
+     * @brief Notifies when a resolver has been created.
+     *
+     * This function is called when a resolver has been created. It is a virtual function that can be overridden by derived classes to perform specific actions when a resolver is created.
+     *
+     * @param resolver The resolver that has been created.
+     */
+    virtual void resolver_created(const riddle::resolver &) {}
+    /**
+     * @brief Notifies when the state of a resolver has changed.
+     *
+     * This function is called when the state of a resolver has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when a resolver's state changes.
+     *
+     * @param resolver The resolver whose state has changed.
+     */
+    virtual void resolver_state_changed(const riddle::resolver &) {}
+    /**
+     * @brief Notifies when the current resolver has changed.
+     *
+     * This function is called when the current resolver has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when the current resolver changes.
+     *
+     * @param resolver The current resolver.
+     */
+    virtual void current_resolver(std::shared_ptr<riddle::resolver>) {}
+
+    /**
+     * @brief Notifies when a causal link has been added.
+     *
+     * This function is called when a causal link has been added. It is a virtual function that can be overridden by derived classes to perform specific actions when a causal link is added.
+     *
+     * @param flaw The flaw that is the source of the causal link.
+     * @param resolver The resolver that is the destination of the causal link.
+     */
+    virtual void causal_link_added(const riddle::flaw &, const riddle::resolver &) {}
+#endif
+
+  private:
     arc_consistency::solver ac_slv; // The arc consistency solver..
     linspire::solver lin_slv;       // The linear programming solver..
+  };
+
+  class state_variable final : public riddle::state_variable
+  {
+  public:
+    state_variable(solver &slv) noexcept;
+
+  private:
+    std::shared_ptr<riddle::flaw> new_peak(std::vector<riddle::atom_expr> &&atms) noexcept override;
+  };
+
+  class reusable_resource final : public riddle::reusable_resource
+  {
+  public:
+    reusable_resource(solver &slv) noexcept;
+
+  private:
+    std::shared_ptr<riddle::flaw> new_peak(std::vector<riddle::atom_expr> &&atms) noexcept override;
+  };
+
+  class consumable_resource final : public riddle::consumable_resource
+  {
+  public:
+    consumable_resource(solver &slv) noexcept;
+
+  private:
+    std::shared_ptr<riddle::flaw> new_overproduction(std::vector<riddle::atom_expr> &&prod_atms, std::vector<riddle::atom_expr> &&cons_atms) noexcept override;
+    std::shared_ptr<riddle::flaw> new_overconsumption(std::vector<riddle::atom_expr> &&cons_atms, std::vector<riddle::atom_expr> &&prod_atms) noexcept override;
   };
 } // namespace ratio

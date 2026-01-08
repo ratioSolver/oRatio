@@ -1,14 +1,14 @@
 #pragma once
 
 #include "server.hpp"
-#include "local_search_solver.hpp"
+#include "solver.hpp"
 
 namespace ratio
 {
-  class local_search_server : public network::server, public local_search_solver
+  class solver_server : public network::server, public solver
   {
   public:
-    local_search_server();
+    solver_server();
 
   private:
     std::unique_ptr<network::response> index(const network::request &req);

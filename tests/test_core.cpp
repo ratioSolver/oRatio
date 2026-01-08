@@ -1,17 +1,9 @@
-#ifdef BASIC_SOLVER
-#include "basic_solver.hpp"
-#elif defined(LOCAL_SEARCH_SOLVER)
-#include "local_search_solver.hpp"
-#endif
+#include "solver.hpp"
 #include <cassert>
 
 void test_basic_core()
 {
-#ifdef BASIC_SOLVER
-    ratio::basic_solver slv;
-#elif defined(LOCAL_SEARCH_SOLVER)
-    ratio::local_search_solver slv;
-#endif
+    ratio::solver slv;
 
     auto i0 = slv.new_int();
     auto i1 = slv.new_int();
