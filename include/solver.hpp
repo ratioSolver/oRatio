@@ -66,11 +66,13 @@ namespace ratio
     void solve();
 
   protected:
-    void new_clause(std::vector<utils::lit> &&lits);
     utils::lbool sat_val(const utils::lit &l) const noexcept;
 
   private:
+    void new_clause(std::vector<utils::lit> &&lits);
     riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) override;
+
+    void compute_flaw_cost(riddle::flaw &f) noexcept;
 
   private:
     bool mk_assign(riddle::bool_expr xpr, utils::lbool val) noexcept override;

@@ -2,29 +2,8 @@
 #include "items.hpp"
 #include "flaws.hpp"
 #include "logging.hpp"
+#include <stack>
 #include <cassert>
-
-#ifdef ORATIO_ENABLE_LISTENERS
-#define STATE_CHANGED() state_changed()
-#define FLAW_CREATED(f) flaw_created(f)
-#define FLAW_STATE_CHANGED(f) flaw_state_changed(f)
-#define FLAW_COST_CHANGED(f) flaw_cost_changed(f)
-#define RESOLVER_CREATED(r) resolver_created(r)
-#define RESOLVER_STATE_CHANGED(r) resolver_state_changed(r)
-#define NEW_CAUSAL_LINK(f, r) causal_link_added(f, r)
-#define CURRENT_FLAW(f) current_flaw(f)
-#define CURRENT_RESOLVER(r) current_resolver(r)
-#else
-#define STATE_CHANGED()
-#define FLAW_CREATED(f)
-#define FLAW_STATE_CHANGED(f)
-#define FLAW_COST_CHANGED(f)
-#define RESOLVER_CREATED(r)
-#define RESOLVER_STATE_CHANGED(r)
-#define NEW_CAUSAL_LINK(f, r)
-#define CURRENT_FLAW(f)
-#define CURRENT_RESOLVER(r)
-#endif
 
 namespace ratio
 {
@@ -163,25 +142,14 @@ namespace ratio
                 ev_refs.emplace_back(*ev_ptr);
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
-            std::vector<std::reference_wrapper<riddle::resolver>> causes;
-            auto res = get_current_resolver();
-            if (res)
-                causes.push_back(res.value());
-            auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
-            FLAW_CREATED(ef);
-            return ef.get_var();
+            return new_flaw<enum_flaw>(*this, get_current_resolver(), tp, std::move(values), ev).get_var();
         }
     }
 
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
-        std::vector<std::reference_wrapper<riddle::resolver>> causes;
-        auto res = get_current_resolver();
-        if (res)
-            causes.push_back(res.value());
-        [[maybe_unused]] auto &df = new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
-        FLAW_CREATED(df);
+        new_flaw<disjunction_flaw>(*this, get_current_resolver(), std::move(disjuncts));
     }
     void solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
     {
@@ -193,12 +161,7 @@ namespace ratio
         }
         else
         { // otherwise, create a new clause flaw..
-            std::vector<std::reference_wrapper<riddle::resolver>> causes;
-            auto res = get_current_resolver();
-            if (res)
-                causes.push_back(res.value());
-            [[maybe_unused]] auto &cf = new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
-            FLAW_CREATED(cf);
+            new_flaw<clause_flaw>(*this, get_current_resolver(), std::move(exprs));
         }
     }
 
@@ -249,36 +212,55 @@ namespace ratio
         size_t iter = 0;
         while (iter < get_flaws().size())
         {
-            auto &flw = get_flaws()[iter];
-            set_current_flaw(*flw);
-            if (flw->get_resolvers().empty())
+            auto &flw = *get_flaws()[iter];
+            set_current_flaw(flw);
+            if (flw.get_resolvers().empty())
             {
-                compute_resolvers(*flw);
-                for (const auto &r : flw->get_resolvers())
+                compute_resolvers(flw);
+                for (const auto &r : flw.get_resolvers())
                 {
                     set_current_resolver(r);
-                    apply_resolver(r, sat_val(static_cast<const flaw &>(*flw).get_phi()) != utils::True || flw->get_resolvers().size() > 1);
+                    apply_resolver(r, sat_val(static_cast<const flaw &>(flw).get_phi()) != utils::True || flw.get_resolvers().size() > 1);
                 }
                 if (!lin_slv.check() || !ac_slv.propagate())
                 { // TODO: unsat handling
                 }
             }
+            compute_flaw_cost(flw);
             iter++;
         }
     }
 
-    void solver::new_clause(std::vector<utils::lit> &&lits) { ac_slv.add_constraint(ac_slv.new_clause(std::move(lits))); }
     utils::lbool solver::sat_val(const utils::lit &l) const noexcept { return ac_slv.sat_val(l); }
 
-    riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args)
+    void solver::new_clause(std::vector<utils::lit> &&lits) { ac_slv.add_constraint(ac_slv.new_clause(std::move(lits))); }
+    riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) { return new_flaw<atom_flaw>(*this, get_current_resolver(), is_fact, pred, std::move(args), new_bool()).get_atom(); }
+
+    void solver::compute_flaw_cost(riddle::flaw &f) noexcept
     {
-        std::vector<std::reference_wrapper<riddle::resolver>> causes;
-        auto res = get_current_resolver();
-        if (res)
-            causes.push_back(res.value());
-        auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), new_bool());
-        FLAW_CREATED(af);
-        return af.get_atom();
+        std::stack<std::pair<riddle::flaw *, std::unordered_set<riddle::flaw *>>> stk;
+        stk.push({&f, {}}); // we push the flaw in the stack..
+
+        while (!stk.empty())
+        {
+            auto c_f = stk.top();
+            stk.pop();
+
+            utils::rational c_cost = utils::rational::positive_infinite;
+            if (sat_val(static_cast<flaw &>(*c_f.first).get_phi()) != utils::False && c_f.second.insert(c_f.first).second) // we compute the cost of the flaw as the minimum of the costs of its resolvers..
+                for (const auto &res : c_f.first->get_resolvers())
+                    if (sat_val(dynamic_cast<resolver &>(res.get()).get_rho()) != utils::False)
+                        c_cost = std::min(c_cost, res.get().get_estimated_cost());
+
+            if (c_f.first->get_estimated_cost() != c_cost) // we update the cost of the flaw..
+            {
+                set_flaw_cost(*c_f.first, c_cost);
+
+                // we propagate the cost to the supported resolvers..
+                for (auto &support : c_f.first->get_supports())
+                    stk.push({&support.get().get_flaw(), c_f.second}); // we push the supported flaw in the stack..
+            }
+        }
     }
 
     riddle::atom_state solver::get_atom_state(const riddle::atom_term &atm) const noexcept

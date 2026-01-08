@@ -9,17 +9,17 @@ namespace ratio
   {
   public:
     flaw(solver &cr, std::vector<std::reference_wrapper<riddle::resolver>> &&causes);
+    flaw(solver &cr, std::optional<std::reference_wrapper<riddle::resolver>> cause);
 
-    const utils::lit &get_phi() const noexcept { return phi; }
+    [[nodiscard]] const utils::lit &get_phi() const noexcept { return phi; }
 
-    utils::rational get_estimated_cost() const noexcept override;
+    [[nodiscard]] json::json to_json() const override;
 
   private:
     utils::lit get_phi(const std::vector<std::reference_wrapper<riddle::resolver>> &causes) const noexcept;
 
   private:
     const utils::lit phi;
-    utils::rational est_cost = utils::rational::positive_infinite; // the estimated cost of this flaw..
   };
 
   class resolver : public virtual riddle::resolver
@@ -30,7 +30,9 @@ namespace ratio
     resolver(flaw &flw, utils::rational &&intrinsic_cost);
     resolver(flaw &flw, utils::rational &&intrinsic_cost, const utils::lit &rho);
 
-    const utils::lit &get_rho() const noexcept { return rho; }
+    [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
+
+    [[nodiscard]] json::json to_json() const override;
 
   protected:
     linspire::constraint lin_cnsts;                                            // The linear constraints in the current context..
@@ -43,7 +45,7 @@ namespace ratio
   class enum_flaw final : public flaw
   {
   public:
-    enum_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept;
+    enum_flaw(solver &slv, std::optional<std::reference_wrapper<riddle::resolver>> cause, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept;
 
     [[nodiscard]] const riddle::enum_expr &get_var() const noexcept { return var; }
 
@@ -68,7 +70,7 @@ namespace ratio
   class clause_flaw final : public flaw
   {
   public:
-    clause_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
+    clause_flaw(solver &slv, std::optional<std::reference_wrapper<riddle::resolver>> cause, std::vector<riddle::bool_expr> &&clause) noexcept;
 
     [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
 
@@ -98,7 +100,7 @@ namespace ratio
   class disjunction_flaw final : public flaw
   {
   public:
-    disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+    disjunction_flaw(solver &slv, std::optional<std::reference_wrapper<riddle::resolver>> cause, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
 
     [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
 
@@ -128,7 +130,7 @@ namespace ratio
   class atom_flaw final : public flaw
   {
   public:
-    atom_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept;
+    atom_flaw(solver &slv, std::optional<std::reference_wrapper<riddle::resolver>> cause, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept;
 
     [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
 
