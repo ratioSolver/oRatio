@@ -8,14 +8,14 @@ namespace ratio
   class flaw : public riddle::flaw
   {
   public:
-    flaw(solver &cr, std::vector<std::shared_ptr<riddle::resolver>> &&causes);
+    flaw(solver &cr, std::vector<std::reference_wrapper<riddle::resolver>> &&causes);
 
     const utils::lit &get_phi() const noexcept { return phi; }
 
     utils::rational get_estimated_cost() const noexcept override;
 
   private:
-    utils::lit get_phi(const std::vector<std::shared_ptr<riddle::resolver>> &causes) const noexcept;
+    utils::lit get_phi(const std::vector<std::reference_wrapper<riddle::resolver>> &causes) const noexcept;
 
   private:
     const utils::lit phi;
@@ -43,7 +43,7 @@ namespace ratio
   class enum_flaw final : public flaw
   {
   public:
-    enum_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept;
+    enum_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept;
 
     [[nodiscard]] const riddle::enum_expr &get_var() const noexcept { return var; }
 
@@ -59,7 +59,7 @@ namespace ratio
     friend class enum_item;
 
   public:
-    select_value(enum_flaw &f, const utils::lit &rho, riddle::expr val) noexcept;
+    select_value(enum_flaw &flw, const utils::lit &rho, riddle::expr val) noexcept;
 
   private:
     bool apply() noexcept override;
@@ -68,7 +68,7 @@ namespace ratio
   class clause_flaw final : public flaw
   {
   public:
-    clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
+    clause_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept;
 
     [[nodiscard]] const std::vector<riddle::bool_expr> &get_clause() const noexcept { return clause; }
 
@@ -84,7 +84,7 @@ namespace ratio
   class choose_lit final : public resolver
   {
   public:
-    choose_lit(clause_flaw &f, riddle::bool_expr lit) noexcept;
+    choose_lit(clause_flaw &flw, riddle::bool_expr lit) noexcept;
 
   private:
     bool apply() noexcept override;
@@ -98,7 +98,7 @@ namespace ratio
   class disjunction_flaw final : public flaw
   {
   public:
-    disjunction_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
+    disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept;
 
     [[nodiscard]] const std::vector<std::unique_ptr<riddle::conjunction>> &get_disjuncts() const noexcept { return disjuncts; }
 
@@ -114,7 +114,7 @@ namespace ratio
   class choose_conjunction final : public resolver
   {
   public:
-    choose_conjunction(disjunction_flaw &f, riddle::conjunction &conj) noexcept;
+    choose_conjunction(disjunction_flaw &flw, riddle::conjunction &conj) noexcept;
 
   private:
     bool apply() noexcept override;
@@ -128,7 +128,7 @@ namespace ratio
   class atom_flaw final : public flaw
   {
   public:
-    atom_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept;
+    atom_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept;
 
     [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
 
@@ -144,8 +144,8 @@ namespace ratio
   class activate_fact final : public resolver
   {
   public:
-    activate_fact(atom_flaw &f) noexcept;
-    activate_fact(atom_flaw &f, const utils::lit &rho) noexcept;
+    activate_fact(atom_flaw &flw) noexcept;
+    activate_fact(atom_flaw &flw, const utils::lit &rho) noexcept;
 
   private:
     bool apply() noexcept override;
@@ -156,8 +156,8 @@ namespace ratio
   class activate_goal final : public resolver
   {
   public:
-    activate_goal(atom_flaw &f) noexcept;
-    activate_goal(atom_flaw &f, const utils::lit &rho) noexcept;
+    activate_goal(atom_flaw &flw) noexcept;
+    activate_goal(atom_flaw &flw, const utils::lit &rho) noexcept;
 
   private:
     bool apply() noexcept override;
@@ -168,7 +168,7 @@ namespace ratio
   class unify_atom final : public resolver
   {
   public:
-    unify_atom(atom_flaw &f, riddle::atom_expr atm) noexcept;
+    unify_atom(atom_flaw &flw, riddle::atom_expr atm) noexcept;
 
   private:
     bool apply() noexcept override;

@@ -97,11 +97,11 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
-    void solver_server::current_flaw(std::shared_ptr<riddle::flaw> f)
+    void solver_server::current_flaw(std::optional<std::reference_wrapper<riddle::flaw>> f)
     {
         auto j_msg = json::json{{"msg_type", "current_flaw"}};
         if (f)
-            j_msg["id"] = f->get_id();
+            j_msg["id"] = f->get().get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
@@ -147,11 +147,11 @@ namespace ratio
         for (auto client : clients)
             client->send(msg);
     }
-    void solver_server::current_resolver(std::shared_ptr<riddle::resolver> r)
+    void solver_server::current_resolver(std::optional<std::reference_wrapper<riddle::resolver>> r)
     {
         auto j_msg = json::json{{"msg_type", "current_resolver"}};
         if (r)
-            j_msg["id"] = r->get_id();
+            j_msg["id"] = r->get().get_id();
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);

@@ -23,11 +23,11 @@ namespace ratio
     void flaw_created(const riddle::flaw &) override;
     void flaw_state_changed(const flaw &) override;
     void flaw_cost_changed(const riddle::flaw &) override;
-    void current_flaw(std::shared_ptr<riddle::flaw>) override;
+    void current_flaw(std::optional<std::reference_wrapper<riddle::flaw>>) override;
 
     void resolver_created(const riddle::resolver &) override;
     void resolver_state_changed(const resolver &) override;
-    void current_resolver(std::shared_ptr<riddle::resolver>) override;
+    void current_resolver(std::optional<std::reference_wrapper<riddle::resolver>>) override;
 
     void causal_link_added(const riddle::flaw &, const riddle::resolver &) override;
 

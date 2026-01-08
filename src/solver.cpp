@@ -163,25 +163,25 @@ namespace ratio
                 ev_refs.emplace_back(*ev_ptr);
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
-            std::vector<std::shared_ptr<riddle::resolver>> causes;
+            std::vector<std::reference_wrapper<riddle::resolver>> causes;
             auto res = get_current_resolver();
             if (res)
-                causes.push_back(res);
-            auto ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
-            FLAW_CREATED(*ef);
-            return ef->get_var();
+                causes.push_back(res.value());
+            auto &ef = new_flaw<enum_flaw>(*this, std::move(causes), tp, std::move(values), ev);
+            FLAW_CREATED(ef);
+            return ef.get_var();
         }
     }
 
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
-        std::vector<std::shared_ptr<riddle::resolver>> causes;
+        std::vector<std::reference_wrapper<riddle::resolver>> causes;
         auto res = get_current_resolver();
         if (res)
-            causes.push_back(res);
-        [[maybe_unused]] auto df = new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
-        FLAW_CREATED(*df);
+            causes.push_back(res.value());
+        [[maybe_unused]] auto &df = new_flaw<disjunction_flaw>(*this, std::move(causes), std::move(disjuncts));
+        FLAW_CREATED(df);
     }
     void solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
     {
@@ -193,12 +193,12 @@ namespace ratio
         }
         else
         { // otherwise, create a new clause flaw..
-            std::vector<std::shared_ptr<riddle::resolver>> causes;
+            std::vector<std::reference_wrapper<riddle::resolver>> causes;
             auto res = get_current_resolver();
             if (res)
-                causes.push_back(res);
-            [[maybe_unused]] auto cf = new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
-            FLAW_CREATED(*cf);
+                causes.push_back(res.value());
+            [[maybe_unused]] auto &cf = new_flaw<clause_flaw>(*this, std::move(causes), std::move(exprs));
+            FLAW_CREATED(cf);
         }
     }
 
@@ -250,7 +250,7 @@ namespace ratio
         while (iter < get_flaws().size())
         {
             auto &flw = get_flaws()[iter];
-            set_current_flaw(flw);
+            set_current_flaw(*flw);
             if (flw->get_resolvers().empty())
             {
                 compute_resolvers(*flw);
@@ -272,13 +272,13 @@ namespace ratio
 
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args)
     {
-        std::vector<std::shared_ptr<riddle::resolver>> causes;
+        std::vector<std::reference_wrapper<riddle::resolver>> causes;
         auto res = get_current_resolver();
         if (res)
-            causes.push_back(res);
-        auto af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), new_bool());
-        FLAW_CREATED(*af);
-        return af->get_atom();
+            causes.push_back(res.value());
+        auto &af = new_flaw<atom_flaw>(*this, std::move(causes), is_fact, pred, std::move(args), new_bool());
+        FLAW_CREATED(af);
+        return af.get_atom();
     }
 
     riddle::atom_state solver::get_atom_state(const riddle::atom_term &atm) const noexcept
@@ -297,51 +297,51 @@ namespace ratio
     bool solver::mk_assign(riddle::bool_expr xpr, utils::lbool val) noexcept
     {
         auto &c = ac_slv.new_assign(utils::variable(std::static_pointer_cast<const riddle::bool_item>(xpr)->get_lit()), val ? arc_consistency::solver::True : arc_consistency::solver::False);
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             ac_slv.add_constraint(c);
         else
-            dynamic_cast<resolver &>(*get_current_resolver()).ac_cnsts.push_back(c);
+            dynamic_cast<resolver &>(get_current_resolver().value().get()).ac_cnsts.push_back(c);
         return true;
     }
     bool solver::mk_eq(riddle::bool_expr lhs, riddle::bool_expr rhs) noexcept
     {
         auto &c = ac_slv.new_equal(utils::variable(std::static_pointer_cast<const riddle::bool_item>(lhs)->get_lit()), utils::variable(std::static_pointer_cast<const riddle::bool_item>(rhs)->get_lit()));
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             ac_slv.add_constraint(c);
         else
-            dynamic_cast<resolver &>(*get_current_resolver()).ac_cnsts.push_back(c);
+            dynamic_cast<resolver &>(get_current_resolver().value().get()).ac_cnsts.push_back(c);
         return true;
     }
     bool solver::mk_neq(riddle::bool_expr lhs, riddle::bool_expr rhs) noexcept
     {
         auto &c = ac_slv.new_distinct(utils::variable(std::static_pointer_cast<const riddle::bool_item>(lhs)->get_lit()), utils::variable(std::static_pointer_cast<const riddle::bool_item>(rhs)->get_lit()));
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             ac_slv.add_constraint(c);
         else
-            dynamic_cast<resolver &>(*get_current_resolver()).ac_cnsts.push_back(c);
+            dynamic_cast<resolver &>(get_current_resolver().value().get()).ac_cnsts.push_back(c);
         return true;
     }
 
     bool solver::mk_lt(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept
     {
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), true);
         else
-            return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), true, dynamic_cast<resolver &>(*get_current_resolver()).lin_cnsts);
+            return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), true, dynamic_cast<resolver &>(get_current_resolver().value().get()).lin_cnsts);
     }
     bool solver::mk_le(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept
     {
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), false);
         else
-            return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), false, dynamic_cast<resolver &>(*get_current_resolver()).lin_cnsts);
+            return lin_slv.new_lt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), false, dynamic_cast<resolver &>(get_current_resolver().value().get()).lin_cnsts);
     }
     bool solver::mk_eq(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept
     {
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             return lin_slv.new_eq(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin());
         else
-            return lin_slv.new_eq(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), dynamic_cast<resolver &>(*get_current_resolver()).lin_cnsts);
+            return lin_slv.new_eq(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), dynamic_cast<resolver &>(get_current_resolver().value().get()).lin_cnsts);
     }
     bool solver::mk_neq(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept
     {
@@ -350,53 +350,53 @@ namespace ratio
     }
     bool solver::mk_ge(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept
     {
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             return lin_slv.new_gt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), false);
         else
-            return lin_slv.new_gt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), false, dynamic_cast<resolver &>(*get_current_resolver()).lin_cnsts);
+            return lin_slv.new_gt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), false, dynamic_cast<resolver &>(get_current_resolver().value().get()).lin_cnsts);
     }
     bool solver::mk_gt(riddle::arith_expr lhs, riddle::arith_expr rhs) noexcept
     {
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             return lin_slv.new_gt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), true);
         else
-            return lin_slv.new_gt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), true, dynamic_cast<resolver &>(*get_current_resolver()).lin_cnsts);
+            return lin_slv.new_gt(std::static_pointer_cast<const riddle::arith_item>(lhs)->get_lin(), std::static_pointer_cast<const riddle::arith_item>(rhs)->get_lin(), true, dynamic_cast<resolver &>(get_current_resolver().value().get()).lin_cnsts);
     }
 
     bool solver::mk_assign(riddle::enum_expr lhs, const utils::enum_val &val) noexcept
     {
         auto &c = ac_slv.new_assign(std::static_pointer_cast<const riddle::enum_item>(lhs)->get_var(), val);
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             ac_slv.add_constraint(c);
         else
-            dynamic_cast<resolver &>(*get_current_resolver()).ac_cnsts.push_back(c);
+            dynamic_cast<resolver &>(get_current_resolver().value().get()).ac_cnsts.push_back(c);
         return true;
     }
     bool solver::mk_forbid(riddle::enum_expr lhs, const utils::enum_val &val) noexcept
     {
         auto &c = ac_slv.new_forbid(std::static_pointer_cast<const riddle::enum_item>(lhs)->get_var(), val);
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             ac_slv.add_constraint(c);
         else
-            dynamic_cast<resolver &>(*get_current_resolver()).ac_cnsts.push_back(c);
+            dynamic_cast<resolver &>(get_current_resolver().value().get()).ac_cnsts.push_back(c);
         return true;
     }
     bool solver::mk_eq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept
     {
         auto &c = ac_slv.new_equal(std::static_pointer_cast<const riddle::enum_item>(lhs)->get_var(), std::static_pointer_cast<const riddle::enum_item>(rhs)->get_var());
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             ac_slv.add_constraint(c);
         else
-            dynamic_cast<resolver &>(*get_current_resolver()).ac_cnsts.push_back(c);
+            dynamic_cast<resolver &>(get_current_resolver().value().get()).ac_cnsts.push_back(c);
         return true;
     }
     bool solver::mk_neq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept
     {
         auto &c = ac_slv.new_distinct(std::static_pointer_cast<const riddle::enum_item>(lhs)->get_var(), std::static_pointer_cast<const riddle::enum_item>(rhs)->get_var());
-        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(*get_current_resolver()).get_rho()) == utils::True)
+        if (!get_current_resolver() || sat_val(dynamic_cast<const resolver &>(get_current_resolver().value().get()).get_rho()) == utils::True)
             ac_slv.add_constraint(c);
         else
-            dynamic_cast<resolver &>(*get_current_resolver()).ac_cnsts.push_back(c);
+            dynamic_cast<resolver &>(get_current_resolver().value().get()).ac_cnsts.push_back(c);
         return true;
     }
 

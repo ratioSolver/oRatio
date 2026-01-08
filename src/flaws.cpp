@@ -5,20 +5,20 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &cr, std::vector<std::shared_ptr<riddle::resolver>> &&causes) : riddle::flaw(cr, std::move(causes)), phi(get_phi(this->get_causes())) {}
-    utils::lit flaw::get_phi(const std::vector<std::shared_ptr<riddle::resolver>> &causes) const noexcept
+    flaw::flaw(solver &cr, std::vector<std::reference_wrapper<riddle::resolver>> &&causes) : riddle::flaw(cr, std::move(causes)), phi(get_phi(this->get_causes())) {}
+    utils::lit flaw::get_phi(const std::vector<std::reference_wrapper<riddle::resolver>> &causes) const noexcept
     {
         switch (causes.size())
         {
         case 0:
             return utils::TRUE_lit;
         case 1:
-            return dynamic_cast<resolver &>(*causes.front()).get_rho();
+            return dynamic_cast<resolver &>(causes.front().get()).get_rho();
         default: // Combine the causes' rhos into a single phi..
             auto phi = cr.new_bool();
             std::vector<utils::lit> rhos;
             for (auto &r : causes)
-                rhos.push_back(!dynamic_cast<resolver &>(*r).get_rho());
+                rhos.push_back(!dynamic_cast<resolver &>(r.get()).get_rho());
             rhos.push_back(static_cast<riddle::bool_item &>(*phi).get_lit());
             static_cast<solver &>(cr).new_clause(std::move(rhos));
             return static_cast<riddle::bool_item &>(*phi).get_lit();
@@ -32,7 +32,7 @@ namespace ratio
         static_cast<solver &>(get_flaw().get_core()).new_clause({!rho, flw.get_phi()});
     }
 
-    enum_flaw::enum_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept : flaw(slv, std::move(causes)), var(std::make_shared<riddle::enum_item>(*this, tp, std::move(values), ev)) {}
+    enum_flaw::enum_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept : flaw(slv, std::move(causes)), var(std::make_shared<riddle::enum_item>(*this, tp, std::move(values), ev)) {}
 
     void enum_flaw::compute_resolvers()
     { // Create a resolver for each possible value..
@@ -46,7 +46,7 @@ namespace ratio
     select_value::select_value(enum_flaw &flw, const utils::lit &rho, riddle::expr val) noexcept : riddle::resolver(flw, utils::rational(1)), ratio::resolver(flw, utils::rational(1), rho), riddle::select_value(flw, std::move(val)) {}
     bool select_value::apply() noexcept { return get_flaw().get_core().assert_expr(get_flaw().get_core().new_eq(static_cast<enum_flaw &>(flw).get_var(), get_value())); }
 
-    clause_flaw::clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
+    clause_flaw::clause_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
 
     void clause_flaw::compute_resolvers()
     { // Create a resolver for each literal in the clause..
@@ -73,7 +73,7 @@ namespace ratio
         return j;
     }
 
-    disjunction_flaw::disjunction_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
+    disjunction_flaw::disjunction_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) noexcept : flaw(slv, std::move(causes)), disjuncts(std::move(disjuncts)) {}
 
     void disjunction_flaw::compute_resolvers()
     { // Create a resolver for each disjunct..
@@ -102,7 +102,7 @@ namespace ratio
         return j;
     }
 
-    atom_flaw::atom_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<riddle::atom>(*this, pred, is_fact, std::move(args), std::move(sigma))) {}
+    atom_flaw::atom_flaw(solver &slv, std::vector<std::reference_wrapper<riddle::resolver>> &&causes, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept : flaw(slv, std::move(causes)), atm(std::make_shared<riddle::atom>(*this, pred, is_fact, std::move(args), std::move(sigma))) {}
 
     void atom_flaw::compute_resolvers()
     { // Create a unify resolver for each inactive ancestor atom..
@@ -204,7 +204,7 @@ namespace ratio
         }
     }
 
-    std::vector<std::shared_ptr<riddle::resolver>> merge_vectors(std::vector<std::shared_ptr<riddle::resolver>> &&a, const std::vector<std::shared_ptr<riddle::resolver>> &&b)
+    std::vector<std::reference_wrapper<riddle::resolver>> merge_vectors(std::vector<std::reference_wrapper<riddle::resolver>> &&a, const std::vector<std::reference_wrapper<riddle::resolver>> &&b)
     {
         a.insert(a.end(), b.begin(), b.end());
         return a;
