@@ -37,11 +37,14 @@ namespace ratio
     void enum_flaw::compute_resolvers()
     { // Create a resolver for each possible value..
         for (auto val : var->get_values())
-            new_resolver<select_value>(*this, utils::lit(), val);
+        {
+            auto rho = get_core().new_bool();
+            new_resolver<select_value>(*this, static_cast<riddle::bool_item &>(*rho).get_lit(), val);
+        }
     }
 
     select_value::select_value(enum_flaw &flw, const utils::lit &rho, riddle::expr val) noexcept : riddle::resolver(flw, utils::rational(1)), ratio::resolver(flw, utils::rational(1), rho), riddle::select_value(flw, std::move(val)) {}
-    bool select_value::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<enum_flaw &>(ratio::resolver::flw).get_var(), get_value())); }
+    bool select_value::apply() noexcept { return get_flaw().get_core().assert_expr(get_flaw().get_core().new_eq(static_cast<enum_flaw &>(flw).get_var(), get_value())); }
 
     clause_flaw::clause_flaw(solver &slv, std::vector<std::shared_ptr<riddle::resolver>> &&causes, std::vector<riddle::bool_expr> &&clause) noexcept : flaw(slv, std::move(causes)), clause(std::move(clause)) {}
 
@@ -60,7 +63,7 @@ namespace ratio
     }
 
     choose_lit::choose_lit(clause_flaw &flw, riddle::bool_expr lit) noexcept : riddle::resolver(flw, utils::rational(1)), ratio::resolver(flw, utils::rational(1), static_cast<riddle::bool_item &>(*lit).get_lit()), lit(lit) {}
-    bool choose_lit::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(lit, ratio::resolver::get_flaw().get_core().new_bool(true))); }
+    bool choose_lit::apply() noexcept { return get_flaw().get_core().assert_expr(get_flaw().get_core().new_eq(lit, get_flaw().get_core().new_bool(true))); }
 
     json::json choose_lit::to_json() const
     {
@@ -110,7 +113,12 @@ namespace ratio
 
         // Create an activate resolver..
         if (atm->is_fact())
-            new_resolver<activate_fact>(*this);
+            if (get_resolvers().empty())
+                new_resolver<activate_fact>(*this, get_phi());
+            else
+                new_resolver<activate_fact>(*this);
+        else if (get_resolvers().empty())
+            new_resolver<activate_goal>(*this, get_phi());
         else
             new_resolver<activate_goal>(*this);
     }
@@ -124,7 +132,8 @@ namespace ratio
     }
 
     activate_fact::activate_fact(atom_flaw &flw) noexcept : riddle::resolver(flw, utils::rational(1)), ratio::resolver(flw, utils::rational(1)) {}
-    bool activate_fact::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()); }
+    activate_fact::activate_fact(atom_flaw &flw, const utils::lit &rho) noexcept : riddle::resolver(flw, utils::rational(1)), ratio::resolver(flw, utils::rational(1), rho) {}
+    bool activate_fact::apply() noexcept { return get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()); }
 
     json::json activate_fact::to_json() const
     {
@@ -134,9 +143,10 @@ namespace ratio
     }
 
     activate_goal::activate_goal(atom_flaw &flw) noexcept : riddle::resolver(flw, utils::rational(1)), ratio::resolver(flw, utils::rational(1)) {}
+    activate_goal::activate_goal(atom_flaw &flw, const utils::lit &rho) noexcept : riddle::resolver(flw, utils::rational(1)), ratio::resolver(flw, utils::rational(1), rho) {}
     bool activate_goal::apply() noexcept
     {
-        if (!ratio::resolver::get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()))
+        if (!get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma()))
             return false;
         try
         {
@@ -159,11 +169,11 @@ namespace ratio
     unify_atom::unify_atom(atom_flaw &flw, riddle::atom_expr atm) noexcept : riddle::resolver(flw, utils::rational(0)), ratio::resolver(flw, utils::rational(0)), atm(std::move(atm)) {}
     bool unify_atom::apply() noexcept
     {
-        if (!ratio::resolver::get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*atm).get_sigma()))
+        if (!get_flaw().get_core().assert_expr(static_cast<riddle::atom &>(*atm).get_sigma()))
             return false;
-        if (!ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_not(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma())))
+        if (!get_flaw().get_core().assert_expr(get_flaw().get_core().new_not(static_cast<riddle::atom &>(*static_cast<atom_flaw &>(flw).get_atom()).get_sigma())))
             return false;
-        return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_eq(static_cast<atom_flaw &>(flw).get_atom(), atm));
+        return get_flaw().get_core().assert_expr(get_flaw().get_core().new_eq(static_cast<atom_flaw &>(flw).get_atom(), atm));
     }
 
     json::json unify_atom::to_json() const
@@ -217,5 +227,5 @@ namespace ratio
     }
 
     ordering::ordering(flaw &flw, riddle::atom_expr before, riddle::atom_expr after) noexcept : riddle::resolver(flw, utils::rational(1)), ratio::resolver(flw, utils::rational(1)), before(std::move(before)), after(std::move(after)) {}
-    bool ordering::apply() noexcept { return ratio::resolver::get_flaw().get_core().assert_expr(ratio::resolver::get_flaw().get_core().new_le(before->get<riddle::arith_term>(riddle::end_kw), after->get<riddle::arith_term>(riddle::start_kw))); }
+    bool ordering::apply() noexcept { return get_flaw().get_core().assert_expr(get_flaw().get_core().new_le(before->get<riddle::arith_term>(riddle::end_kw), after->get<riddle::arith_term>(riddle::start_kw))); }
 } // namespace ratio

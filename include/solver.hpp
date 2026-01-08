@@ -11,11 +11,14 @@ namespace ratio
   static constexpr const char *INIT_STRING = "predicate Impulse(real at) { at >= origin; at <= horizon; } predicate Interval(real start, real end, real duration) { start >= origin; duration == end - start; duration >= 0.0; end <= horizon; } real origin, horizon; origin >= 0.0; origin <= horizon;";
 
   class flaw;
+  class resolver;
+  class unify_atom;
 
   class solver : public riddle::core
   {
     friend class flaw;
     friend class resolver;
+    friend class unify_atom;
 
   public:
     solver(std::string_view name = "oRatio") noexcept;
@@ -88,7 +91,7 @@ namespace ratio
     bool mk_eq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept override;
     bool mk_neq(riddle::enum_expr lhs, riddle::enum_expr rhs) noexcept override;
 
-#ifdef ORATIO_ENABLE_LISTENERS
+#ifdef RIDDLE_ENABLE_LISTENERS
   private:
     /**
      * @brief This function is called when the state of the solver changes.
@@ -99,46 +102,14 @@ namespace ratio
      */
     virtual void state_changed() {}
     /**
-     * @brief Notifies when a flaw has been created.
-     *
-     * This function is called when a flaw has been created. It is a virtual function that can be overridden by derived classes to perform specific actions when a flaw is created.
-     *
-     * @param flaw The flaw that has been created.
-     */
-    virtual void flaw_created(const riddle::flaw &) {}
-    /**
      * @brief Notifies when the state of a flaw has changed.
      *
      * This function is called when the state of a flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when a flaw's state changes.
      *
      * @param flaw The flaw whose state has changed.
      */
-    virtual void flaw_state_changed(const riddle::flaw &) {}
-    /**
-     * @brief Notifies when the cost of a flaw has changed.
-     *
-     * This function is called when the cost of a flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when a flaw's cost changes.
-     *
-     * @param flaw The flaw whose cost has changed.
-     */
-    virtual void flaw_cost_changed(const riddle::flaw &) {}
-    /**
-     * @brief Notifies when the current flaw has changed.
-     *
-     * This function is called when the current flaw has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when the current flaw changes.
-     *
-     * @param flaw The current flaw.
-     */
-    virtual void current_flaw(std::shared_ptr<riddle::flaw>) {}
+    virtual void flaw_state_changed(const flaw &) {}
 
-    /**
-     * @brief Notifies when a resolver has been created.
-     *
-     * This function is called when a resolver has been created. It is a virtual function that can be overridden by derived classes to perform specific actions when a resolver is created.
-     *
-     * @param resolver The resolver that has been created.
-     */
-    virtual void resolver_created(const riddle::resolver &) {}
     /**
      * @brief Notifies when the state of a resolver has changed.
      *
@@ -146,25 +117,7 @@ namespace ratio
      *
      * @param resolver The resolver whose state has changed.
      */
-    virtual void resolver_state_changed(const riddle::resolver &) {}
-    /**
-     * @brief Notifies when the current resolver has changed.
-     *
-     * This function is called when the current resolver has changed. It is a virtual function that can be overridden by derived classes to perform specific actions when the current resolver changes.
-     *
-     * @param resolver The current resolver.
-     */
-    virtual void current_resolver(std::shared_ptr<riddle::resolver>) {}
-
-    /**
-     * @brief Notifies when a causal link has been added.
-     *
-     * This function is called when a causal link has been added. It is a virtual function that can be overridden by derived classes to perform specific actions when a causal link is added.
-     *
-     * @param flaw The flaw that is the source of the causal link.
-     * @param resolver The resolver that is the destination of the causal link.
-     */
-    virtual void causal_link_added(const riddle::flaw &, const riddle::resolver &) {}
+    virtual void resolver_state_changed(const resolver &) {}
 #endif
 
   private:

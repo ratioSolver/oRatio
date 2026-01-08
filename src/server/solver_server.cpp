@@ -54,15 +54,27 @@ namespace ratio
     {
         auto j_msg = f.to_json();
         j_msg["id"] = static_cast<uint64_t>(f.get_id());
+        switch (sat_val(static_cast<const flaw &>(f).get_phi()))
+        {
+        case utils::True:
+            j_msg["state"] = "active";
+            break;
+        case utils::False:
+            j_msg["state"] = "forbidden";
+            break;
+        default:
+            j_msg["state"] = "inactive";
+            break;
+        }
         j_msg["msg_type"] = "flaw_created";
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
-    void solver_server::flaw_state_changed(const riddle::flaw &f)
+    void solver_server::flaw_state_changed(const flaw &f)
     {
         auto j_msg = json::json{{"msg_type", "flaw_state_changed"}, {"id", f.get_id()}};
-        switch (sat_val(static_cast<const flaw &>(f).get_phi()))
+        switch (sat_val(f.get_phi()))
         {
         case utils::True:
             j_msg["state"] = "active";
@@ -98,25 +110,37 @@ namespace ratio
     void solver_server::resolver_created(const riddle::resolver &r)
     {
         auto j_msg = r.to_json();
+        switch (sat_val(dynamic_cast<const resolver &>(r).get_rho()))
+        {
+        case utils::True:
+            j_msg["state"] = "active";
+            break;
+        case utils::False:
+            j_msg["state"] = "forbidden";
+            break;
+        default:
+            j_msg["state"] = "inactive";
+            break;
+        }
         j_msg["id"] = r.get_id();
         j_msg["msg_type"] = "resolver_created";
         auto msg = j_msg.dump();
         for (auto client : clients)
             client->send(msg);
     }
-    void solver_server::resolver_state_changed(const riddle::resolver &r)
+    void solver_server::resolver_state_changed(const resolver &r)
     {
         auto j_msg = json::json{{"msg_type", "resolver_state_changed"}, {"id", r.get_id()}};
-        switch (sat_val(dynamic_cast<const resolver &>(r).get_rho()))
+        switch (sat_val(r.get_rho()))
         {
         case utils::True:
-            j_msg["state"] = "applied";
+            j_msg["state"] = "active";
             break;
         case utils::False:
             j_msg["state"] = "forbidden";
             break;
         default:
-            j_msg["state"] = "unapplied";
+            j_msg["state"] = "inactive";
             break;
         }
         auto msg = j_msg.dump();

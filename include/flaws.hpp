@@ -145,6 +145,7 @@ namespace ratio
   {
   public:
     activate_fact(atom_flaw &f) noexcept;
+    activate_fact(atom_flaw &f, const utils::lit &rho) noexcept;
 
   private:
     bool apply() noexcept override;
@@ -156,6 +157,7 @@ namespace ratio
   {
   public:
     activate_goal(atom_flaw &f) noexcept;
+    activate_goal(atom_flaw &f, const utils::lit &rho) noexcept;
 
   private:
     bool apply() noexcept override;

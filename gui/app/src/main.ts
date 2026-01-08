@@ -1,5 +1,5 @@
 import { Settings, AppComponent, App, Connection, BrandComponent, NavbarContent } from '@ratiosolver/flick';
-import { solver, TimelinesChart, SolverGraph, SolverTree } from '@ratiosolver/solver';
+import { solver, TimelinesChart, SolverGraph } from '@ratiosolver/solver';
 import './styles.css';
 
 Settings.get_instance().load_settings({ ws_path: '/ratio' });
@@ -45,22 +45,6 @@ class ChartSelector extends NavbarContent implements solver.SolverSetListener {
     graph_button.addEventListener('click', () => { App.get_instance().selected_component(new SolverGraph(this.solver!)); });
     graph_pill.appendChild(graph_button);
     pills.appendChild(graph_pill);
-
-    const tree_pill = document.createElement('li');
-    tree_pill.classList.add('nav-item');
-    tree_pill.role = 'presentation';
-    const tree_button = document.createElement('button');
-    tree_button.classList.add('nav-link');
-    tree_button.id = 'tree-tab';
-    tree_button.type = 'button';
-    tree_button.setAttribute('data-bs-toggle', 'pill');
-    tree_button.setAttribute('role', 'tab');
-    tree_button.setAttribute('aria-controls', 'tree');
-    tree_button.setAttribute('aria-selected', 'false');
-    tree_button.innerText = 'Tree';
-    tree_button.addEventListener('click', () => { App.get_instance().selected_component(new SolverTree(this.solver!)); });
-    tree_pill.appendChild(tree_button);
-    pills.appendChild(tree_pill);
 
     this.node.appendChild(pills);
 
