@@ -1,7 +1,6 @@
 #pragma once
 
-#include "core.hpp"
-#include "flaw.hpp"
+#include "graph.hpp"
 #include "linspire.hpp"
 #include "arc_consistency.hpp"
 #include "types.hpp"
@@ -12,11 +11,17 @@ namespace ratio
 
   class flaw;
   class resolver;
+  class activate_fact;
+  class activate_goal;
+  class unify_atom;
 
-  class solver : public riddle::core
+  class solver : public riddle::graph
   {
     friend class flaw;
     friend class resolver;
+    friend class activate_fact;
+    friend class activate_goal;
+    friend class unify_atom;
 
   public:
     solver(std::string_view name = "oRatio") noexcept;
@@ -57,8 +62,6 @@ namespace ratio
     [[nodiscard]] riddle::arith_expr new_product(std::vector<riddle::arith_expr> &&xprs) override;
     [[nodiscard]] riddle::arith_expr new_division(std::vector<riddle::arith_expr> &&xprs) override;
 
-    riddle::atom_state get_atom_state(const riddle::atom_term &atm) const noexcept override;
-
     [[nodiscard]] riddle::expr new_enum(riddle::component_type &tp, std::vector<riddle::expr> &&values) override;
 
     void new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts) override;
@@ -69,15 +72,13 @@ namespace ratio
     void solve();
 
   protected:
-    utils::lbool sat_val(const utils::lit &l) const noexcept;
+    [[nodiscard]] utils::var new_prop() noexcept override;
+    [[nodiscard]] utils::lbool prop_val(const utils::lit &l) const noexcept override;
+    void new_clause(std::vector<utils::lit> &&lits) noexcept override;
 
   private:
-    void new_clause(std::vector<utils::lit> &&lits);
-    riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) override;
-
-    void add_causal_link(riddle::flaw &f, riddle::resolver &r) noexcept override;
-
-    void compute_flaw_cost(riddle::flaw &f) noexcept;
+    void new_enum_eq(const riddle::enum_term &xpr, const utils::enum_val &val, riddle::expr lhs, riddle::expr rhs) noexcept override;
+    [[nodiscard]] riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) override;
 
   private:
     bool mk_assign(riddle::bool_expr xpr, utils::lbool val) noexcept override;

@@ -7,44 +7,32 @@ namespace ratio
 {
   class flaw : public riddle::flaw, private arc_consistency::listener
   {
+    friend class solver;
+
   public:
     flaw(solver &cr, std::optional<std::reference_wrapper<riddle::resolver>> cause) : flaw(cr, cause.has_value() ? std::vector<std::reference_wrapper<riddle::resolver>>{cause.value()} : std::vector<std::reference_wrapper<riddle::resolver>>{}) {}
     flaw(solver &cr, std::vector<std::reference_wrapper<riddle::resolver>> &&causes);
 
-    [[nodiscard]] const utils::lit &get_phi() const noexcept { return phi; }
-
-    [[nodiscard]] json::json to_json() const override;
-
   private:
-    utils::lit get_phi(const std::vector<std::reference_wrapper<riddle::resolver>> &causes) const noexcept;
-
+    virtual void compute_resolvers() override = 0;
     void on_domain_changed(const utils::var v) noexcept override;
-
-  private:
-    const utils::lit phi;
   };
 
-  class resolver : public virtual riddle::resolver, private arc_consistency::listener
+  class resolver : public riddle::resolver, private arc_consistency::listener
   {
     friend class solver;
 
   public:
-    resolver(flaw &flw, utils::rational &&intrinsic_cost);
-    resolver(flaw &flw, utils::rational &&intrinsic_cost, const utils::lit &rho);
-
-    [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
-
-    [[nodiscard]] json::json to_json() const override;
+    resolver(flaw &flw, utils::rational &&intrinsic_cost) : resolver(flw, static_cast<solver &>(flw.get_graph()).new_prop(), std::move(intrinsic_cost)) {}
+    resolver(flaw &flw, const utils::lit &rho, utils::rational &&intrinsic_cost);
 
   private:
+    [[nodiscard]] bool apply() noexcept override = 0;
     void on_domain_changed(const utils::var v) noexcept override;
 
   protected:
     linspire::constraint lin_cnsts;                                            // The linear constraints in the current context..
     std::vector<std::reference_wrapper<arc_consistency::constraint>> ac_cnsts; // The arc consistency constraints in the current context..
-
-  private:
-    const utils::lit rho;
   };
 
   class enum_flaw final : public flaw
@@ -61,15 +49,18 @@ namespace ratio
     riddle::enum_expr var;
   };
 
-  class select_value final : public resolver, public riddle::select_value
+  class select_value final : public resolver
   {
-    friend class enum_item;
+    friend class solver;
 
   public:
     select_value(enum_flaw &flw, const utils::lit &rho, riddle::expr val) noexcept;
 
   private:
     bool apply() noexcept override;
+
+  private:
+    riddle::expr val; // the value to select..
   };
 
   class clause_flaw final : public flaw
@@ -135,7 +126,7 @@ namespace ratio
   class atom_flaw final : public flaw
   {
   public:
-    atom_flaw(solver &slv, std::optional<std::reference_wrapper<riddle::resolver>> cause, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, riddle::bool_expr &&sigma) noexcept;
+    atom_flaw(solver &slv, std::optional<std::reference_wrapper<riddle::resolver>> cause, bool is_fact, riddle::predicate &pred, std::map<std::string, riddle::expr, std::less<>> &&args, const utils::lit &sigma) noexcept;
 
     [[nodiscard]] const riddle::atom_expr &get_atom() const noexcept { return atm; }
 
