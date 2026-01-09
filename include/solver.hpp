@@ -21,6 +21,9 @@ namespace ratio
   public:
     solver(std::string_view name = "oRatio") noexcept;
 
+    void read(std::string_view script) override;
+    void read(const std::vector<std::filesystem::path> &files) override;
+
     [[nodiscard]] riddle::bool_expr new_bool() override;
     [[nodiscard]] riddle::bool_expr new_bool(const bool value) override;
     [[nodiscard]] utils::lbool bool_value(const riddle::bool_term &expr) const noexcept override;
@@ -94,13 +97,14 @@ namespace ratio
 #ifdef RIDDLE_ENABLE_LISTENERS
   private:
     /**
-     * @brief This function is called when the state of the solver changes.
+     * @brief This function is called when the state changes.
      *
      * This function should be overridden by derived classes to handle the state change event.
      *
      * @note This is a virtual function and can be overridden by derived classes.
      */
     virtual void state_changed() {}
+
     /**
      * @brief Notifies when the state of a flaw has changed.
      *

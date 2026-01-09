@@ -16,6 +16,25 @@ namespace ratio
         add_type(std::make_unique<consumable_resource>(*this));
     }
 
+    void solver::read(std::string_view script)
+    {
+        riddle::core::read(script);
+        if (!lin_slv.check() || !ac_slv.propagate())
+            throw std::runtime_error("initial constraints are unsatisfiable");
+#ifdef RIDDLE_ENABLE_LISTENERS
+        state_changed();
+#endif
+    }
+    void solver::read(const std::vector<std::filesystem::path> &files)
+    {
+        riddle::core::read(files);
+        if (!lin_slv.check() || !ac_slv.propagate())
+            throw std::runtime_error("initial constraints are unsatisfiable");
+#ifdef RIDDLE_ENABLE_LISTENERS
+        state_changed();
+#endif
+    }
+
     riddle::bool_expr solver::new_bool() { return std::make_shared<riddle::bool_item>(static_cast<riddle::bool_type &>(get_type(riddle::bool_kw)), ac_slv.new_sat()); }
     riddle::bool_expr solver::new_bool(const bool value)
     {
@@ -159,10 +178,8 @@ namespace ratio
             if (!assert_expr(exprs[0]))
                 throw std::runtime_error("Unsatisfiable constraints");
         }
-        else
-        { // otherwise, create a new clause flaw..
+        else // otherwise, create a new clause flaw..
             new_flaw<clause_flaw>(*this, get_current_resolver(), std::move(exprs));
-        }
     }
 
     bool solver::match(riddle::term &lhs, riddle::term &rhs) const
@@ -209,8 +226,16 @@ namespace ratio
 
     void solver::solve()
     {
+        std::unordered_set<riddle::flaw *> root_flaws;
+        for (const auto &flw_ptr : get_flaws())
+            if (flw_ptr->get_causes().empty())
+                root_flaws.insert(flw_ptr.get());
+        if (root_flaws.empty())
+            return; // nothing to solve..
+
         size_t iter = 0;
-        while (iter < get_flaws().size())
+        while (std::any_of(root_flaws.begin(), root_flaws.end(), [this](riddle::flaw *f)
+                           { return utils::is_infinite(f->get_estimated_cost()); }))
         {
             auto &flw = *get_flaws()[iter];
             set_current_flaw(flw);
@@ -225,6 +250,9 @@ namespace ratio
                 if (!lin_slv.check() || !ac_slv.propagate())
                 { // TODO: unsat handling
                 }
+#ifdef RIDDLE_ENABLE_LISTENERS
+                state_changed();
+#endif
             }
             compute_flaw_cost(flw);
             iter++;
