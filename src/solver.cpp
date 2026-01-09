@@ -272,7 +272,17 @@ namespace ratio
 
     void solver::new_enum_eq(const riddle::enum_term &xpr, const utils::enum_val &val, riddle::expr lhs, riddle::expr rhs) noexcept
     {
-        static_cast<const riddle::enum_item &>(xpr).get_flaw().get_resolvers();
+        if (static_cast<const riddle::enum_item &>(xpr).get_flaw().get_resolvers().empty())
+            static_cast<flaw &>(static_cast<const riddle::enum_item &>(xpr).get_flaw()).compute_resolvers();
+        for (const auto &r : static_cast<const riddle::enum_item &>(xpr).get_flaw().get_resolvers())
+            if (&*static_cast<select_value &>(r.get()).val == &val)
+            {
+                auto c_r = get_current_resolver();
+                set_current_resolver(r);
+                assert_expr(new_eq(lhs, rhs));
+                set_current_resolver(c_r);
+                break;
+            }
     }
     riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args)
     {
