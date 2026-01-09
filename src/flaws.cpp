@@ -5,15 +5,26 @@
 
 namespace ratio
 {
-    flaw::flaw(solver &cr, std::vector<std::reference_wrapper<riddle::resolver>> &&causes) : riddle::flaw(cr, std::move(causes)), phi(get_phi(this->get_causes())) {}
-    flaw::flaw(solver &cr, std::optional<std::reference_wrapper<riddle::resolver>> cause) : riddle::flaw(cr, cause), phi(get_phi(this->get_causes())) {}
+    flaw::flaw(solver &cr, std::vector<std::reference_wrapper<riddle::resolver>> &&causes) : riddle::flaw(cr, std::move(causes)), arc_consistency::listener(cr.ac_slv), phi(get_phi(this->get_causes()))
+    {
+        assert(cr.sat_val(phi) != utils::False);
+        listen(utils::variable(phi));
+        if (static_cast<solver &>(cr).sat_val(phi) == utils::True) // The flaw is already active..
+            static_cast<solver &>(cr).open_flaws.insert(this);
+    }
+    void flaw::on_domain_changed([[maybe_unused]] const utils::var v) noexcept
+    {
+        assert(v == utils::variable(phi));
+        if (static_cast<solver &>(cr).sat_val(phi) == utils::True) // The flaw has been activated..
+            static_cast<solver &>(cr).open_flaws.insert(this);
+    }
     utils::lit flaw::get_phi(const std::vector<std::reference_wrapper<riddle::resolver>> &causes) const noexcept
     {
         switch (causes.size())
         {
-        case 0:
+        case 0: // No causes, phi is always true..
             return utils::TRUE_lit;
-        case 1:
+        case 1: // Single cause, phi is the rho of the cause..
             return dynamic_cast<resolver &>(causes.front().get()).get_rho();
         default: // Combine the causes' rhos into a single phi..
             auto phi = cr.new_bool();
@@ -33,15 +44,28 @@ namespace ratio
     }
 
     resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost) : resolver(flw, std::move(intrinsic_cost), static_cast<riddle::bool_item &>(*flw.get_core().new_bool()).get_lit()) {}
-    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost, const utils::lit &rho) : riddle::resolver(flw, std::move(intrinsic_cost)), rho(rho)
-    { // Applying this resolver implies that the flaw's phi is satisfied..
-        static_cast<solver &>(get_flaw().get_core()).new_clause({!rho, flw.get_phi()});
+    resolver::resolver(flaw &flw, utils::rational &&intrinsic_cost, const utils::lit &rho) : riddle::resolver(flw, std::move(intrinsic_cost)), arc_consistency::listener(static_cast<solver &>(get_flaw().get_core()).ac_slv), rho(rho)
+    {
+        assert(static_cast<solver &>(get_flaw().get_core()).sat_val(rho) != utils::False);
+        listen(utils::variable(rho));
+        // Applying this resolver implies that the flaw's phi is satisfied..
+        if (rho != flw.get_phi())
+            static_cast<solver &>(get_flaw().get_core()).new_clause({!rho, flw.get_phi()});
+        if (static_cast<solver &>(get_flaw().get_core()).sat_val(rho) == utils::True) // The resolver is already active..
+            static_cast<solver &>(get_flaw().get_core()).open_flaws.erase(&flw);
     }
     json::json resolver::to_json() const
     {
         auto j = riddle::resolver::to_json();
         j["rho"] = utils::to_string(rho);
         return j;
+    }
+
+    void resolver::on_domain_changed([[maybe_unused]] const utils::var v) noexcept
+    {
+        assert(v == utils::variable(rho));
+        if (static_cast<solver &>(get_flaw().get_core()).sat_val(rho) == utils::True) // The resolver has been activated..
+            static_cast<solver &>(get_flaw().get_core()).open_flaws.erase(&flw);
     }
 
     enum_flaw::enum_flaw(solver &slv, std::optional<std::reference_wrapper<riddle::resolver>> cause, riddle::component_type &tp, std::vector<riddle::expr> &&values, utils::var ev) noexcept : flaw(slv, cause), var(std::make_shared<riddle::enum_item>(*this, tp, std::move(values), ev)) {}

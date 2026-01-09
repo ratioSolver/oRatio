@@ -75,6 +75,8 @@ namespace ratio
     void new_clause(std::vector<utils::lit> &&lits);
     riddle::atom_expr create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) override;
 
+    void add_causal_link(riddle::flaw &f, riddle::resolver &r) noexcept override;
+
     void compute_flaw_cost(riddle::flaw &f) noexcept;
 
   private:
@@ -125,8 +127,9 @@ namespace ratio
 #endif
 
   private:
-    arc_consistency::solver ac_slv; // The arc consistency solver..
-    linspire::solver lin_slv;       // The linear programming solver..
+    arc_consistency::solver ac_slv;                // The arc consistency solver..
+    linspire::solver lin_slv;                      // The linear programming solver..
+    std::unordered_set<riddle::flaw *> open_flaws; // The set of open flaws..
   };
 
   class state_variable final : public riddle::state_variable

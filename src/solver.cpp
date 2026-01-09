@@ -161,14 +161,19 @@ namespace ratio
                 ev_refs.emplace_back(*ev_ptr);
             auto ev = ac_slv.new_var(ev_refs);
             // .. and create a new enum flaw to manage the variable..
-            return new_flaw<enum_flaw>(*this, get_current_resolver(), tp, std::move(values), ev).get_var();
+            auto &ef = new_flaw<enum_flaw>(*this, get_current_resolver(), tp, std::move(values), ev);
+            if (get_current_resolver()) // activate the flaw if the resolver is activated..
+                add_causal_link(ef, *get_current_resolver());
+            return ef.get_var();
         }
     }
 
     void solver::new_disjunction(std::vector<std::unique_ptr<riddle::conjunction>> &&disjuncts)
     {
         assert(disjuncts.size() > 1);
-        new_flaw<disjunction_flaw>(*this, get_current_resolver(), std::move(disjuncts));
+        auto &df = new_flaw<disjunction_flaw>(*this, get_current_resolver(), std::move(disjuncts));
+        if (get_current_resolver()) // activate the flaw if the resolver is activated..
+            add_causal_link(df, *get_current_resolver());
     }
     void solver::new_clause(std::vector<riddle::bool_expr> &&exprs)
     {
@@ -178,8 +183,12 @@ namespace ratio
             if (!assert_expr(exprs[0]))
                 throw std::runtime_error("Unsatisfiable constraints");
         }
-        else // otherwise, create a new clause flaw..
-            new_flaw<clause_flaw>(*this, get_current_resolver(), std::move(exprs));
+        else
+        { // otherwise, create a new clause flaw..
+            auto &cf = new_flaw<clause_flaw>(*this, get_current_resolver(), std::move(exprs));
+            if (get_current_resolver()) // activate the flaw if the resolver is activated..
+                add_causal_link(cf, *get_current_resolver());
+        }
     }
 
     bool solver::match(riddle::term &lhs, riddle::term &rhs) const
@@ -226,15 +235,8 @@ namespace ratio
 
     void solver::solve()
     {
-        std::unordered_set<riddle::flaw *> root_flaws;
-        for (const auto &flw_ptr : get_flaws())
-            if (flw_ptr->get_causes().empty())
-                root_flaws.insert(flw_ptr.get());
-        if (root_flaws.empty())
-            return; // nothing to solve..
-
         size_t iter = 0;
-        while (std::any_of(root_flaws.begin(), root_flaws.end(), [this](riddle::flaw *f)
+        while (std::any_of(open_flaws.begin(), open_flaws.end(), [this](riddle::flaw *f)
                            { return utils::is_infinite(f->get_estimated_cost()); }))
         {
             auto &flw = *get_flaws()[iter];
@@ -262,7 +264,20 @@ namespace ratio
     utils::lbool solver::sat_val(const utils::lit &l) const noexcept { return ac_slv.sat_val(l); }
 
     void solver::new_clause(std::vector<utils::lit> &&lits) { ac_slv.add_constraint(ac_slv.new_clause(std::move(lits))); }
-    riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args) { return new_flaw<atom_flaw>(*this, get_current_resolver(), is_fact, pred, std::move(args), new_bool()).get_atom(); }
+    riddle::atom_expr solver::create_atom(bool is_fact, riddle::predicate &pred, std::map<std::string, std::shared_ptr<riddle::term>, std::less<>> &&args)
+    {
+        auto &af = new_flaw<atom_flaw>(*this, get_current_resolver(), is_fact, pred, std::move(args), new_bool());
+        if (get_current_resolver()) // activate the flaw if the resolver is activated..
+            add_causal_link(af, *get_current_resolver());
+        return af.get_atom();
+    }
+
+    void solver::add_causal_link(riddle::flaw &f, riddle::resolver &r) noexcept
+    {
+        riddle::core::add_causal_link(f, r);
+        if (static_cast<flaw &>(f).get_phi() != dynamic_cast<resolver &>(r).get_rho())
+            new_clause({static_cast<flaw &>(f).get_phi(), !dynamic_cast<resolver &>(r).get_rho()}); // Adding the causal link implies that if the resolver is applied, the flaw is activated..
+    }
 
     void solver::compute_flaw_cost(riddle::flaw &f) noexcept
     {

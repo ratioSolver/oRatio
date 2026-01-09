@@ -5,11 +5,11 @@
 
 namespace ratio
 {
-  class flaw : public riddle::flaw
+  class flaw : public riddle::flaw, private arc_consistency::listener
   {
   public:
+    flaw(solver &cr, std::optional<std::reference_wrapper<riddle::resolver>> cause) : flaw(cr, cause.has_value() ? std::vector<std::reference_wrapper<riddle::resolver>>{cause.value()} : std::vector<std::reference_wrapper<riddle::resolver>>{}) {}
     flaw(solver &cr, std::vector<std::reference_wrapper<riddle::resolver>> &&causes);
-    flaw(solver &cr, std::optional<std::reference_wrapper<riddle::resolver>> cause);
 
     [[nodiscard]] const utils::lit &get_phi() const noexcept { return phi; }
 
@@ -18,11 +18,13 @@ namespace ratio
   private:
     utils::lit get_phi(const std::vector<std::reference_wrapper<riddle::resolver>> &causes) const noexcept;
 
+    void on_domain_changed(const utils::var v) noexcept override;
+
   private:
     const utils::lit phi;
   };
 
-  class resolver : public virtual riddle::resolver
+  class resolver : public virtual riddle::resolver, private arc_consistency::listener
   {
     friend class solver;
 
@@ -33,6 +35,9 @@ namespace ratio
     [[nodiscard]] const utils::lit &get_rho() const noexcept { return rho; }
 
     [[nodiscard]] json::json to_json() const override;
+
+  private:
+    void on_domain_changed(const utils::var v) noexcept override;
 
   protected:
     linspire::constraint lin_cnsts;                                            // The linear constraints in the current context..
